@@ -175,12 +175,12 @@ class StrategyConfig(object):
                                                self.blunium_start_push_pose[2]])
 
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.11,
-                                                     self.blunium[1] + self.robot_outer_radius - 0.04,
-                                                     0.7])  # 0.56 both
+                                                     self.blunium[1] + self.robot_outer_radius - 0.03,
+                                                     0.63])  # 0.56 both
 
         self.blunium_nose_end_push_pose = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
-                                                   self.blunium[1] + 0.13,
-                                                   0.7])  # 0.56 both.   0.7 only purple FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                                   self.blunium[1] + self.robot_outer_radius - 0.03,  # self.blunium[1] + 0.13
+                                                   0.63])  # 0.56 both.   0.7 only purple FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         self.blunium_get_back_pose = np.array([self.blunium_end_push_pose[0],
                                                self.blunium_end_push_pose[1] + 0.1,
@@ -280,13 +280,15 @@ class StrategyConfig(object):
                     if len(purple_chaos_pucks) == 4:
                         self.my_chaos_pucks.set(purple_chaos_pucks)
                         self.is_our_chaos_observed_flag.set(True)
-                        rospy.loginfo("Got pucks observation:")
-                        rospy.loginfo(self.my_chaos_pucks.get())
+                        # rospy.loginfo("Got MY pucks observation:")
+                        # print self.my_chaos_pucks.get()
+                        # print " "
                     if len(yellow_chaos_pucks) == 4:
                         self.opponent_chaos_pucks.set(yellow_chaos_pucks)
                         self.is_opponent_chaos_observed_flag.set(True)
-                        rospy.loginfo("Got pucks observation:")
-                        rospy.loginfo(self.opponent_chaos_pucks.get())
+                        # rospy.loginfo("Got OPP pucks observation:")
+                        # print self.opponent_chaos_pucks.get()
+                        # print " "
 
                     self.our_pucks_rgb.set(purple_pucks_rgb)
 
@@ -294,13 +296,15 @@ class StrategyConfig(object):
                     if len(yellow_chaos_pucks) == 4:
                         self.my_chaos_pucks.set(yellow_chaos_pucks)
                         self.is_our_chaos_observed_flag.set(True)
-                        rospy.loginfo("Got pucks observation:")
-                        rospy.loginfo(self.my_chaos_pucks.get())
+                        # rospy.loginfo("Got MY pucks observation:")
+                        # print self.my_chaos_pucks.get()
+                        # print " "
                     if len(purple_chaos_pucks) == 4:
                         self.opponent_chaos_pucks.set(purple_chaos_pucks)
                         self.is_opponent_chaos_observed_flag.set(True)
-                        rospy.loginfo("Got pucks observation:")
-                        rospy.loginfo(self.opponent_chaos_pucks.get())
+                        # rospy.loginfo("Got OPP pucks observation:")
+                        # print self.opponent_chaos_pucks.get()
+                        # print " "
 
                     self.our_pucks_rgb.set(yellow_pucks_rgb)
 
@@ -308,6 +312,14 @@ class StrategyConfig(object):
                 my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
                 self.my_chaos_pucks.set(my_chaos_pucks)
                 self.opponent_chaos_pucks.set(opp_chaos_pucks)
+
+            rospy.loginfo("Got MY pucks observation:")
+            print self.my_chaos_pucks.get()
+            print " "
+
+            # rospy.loginfo("Got OPP pucks observation:")
+            # print self.opponent_chaos_pucks.get()
+            # print " "
 
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
@@ -379,7 +391,7 @@ class StrategyConfig(object):
         comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
 
         print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
-        print "colors_of_opp_observed", sorted(colors_of_opp_observed)
+        # print "colors_of_opp_observed", sorted(colors_of_opp_observed)
 
         if sorted(comparison_our) == ref_colors:
             print "my chaos, equal"
@@ -388,12 +400,12 @@ class StrategyConfig(object):
             my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
             print "my chaos, need to parse!"
 
-        if sorted(comparison_opponent) == ref_colors:
-            print "opp_chaos, equal"
-            opp_chaos_new = observed_opponent_chaos_collection
-        else:
-            opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
-            print "opp_chaos, need to parse!"
+        # if sorted(comparison_opponent) == ref_colors:
+        #     print "opp_chaos, equal"
+        #     opp_chaos_new = observed_opponent_chaos_collection
+        # else:
+        #     opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
+        #     print "opp_chaos, need to parse!"
 
         my_chaos_new = np.array(my_chaos_new)
         opp_chaos_new = np.array(opp_chaos_new)
@@ -423,6 +435,7 @@ class StrategyConfig(object):
             ind = colors_in_new_obs.index("BLUNIUM")
             colors_in_new_obs.remove("BLUNIUM")
             list_of_pucks.append(new_obs.pop(ind))
+            print "UPDATED BLUNIUM COORDINATE ==========================="
             try:
                 ind_old = colors_in_known.index("BLUNIUM")
                 colors_in_known.remove("BLUNIUM")
@@ -435,6 +448,7 @@ class StrategyConfig(object):
             ind = colors_in_new_obs.index("GREENIUM")
             colors_in_new_obs.remove("GREENIUM")
             list_of_pucks.append(new_obs.pop(ind))
+            print "UPDATED GREENIUM COORDINATE ==========================="
             try:
                 ind_old = colors_in_known.index("GREENIUM")
                 colors_in_known.remove("GREENIUM")
@@ -450,7 +464,7 @@ class StrategyConfig(object):
             try:
                 ind_old = colors_in_known.index('REDIUM')
                 colors_in_known.remove('REDIUM')
-                print "old after deleting", colors_in_known
+                # print "old after deleting", colors_in_known
                 del known[ind_old]
             except ValueError as Error:
                 print Error
@@ -465,8 +479,8 @@ class StrategyConfig(object):
             except ValueError as Error:
                 print Error
 
-            print "known"
-            print known
+            print "UPDATED TWO REDIUM COORDINATE ==========================="
+
             list_of_pucks.extend(known)
 
         elif colors_in_new_obs.count("REDIUM") < 2:
@@ -475,8 +489,7 @@ class StrategyConfig(object):
         return list_of_pucks
 
     def is_observed(self):
-        rospy.loginfo("is observed?")
-        # if self.is_observed_flag.get(): 
+        # rospy.loginfo("is observed?")
         if self.is_our_chaos_observed_flag.get():  # FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
@@ -558,22 +571,6 @@ class StrategyConfig(object):
                 rospy.loginfo('Landing is free to go')
                 return bt.Status.SUCCESS
 
-    # def update_chaos_pucks(self):
-    #     """
-    #     TODO: make it usable when collecting opponent's chaos
-
-    #     delete taken puck from known on the field
-    #     get color of last taken puck
-    #     :return: None
-    #     """
-
-    #     incoming_puck_color = get_color(self.my_chaos_pucks.get()[0])
-    #     self.incoming_puck_color.set(incoming_puck_color)
-    #     rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
-    #     self.my_collected_chaos.set(self.my_chaos_pucks.get()[0])
-    #     self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
-    #     rospy.loginfo("Known pucks after removing: " + str(self.my_chaos_pucks.get()))
-
     def update_chaos_pucks(self, side="my"):
         """
         TODO: make it usable when collecting opponent's chaos
@@ -630,8 +627,10 @@ class StrategyConfig(object):
             my_known_chaos_pucks = np.array(my_known_chaos_pucks)
             self.my_chaos_pucks.set(my_known_chaos_pucks)
 
-        rospy.loginfo("Known pucks sorted: " + str(self.my_chaos_pucks.get()))
-
+        rospy.loginfo("Known pucks sorted: ")
+        print self.my_chaos_pucks.get()
+        print " "
+        
     #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
     #     if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
     #         # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
@@ -734,11 +733,11 @@ class SberStrategy(StrategyConfig):
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
                                     bt.SequenceWithMemoryNode([
-                                        bt_ros.Delay500("manipulator_client"),
+                                        #bt_ros.Delay500("manipulator_client"),
                                         bt_ros.BlindStartCollectGround("manipulator_client"),
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt_ros.CompleteCollectGround("manipulator_client")
                                     ])
-                                ], threshold=3),
+                                ], threshold=2),
                                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
 
                                 bt_ros.BlindStartCollectGround("manipulator_client"),

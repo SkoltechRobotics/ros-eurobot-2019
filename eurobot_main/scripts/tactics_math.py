@@ -27,7 +27,7 @@ def get_color(puck):
 
     color_val = None
     color_key = puck[3:]
-    print color_key
+    # print color_key
     if all(color_key == np.array([1, 0, 0])):
         color_val = "REDIUM"
     elif all(color_key == np.array([0, 1, 0])):
