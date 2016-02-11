@@ -478,7 +478,7 @@ class StrategyConfig(object):
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
         if not self.is_secondary_responding:
-            rospy.sleep(0)
+            rospy.sleep(5)
             return bt.Status.SUCCESS
         else:
             if polygon.contains(point):
@@ -513,8 +513,8 @@ class StrategyConfig(object):
             rospy.loginfo("Opponent's known pucks after removing: " + str(self.opponent_chaos_pucks.get()))
 
     def update_lost_pucks(self):
-        self.visible_pucks_on_field.set(np.delete(self.visible_pucks_on_field.get(), 0, axis=0))
-        rospy.loginfo("visible_pucks_on_field: " + str(self.visible_pucks_on_field.get()))
+        self.visible_pucks_on_field_sorted.set(np.delete(self.visible_pucks_on_field_sorted.get(), 0, axis=0))
+        rospy.loginfo("visible_pucks_on_field_sorted: " + str(self.visible_pucks_on_field_sorted.get()))
 
     def remove_uncollected_chaos_puck(self):
         self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
@@ -659,6 +659,15 @@ class StrategyConfig(object):
             return False
 
 
+
+
+
+
+
+
+
+
+
 class RusStr(StrategyConfig):
     def __init__(self, side):  # pucks_slave
         super(RusStr, self).__init__(side)  # pucks_slave
@@ -678,30 +687,55 @@ class RusStr(StrategyConfig):
                                         ])
                                     ], threshold=2)
 
+
         collect_green_cell_puck = bt.SequenceWithMemoryNode([
                                     bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
                                     bt.ActionNode(self.calculate_next_prelanding),
-                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
 
-                                    bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-                                    bt.ActionNode(self.calculate_next_prelanding),
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-                                        bt.FallbackWithMemoryNode([
-                                            bt.SequenceWithMemoryNode([
-                                                bt_ros.SmallDelayStartCollectGroundCheck("manipulator_client"),
-                                                #bt_ros.StartCollectGroundCheck("manipulator_client"),
-                                                bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
-                                                bt_ros.CompleteCollectGround("manipulator_client"),
-                                            ]),
-                                            bt.SequenceWithMemoryNode([
-                                                bt_ros.StopPump("manipulator_client"),
-                                                bt_ros.SetManipulatortoUp("manipulator_client")
-                                            ])
+                                    #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                    bt.FallbackWithMemoryNode([
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.StartCollectGroundCheck("manipulator_client"),
+                                            #bt_ros.StartCollectGroundCheck("manipulator_client"),
+                                            bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                        ]),
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.StopPump("manipulator_client"),
+                                            bt_ros.SetManipulatortoUp("manipulator_client")
                                         ])
-                                    ], threshold=2),
+                                    ]),
+                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client")
                                 ])
+
+
+
+        # collect_green_cell_puck = bt.SequenceWithMemoryNode([
+        #                             bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
+        #                             bt.ActionNode(self.calculate_next_prelanding),
+        #                             bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
+
+        #                             bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+        #                             bt.ActionNode(self.calculate_next_prelanding),
+        #                             bt.ParallelWithMemoryNode([
+        #                                 bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+        #                                 bt.FallbackWithMemoryNode([
+        #                                     bt.SequenceWithMemoryNode([
+        #                                         bt_ros.SmallDelayStartCollectGroundCheck("manipulator_client"),
+        #                                         #bt_ros.StartCollectGroundCheck("manipulator_client"),
+        #                                         bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
+        #                                         bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                     ]),
+        #                                     bt.SequenceWithMemoryNode([
+        #                                         bt_ros.StopPump("manipulator_client"),
+        #                                         bt_ros.SetManipulatortoUp("manipulator_client")
+        #                                     ])
+        #                                 ])
+        #                             ], threshold=2),
+        #                             bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+        #                         ])
 
         collect_blue_cell_puck = bt.FallbackWithMemoryNode([
                                     bt.SequenceWithMemoryNode([
@@ -837,8 +871,8 @@ class RusStr(StrategyConfig):
                                             bt.ConditionNode(self.is_lost_puck_present),
                                             bt.ActionNode(self.sort_lost_wrt_robot),
                                             bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field_sorted.get()[0])),
-                                            bt.ActionNode(self.calculate_next_prelanding),
-                                            bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                            #bt.ActionNode(self.calculate_next_prelanding),
+                                            #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                             bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
 
                                             bt.FallbackWithMemoryNode([
@@ -865,8 +899,36 @@ class RusStr(StrategyConfig):
                                 bt.ConditionNode(self.is_lost_puck_present),
                                 bt.ActionNode(self.sort_lost_wrt_robot),
                                 bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field_sorted.get()[0])),
-                                bt.ActionNode(self.calculate_next_prelanding),
-                                bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                #bt.ActionNode(self.calculate_next_prelanding),
+                                #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+
+                                bt.FallbackWithMemoryNode([
+                                    bt.SequenceWithMemoryNode([
+                                        bt_ros.StartCollectGroundCheck("manipulator_client"),
+                                        bt.ActionNode(lambda: self.score_master.add(get_color(self.visible_pucks_on_field_sorted.get()[0]))),
+                                        bt.ActionNode(self.update_lost_pucks),
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client")
+                                        ], threshold=2),
+                                        bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),
+                                        bt_ros.UnloadAccelerator("manipulator_client"),
+                                        bt.ActionNode(lambda: self.score_master.unload("ACC"))
+                                    ]),
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.StopPump("manipulator_client"),
+                                            bt_ros.SetManipulatortoUp("manipulator_client")
+                                        ])
+                                ])
+                            ])
+
+        final_search_unload2 = bt.SequenceWithMemoryNode([
+                                bt.ConditionNode(self.is_lost_puck_present),
+                                bt.ActionNode(self.sort_lost_wrt_robot),
+                                bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field_sorted.get()[0])),
+                                #bt.ActionNode(self.calculate_next_prelanding),
+                                #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                 bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
 
                                 bt.FallbackWithMemoryNode([
@@ -894,11 +956,21 @@ class RusStr(StrategyConfig):
                         collect_red_cell_puck,
                         collect_green_cell_puck,
                         collect_blue_cell_puck,
-                        push_blunium_collision_delay,
-                        collect_goldenium,
+                        # push_blunium_collision_delay,
+                        # collect_goldenium,
                         search_lost_puck_unload_cell,
-                        final_search_unload
+                        final_search_unload,
+                        final_search_unload2
                     ])
+
+
+
+
+
+
+
+
+
 
 
 class MadSafe(StrategyConfig):
@@ -1098,6 +1170,14 @@ class MadSafe(StrategyConfig):
                         search_lost_puck_unload_cell,
                         search_lost_puck_unload_cell2
                     ])
+
+
+
+
+
+
+
+
 
 
 class SafeStrategy(StrategyConfig):
