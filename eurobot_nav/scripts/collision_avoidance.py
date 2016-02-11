@@ -100,10 +100,16 @@ class CollisionAvoidanceMainRobot(object):
         x, y = cloud.T
         x0, y0 = 0, 0
         x1, y1 = np.roll(x, 1), np.roll(y, 1)
+        x2, y2 = np.roll(x,-1), np.roll(y, -1)
         cos_angle = ((x - x0) * (x - x1) + (y - y0) * (y - y1)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
                                                                    * np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1)))
         sin_angle = np.sqrt(1 - cos_angle * cos_angle)
-        index = sin_angle >= min_sin_angle
+        index1 = sin_angle >= min_sin_angle
+        cos_angle = ((x - x0) * (x - x2) + (y - y0) * (y - y2)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+                                                                   * np.sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2)))
+        sin_angle = np.sqrt(1 - cos_angle * cos_angle)
+        index2 = sin_angle >= min_sin_angle
+        index = index1 * index2
         return index
 
     def proximity_callback(self, data):

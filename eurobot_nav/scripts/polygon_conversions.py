@@ -55,7 +55,10 @@ def get_map(world, polygons):
     if len(polygons) != 0:
         for i in polygons:
             world_map = world_map.symmetric_difference(i).difference(i)
-        obstacle = world_map.interiors
-    world_map = world_map.exterior
-    world_map = list_from_polygon(world_map)
-    return world_map, obstacle
+    if  not type(world_map) is MultiPolygon:
+            obstacle = world_map.interiors
+	    world_map = world_map.exterior
+	    world_map = list_from_polygon(world_map)
+	    return world_map, obstacle
+    else:
+	    return polygon_list_from_numpy([world])[0], []
