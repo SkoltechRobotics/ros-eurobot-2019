@@ -1538,7 +1538,7 @@ class SafeStrategy(StrategyConfig):
                                                     bt.ActionNode(self.set_closest_chaos_landing),
                                                     bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
-                                                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
                                                 ])
                                             ], threshold=2),
@@ -1567,7 +1567,7 @@ class SafeStrategy(StrategyConfig):
                                                     bt.ActionNode(self.set_closest_chaos_landing),
                                                     bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
-                                                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
 
                                                 ])
@@ -1592,7 +1592,7 @@ class SafeStrategy(StrategyConfig):
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.CompleteCollectGround("manipulator_client"),
                                                 bt.SequenceWithMemoryNode([
-                                                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
                                                 ])
                                             ], threshold=2),
@@ -1612,7 +1612,7 @@ class SafeStrategy(StrategyConfig):
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.SetManipulatortoWall("manipulator_client"),
                                                 bt.SequenceWithMemoryNode([
-                                                    #bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
                                                 ])
                                             ], threshold=2)
@@ -1656,7 +1656,7 @@ class SafeStrategy(StrategyConfig):
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.SetManipulatortoWall("manipulator_client"),
                                                 bt.SequenceWithMemoryNode([
-                                                    #bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
                                                 ])
                                             ], threshold=2)
@@ -1870,8 +1870,8 @@ class SafeStrategy(StrategyConfig):
                                                             bt.ConditionNode(self.is_scales_landing_free),
                                                             bt.ParallelWithMemoryNode([
                                                                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
-                                                                bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), "manipulator_client", threshold=0.03),
-                                                                bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.03),
+                                                                bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.03, 0]), "manipulator_client", threshold=0.03),
+                                                                bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.03, 0]), self.score_master, "SCALES", threshold=0.03),
                                                             ], threshold=3)
                                                         ])
                                                     )
