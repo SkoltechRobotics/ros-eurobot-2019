@@ -193,7 +193,7 @@ class Strategy(object):
         self.nearest_PRElanding = bt.BTVariable()
         self.next_landing_var = bt.BTVariable()
 
-        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] - self.sign * 0.2,
+        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] - self.sign * 0.05,
                                                          self.chaos_center[1] - 0.3,
                                                          1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
 
@@ -257,21 +257,12 @@ class Strategy(object):
             print "no coords available"
             rospy.sleep(0.5)
 
-        print(self.main_coords)
-        print "puck is"
-        print puck
-        print " "
-
         dist, _ = calculate_distance(self.main_coords, puck)  # return deltaX and deltaY coords
         gamma = np.arctan2(dist[1], dist[0])
         puck = np.hstack((puck, gamma))
         landing = cvt_local2global(self.approach_vec, puck)
-        # landing = landing[np.newaxis, :]
         self.next_landing_var.set(landing)
-
         rospy.loginfo("calculated next landing")
-        print "calculated next landing"
-        print self.next_landing_var.get()
         rospy.loginfo(self.next_landing_var.get())
 
     def is_robot_empty(self):
@@ -583,13 +574,13 @@ class Combobombo(Strategy):
         self.tree = bt.SequenceWithMemoryNode([
                         red_cell_puck,
 
-                        # bt.FallbackWithMemoryNode([
-                        #     bt.SequenceNode([
-                        #         bt.ConditionNode(self.is_observed),
-                        #         collect_chaos
-                        #     ]),
-                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        # ]),
+                        bt.FallbackWithMemoryNode([
+                            bt.SequenceNode([
+                                bt.ConditionNode(self.is_observed),
+                                collect_chaos
+                            ]),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                        ]),
                         green_cell_puck,
                         blue_cell_puck,
                         move_home,
