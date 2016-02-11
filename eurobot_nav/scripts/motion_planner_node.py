@@ -181,6 +181,7 @@ class MotionPlannerNode:
             rospy.loginfo("TIME")
             rospy.loginfo(rospy.Time.now().to_sec())
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
+            rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback, oneshot=True)
         elif cmd_type == "stop":
             self.terminate_moving()
         self.mutex.release()
