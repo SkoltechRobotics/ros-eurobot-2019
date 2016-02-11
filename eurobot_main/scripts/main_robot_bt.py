@@ -104,6 +104,7 @@ class StrategyConfig(object):
         self.collected_pucks = bt.BTVariable(np.array([]))
 
         self.is_main_robot_started = bt.BTVariable(False)
+        self.is_observed_flag = bt.BTVariable(False)  # FIXME!!!!!!!! remove
         self.is_our_chaos_observed_flag = bt.BTVariable(False)
         self.is_opponent_chaos_observed_flag = bt.BTVariable(False)
 
@@ -173,8 +174,8 @@ class StrategyConfig(object):
                                                self.blunium_start_push_pose[1],
                                                self.blunium_start_push_pose[2]])
 
-        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.07,
-                                                     self.blunium[1] + self.robot_outer_radius,
+        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.09,
+                                                     self.blunium[1] + self.robot_outer_radius - 0.02,
                                                      0.56])
 
         self.blunium_nose_end_push_pose = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
@@ -233,7 +234,7 @@ class StrategyConfig(object):
 
         self.guard_chaos_loc_var = bt.BTVariable(np.array([1.35,
                                                            0.9,
-                                                           1.57 - self.sign * 1.57]))  # FIXME change to another angle and loc * 0.785
+                                                           1.57 + self.sign * 1.57]))  # FIXME change to another angle and loc * 0.785
 
         self.starting_pos_var = bt.BTVariable(np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                                         0.45,
@@ -247,55 +248,14 @@ class StrategyConfig(object):
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
 
-    # works but only once
-    # def pucks_callback(self, data):
-    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
-    #     # red (1, 0, 0)
-    #     # green (0, 1, 0)
-    #     # blue (0, 0, 1)
-    #     # rospy.loginfo(data)
-    #
-    #     try:
-    #         new_observation_pucks = [[marker.pose.position.x,
-    #                                   marker.pose.position.y,
-    #                                   marker.id,
-    #                                   marker.color.r,
-    #                                   marker.color.g,
-    #                                   marker.color.b] for marker in data.markers]
-    #
-    #         purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = self.parse_pucks(new_observation_pucks,
-    #                                                                                                       self.purple_chaos_center,
-    #                                                                                                       self.yellow_chaos_center,
-    #                                                                                                       self.chaos_radius,
-    #                                                                                                       self.purple_cells_area,
-    #                                                                                                       self.yellow_cells_area)
-    #
-    #         if self.color_side == "purple_side":
-    #             self.our_chaos_pucks.set(purple_chaos_pucks)
-    #             self.opponent_chaos_pucks.set(yellow_chaos_pucks)
-    #             self.our_pucks_rgb.set(purple_pucks_rgb)
-    #         elif self.color_side == "yellow_side":
-    #             self.our_chaos_pucks.set(yellow_chaos_pucks)
-    #             self.opponent_chaos_pucks.set(purple_chaos_pucks)
-    #             self.our_pucks_rgb.set(yellow_pucks_rgb)
-    #
-    #         if len(self.our_chaos_pucks.get()) == 4:
-    #             self.is_observed_flag.set(True)
-    #             rospy.loginfo("Got pucks observation:")
-    #             rospy.loginfo(self.our_chaos_pucks.get())
-    #
-    #             self.pucks_subscriber.unregister()
-    #
-    #     except Exception:  # FIXME
-    #         rospy.loginfo("list index out of range - no visible pucks on the field ")
-
+    #works but only once
     def pucks_callback(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
         # green (0, 1, 0)
         # blue (0, 0, 1)
         # rospy.loginfo(data)
-
+    
         try:
             new_observation_pucks = [[marker.pose.position.x,
                                       marker.pose.position.y,
@@ -303,215 +263,258 @@ class StrategyConfig(object):
                                       marker.color.r,
                                       marker.color.g,
                                       marker.color.b] for marker in data.markers]
-
-            # Updating all pucks from scratch with each new observation if robots are still waiting.
-            # When robots start, there occurs possibility that camera just doesn't see some of pucks or they are already collected:
-            # in this case function compare_to_update_or_ignore is used
-
-            if self.is_main_robot_started.get() is False:
-
-                purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(new_observation_pucks,
-                                                                                                                  self.purple_chaos_center,
-                                                                                                                  self.yellow_chaos_center,
-                                                                                                                  self.chaos_radius,
-                                                                                                                  self.purple_cells_area,
-                                                                                                                  self.yellow_cells_area)
-
-                if self.color_side == "purple_side":
-                    if len(purple_chaos_pucks) == 4:
-                        self.my_chaos_pucks.set(purple_chaos_pucks)
-                    if len(yellow_chaos_pucks) == 4:
-                        self.opponent_chaos_pucks.set(yellow_chaos_pucks)
-
-                    self.our_pucks_rgb.set(purple_pucks_rgb)
-
-                elif self.color_side == "yellow_side":
-                    if len(yellow_chaos_pucks) == 4:
-                        self.my_chaos_pucks.set(yellow_chaos_pucks)
-                    if len(purple_chaos_pucks) == 4:
-                        self.opponent_chaos_pucks.set(purple_chaos_pucks)
-
-                    self.our_pucks_rgb.set(yellow_pucks_rgb)
-
-            if self.is_main_robot_started.get() is True:
-                if len(self.my_chaos_pucks.get()) == 4:
-                    self.is_our_chaos_observed_flag.set(True)
-                    rospy.loginfo("Got pucks observation:")
-                    rospy.loginfo(self.my_chaos_pucks.get())
-
-                if len(self.opponent_chaos_pucks.get()) == 4:
-                    self.is_opponent_chaos_observed_flag.set(True)
-                    rospy.loginfo("Got pucks observation:")
-                    rospy.loginfo(self.opponent_chaos_pucks.get())
-
-                my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
-
-                self.my_chaos_pucks.set(my_chaos_pucks)
-                self.opponent_chaos_pucks.set(opp_chaos_pucks)
-
+    
+            purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = self.parse_pucks(new_observation_pucks,
+                                                                                                          self.purple_chaos_center,
+                                                                                                          self.yellow_chaos_center,
+                                                                                                          self.chaos_radius,
+                                                                                                          self.purple_cells_area,
+                                                                                                          self.yellow_cells_area)
+    
+            if self.color_side == "purple_side":
+                self.our_chaos_pucks.set(purple_chaos_pucks)
+                self.opponent_chaos_pucks.set(yellow_chaos_pucks)
+                self.our_pucks_rgb.set(purple_pucks_rgb)
+                
+            elif self.color_side == "yellow_side":
+                self.our_chaos_pucks.set(yellow_chaos_pucks)
+                self.opponent_chaos_pucks.set(purple_chaos_pucks)
+                self.our_pucks_rgb.set(yellow_pucks_rgb)
+    
+            if len(self.our_chaos_pucks.get()) == 4:
+                self.is_observed_flag.set(True)
+                rospy.loginfo("Got pucks observation:")
+                rospy.loginfo(self.our_chaos_pucks.get())
+    
+                self.pucks_subscriber.unregister()
+    
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
 
-    def compare_to_update_or_ignore(self, new_observation):
-        """
-        Updates coordinates of the puck if camera sees it and is certain that it was moved
+    # def pucks_callback(self, data):
+    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+    #     # red (1, 0, 0)
+    #     # green (0, 1, 0)
+    #     # blue (0, 0, 1)
+    #     # rospy.loginfo(data)
 
-        In a new list first puck may be absent for at least three reasons:
-        - it was collected by our robot
-        - it is not visible (but it's still there) either because of robot in the line of view or light conditions
-        - it was collected by opponent robot (and it's not there anymore)
+    #     try:
+    #         new_observation_pucks = [[marker.pose.position.x,
+    #                                   marker.pose.position.y,
+    #                                   marker.id,
+    #                                   marker.color.r,
+    #                                   marker.color.g,
+    #                                   marker.color.b] for marker in data.markers]
 
-        Updating procedure for my chaos:
-        1) Parsing pucks to chaos collections
-        if we see every puck left in our chaos than simply update all
-        if we see less than calculated, than update only green and blue.
-        If we see only one red, it's hard to say which particularly it is, so update red pucks only if both are observed
+    #         # Updating all pucks from scratch with each new observation if robots are still waiting.
+    #         # When robots start, there occurs possibility that camera just doesn't see some of pucks or they are already collected:
+    #         # in this case function compare_to_update_or_ignore is used
 
-        :param new_observation: [(x, y, id, r, g, b), ...]
-        :return: [(x, y, id, r, g, b), ...]
-        """
+    #         if self.is_main_robot_started.get() is False:
 
-        my_chaos_new = self.my_chaos_pucks.get().copy()
-        opp_chaos_new = self.opponent_chaos_pucks.get().copy()
+    #             purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(new_observation_pucks,
+    #                                                                                                               self.purple_chaos_center,
+    #                                                                                                               self.yellow_chaos_center,
+    #                                                                                                               self.chaos_radius,
+    #                                                                                                               self.purple_cells_area,
+    #                                                                                                               self.yellow_cells_area)
 
-        observed_my_chaos_collection = []
-        observed_opponent_chaos_collection = []
-        other_pucks = []
-        ref_colors = ['BLUNIUM', 'GREENIUM', 'REDIUM', 'REDIUM']
-        colors_of_my_observed_chaos = []
-        colors_of_opp_observed = []
-        colors_of_my_collected_chaos = []
-        colors_of_opp_chaos_collected_by_me = []
+    #             if self.color_side == "purple_side":
+    #                 if len(purple_chaos_pucks) == 4:
+    #                     self.my_chaos_pucks.set(purple_chaos_pucks)
+    #                 if len(yellow_chaos_pucks) == 4:
+    #                     self.opponent_chaos_pucks.set(yellow_chaos_pucks)
 
-        my_chaos_area = Polygon([self.my_chaos_area[0],
-                                 self.my_chaos_area[1],
-                                 self.my_chaos_area[2],
-                                 self.my_chaos_area[3]])
+    #                 self.our_pucks_rgb.set(purple_pucks_rgb)
 
-        opponent_chaos_area = Polygon([self.opponent_chaos_area[0],
-                                       self.opponent_chaos_area[1],
-                                       self.opponent_chaos_area[2],
-                                       self.opponent_chaos_area[3]])
+    #             elif self.color_side == "yellow_side":
+    #                 if len(yellow_chaos_pucks) == 4:
+    #                     self.my_chaos_pucks.set(yellow_chaos_pucks)
+    #                 if len(purple_chaos_pucks) == 4:
+    #                     self.opponent_chaos_pucks.set(purple_chaos_pucks)
 
-        # TODO change to list comprehension
-        for puck in self.my_collected_chaos.get():
-            colors_of_my_collected_chaos.append(get_color(puck))
+    #                 self.our_pucks_rgb.set(yellow_pucks_rgb)
 
-        # TODO change to list comprehension
-        for puck in self.opp_chaos_collected_me.get():
-            colors_of_opp_chaos_collected_by_me.append(get_color(puck))
+    #         if self.is_main_robot_started.get() is True:
+    #             if len(self.my_chaos_pucks.get()) == 4:
+    #                 self.is_our_chaos_observed_flag.set(True)
+    #                 rospy.loginfo("Got pucks observation:")
+    #                 rospy.loginfo(self.my_chaos_pucks.get())
 
-        for puck in new_observation:
-            unknown_puck = Point(puck[0], puck[1])
-            if unknown_puck.within(my_chaos_area):
-                observed_my_chaos_collection.append(puck)
-                colors_of_my_observed_chaos.append(get_color(puck))
-            elif unknown_puck.within(opponent_chaos_area):
-                observed_opponent_chaos_collection.append(puck)
-                colors_of_opp_observed.append(get_color(puck))
-            else:
-                other_pucks.append(puck)
+    #             if len(self.opponent_chaos_pucks.get()) == 4:
+    #                 self.is_opponent_chaos_observed_flag.set(True)
+    #                 rospy.loginfo("Got pucks observation:")
+    #                 rospy.loginfo(self.opponent_chaos_pucks.get())
 
-        comparison_our = colors_of_my_observed_chaos[:]
-        comparison_our.extend(colors_of_my_collected_chaos)
+    #             my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
 
-        comparison_opponent = colors_of_opp_observed[:]
-        comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
+    #             self.my_chaos_pucks.set(my_chaos_pucks)
+    #             self.opponent_chaos_pucks.set(opp_chaos_pucks)
 
-        print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
-        print "colors_of_opp_observed", sorted(colors_of_opp_observed)
+    #     except Exception:  # FIXME
+    #         rospy.loginfo("list index out of range - no visible pucks on the field ")
 
-        if sorted(comparison_our) == ref_colors:
-            print "equal"
-            my_chaos_new = observed_my_chaos_collection
-        else:
-            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
-            print "need to parse!"
 
-        if sorted(comparison_opponent) == ref_colors:
-            print "equal"
-            opp_chaos_new = observed_opponent_chaos_collection
-        else:
-            opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
-            print "need to parse!"
+    # def compare_to_update_or_ignore(self, new_observation):
+    #     """
+    #     Updates coordinates of the puck if camera sees it and is certain that it was moved
 
-        my_chaos_new = np.array(my_chaos_new)
-        opp_chaos_new = np.array(opp_chaos_new)
+    #     In a new list first puck may be absent for at least three reasons:
+    #     - it was collected by our robot
+    #     - it is not visible (but it's still there) either because of robot in the line of view or light conditions
+    #     - it was collected by opponent robot (and it's not there anymore)
 
-        return my_chaos_new, opp_chaos_new
+    #     Updating procedure for my chaos:
+    #     1) Parsing pucks to chaos collections
+    #     if we see every puck left in our chaos than simply update all
+    #     if we see less than calculated, than update only green and blue.
+    #     If we see only one red, it's hard to say which particularly it is, so update red pucks only if both are observed
 
-    @staticmethod
-    def parse_by_color(new_obs, known):
+    #     :param new_observation: [(x, y, id, r, g, b), ...]
+    #     :return: [(x, y, id, r, g, b), ...]
+    #     """
 
-        colors = ['BLUNIUM', 'GREENIUM', 'REDIUM']
-        known = known.tolist()
-        colors_in_new_obs = []
-        colors_in_known = []
-        list_of_pucks = []
+    #     my_chaos_new = self.my_chaos_pucks.get().copy()
+    #     opp_chaos_new = self.opponent_chaos_pucks.get().copy()
 
-        for puck in new_obs:
-            puck_color = get_color(puck)
-            colors_in_new_obs.append(puck_color)
+    #     observed_my_chaos_collection = []
+    #     observed_opponent_chaos_collection = []
+    #     other_pucks = []
+    #     ref_colors = ['BLUNIUM', 'GREENIUM', 'REDIUM', 'REDIUM']
+    #     colors_of_my_observed_chaos = []
+    #     colors_of_opp_observed = []
+    #     colors_of_my_collected_chaos = []
+    #     colors_of_opp_chaos_collected_by_me = []
 
-        for puck in known:
-            puck_color = get_color(puck)
-            colors_in_known.append(puck_color)
+    #     my_chaos_area = Polygon([self.my_chaos_area[0],
+    #                              self.my_chaos_area[1],
+    #                              self.my_chaos_area[2],
+    #                              self.my_chaos_area[3]])
 
-        if colors_in_new_obs.count("BLUNIUM") == 1:
+    #     opponent_chaos_area = Polygon([self.opponent_chaos_area[0],
+    #                                    self.opponent_chaos_area[1],
+    #                                    self.opponent_chaos_area[2],
+    #                                    self.opponent_chaos_area[3]])
 
-            ind = colors_in_new_obs.index("BLUNIUM")
-            colors_in_new_obs.remove("BLUNIUM")
-            list_of_pucks.append(new_obs.pop(ind))
-            try:
-                ind_old = colors_in_known.index("BLUNIUM")
-                colors_in_known.remove("BLUNIUM")
-                del known[ind_old]
-            except ValueError as Error:
-                print Error
+    #     # TODO change to list comprehension
+    #     for puck in self.my_collected_chaos.get():
+    #         colors_of_my_collected_chaos.append(get_color(puck))
 
-        if colors_in_new_obs.count("GREENIUM") == 1:
+    #     # TODO change to list comprehension
+    #     for puck in self.opp_chaos_collected_me.get():
+    #         colors_of_opp_chaos_collected_by_me.append(get_color(puck))
 
-            ind = colors_in_new_obs.index("GREENIUM")
-            colors_in_new_obs.remove("GREENIUM")
-            list_of_pucks.append(new_obs.pop(ind))
-            try:
-                ind_old = colors_in_known.index("GREENIUM")
-                colors_in_known.remove("GREENIUM")
-                del known[ind_old]
-            except ValueError as Error:
-                print Error
+    #     for puck in new_observation:
+    #         unknown_puck = Point(puck[0], puck[1])
+    #         if unknown_puck.within(my_chaos_area):
+    #             observed_my_chaos_collection.append(puck)
+    #             colors_of_my_observed_chaos.append(get_color(puck))
+    #         elif unknown_puck.within(opponent_chaos_area):
+    #             observed_opponent_chaos_collection.append(puck)
+    #             colors_of_opp_observed.append(get_color(puck))
+    #         else:
+    #             other_pucks.append(puck)
 
-        if colors_in_new_obs.count('REDIUM') == 2:
+    #     comparison_our = colors_of_my_observed_chaos[:]
+    #     comparison_our.extend(colors_of_my_collected_chaos)
 
-            ind = colors_in_new_obs.index('REDIUM')
-            colors_in_new_obs.remove('REDIUM')
-            list_of_pucks.append(new_obs.pop(ind))
-            try:
-                ind_old = colors_in_known.index('REDIUM')
-                colors_in_known.remove('REDIUM')
-                print "old after deleting", colors_in_known
-                del known[ind_old]
-            except ValueError as Error:
-                print Error
+    #     comparison_opponent = colors_of_opp_observed[:]
+    #     comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
 
-            ind = colors_in_new_obs.index('REDIUM')
-            colors_in_new_obs.remove('REDIUM')
-            list_of_pucks.append(new_obs.pop(ind))
-            try:
-                ind_old = colors_in_known.index('REDIUM')
-                colors_in_known.remove('REDIUM')
-                del known[ind_old]
-            except ValueError as Error:
-                print Error
+    #     print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
+    #     print "colors_of_opp_observed", sorted(colors_of_opp_observed)
 
-            print "known"
-            print known
-            list_of_pucks.extend(known)
+    #     if sorted(comparison_our) == ref_colors:
+    #         print "equal"
+    #         my_chaos_new = observed_my_chaos_collection
+    #     else:
+    #         my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
+    #         print "need to parse!"
 
-        elif colors_in_new_obs.count("REDIUM") < 2:
-            # get coords of red in known and append them
-            list_of_pucks.extend(known)
-        return list_of_pucks
+    #     if sorted(comparison_opponent) == ref_colors:
+    #         print "equal"
+    #         opp_chaos_new = observed_opponent_chaos_collection
+    #     else:
+    #         opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
+    #         print "need to parse!"
+
+    #     my_chaos_new = np.array(my_chaos_new)
+    #     opp_chaos_new = np.array(opp_chaos_new)
+
+    #     return my_chaos_new, opp_chaos_new
+
+    # @staticmethod
+    # def parse_by_color(new_obs, known):
+
+    #     colors = ['BLUNIUM', 'GREENIUM', 'REDIUM']
+    #     known = known.tolist()
+    #     colors_in_new_obs = []
+    #     colors_in_known = []
+    #     list_of_pucks = []
+
+    #     for puck in new_obs:
+    #         puck_color = get_color(puck)
+    #         colors_in_new_obs.append(puck_color)
+
+    #     for puck in known:
+    #         puck_color = get_color(puck)
+    #         colors_in_known.append(puck_color)
+
+    #     if colors_in_new_obs.count("BLUNIUM") == 1:
+
+    #         ind = colors_in_new_obs.index("BLUNIUM")
+    #         colors_in_new_obs.remove("BLUNIUM")
+    #         list_of_pucks.append(new_obs.pop(ind))
+    #         try:
+    #             ind_old = colors_in_known.index("BLUNIUM")
+    #             colors_in_known.remove("BLUNIUM")
+    #             del known[ind_old]
+    #         except ValueError as Error:
+    #             print Error
+
+    #     if colors_in_new_obs.count("GREENIUM") == 1:
+
+    #         ind = colors_in_new_obs.index("GREENIUM")
+    #         colors_in_new_obs.remove("GREENIUM")
+    #         list_of_pucks.append(new_obs.pop(ind))
+    #         try:
+    #             ind_old = colors_in_known.index("GREENIUM")
+    #             colors_in_known.remove("GREENIUM")
+    #             del known[ind_old]
+    #         except ValueError as Error:
+    #             print Error
+
+    #     if colors_in_new_obs.count('REDIUM') == 2:
+
+    #         ind = colors_in_new_obs.index('REDIUM')
+    #         colors_in_new_obs.remove('REDIUM')
+    #         list_of_pucks.append(new_obs.pop(ind))
+    #         try:
+    #             ind_old = colors_in_known.index('REDIUM')
+    #             colors_in_known.remove('REDIUM')
+    #             print "old after deleting", colors_in_known
+    #             del known[ind_old]
+    #         except ValueError as Error:
+    #             print Error
+
+    #         ind = colors_in_new_obs.index('REDIUM')
+    #         colors_in_new_obs.remove('REDIUM')
+    #         list_of_pucks.append(new_obs.pop(ind))
+    #         try:
+    #             ind_old = colors_in_known.index('REDIUM')
+    #             colors_in_known.remove('REDIUM')
+    #             del known[ind_old]
+    #         except ValueError as Error:
+    #             print Error
+
+    #         print "known"
+    #         print known
+    #         list_of_pucks.extend(known)
+
+    #     elif colors_in_new_obs.count("REDIUM") < 2:
+    #         # get coords of red in known and append them
+    #         list_of_pucks.extend(known)
+    #     return list_of_pucks
 
     # def is_chaos_available(self, side):
     #
@@ -523,7 +526,8 @@ class StrategyConfig(object):
 
     def is_observed(self):
         # rospy.loginfo("is observed?")
-        if self.is_our_chaos_observed_flag.get():
+        if self.is_observed_flag.get(): 
+        # if self.is_our_chaos_observed_flag.get():  # FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
         else:
@@ -602,6 +606,22 @@ class StrategyConfig(object):
             else:
                 rospy.loginfo('Landing is free to go')
                 return bt.Status.SUCCESS
+
+    # def update_chaos_pucks(self):
+    #     """
+    #     TODO: make it usable when collecting opponent's chaos
+
+    #     delete taken puck from known on the field
+    #     get color of last taken puck
+    #     :return: None
+    #     """
+
+    #     incoming_puck_color = get_color(self.my_chaos_pucks.get()[0])
+    #     self.incoming_puck_color.set(incoming_puck_color)
+    #     rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
+    #     self.my_collected_chaos.set(self.my_chaos_pucks.get()[0])
+    #     self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
+    #     rospy.loginfo("Known pucks after removing: " + str(self.my_chaos_pucks.get()))
 
     def update_chaos_pucks(self, side="my"):
         """
@@ -697,7 +717,6 @@ class StrategyConfig(object):
     def update_robot_status(self):
         self.is_main_robot_started.set(True)
         rospy.loginfo('main_robot_started')
-        return bt.Status.SUCCESS
 
     def update_main_coords(self):
         try:
@@ -742,10 +761,21 @@ class SberStrategy(StrategyConfig):
     def __init__(self, side):
         super(SberStrategy, self).__init__(side)
 
-        # move_immidiately_to_chaos = bt.SequenceWithMemoryNode([
-        #                                 bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client")
-        #
-        # ])
+        move_to_guard_zone = bt.SequenceWithMemoryNode([
+                                bt.ParallelWithMemoryNode([
+                                    bt.SequenceWithMemoryNode([
+                                        bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client")
+                                    ]),
+                                    bt.SequenceWithMemoryNode([
+                                        bt_ros.Delay500("manipulator_client"),
+                                        bt_ros.BlindStartCollectGround("manipulator_client"),
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                    ])
+                                ], threshold=2),
+                                bt.ActionNode(lambda: self.score_master.add("REDIUM"))   # FIXME!!!!!!!!!!!!!!!!!!!!!
+                            ])
+
+        move_home = bt_ros.MoveToVariable(self.starting_pos_var, "move_client")
 
         move_to_opp_chaos = bt.SequenceWithMemoryNode([
                                 bt.ActionNode(self.calculate_pucks_configuration),
@@ -762,6 +792,7 @@ class SberStrategy(StrategyConfig):
                                         bt_ros.CompleteCollectGround("manipulator_client"),
                                     ])
                                 ], threshold=2),
+                                bt.ActionNode(lambda: self.score_master.add(self.red_cell_puck)),
 
                                 bt.ActionNode(self.calculate_pucks_configuration),
                                 bt.ActionNode(self.calculate_closest_landing),
@@ -778,41 +809,17 @@ class SberStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
         ])
 
-        # WORKS BUT SLOW
-        # red_cell_puck = bt.SequenceWithMemoryNode([
-        #                     bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
-        #                     bt.FallbackWithMemoryNode([
-        #                         bt.SequenceWithMemoryNode([
-        #                             bt_ros.BlindStartCollectGround("manipulator_client"),
-        #                             bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
-        #                             bt.ParallelWithMemoryNode([
-        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                 bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
-        #
-        #                                 # bt.SequenceWithMemoryNode([
-        #                                 #     bt.ActionNode(self.calculate_pucks_configuration),
-        #                                 #     bt.ActionNode(self.calculate_closest_landing),
-        #                                 #     bt.ActionNode(self.calculate_prelanding),
-        #                                 #     bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #                                 #     bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
-        #                                 # ])
-        #                             ], threshold=2),
-        #                         ]),
-        #                         bt.ParallelWithMemoryNode([
-        #                             bt_ros.SetManipulatortoWall("manipulator_client"),
-        #                             bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client")
-        #                         ], threshold=2)
-        #                     ]),
-        #                 ])
-
         collect_chaos = bt.SequenceWithMemoryNode([
-                    # 1st, but done in finishing red
+                    # # 1st, but done in finishing red
                     # bt.ActionNode(self.calculate_pucks_configuration),
                     # bt.ActionNode(self.calculate_closest_landing),
                     # bt.ActionNode(self.calculate_prelanding),
-                    #
+                    
                     # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                     # bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
+
+
+
                     bt_ros.BlindStartCollectGround("manipulator_client"),
                     bt.ActionNode(self.update_chaos_pucks),
                     bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
@@ -872,86 +879,6 @@ class SberStrategy(StrategyConfig):
                     # bt_ros.StepperUp("manipulator_client")
         ])
 
-        # green_cell_puck_after_chaos = bt.SequenceWithMemoryNode([
-        #                                 bt.ParallelWithMemoryNode([
-        #                                     bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                     bt.SequenceWithMemoryNode([
-        #                                         bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
-        #                                         bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-        #                                         bt_ros.MoveToVariable(self.next_landing_var, "move_client")
-        #                                     ])
-        #                                 ], threshold=2),
-        #
-        #                                 bt.FallbackWithMemoryNode([
-        #                                     bt.SequenceWithMemoryNode([
-        #                                         bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
-        #                                         bt_ros.BlindStartCollectGround("manipulator_client"),
-        #                                         bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
-        #                                         bt.ParallelWithMemoryNode([
-        #                                             bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                             bt.SequenceWithMemoryNode([
-        #                                                 bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-        #                                                 bt_ros.MoveToVariable(self.next_landing_var, "move_client")
-        #                                             ])
-        #                                         ], threshold=2),
-        #                                     ]),
-        #                                     bt.ParallelWithMemoryNode([
-        #                                         bt_ros.SetManipulatortoWall("manipulator_client"),
-        #                                         bt_ros.MoveToVariable(self.next_landing_var, "move_client"),  # FIXME
-        #                                     ], threshold=2)
-        #                                 ])
-        #                             ])
-
-        # when not collectin blunium but pushing it in the end
-        # blue_cell_puck = bt.SequenceWithMemoryNode([
-        #                     bt.FallbackWithMemoryNode([
-        #                         bt.SequenceWithMemoryNode([
-        #                             bt_ros.BlindStartCollectGround("manipulator_client"),
-        #                             bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
-        #                             bt.ParallelWithMemoryNode([
-        #                                 bt_ros.CompleteCollectGroundWhenFull("manipulator_client"),
-        #                                 bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
-        #                                 # bt_ros.MoveLineToPoint(self.blunium_get_back_pose, "move_client"),  # FIXME try Arc
-        #                             ], threshold=2),
-        #                         ]),
-        #                         bt.ParallelWithMemoryNode([
-        #                             bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
-        #                             bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
-        #                             # bt_ros.MoveLineToPoint(self.blunium_get_back_pose, "move_client"),  # FIXME try Arc
-        #                         ], threshold=2)  # if fail, FIXME never happens now
-        #                     ])
-        #                 ])
-
-        # when robot is NOT FULL (inside 6)
-        # move_and_collect_blunium = bt.SequenceWithMemoryNode([
-        #                                 # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
-        #                                 bt_ros.StartCollectBlunium("manipulator_client"),
-        #                                 bt.ParallelWithMemoryNode([
-        #                                     bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
-        #                                     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-        #                                 ], threshold=1),  # CheckLimitSwitchInf
-        #                                 # bt_ros.MoveLineToPoint(self.blunium_collect_pos_side, "move_client"),
-        #                                 bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
-        #                                 bt_ros.FinishCollectBlunium("manipulator_client"),
-        #                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # COMA!!!!!!
-        #                                 bt_ros.MainSetManipulatortoGround("manipulator_client")
-        #                             ])
-
-        # when full (inside 7)
-        # move_and_collect_blunium = bt.SequenceWithMemoryNode([
-        #                                 bt_ros.StartCollectBlunium("manipulator_client"),
-        #                                 bt.ParallelWithMemoryNode([
-        #                                     bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
-        #                                     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-        #                                 ], threshold=1),  # CheckLimitSwitchInf
-        #                                 # bt_ros.MoveLineToPoint(self.blunium_collect_pos_side, "move_client"),
-        #                                 bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.06, 0]), "move_client"),  # FIXME
-        #                                 bt_ros.MainSetManipulatortoGround("manipulator_client")  # Here changed!!!!!!!!!!!!
-        #                                 #bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
-        #                                 # bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-        #                                 # bt_ros.MainSetManipulatortoGround("manipulator_client")
-        #                             ])
-
         finish_chaos_push_nose_blunium = bt.SequenceWithMemoryNode([
                                 bt.ParallelWithMemoryNode([
                                     bt.SequenceWithMemoryNode([
@@ -960,6 +887,7 @@ class SberStrategy(StrategyConfig):
                                     ]),
                                     bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
                                 ], threshold=2),
+                                #bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
                                 bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
@@ -972,25 +900,6 @@ class SberStrategy(StrategyConfig):
                             bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client")  # [0, -0.1, 0]
                         ])
 
-        # # when not full
-        # collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
-        #                             bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-        #                             bt_ros.UnloadAccelerator("manipulator_client"),
-        #                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
-        #                         ])
-
-        # when full - don't move stepper up
-        # collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
-        #                             # bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-        #                             bt_ros.UnloadAccelerator("manipulator_client"),
-        #                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),  # COMAAAAAA
-        #
-        #                             bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
-        #                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM"))
-        #                         ])
-
         unload_acc = bt.SequenceNode([
                         bt.FallbackNode([
                             bt.ConditionNode(self.is_robot_empty),
@@ -1001,17 +910,6 @@ class SberStrategy(StrategyConfig):
                         ]),
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
-
-        # move_and_push_blunium = bt.SequenceWithMemoryNode([
-        #                             bt_ros.MoveLineToPoint(self.blunium_prepose, "move_client"),
-        #                             bt.ParallelWithMemoryNode([
-        #                                 bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-        #                                 bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
-        #                             ], threshold=2),
-        #                             bt_ros.MoveLineToPoint(self.blunium_end_push_pose, "move_client"),
-        #                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-        #                             bt.ActionNode(lambda: self.score_master.unload("ACC"))
-        #                         ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.Delay500("manipulator_client"),
@@ -1050,46 +948,30 @@ class SberStrategy(StrategyConfig):
                                 ])
                             ])
 
-        # self.tree = bt.SequenceWithMemoryNode([
-        #                 bt.ActionNode(self.update_robot_status),
-        #                 move_immidiately_to_chaos,
-        #                 # red_cell_puck,
-        #
-        #                 bt.FallbackWithMemoryNode([
-        #                     bt.SequenceNode([
-        #                         bt.ConditionNode(self.is_observed),
-        #                         collect_chaos
-        #                     ]),
-        #                     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-        #                 ]),
-        #
-        #                 green_cell_puck_after_chaos,
-        #                 blue_cell_puck,
-        #                 move_and_collect_blunium,
-        #                 approach_acc,
-        #                 collect_unload_first_in_acc,
-        #                 unload_acc,
-        #                 # move_and_push_blunium,
-        #                 collect_goldenium,
-        #                 move_to_goldenium_prepose,
-        #                 unload_goldenium
-        #             ])
-
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
-                        move_to_opp_chaos,
+
+                        bt.FallbackWithMemoryNode([
+                            bt.SequenceNode([
+                                bt.ConditionNode(self.is_observed),
+                                move_to_opp_chaos
+                            ]),
+                            #bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            move_to_guard_zone
+                        ]),
+
                         bt.FallbackWithMemoryNode([
                             bt.SequenceNode([
                                 bt.ConditionNode(self.is_observed),
                                 collect_chaos
                             ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            move_home
                         ]),
 
                         finish_chaos_push_nose_blunium,
                         approach_acc,
                         unload_acc,
-                        approach_acc,
                         collect_goldenium,
                         move_to_goldenium_prepose,
                         unload_goldenium
