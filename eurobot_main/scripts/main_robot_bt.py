@@ -51,15 +51,17 @@ class MainRobotBT(object):
         self.side_status = side
         # self.strategy = Combobombo(self.side_status)
         # self.strategy = SberStrategy(self.side_status)
-        self.strategy = PeacefulStrategy(self.side_status)
+        # self.strategy = PeacefulStrategy(self.side_status)
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
+        self.strategy = Testing(self.side_status)
 
     def change_strategy(self, num):
         self.strategy_number = num
         if num == 0:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = PeacefulStrategy(self.side_status)
+            # self.strategy = PeacefulStrategy(self.side_status)
+            self.strategy = Testing(self.side_status)
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
             self.strategy = SberStrategy(self.side_status)
@@ -232,9 +234,9 @@ class StrategyConfig(object):
                                               self.our_chaos_center[1] + 0.37,
                                               1.57 + self.sign * 0.26])  # y/p 1.83 / 1.31
 
-        self.unload_gold_on_blue = np.array([1.5 + self.sign * 1.3,  # y/p 2.7 / 0.3
+        self.unload_goldenium_on_blue = np.array([1.5 + self.sign * 1.3,  # y/p 2.7 / 0.3
                                             0.9,
-                                            -1.57 - self.sign * 0.785])  # y/p 3.14 / 0
+                                            -1.57 + self.sign * 0.785])  # y/p -0.78 / -2.35
 
         self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
         self.critical_angle = rospy.get_param("critical_angle")
@@ -846,7 +848,7 @@ class Testing(StrategyConfig):
                                             bt_ros.MoveLineToPoint(self.unload_goldenium_on_blue, "move_client"),
                                             bt_ros.SetToWall_ifReachedGoal(self.unload_goldenium_on_blue + np.array([0, -0.1, 0]), "manipulator_client", threshold=0.15),
                                             bt_ros.PublishScore_ifReachedGoal(self.unload_goldenium_on_blue + np.array([0, -0.1, 0]), self.score_master, "CELLS", threshold=0.15),
-                                        ], threshold=3)
+                                        ], threshold=3),
                                         bt_ros.UnloadGoldenium("manipulator_client")
                                     ])
 

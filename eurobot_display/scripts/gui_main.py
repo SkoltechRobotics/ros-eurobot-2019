@@ -72,7 +72,11 @@ class App:
 
         # Main block side status
         self.frame7 = Frame(self.frame4, bg="white", colormap="new")
-        self.frame7.pack(side="right")
+        self.frame7.pack(side="left")
+
+        # Main block strategy status
+        self.frame8 = Frame(self.frame4, bg="white", colormap="new")
+        self.frame8.pack(side="right")
 
         # --------------------------------------------------
 
@@ -82,22 +86,22 @@ class App:
 
         # main SIDE config
         self.main_side_status = StringVar()
-        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=10, font=("Helvetica", 60), textvariable=self.main_side_status)
+        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=6, font=("Helvetica", 55), textvariable=self.main_side_status)
         self.main_side_status.set("Side")
         self.main_side_frame.pack(side="left")
 
         # main WIRE config
         self.main_start_status = StringVar()
         self.main_start_status.set("Waiting")
-        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 60), textvariable=self.main_start_status)
+        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=7, font=("Helvetica", 55), textvariable=self.main_start_status)
         self.main_wire_frame.pack(side="left")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
         # main STRATEGY config
         self.main_strategy_status = StringVar()
-        self.main_strategy_frame = Label(self.frame7, bg="green", height=2, width=9, font=("Helvetica", 40), textvariable=self.main_strategy_status)
         self.main_strategy_status.set("Strategy")
-        self.main_strategy_frame.pack(side="top")
+        self.main_strategy_frame = Label(self.frame8, bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]), height=1, width=7, font=("Helvetica", 55), textvariable=self.main_strategy_status)
+        self.main_strategy_frame.pack(side="left")
 
         # --------------------------------------------------
 
