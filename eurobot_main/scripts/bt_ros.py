@@ -215,6 +215,12 @@ class DelayStartCollectGroundCheck(ActionClientNode):
         super(DelayStartCollectGroundCheck, self).__init__(cmd, action_client_id)
 
 
+class SmallDelayStartCollectGroundCheck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "small_delay_start_collect_ground"
+        super(SmallDelayStartCollectGroundCheck, self).__init__(cmd, action_client_id)
+
+
 class BlindStartCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "blind_start_collect_ground"
