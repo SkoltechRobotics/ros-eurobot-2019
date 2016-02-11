@@ -134,12 +134,12 @@ class CollisionAvoidance(object):
         self.obstacle_points_sensor = self.get_points_outside_map(self.obstacle_points_sensor.copy())
         self.obstacle_points_sensor = self.obstacle_points_sensor[self.get_points_inside_collision_area(self.obstacle_points_sensor.copy(), coords, goal)]
         # self.set_collision_area(self.collision_area)
-        self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
+        #self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
         # self.obstacle_points = cvt_local2global(self.obstacle_points, coords)
         # self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points)
         # self.obstacle_points = self.get_points_outside_map(self.obstacle_points)
         # self.obstacle_points = self.obstacle_points[self.get_points_inside_collision_area(self.obstacle_points, coords, goal)]
-        self.set_collision_point(self.obstacle_points)
+        self.set_collision_point(self.obstacle_points_lidar)
 
     def get_collision_status(self, coords, goal):
         self.p = 1
