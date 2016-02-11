@@ -5,10 +5,14 @@ import numpy as np
 from Tkinter import *
 import tf2_ros
 from tf.transformations import euler_from_quaternion
+from visualization_msgs.msg import MarkerArray
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
                         [255, 0, 255],  # purple
                         [124, 252, 0]])  # green
+
+HEARTBEAT = np.array([[255, 0, 0],  # red
+                      [124, 252, 0]])  # green
 
 
 class Prediction:
@@ -16,15 +20,18 @@ class Prediction:
 
         self.puck_points = {
             "REDIUM_ON_RED": 6,
-            "REDIUM_ON_OTHER": 1,  # FIXME
+            "REDIUM_ON_GREEN": 1,
+            "REDIUM_ON_BLUE": 1,
 
             "GREENIUM_ON_GREEN": 6,
-            "GREENIUM_ON_OTHER": 1,  # FIXME
+            "GREENIUM_ON_RED": 1,
+            "GREENIUM_ON_BLUE": 1,
 
             "BLUNIUM_ON_BLUE": 6,
-            "BLUNIUM_ON_OTHER": 1,  # FIXME
+            "BLUNIUM_ON_RED": 1,
+            "BLUNIUM_ON_GREEN": 1,
 
-            "GOLDENIUM_ON_ANY": 6,
+            "GOLDENIUM_ON_CELLS": 6,
 
             "REDIUM_ON_ACC": 10,
             "GREENIUM_ON_ACC": 10,
@@ -50,6 +57,7 @@ class App:
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.main_coords_array = np.array([0, 0, 0])
+        self.signal_color = HEARTBEAT[0]
 
         # Master page
         frame = Frame(master, bg="white", colormap="new")
@@ -69,7 +77,11 @@ class App:
 
         # Main block side status
         self.frame7 = Frame(self.frame4, bg="white", colormap="new")
-        self.frame7.pack(side="right")
+        self.frame7.pack(side="left")
+
+        # Main block strategy status
+        self.frame8 = Frame(self.frame4, bg="white", colormap="new")
+        self.frame8.pack(side="right")
 
         # --------------------------------------------------
 
@@ -79,16 +91,22 @@ class App:
 
         # main SIDE config
         self.main_side_status = StringVar()
-        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=10, font=("Helvetica", 60), textvariable=self.main_side_status)
+        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=6, font=("Helvetica", 55), textvariable=self.main_side_status)
         self.main_side_status.set("Side")
         self.main_side_frame.pack(side="left")
 
         # main WIRE config
         self.main_start_status = StringVar()
         self.main_start_status.set("Waiting")
-        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 60), textvariable=self.main_start_status)
+        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=7, font=("Helvetica", 55), textvariable=self.main_start_status)
         self.main_wire_frame.pack(side="left")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
+
+        # main STRATEGY config
+        self.main_strategy_status = StringVar()
+        self.main_strategy_status.set("Strategy")
+        self.main_strategy_frame = Label(self.frame8, bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]), height=1, width=7, font=("Helvetica", 55), textvariable=self.main_strategy_status)
+        self.main_strategy_frame.pack(side="left")
 
         # --------------------------------------------------
 
@@ -111,11 +129,11 @@ class App:
         Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_main_and_exp, font=("Helvetica", 120)).pack(side="bottom")
 
     def heartbeat_loop(self):
-        if self.heartbeat["bg"] == "red":
-            self.heartbeat.config(bg="white")
+        if self.heartbeat["bg"] == '#%02x%02x%02x' % tuple(self.signal_color):  # "red"
+            self.heartbeat.config(bg="white")  # "white"
             self.frame4.after(0, self.update_main_coords)
         else:
-            self.heartbeat.config(bg="red")
+            self.heartbeat.config(bg='#%02x%02x%02x' % tuple(self.signal_color))  # "red"
 
         self.frame5.after(800, self.heartbeat_loop)
 
@@ -140,6 +158,14 @@ class App:
             self.main_start_status.set("GO!")
             self.main_wire_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]))
 
+    def main_strategy_status_callback(self, data):
+        if data.data == "0":
+            self.main_strategy_status.set("0 ???")  # Mir
+        elif data.data == "1":
+            self.main_strategy_status.set("1 ")  # Att
+        elif data.data == "2":
+            self.main_strategy_status.set("2 ")  # NON
+
     def main_score_callback(self, data):
         """
 
@@ -149,6 +175,22 @@ class App:
         points = self.predict.get_points(data.data)
         print points
         self.score_main_and_exp.set(self.score_main_and_exp.get() + int(points))
+
+    def main_pucks_callback(self, data):
+
+        try:
+            new_observation_pucks = [[marker.pose.position.x,
+                                      marker.pose.position.y,
+                                      marker.id,
+                                      marker.color.r,
+                                      marker.color.g,
+                                      marker.color.b] for marker in data.markers]
+
+            if len(new_observation_pucks) > 8:
+                self.signal_color = HEARTBEAT[1]
+
+        except Exception:  # FIXME
+            rospy.loginfo("list index out of range - no visible pucks on the field ")
 
     def update_main_coords(self):
         try:
@@ -188,6 +230,8 @@ if __name__ == '__main__':
     rospy.Subscriber("score", String, app.main_score_callback)
     rospy.Subscriber("stm/start_status", String, app.main_wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.main_side_status_callback)
+    rospy.Subscriber("stm/strategy_status", String, app.main_strategy_status_callback)
+    rospy.Subscriber("/pucks", MarkerArray, app.main_pucks_callback, queue_size=1)
 
     rate = rospy.Rate(100)
     rospy.loginfo("Start display")

@@ -923,30 +923,30 @@ class SberStrategy(StrategyConfig):
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
 
-                        # # move_to_opp_chaos,
-                        # # collect_chaos,
+                        # move_to_opp_chaos,
+                        # collect_chaos,
 
-                        # bt.FallbackWithMemoryNode([
-                        #     bt.SequenceNode([
-                        #         bt.ConditionNode(self.is_observed),
-                        #         move_to_opp_chaos
-                        #     ]),
-                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        #     # move_to_guard_zone
-                        # ]),
+                        bt.FallbackWithMemoryNode([
+                            bt.SequenceNode([
+                                bt.ConditionNode(self.is_observed),
+                                move_to_opp_chaos
+                            ]),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # move_to_guard_zone
+                        ]),
 
-                        # bt.FallbackWithMemoryNode([
-                        #     bt.SequenceNode([
-                        #         bt.ConditionNode(self.is_observed),
-                        #         collect_chaos
-                        #     ]),
-                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        #     # move_home
-                        # ]),
+                        bt.FallbackWithMemoryNode([
+                            bt.SequenceNode([
+                                bt.ConditionNode(self.is_observed),
+                                collect_chaos
+                            ]),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # move_home
+                        ]),
 
-                        # finish_chaos_push_nose_blunium,
-                        # approach_acc,
-                        # unload_acc,
+                        finish_chaos_push_nose_blunium,
+                        approach_acc,
+                        unload_acc,
                         collect_goldenium,
                         move_to_goldenium_prepose,
                         unload_goldenium
