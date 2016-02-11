@@ -155,11 +155,11 @@ class App:
 
     def main_strategy_status_callback(self, data):
         if data.data == "0":
-            self.main_strategy_status.set("0 Mir")
+            self.main_strategy_status.set("0 ???")  # Mir
         elif data.data == "1":
-            self.main_strategy_status.set("1 Att")
+            self.main_strategy_status.set("1 ")  # Att
         elif data.data == "2":
-            self.main_strategy_status.set("2 NON")
+            self.main_strategy_status.set("2 ")  # NON
 
     def main_score_callback(self, data):
         """

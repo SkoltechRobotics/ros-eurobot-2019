@@ -97,6 +97,8 @@ class Manipulator(object):
         elif cmd == "delay_500":
             return self.delay_500()
         # --- main_robot
+        elif cmd == "manipulator_scales":
+            return self.set_manipulator_scales()
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
         elif cmd == "blind_start_collect_ground":
@@ -376,6 +378,10 @@ class Manipulator(object):
 
     def set_manipulator_platform(self):
         self.send_command(self.protocol["SET_PLATFORM"])
+        return True
+
+    def set_manipulator_scales(self):
+        self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
         return True
 
     def start_pump(self):

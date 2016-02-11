@@ -487,6 +487,54 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return bt.Status.RUNNING
 
 
+class SetToScales_ifReachedGoal(bt.SequenceNode):
+    def __init__(self, goal, action_client_id, threshold=0.3):
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+
+        self.robot_name = rospy.get_param("robot_name")
+        self.robot_coordinates = None
+
+        self.goal = goal
+        self.threshold = bt.BTVariable(threshold)
+
+        self.set_to_wall_node = ActionClientNode("manipulator_scales", action_client_id, name="manipulator_to_scales")
+
+        super(SetToScales_ifReachedGoal, self).__init__([
+            bt.ConditionNode(self.is_coordinates_reached),
+            self.set_to_wall_node
+        ])
+
+    def update_coordinates(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
+            q = [trans.transform.rotation.x,
+                 trans.transform.rotation.y,
+                 trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+            self.robot_coordinates = np.array([trans.transform.translation.x,
+                                               trans.transform.translation.y,
+                                               angle])
+            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            rospy.logwarn("SMT WROND QQ")
+            return False
+
+    def is_coordinates_reached(self):
+        self.update_coordinates()
+        if self.robot_coordinates is None:
+            return bt.Status.RUNNING
+        distance, _ = calculate_distance(self.robot_coordinates, self.goal)
+        norm_distance = np.linalg.norm(distance)
+        if norm_distance < self.threshold.get():
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+
 class PublishScore_ifReachedGoal(bt.SequenceNode):
     def __init__(self, goal, score_controller, unload_zone ,threshold=0.15):
         self.tfBuffer = tf2_ros.Buffer()

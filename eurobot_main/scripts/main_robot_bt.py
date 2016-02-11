@@ -50,18 +50,19 @@ class MainRobotBT(object):
     def change_side(self, side):
         self.side_status = side
         # self.strategy = Combobombo(self.side_status)
-        # self.strategy = SberStrategy(self.side_status)
+        self.strategy = SberStrategy(self.side_status)
         # self.strategy = PeacefulStrategy(self.side_status)
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
-        self.strategy = Testing(self.side_status)
+        # self.strategy = Testing(self.side_status)
 
     def change_strategy(self, num):
         self.strategy_number = num
         if num == 0:
             print("CHANGE STRATEGY TO " + str(num))
-            # self.strategy = PeacefulStrategy(self.side_status)
-            self.strategy = Testing(self.side_status)
+            #self.strategy = PeacefulStrategy(self.side_status)
+            #self.strategy = Testing(self.side_status)
+            self.strategy = SberStrategy(self.side_status)
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
             self.strategy = SberStrategy(self.side_status)
@@ -175,7 +176,7 @@ class StrategyConfig(object):
                                                 -1.57])
 
         self.blunium_collect_pos = np.array([self.blunium[0],
-                                             self.blunium[1] + self.VPAD,  # 0.185,  # FIXME move 0.185 in params
+                                             self.blunium[1] + self.VPAD,
                                              self.blunium_collect_PREpos[2]])
 
         self.blunium_collect_pos_side = np.array([self.blunium[0] + self.sign * 0.03,
@@ -192,11 +193,11 @@ class StrategyConfig(object):
 
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.11,
                                                      self.blunium[1] + self.robot_outer_radius - 0.03,
-                                                     0.63])  # 0.56 both
+                                                     0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
         self.blunium_nose_end_push_pose = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
                                                    self.blunium[1] + self.robot_outer_radius - 0.03,  # self.blunium[1] + 0.13
-                                                   0.63])  # 0.56 both.   0.7 only purple FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                                   self.blunium_nose_start_push_pose[2]])
 
         self.blunium_get_back_pose = np.array([self.blunium_end_push_pose[0],
                                                self.blunium_end_push_pose[1] + 0.1,
@@ -328,6 +329,7 @@ class StrategyConfig(object):
 
                     self.our_pucks_rgb.set(yellow_pucks_rgb)
 
+            """
             if self.is_main_robot_started.get() is True:
                 my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
                 self.my_chaos_pucks.set(my_chaos_pucks)
@@ -337,9 +339,10 @@ class StrategyConfig(object):
             print self.my_chaos_pucks.get()
             print " "
 
-            # rospy.loginfo("Got OPP pucks observation:")
-            # print self.opponent_chaos_pucks.get()
-            # print " "
+            rospy.loginfo("Got OPP pucks observation:")
+            print self.opponent_chaos_pucks.get()
+            print " "
+            """
 
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
@@ -386,12 +389,12 @@ class StrategyConfig(object):
                                        self.opponent_chaos_area[3]])
 
         # TODO change to list comprehension
-        for puck in self.my_collected_chaos.get():
-            colors_of_my_collected_chaos.append(get_color(puck))
+        # for puck in self.my_collected_chaos.get():
+        #     colors_of_my_collected_chaos.append(get_color(puck))
 
         # TODO change to list comprehension
-        for puck in self.opp_chaos_collected_me.get():
-            colors_of_opp_chaos_collected_by_me.append(get_color(puck))
+        # for puck in self.opp_chaos_collected_me.get():
+        #     colors_of_opp_chaos_collected_by_me.append(get_color(puck))
 
         for puck in new_observation:
             unknown_puck = Point(puck[0], puck[1])
@@ -404,14 +407,14 @@ class StrategyConfig(object):
             else:
                 other_pucks.append(puck)
 
-        comparison_our = colors_of_my_observed_chaos[:]
-        comparison_our.extend(colors_of_my_collected_chaos)
+        # comparison_our = colors_of_my_observed_chaos[:]
+        # comparison_our.extend(colors_of_my_collected_chaos)
 
-        comparison_opponent = colors_of_opp_observed[:]
-        comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
+        # comparison_opponent = colors_of_opp_observed[:]
+        # comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
 
-        print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
-        # print "colors_of_opp_observed", sorted(colors_of_opp_observed)
+        print "MY_chaos_observed", sorted(colors_of_my_observed_chaos)
+        print "OPPONENT_chaos_observed", sorted(colors_of_opp_observed)
 
         if len(observed_my_chaos_collection) == (4 - len(self.my_collected_chaos.get())):
         #if sorted(comparison_our) == ref_colors:
@@ -420,6 +423,11 @@ class StrategyConfig(object):
         # else:
         #     my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
         #     print "my chaos, need to parse!"
+
+        if len(observed_opponent_chaos_collection) == (4 - len(self.opp_chaos_collected_me.get())):
+        #if sorted(comparison_our) == ref_colors:
+            print "opp_chaos, equal"
+            opp_chaos_new = observed_opponent_chaos_collection
 
         # if sorted(comparison_opponent) == ref_colors:
         #     print "opp_chaos, equal"
@@ -433,6 +441,7 @@ class StrategyConfig(object):
 
         return my_chaos_new, opp_chaos_new
 
+    """
     @staticmethod
     def parse_by_color(new_obs, known):
 
@@ -508,6 +517,7 @@ class StrategyConfig(object):
             # get coords of red in known and append them
             list_of_pucks.extend(known)
         return list_of_pucks
+    """
 
     def is_observed(self):
         # rospy.loginfo("is observed?")
@@ -846,7 +856,7 @@ class Testing(StrategyConfig):
         unload_goldenium_on_blue = bt.SequenceWithMemoryNode([
                                         bt.ParallelWithMemoryNode([
                                             bt_ros.MoveLineToPoint(self.unload_goldenium_on_blue, "move_client"),
-                                            bt_ros.SetToWall_ifReachedGoal(self.unload_goldenium_on_blue + np.array([0, -0.1, 0]), "manipulator_client", threshold=0.15),
+                                            bt_ros.SetToScales_ifReachedGoal(self.unload_goldenium_on_blue + np.array([0, -0.1, 0]), "manipulator_client", threshold=0.15),
                                             bt_ros.PublishScore_ifReachedGoal(self.unload_goldenium_on_blue + np.array([0, -0.1, 0]), self.score_master, "CELLS", threshold=0.15),
                                         ], threshold=3),
                                         bt_ros.UnloadGoldenium("manipulator_client")
@@ -1031,7 +1041,7 @@ class PeacefulStrategy(StrategyConfig):
                                 bt.SequenceWithMemoryNode([
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
-                                        bt_ros.SetToWall_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), "manipulator_client", threshold=0.1),
+                                        bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), "manipulator_client", threshold=0.1),
                                         bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.1),
                                     ], threshold=3),
                                     # bt.ActionNode(lambda: self.score_master.unload("SCALES")),
@@ -1079,7 +1089,7 @@ class SberStrategy(StrategyConfig):
                                     ]),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.Delay500("manipulator_client"),
-                                        bt_ros.BlindStartCollectGround("manipulator_client"),
+                                        bt_ros.DelayBlindStartCollectGround("manipulator_client"),
                                         bt_ros.CompleteCollectGround("manipulator_client"),
                                     ])
                                 ], threshold=2),
@@ -1096,7 +1106,7 @@ class SberStrategy(StrategyConfig):
                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
                                     bt.SequenceWithMemoryNode([
                                         #bt_ros.Delay500("manipulator_client"),
-                                        bt_ros.BlindStartCollectGround("manipulator_client"),
+                                        bt_ros.DelayBlindStartCollectGround("manipulator_client"),
                                         bt_ros.CompleteCollectGround("manipulator_client")
                                     ])
                                 ], threshold=2),
@@ -1267,8 +1277,8 @@ class SberStrategy(StrategyConfig):
                                 bt.SequenceWithMemoryNode([
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
-                                        bt_ros.SetToWall_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), "manipulator_client", threshold=0.15),
-                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.15),
+                                        bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.07, 0]), "manipulator_client", threshold=0.1),
+                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.1),
                                     ], threshold=3),
                                     # bt.ActionNode(lambda: self.score_master.unload("SCALES")),
                                     # bt_ros.SetManipulatortoWall("manipulator_client"),
@@ -1312,9 +1322,6 @@ class SberStrategy(StrategyConfig):
                         move_to_goldenium_prepose,
                         unload_goldenium
                     ])
-
-
-
 
 
 if __name__ == '__main__':
