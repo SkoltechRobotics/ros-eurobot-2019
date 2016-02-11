@@ -4,7 +4,7 @@ import geometry_msgs.msg
 import tf_conversions
 import tf2_ros
 import nav_msgs.msg 
-
+from std_msgs.msg import String
 class Odometry():
     def __init__(self, stm_protocol, rate):
         self.robot_name = rospy.get_param("robot_name")
