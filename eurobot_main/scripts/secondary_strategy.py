@@ -592,14 +592,14 @@ class ReflectedVovanStrategy(Strategy):
         ])
 
         leaving_red_zone = bt.SequenceNode([
-            bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
+            bt_ros.MoveLineToPoint(self.reflected_last_zone + (side_sign*-0.07, 0.1, 0), "move_client"),
             bt_ros.UpperMoustacheDefault("manipulator_client"),
             bt_ros.LowerMoustacheDefault("manipulator_client")
         ])
 
         second_ground_puck = bt.FallbackWithMemoryNode([
                 bt.SequenceWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.second_ground_puck + (side_sign * 0.07, 0, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.second_ground_puck + (side_sign * 0.2, 0, 0), "move_client"),
                     bt_ros.MoveLineToPoint(self.second_ground_puck, "move_client"),
                     bt_ros.StartCollectGroundCheck("manipulator_client"),
                     bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
