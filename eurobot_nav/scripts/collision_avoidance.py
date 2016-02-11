@@ -273,7 +273,7 @@ class CollisionAvoidanceSecondaryRobot(object):
     def filter_scan(scan):
         ranges = np.array(scan.ranges)
         index0 = ranges < 2
-        index1 = ranges > 0.1
+        index1 = ranges > 0.2
         index = index0
         return np.where(index, ranges, 0)
 
