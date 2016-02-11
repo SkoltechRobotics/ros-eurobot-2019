@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_loc)/config/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_nav)/config/motion_planner_secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_tactics)/config/tactics_secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
     <param name = "field/color" value = "orange"/>
 
     <group ns = "secondary_robot">
@@ -18,9 +20,11 @@
         <param name="field_description_semantic" textfile="$(find eurobot_loc)/models/field.urdf" /> 
     </group>
 
-    <group ns="main_robot">
-    <!-- Robot model -->
+    <!-- Robot model
+        <group ns="main_robot">
         <param name="description" command="cat $(find eurobot_loc)/models/main_robot.urdf" />
         <param name="description_semantic" command="cat $(find eurobot_loc)/models/main_robot.urdf" />
     </group>
+    -->
+
 </launch>

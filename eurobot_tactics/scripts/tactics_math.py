@@ -8,34 +8,34 @@ from core_functions import wrap_back
 from core_functions import cvt_local2global
 
 
-# def calculate_pucks_configuration(robot_coords, known_chaos_pucks, critical_angle):
-#
-#     known_chaos_pucks = sort_wrt_robot(robot_coords, known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
-#
-#     if len(known_chaos_pucks) >= 3:
-#         is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(robot_coords, known_chaos_pucks, critical_angle)
-#
-#         if is_hull_safe_to_approach:  # only sharp angles
-#             print("hull is SAFE to approach, sorted wrt robot")
-#
-#         if not is_hull_safe_to_approach:
-#             known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
-#             print("hull is not safe to approach, sorted by angle")
-#
-#     # when we finally sorted them, chec if one of them is blue. If so, roll it
-#     if len(known_chaos_pucks) > 1 and all(known_chaos_pucks[0][3:6] == [0, 0, 1]):
-#         known_chaos_pucks = np.roll(known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
-#         print("blue rolled")
-#     return known_chaos_pucks
+def calculate_pucks_configuration(robot_coords, known_chaos_pucks, critical_angle):
 
-#
-# def calculate_landings(robot_coords, coordinates, approach_vec, scale_factor, approach_dist):
-#     coords = coordinates[:, :2]
-#     if len(coords) == 1:
-#         landings = calculate_closest_landing_to_point(robot_coords, coords, approach_vec)  # Should be [(x, y, theta), ...]
-#     else:
-#         landings = unleash_power_of_geometry(coords, scale_factor, approach_dist)
-#     return landings
+    known_chaos_pucks = sort_wrt_robot(robot_coords, known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
+
+    if len(known_chaos_pucks) >= 3:
+        is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(robot_coords, known_chaos_pucks, critical_angle)
+
+        if is_hull_safe_to_approach:  # only sharp angles
+            print("hull is SAFE to approach, sorted wrt robot")
+
+        if not is_hull_safe_to_approach:
+            known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
+            print("hull is not safe to approach, sorted by angle")
+
+    # when we finally sorted them, chec if one of them is blue. If so, roll it
+    if len(known_chaos_pucks) > 1 and all(known_chaos_pucks[0][3:6] == [0, 0, 1]):
+        known_chaos_pucks = np.roll(known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
+        print("blue rolled")
+    return known_chaos_pucks
+
+
+def calculate_landings(robot_coords, coordinates, approach_vec, scale_factor, approach_dist):
+    coords = coordinates[:, :2]
+    if len(coords) == 1:
+        landings = calculate_closest_landing_to_point(robot_coords, coords, approach_vec)  # Should be [(x, y, theta), ...]
+    else:
+        landings = unleash_power_of_geometry(coords, scale_factor, approach_dist)
+    return landings
 
 
 def unleash_power_of_geometry(coords, scale_factor, approach_dist):
