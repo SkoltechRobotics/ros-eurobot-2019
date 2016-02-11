@@ -71,17 +71,17 @@ class MainRobotBT(object):
     def change_side(self, side):
 
         self.side_status = side
-        self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
-        # self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
+        # self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
+        self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
         # self.testfield = TestField(self.side_status)  # , self.pucks_slave
 
-        self.strategy = self.sberstr
+        self.strategy = self.suddenblind
 
     def change_strategy(self, num):
         self.strategy_number = num
         if num == 0:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = self.sberstr
+            self.strategy = self.suddenblind  # sberstr
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
             # self.strategy = self.suddenblind
@@ -309,7 +309,7 @@ class StrategyConfig(object):
         #       will call them REDIUM  (it doesn't matter, because in this strategy we move them all to acc)
         #       It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
-    def pucks_callback(self):  # parse_pucks
+    def pucks_callback(self, data):  # parse_pucks
         # data = self.pucks_slave.get_pucks()
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
@@ -543,7 +543,7 @@ class StrategyConfig(object):
 
         :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
         """
-        self.parse_pucks()
+        # self.parse_pucks()
         while not self.update_main_coords():
             print "no coords available"
             rospy.sleep(0.5)
@@ -1191,12 +1191,12 @@ class SuddenBlind(StrategyConfig):
                                 # move_to_opp_chaos_while_taking_red_collision,
                                 collect_chaos  # FIXME
                             ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            # bt.SequenceWithMemoryNode([
-                            #     collect_red_cell_puck,
-                            #     blind_move_chaos_center_collect,
-                            #     collect_green_cell_puck
-                            # ])
+                            # bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            bt.SequenceWithMemoryNode([
+                                collect_red_cell_puck,
+                                blind_move_chaos_center_collect,
+                                collect_green_cell_puck
+                            ])
                         ]),
 
                         push_nose_blunium,
