@@ -54,6 +54,23 @@ class SecondaryRobotBT(object):
             self.strategy = None
         self.side_status = side
 
+    def change_strategy(self, num):
+        if num == 0:
+            print("CHANGE STRATEGY TO " + str(num))
+            self.purple_strategy = secondary_strategy.VovanStrategy(SideStatus.PURPLE)
+            self.yellow_strategy = secondary_strategy.VovanStrategy(SideStatus.YELLOW)
+        elif num == 1:
+            print("CHANGE STRATEGY TO " + str(num))
+            self.purple_strategy = secondary_strategy.HomoStrategy(SideStatus.PURPLE)
+            self.yellow_strategy = secondary_strategy.HomoStrategy(SideStatus.YELLOW)
+        elif num == 2:
+            print("CHANGE STRATEGY TO " + str(num))
+            pass
+        if self.side_status == SideStatus.PURPLE:
+            self.strategy = self.purple_strategy
+        elif self.side_status == SideStatus.YELLOW:
+            self.strategy = self.yellow_strategy
+
     def timer_callback(self, event):
         status = self.bt.tick()
         if status != bt.Status.RUNNING:

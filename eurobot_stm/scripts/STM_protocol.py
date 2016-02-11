@@ -20,6 +20,7 @@ class STMprotocol(object):
                 0x02: "=",
                 0x03: "=",
                 0x04: "=",
+                0x05: "=",
                 0x07: "=",
                 0x08: "=fff",
                 0x09: "=",
@@ -63,6 +64,7 @@ class STMprotocol(object):
                 0x02: "=cc",
                 0x03: "=B",
                 0x04: "=B",
+                0x05: "=B",
                 0x07: "=fff",
                 0x08: "=cc",
                 0x09: "=fff",
@@ -98,7 +100,7 @@ class STMprotocol(object):
                 0x63: "=cc",
                 0x64: "=cc",
 
-                0x70: "=BBBBBBB"
+                0x70: "=BBBBBBBBB"
             }
 
             self.response_bytes = {
@@ -106,6 +108,7 @@ class STMprotocol(object):
                 0x02: 2,
                 0x03: 1,
                 0x04: 1,
+                0x05: 1,
                 0x07: 12,
                 0x08: 2,
                 0x09: 12,
@@ -141,7 +144,7 @@ class STMprotocol(object):
                 0x63: 2,
                 0x64: 2,
 
-                0x70: 7
+                0x70: 9
             }
 
         if self.robot_name == "secondary_robot":
@@ -151,6 +154,7 @@ class STMprotocol(object):
                 0x02: "=",
                 0x03: "=",
                 0x04: "=",
+                0x05: "=",
                 0x07: "=",
                 0x08: "=fff",
                 0x09: "=",
@@ -194,6 +198,7 @@ class STMprotocol(object):
                 0x02: "=cc",
                 0x03: "=B",
                 0x04: "=B",
+                0x05: "=B",
                 0x07: "=fff",
                 0x08: "=cc",
                 0x09: "=fff",
@@ -229,7 +234,7 @@ class STMprotocol(object):
                 0x63: "=cc",
                 0x64: "=cc",
 
-                0x70: "=BBBBBB"
+                0x70: "=BBBBB"
             }
 
             self.response_bytes = {
@@ -237,6 +242,7 @@ class STMprotocol(object):
                 0x02: 2,
                 0x03: 1,
                 0x04: 1,
+                0x05: 1,
                 0x07: 12,
                 0x08: 2,
                 0x09: 12,
@@ -272,7 +278,7 @@ class STMprotocol(object):
                 0x63: 2,
                 0x64: 2,
 
-                0x70: 6
+                0x70: 5
             }
 
     def send(self, cmd, args):
