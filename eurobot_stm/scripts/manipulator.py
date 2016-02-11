@@ -98,6 +98,8 @@ class Manipulator(object):
             return self.delay_500()
         elif cmd == "delay_collision":
             return self.delay_collision()
+        elif cmd == "check_barometr":
+            return self.check_barometr()
         # --- main_robot
         elif cmd == "manipulator_scales":
             return self.set_manipulator_scales()
@@ -371,6 +373,13 @@ class Manipulator(object):
         result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
         if result:
             self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
+            return True
+        else:
+            return False
+
+    def check_barometr(self):
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
+        if result:
             return True
         else:
             return False

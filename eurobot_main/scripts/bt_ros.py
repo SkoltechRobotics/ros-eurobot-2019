@@ -369,6 +369,12 @@ class CheckLimitSwitchInf(ActionClientNode):
         super(CheckLimitSwitchInf, self).__init__(cmd, action_client_id)
 
 
+class CheckBarometr(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "check_barometr"
+        super(CheckBarometr, self).__init__(cmd, action_client_id)
+
+
 class CheckLimitSwitchInfLong(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "long_check_limit_switch_infinitely"
