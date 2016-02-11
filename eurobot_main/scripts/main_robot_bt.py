@@ -164,7 +164,7 @@ class Strategy(object):
                                                self.blunium_end_push_pose[1] + 0.1,
                                                self.blunium_end_push_pose[2]])
 
-        self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,
+        self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] - self.sign * 0.21,  # 0.22
                                                        self.blunium[1] + 0.13,
                                                        0.56])
 
@@ -188,11 +188,11 @@ class Strategy(object):
                                                  self.goldenium_back_pose[1],
                                                  1.57 - self.sign * 0.5])  # y/p 1.07 / 2.07
 
-        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.1,
+        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.08,
                                                  self.our_chaos_center[1] - 0.6,
                                                  1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
 
-        self.scales_goldenium_pos = np.array([self.our_chaos_center[0] - self.sign * 0.3,
+        self.scales_goldenium_pos = np.array([self.our_chaos_center[0] - self.sign * 0.29,  # 0.3
                                               self.our_chaos_center[1] + 0.37,
                                               1.57 + self.sign * 0.26])  # y/p 1.83 / 1.31
 
@@ -388,7 +388,7 @@ class Strategy(object):
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
         if not self.is_secondary_responding:
-            rospy.sleep(5)
+            rospy.sleep(3)
             return bt.Status.SUCCESS
         else:
             if polygon.contains(point):
@@ -788,6 +788,7 @@ class SberStrategy(Strategy):
                                         ])
                                     ])
 
+        # when not collectin blunium but pushing it in the end
         blue_cell_puck = bt.SequenceWithMemoryNode([
                             bt.FallbackWithMemoryNode([
                                 bt.SequenceWithMemoryNode([
@@ -795,15 +796,19 @@ class SberStrategy(Strategy):
                                     bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGroundWhenFull("manipulator_client"),
-                                        bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
-                                    ], threshold=1),
+                                        # bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
+                                        bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
+                                    ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
-                                    bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
+                                    # bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
+                                    bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
                                 ], threshold=2)  # if fail, FIXME never happens now
                             ])
                         ])
+
+
 
         # when robot is NOT FULL (inside 6)
         # move_and_collect_blunium = bt.SequenceWithMemoryNode([
@@ -821,25 +826,26 @@ class SberStrategy(Strategy):
         #                             ])
 
         # when full (inside 7)
-        move_and_collect_blunium = bt.SequenceWithMemoryNode([
-                                        # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
-                                        bt_ros.StartCollectBlunium("manipulator_client"),
-                                        bt.ParallelWithMemoryNode([
-                                            bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
-                                            bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-                                        ], threshold=1),  # CheckLimitSwitchInf
-                                        # bt_ros.MoveLineToPoint(self.blunium_collect_pos_side, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.06, 0]), "move_client"),  # FIXME
-                                        bt_ros.MainSetManipulatortoGround("manipulator_client"),  # Here changed!!!!!!!!!!!!
-                                        #bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
-                                        # bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                        # bt_ros.MainSetManipulatortoGround("manipulator_client")
-                                    ])
+        # move_and_collect_blunium = bt.SequenceWithMemoryNode([
+        #                                 # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+        #                                 bt_ros.StartCollectBlunium("manipulator_client"),
+        #                                 bt.ParallelWithMemoryNode([
+        #                                     bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
+        #                                     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+        #                                 ], threshold=1),  # CheckLimitSwitchInf
+        #                                 # bt_ros.MoveLineToPoint(self.blunium_collect_pos_side, "move_client"),
+        #                                 bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.06, 0]), "move_client"),  # FIXME
+        #                                 bt_ros.MainSetManipulatortoGround("manipulator_client")  # Here changed!!!!!!!!!!!!
+        #                                 #bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
+        #                                 # bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+        #                                 # bt_ros.MainSetManipulatortoGround("manipulator_client")
+        #                             ])
 
         approach_acc = bt.SequenceWithMemoryNode([
+                            bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
                             bt_ros.MoveLineToPoint(self.blunium_get_back_pose, "move_client"),
                             bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
-                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client")
+                            # bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client")
                         ])
 
         # # when not full
@@ -873,14 +879,14 @@ class SberStrategy(Strategy):
                     ])
 
         move_and_push_blunium = bt.SequenceWithMemoryNode([
-                                            bt_ros.MoveLineToPoint(self.blunium_prepose, "move_client"),
-                                            bt.ParallelWithMemoryNode([
-                                                bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-                                                bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
-                                            ], threshold=2),
-                                            bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
-                                            bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                            bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                                    bt_ros.MoveLineToPoint(self.blunium_prepose, "move_client"),
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                        bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
+                                    ], threshold=2),
+                                    bt_ros.MoveLineToPoint(self.blunium_end_push_pose, "move_client"),
+                                    bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                    bt.ActionNode(lambda: self.score_master.unload("ACC"))
                                         ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
@@ -921,26 +927,26 @@ class SberStrategy(Strategy):
                             ])
 
         self.tree = bt.SequenceWithMemoryNode([
-                        red_cell_puck,
+                        # red_cell_puck,
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_observed),
-                                collect_chaos
-                            ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_observed),
+                        #         collect_chaos
+                        #     ]),
+                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                        # ]),
 
-                        green_cell_puck_after_chaos,
-                        blue_cell_puck,
-                        move_and_collect_blunium,
+                        # green_cell_puck_after_chaos,
+                        # blue_cell_puck,
+                        ## move_and_collect_blunium,
                         approach_acc,
-                        collect_unload_first_in_acc,  
-                        unload_acc, # COMAAAAAAA
-                        move_and_push_blunium,
-                        collect_goldenium,
-                        move_to_goldenium_prepose,
-                        unload_goldenium
+                        #collect_unload_first_in_acc,  
+                        #unload_acc,
+                        #move_and_push_blunium,
+                        #collect_goldenium,
+                        #move_to_goldenium_prepose,
+                        #unload_goldenium
                     ])
 
 
