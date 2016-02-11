@@ -43,6 +43,7 @@ class CollisionAvoidance(object):
         self.num_lidar_collision_points = None
         self.num_sensor_collision_points = None
         self.default_obstacle_point = []
+        self.distances_history = np.zeros((5, self.sensor_coords.shape[0])) * 0.5
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
@@ -103,10 +104,12 @@ class CollisionAvoidance(object):
         return np.where(index > 0)
 
     def proximity_callback(self, data):
-        distances = (np.array((data.data.split())).astype(float))/100
-        distances[np.where(distances == 0)] = 100
+        distances = ((np.array((data.data.split())).astype(float))/100)[np.newaxis, :]
         rospy.loginfo("Proximity data %s", distances)
-        distances[np.where(distances == 0.5)] = 1
+        self.distances_history = np.append(self.distances_history, distances, axis=0)
+        self.distances_history = np.delete(self.distances_history, 0, axis=0)
+        distances = np.median(self.distances_history, axis=0)
+        rospy.loginfo("median data %s", distances)
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
