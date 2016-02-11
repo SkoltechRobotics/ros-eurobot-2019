@@ -131,77 +131,6 @@ class CollectChaos(bt.FallbackWithMemoryNode):
             ])
 	    ])
 
-        # super(CollectChaos, self).__init__([
-        #     bt.SequenceWithMemoryNode([
-        #         bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
-                
-        #         # 1st
-        #         bt.ActionNode(self.calculate_pucks_configuration),
-        #         bt.ActionNode(self.calculate_closest_landing),
-        #         bt.ActionNode(self.calculate_prelanding),
-
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-        #         bt_ros.BlindStartCollectGround("manipulator_client"),
-        #         bt.ActionNode(self.update_chaos_pucks),
-        #         bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-                
-        #         # 2nd
-        #         bt.ActionNode(self.calculate_pucks_configuration),
-        #         bt.ActionNode(self.calculate_closest_landing),
-        #         bt.ActionNode(self.calculate_prelanding),
-
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-        #         bt_ros.BlindStartCollectGround("manipulator_client"),
-        #         bt.ActionNode(self.update_chaos_pucks),
-        #         bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         # 3rd
-        #         bt.ActionNode(self.calculate_pucks_configuration),
-        #         bt.ActionNode(self.calculate_closest_landing),
-        #         bt.ActionNode(self.calculate_prelanding),
-
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-        #         bt_ros.BlindStartCollectGround("manipulator_client"),
-        #         bt.ActionNode(self.update_chaos_pucks),
-        #         bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         # 4th
-        #         bt.ActionNode(self.calculate_pucks_configuration),
-        #         bt.ActionNode(self.calculate_closest_landing),
-
-        #         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-        #         bt_ros.BlindStartCollectGround("manipulator_client"),
-        #         bt.ActionNode(self.update_chaos_pucks),
-        #         bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         # bt.ParallelWithMemoryNode([
-        #         # ], threshold=5),
-
-        #     ]),
-
-        #     bt.SequenceNode([
-		#         bt.Latch(bt_ros.StepperUp("manipulator_client")), 
-		#         bt.FallbackNode([
-        #             bt.ConditionNode(self.is_robot_empty),
-        #             bt.SequenceWithMemoryNode([
-        #                 bt_ros.UnloadAccelerator("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #             ])
-		#         ]),
-		#         bt.ConditionNode(self.is_robot_empty_1)
-	    #     ])
-        # ])
-
     @staticmethod
     def get_color(puck):
         """
@@ -322,8 +251,8 @@ class MainRobotBT(object):
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
-        self.is_observed = bt.BTVariable(False)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
-        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
+        self.is_observed = bt.BTVariable(False)
+        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
