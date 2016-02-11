@@ -190,11 +190,11 @@ class StrategyConfig(object):
                                                 self.first_puck_landing[2]])
 
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.14,  # 0.11
-                                                     self.blunium[1] + self.robot_outer_radius - 0.03,
+                                                     self.blunium[1] + self.robot_outer_radius - 0.04, # 0.03 to close
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
         self.blunium_nose_end_push_pose = np.array([self.blunium[0] - self.sign * 0.22,  # 0.22
-                                                   self.blunium[1] + self.robot_outer_radius - 0.03,  # self.blunium[1] + 0.13
+                                                   self.blunium_nose_start_push_pose[1],  # self.blunium[1] + 0.13
                                                    self.blunium_nose_start_push_pose[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
@@ -1147,6 +1147,7 @@ class SuddenBlind(StrategyConfig):
         search_lost_puck_unload_cell = bt.SequenceWithMemoryNode([
                                             bt.ConditionNode(self.is_lost_puck_present),
                                             bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field.get()[0])),
+                                            bt.ActionNode(self.calculate_next_prelanding),
                                             bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                             bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
 
