@@ -14,7 +14,7 @@ YAW_GOAL_TOLERANCE: 0.012
 XY_GOAL_TOLERANCE_MOVE_TO_POINT: 0.015
 YAW_GOAL_TOLERANCE_MOVE_TO_POINT: 0.015
 # maximum speed
-V_MAX: 0.7
+V_MAX: 0.6
 W_MAX: 1.2
 AV_MAX: 0.9
 AW_MAX: 1.5
@@ -23,8 +23,8 @@ ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.1
 R_DECELERATION: 1
-exp_const: 0.13
-exp_const_move_to_point: 0.3
+exp_const: 0.1
+exp_const_move_to_point: 0.17
 # power of deceleration factor
 GAMMA: 0.75
 oponent_robot_radius: 0.08

@@ -21,8 +21,6 @@ def list_from_polygon(polygon):
             polygon.append([x[i], y[i]])
     return polygon
 '''
-
-
 def list_from_polygon(polygon):
     print (type(polygon))
     if type(polygon) is Polygon:

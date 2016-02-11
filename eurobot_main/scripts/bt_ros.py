@@ -106,25 +106,25 @@ class MainSetManipulatortoGround(ActionClientNode):
         cmd = "set_manipulator_ground_main"
         super(MainSetManipulatortoGround, self).__init__(cmd, action_client_id)
 
-class LeftMoustacheDefault(ActionClientNode):
+class UpperMoustacheDefault(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "left_moustache_default"
-        super(LeftMoustacheDefault, self).__init__(cmd, action_client_id)
+        cmd = "upper_moustache_default"
+        super(UpperMoustacheDefault, self).__init__(cmd, action_client_id)
 
-class LeftMoustacheDown(ActionClientNode):
+class UpperMoustacheOpen(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "left_moustache_down"
-        super(LeftMoustacheDown, self).__init__(cmd, action_client_id)
+        cmd = "upper_moustache_open"
+        super(UpperMoustacheOpen, self).__init__(cmd, action_client_id)
 
-class RightMoustacheDefault(ActionClientNode):
+class LowerMoustacheDefault(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "right_moustache_default"
-        super(RightMoustacheDefault, self).__init__(cmd, action_client_id)
+        cmd = "lower_moustache_default"
+        super(LowerMoustacheDefault, self).__init__(cmd, action_client_id)
 
-class RightMoustacheDown(ActionClientNode):
+class LowerMoustacheOpen(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "right_moustache_down"
-        super(RightMoustacheDown, self).__init__(cmd, action_client_id)
+        cmd = "lower_moustache_open"
+        super(LowerMoustacheOpen, self).__init__(cmd, action_client_id)
 
 class SetReleaserSpeedToHigh(ActionClientNode):
     def __init__(self, action_client_id):
@@ -389,7 +389,7 @@ class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
 
 class CheckLimitSwitchInf(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "check_limit switch_infinitely"
+        cmd = "check_limit_switch_infinitely"
         super(CheckLimitSwitchInf, self).__init__(cmd, action_client_id)
 
 
@@ -428,10 +428,9 @@ class CompleteTakeWallPuck(ActionClientNode):
         cmd = "complete_collect_wall"
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
 
-
 # FIXME
 class SetToGround_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, action_client_id, threshold=0.2):
+    def __init__(self, goal, action_client_id, threshold=0.3):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 

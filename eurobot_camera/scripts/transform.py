@@ -54,7 +54,7 @@ def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path
     im2 = cv2.imread(templ_path)
     im1 = cv2.resize(im1, (int(rx),int(ry)))
     im2 = cv2.resize(im2, (int(rx),int(ry)))
-
+    cv2.imwrite("asdad.png", im1)
     # Convert images to grayscale
     im1Gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
     im2Gray = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)

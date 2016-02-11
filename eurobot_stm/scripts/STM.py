@@ -106,7 +106,7 @@ class STMstatus(object):
                     self.proximity_status_publisher.publish(message)
 
 
-                successfully, values = self.stm_protocol.send(0x19, args=None)
+                successfully, values = self.stm_protocol.send(0x1B, args=None)
 
                 message = ""
                 for val in values:
