@@ -752,36 +752,41 @@ class SberStrategy(Strategy):
 
                     bt_ros.BlindStartCollectGround("manipulator_client"),
                     bt.ActionNode(self.update_chaos_pucks),
-                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get()))  # COMAAAAAA
 
-                    bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.StepperUp("manipulator_client")
+                    # bt_ros.CompleteCollectGround("manipulator_client"),
+                    # bt_ros.StepperUp("manipulator_client")
         ])
 
-        green_cell_puck = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
-                            bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-                            bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
-                            # bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
-                            bt.FallbackWithMemoryNode([
-                                bt.SequenceWithMemoryNode([
-                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
-                                    bt_ros.BlindStartCollectGround("manipulator_client"),
-                                    bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.SequenceWithMemoryNode([
-                                            bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-                                            bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+        green_cell_puck_after_chaos = bt.SequenceWithMemoryNode([
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt.SequenceWithMemoryNode([
+                                                bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
+                                                bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                                bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+                                            ])
+                                        ], threshold=2),
+
+                                        bt.FallbackWithMemoryNode([
+                                            bt.SequenceWithMemoryNode([
+                                                bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
+                                                bt_ros.BlindStartCollectGround("manipulator_client"),
+                                                bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
+                                                bt.ParallelWithMemoryNode([
+                                                    bt_ros.CompleteCollectGround("manipulator_client"),
+                                                    bt.SequenceWithMemoryNode([
+                                                        bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                                        bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+                                                    ])
+                                                ], threshold=2),
+                                            ]),
+                                            bt.ParallelWithMemoryNode([
+                                                bt_ros.SetManipulatortoWall("manipulator_client"),
+                                                bt_ros.MoveToVariable(self.next_landing_var, "move_client"),  # FIXME 
+                                            ], threshold=2)
                                         ])
-                                    ], threshold=2),
-                                ]),
-                                bt.ParallelWithMemoryNode([
-                                    bt_ros.SetManipulatortoWall("manipulator_client"),
-                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),  # FIXME 
-                                ], threshold=2)
-                            ])
-                        ])
+                                    ])
 
         blue_cell_puck = bt.SequenceWithMemoryNode([
                             bt.FallbackWithMemoryNode([
@@ -789,7 +794,7 @@ class SberStrategy(Strategy):
                                     bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt_ros.CompleteCollectGroundWhenFull("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
                                     ], threshold=1),
                                 ]),
@@ -800,7 +805,7 @@ class SberStrategy(Strategy):
                             ])
                         ])
 
-        # doesn't work when robot is full, need to use command FinishCollectBluniumWhenFull
+        # when robot is NOT FULL (inside 6)
         # move_and_collect_blunium = bt.SequenceWithMemoryNode([
         #                                 # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
         #                                 bt_ros.StartCollectBlunium("manipulator_client"),
@@ -815,7 +820,7 @@ class SberStrategy(Strategy):
         #                                 bt_ros.MainSetManipulatortoGround("manipulator_client")
         #                             ])
 
-        # when full
+        # when full (inside 7)
         move_and_collect_blunium = bt.SequenceWithMemoryNode([
                                         # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
                                         bt_ros.StartCollectBlunium("manipulator_client"),
@@ -824,10 +829,11 @@ class SberStrategy(Strategy):
                                             bt_ros.CheckLimitSwitchInfLong("manipulator_client")
                                         ], threshold=1),  # CheckLimitSwitchInf
                                         # bt_ros.MoveLineToPoint(self.blunium_collect_pos_side, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
-                                        bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                        bt_ros.MainSetManipulatortoGround("manipulator_client")
+                                        bt_ros.MoveLineToPoint(self.blunium_collect_pos + np.array([0, 0.06, 0]), "move_client"),  # FIXME
+                                        bt_ros.MainSetManipulatortoGround("manipulator_client"),  # Here changed!!!!!!!!!!!!
+                                        #bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
+                                        # bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                        # bt_ros.MainSetManipulatortoGround("manipulator_client")
                                     ])
 
         approach_acc = bt.SequenceWithMemoryNode([
@@ -836,7 +842,7 @@ class SberStrategy(Strategy):
                             bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client")
                         ])
 
-        # doesn't work when robot is full, need to use command FinishCollectBluniumWhenFull
+        # # when not full
         # collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
         #                             bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
         #                             bt_ros.UnloadAccelerator("manipulator_client"),
@@ -844,12 +850,15 @@ class SberStrategy(Strategy):
         #                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
         #                         ])
 
-        # when full
+        # when full - don't move stepper up
         collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
                                     # bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
+                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))  # COMAAAAAA
+
+                                    # bt_ros.FinishCollectBluniumWhenFull("manipulator_client"),
+                                    # bt.ActionNode(lambda: self.score_master.add("BLUNIUM"))
                                 ])
 
         unload_acc = bt.SequenceNode([
@@ -862,6 +871,17 @@ class SberStrategy(Strategy):
                         ]),
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
+
+        move_and_push_blunium = bt.SequenceWithMemoryNode([
+                                            bt_ros.MoveLineToPoint(self.blunium_prepose, "move_client"),
+                                            bt.ParallelWithMemoryNode([
+                                                bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                                bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
+                                            ], threshold=2),
+                                            bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
+                                            bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                            bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                                        ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.Delay500("manipulator_client"),
@@ -911,15 +931,16 @@ class SberStrategy(Strategy):
                             bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
                         ]),
 
-                        green_cell_puck,
+                        green_cell_puck_after_chaos,
                         blue_cell_puck,
                         move_and_collect_blunium,
                         approach_acc,
-                        collect_unload_first_in_acc  # COMAAAAAAA
-                        # unload_acc,
-                        # collect_goldenium,
-                        # move_to_goldenium_prepose,
-                        # unload_goldenium
+                        collect_unload_first_in_acc,  
+                        unload_acc, # COMAAAAAAA
+                        move_and_push_blunium,
+                        collect_goldenium,
+                        move_to_goldenium_prepose,
+                        unload_goldenium
                     ])
 
 

@@ -321,6 +321,8 @@ class Manipulator(object):
         return True
 
     def finish_collect_blunium_when_full(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_PLATFORM"])
         rospy.sleep(0.1)
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])

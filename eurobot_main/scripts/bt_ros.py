@@ -219,7 +219,7 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
-class CompleteCollectGroundWhenFull():
+class CompleteCollectGroundWhenFull(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_ground_when_full"
         super(CompleteCollectGroundWhenFull, self).__init__(cmd, action_client_id)
