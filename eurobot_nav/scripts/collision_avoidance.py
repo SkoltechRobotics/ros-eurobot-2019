@@ -8,6 +8,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import PoseStamped, Point
+from threading import Lock
+
 
 LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
 LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
@@ -149,8 +151,9 @@ class CollisionAvoidanceMainRobot(object):
             min_ind = np.argmin(distances)
             min_dist_to_obstacle = distances[min_ind]
             obstacle_point = self.obstacle_points[min_ind]
-            rospy.loginfo("Lidar dist %s", min_dist_to_obstacle)
+            rospy.loginfo("dist %s", min_dist_to_obstacle)
             if min_ind < self.num_lidar_collision_points:
+                rospy.loginfo("Lidar collision point %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_lidar:
                     rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point
@@ -160,6 +163,7 @@ class CollisionAvoidanceMainRobot(object):
                     else:
                         p_lidar = min_dist_to_obstacle/0.7
             else:
+                rospy.loginfo("Sensor obstacle point %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_sensor:
                     rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point
@@ -227,6 +231,7 @@ class CollisionAvoidanceMainRobot(object):
 class CollisionAvoidanceSecondaryRobot(object):
     def __init__(self):
         self.robot_name = rospy.get_param("robot_name")
+        #self.mutex = Lock()
 #       collision params
         self.p = 1
         self.sensor_coords = np.array(rospy.get_param("collision/sensor_position"))
@@ -255,7 +260,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.num_sensor_collision_points = None
         self.default_obstacle_point = []
 #       init subscribers
-        #rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+        rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
         #rospy.Subscriber("obstacle_point", String, self.obstacle_callback, queue_size=1)
 #       init publishers
@@ -265,8 +270,8 @@ class CollisionAvoidanceSecondaryRobot(object):
 
     def obstacle_callback(self, point):
         self.obstacle_points = np.array([point.data.split()]).astype(float)
-        rospy.loginfo("!!!!!!!!!!!!!")
-        rospy.loginfo(self.obstacle_points)
+        #rospy.loginfo("!!!!!!!!!!!!!")
+        #rospy.loginfo(self.obstacle_points)
         # self.set_collision_point(self.obstacle_points)
 
     @staticmethod
@@ -317,6 +322,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         return np.where(index > 0)
 
     def proximity_callback(self, data):
+        #self.mutex.acquire()
         distances = (np.array((data.data.split())).astype(float))/100
         #distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
@@ -324,6 +330,7 @@ class CollisionAvoidanceSecondaryRobot(object):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             points = np.append(points, points_in_sensor_frame, axis=0)
         self.obstacle_points_sensor = points
+        #self.mutex.release()
 
     @staticmethod
     def alpha_filter(cloud, min_sin_angle):
@@ -337,6 +344,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         return index
 
     def scan_callback(self, scan):
+        #self.mutex.acquire()
         scan = scan
         angles, distances = self.get_landmarks(scan)
         x = distances * np.cos(angles)
@@ -346,52 +354,64 @@ class CollisionAvoidanceSecondaryRobot(object):
         #rospy.loginfo(landmarks)
         if landmarks.size > 0:
             self.obstacle_points_lidar = landmarks
+        #self.mutex.release()
+
 
     def get_collision_area(self, coords, goal):
-        rospy.loginfo("GOAL %s", goal)
-        rospy.loginfo("COORDS %s", coords)
+        #rospy.loginfo("GOAL %s", goal)
+        #rospy.loginfo("COORDS %s", coords)
         goal_in_robot_frame = cvt_global2local(goal, coords)
-        rospy.loginfo("GOAL IN ROBOT FRAME %s", goal_in_robot_frame)
+        #rospy.loginfo("GOAL IN ROBOT FRAME %s", goal_in_robot_frame)
         dist_to_goal = np.linalg.norm(goal[:2] - coords[:2])
-        rospy.loginfo("DIST TO GOAL POINT %s", dist_to_goal)
+        #rospy.loginfo("DIST TO GOAL POINT %s", dist_to_goal)
         points = np.array([[-0.15, -0.15], [dist_to_goal+0.15, -0.15], [dist_to_goal+0.15, 0.15], [-0.15, 0.15], [-0.15, -0.15]])
         self.collision_area = cvt_local2global(points, np.array(
             [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
         self.obstacle_points_lidar = self.filter_points(self.obstacle_points_lidar.copy(), coords.copy(), goal.copy())
-        self.obstacle_points_sensor = self.filter_points(self.obstacle_points_sensor.copy(), coords.copy(), goal.copy())
+        self.set_collision_point(self.obstacle_points_lidar)
+        rospy.loginfo("LIDAR POINTS %s", self.obstacle_points_lidar)
+        #self.obstacle_points_sensor = self.filter_points(self.obstacle_points_sensor.copy(), coords.copy(), goal.copy())
         self.num_lidar_collision_points = self.obstacle_points_lidar.shape[0]
         self.num_sensor_collision_points = self.obstacle_points_sensor.shape[0]
+        rospy.loginfo("Vaues before %s", self.obstacle_points_lidar)
+        self.obstacle_points = self.obstacle_points_lidar.copy()
+        rospy.loginfo("Vaues before %s", self.obstacle_points)
+        '''
         self.obstacle_points = np.zeros((0,2))
         if self.obstacle_points_lidar.shape[0] > 0:
             self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_lidar, axis=0)
         if self.obstacle_points_lidar.shape[0] > 0:
             self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_sensor, axis=0)
-        self.set_collision_point(self.obstacle_points)
+        '''
+        #self.set_collision_point(self.obstacle_points)
 
     def filter_points(self, points, coords, goal):
-        rospy.loginfo("POINTS")
+        #rospy.loginfo("POINTS")
         filtered_points = cvt_local2global(points.copy(), coords.copy())
         filtered_points = self.get_landmarks_inside_table(filtered_points.copy())
         filtered_points = self.get_points_outside_map(filtered_points.copy())
         filtered_points = filtered_points[self.get_points_inside_collision_area(filtered_points.copy(), coords.copy(), goal.copy())]
-        rospy.loginfo(filtered_points)
+        rospy.loginfo("Filtered points %s", filtered_points)
         return filtered_points
 
     def get_collision_status(self, coords, goal):
+        #self.mutex.acquire()
         self.p = 1
         p_lidar = 1
         p_sensor = 1
         self.get_collision_area(coords, goal)
-        rospy.loginfo(self.obstacle_points)
+        rospy.loginfo("Final obstacle points %s", self.obstacle_points)
         if self.obstacle_points.shape[0] > 0:
             distances = np.linalg.norm(coords[:2] - self.obstacle_points, axis=1)
             min_ind = np.argmin(distances)
             min_dist_to_obstacle = distances[min_ind]
             obstacle_point = self.obstacle_points[min_ind]
-            rospy.loginfo("Lidar dist %s", min_dist_to_obstacle)
+            rospy.loginfo("dist %s", min_dist_to_obstacle)
             if min_ind < self.num_lidar_collision_points:
+                rospy.loginfo("Lidar dist %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_lidar:
                     rospy.loginfo("COLLISION")
+                    #/self.mutex.release()
                     return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.7:
@@ -399,16 +419,20 @@ class CollisionAvoidanceSecondaryRobot(object):
                     else:
                         p_lidar = min_dist_to_obstacle/0.7
             else:
+                rospy.loginfo("Sensor dist %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_sensor:
                     rospy.loginfo("COLLISION")
+                    #self.mutex.release()
                     return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.4:
                         p_sensor = 1
                     else:
                         p_sensor = min_dist_to_obstacle/0.4
+            #self.mutex.release()
             return False, min(p_lidar, p_sensor), obstacle_point
         else:
+            #self.mutex.release()
             return   False, self.p, self.default_obstacle_point
 
     def set_collision_point(self, positions):
@@ -460,6 +484,6 @@ class CollisionAvoidanceSecondaryRobot(object):
             point.x = position[0]
             point.y = position[1]
             point.z = 0.2
-            marker.points.append(point)
+            #marker.points.append(point)
         self.collision_area_publisher.publish(marker)
 
