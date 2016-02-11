@@ -213,6 +213,12 @@ class BlindStartCollectGround(ActionClientNode):
         super(BlindStartCollectGround, self).__init__(cmd, action_client_id)
 
 
+class DelayBlindStartCollectGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_blind_start_collect_ground"
+        super(DelayBlindStartCollectGround, self).__init__(cmd, action_client_id)
+
+
 class CompleteCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_ground"
