@@ -35,7 +35,7 @@ secondary_robot:
     redium_zone_second: [2.75, 0.65, -1.57]
     redium_zone_third: [2.75, 0.75, -1.5]
     redium_zone_forth: [2.85, 0.75, -1.57]
-    reflected_last_zone : [2.79, 0.45, 1.44]
+    reflected_last_zone : [2.83, 0.77, 1.37]
 
 ground_spacing_dist: 0.3  # between pucks on ground
 chaos_radius: 0.15

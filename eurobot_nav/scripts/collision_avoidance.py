@@ -255,7 +255,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.num_sensor_collision_points = None
         self.default_obstacle_point = []
 #       init subscribers
-        rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+        #rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
         #rospy.Subscriber("obstacle_point", String, self.obstacle_callback, queue_size=1)
 #       init publishers
