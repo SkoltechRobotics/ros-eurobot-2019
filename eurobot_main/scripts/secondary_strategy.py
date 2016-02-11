@@ -177,6 +177,7 @@ class SemaPidrStrategy(Strategy):
         self.redium_zone_third = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_third"))
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
+        self.reflected_last_zone = np.array(rospy.get_param("secondary_robot/" + param + "/reflected_last_zone"))
 
         unload = bt.SequenceNode([
             bt.FallbackNode([
@@ -226,7 +227,7 @@ class SemaPidrStrategy(Strategy):
                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.1, 0), "move_client"),
                 bt_ros.CompleteTakeWallPuck("manipulator_client"),
-                bt_ros.MoveLineToPoint((0.17, 0.36, -1.66), "move_client")
+                bt_ros.MoveLineToPoint(self.reflected_last_zone, "move_client")
             ])
         ])
 
@@ -235,6 +236,7 @@ class SemaPidrStrategy(Strategy):
             seventh_puck,
             eighth_puck,
             bt_ros.StepperUp("manipulator_client"),
+            bt_ros.RightMoustacheDown("manipulator_client"),
             unload
         ])
 
@@ -266,6 +268,7 @@ class ReflectedVovanStrategy(Strategy):
         self.redium_zone_third = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_third"))
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
+        self.reflected_last_zone = np.array(rospy.get_param("secondary_robot/" + param + "/reflected_last_zone"))
 
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -459,7 +462,7 @@ class ReflectedVovanStrategy(Strategy):
             bt_ros.TryToPumpWallPuck(self.nineth_puck),
             bt.ActionNode(lambda: self.score_master.add("REDIUM")),
             bt.ParallelWithMemoryNode([
-                bt_ros.MoveLineToPoint((0.21, 0.36, -1.7), "move_client"),
+                bt_ros.MoveLineToPoint(self.reflected_last_zone, "move_client"),
                 bt_ros.CompleteCollectLastWall("manipulator_client")
             ], threshold=2)
         ])

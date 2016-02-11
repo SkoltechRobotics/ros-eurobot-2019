@@ -45,6 +45,8 @@ class STMprotocol(object):
                 0x23: "=",
                 0x24: "=",
                 0x25: "=",
+                0x26: "=",
+                0x27: "=",
                 # main
                 0x30: "=",
                 0x31: "=",
@@ -94,6 +96,8 @@ class STMprotocol(object):
                 0x23: "=cc",
                 0x24: "=cc",
                 0x25: "=cc",
+                0x26: "=cc",
+                0x27: "=cc",
                 # main
                 0x30: "=cc",
                 0x31: "=cc",
@@ -143,6 +147,8 @@ class STMprotocol(object):
                 0x23: 2,
                 0x24: 2,
                 0x25: 2,
+                0x26: 2,
+                0x27: 2,
                 # main
                 0x30: 2,
                 0x31: 2,
@@ -194,6 +200,8 @@ class STMprotocol(object):
                 0x23: "=cc",
                 0x24: "=cc",
                 0x25: "=cc",
+                0x26: "=cc",
+                0x27: "=cc",                
                 # main
                 0x30: "=",
                 0x31: "=",
@@ -243,6 +251,8 @@ class STMprotocol(object):
                 0x23: "=cc",
                 0x24: "=cc",
                 0x25: "=cc",
+                0x26: "=cc",
+                0x27: "=cc",
                 # main
                 0x30: "=cc",
                 0x31: "=cc",
@@ -292,6 +302,8 @@ class STMprotocol(object):
                 0x23: 2,
                 0x24: 2,
                 0x25: 2,
+                0x26: 2,
+                0x27: 2,
                 # main
                 0x30: 2,
                 0x31: 2,
