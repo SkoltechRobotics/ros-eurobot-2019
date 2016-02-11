@@ -250,7 +250,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.obstacle_points_sensor = np.zeros((0, 2))
         self.obstacle_points = np.zeros((0, 2))
         self.collision_area = None
-        self.default_obstacle_point = np.array([100., 100.])
+        self.default_obstacle_point = []
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)

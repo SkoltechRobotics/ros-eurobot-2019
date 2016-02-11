@@ -22,6 +22,12 @@ def list_from_polygon(polygon):
     return polygon
 
 
+def get_collision_polygon(collision_polygon, robot_polygon):
+    polygons = polygon_list_from_numpy(np.array([collision_polygon, robot_polygon]))
+    obstacle = polygons[0].symmetric_difference(polygons[1]).difference(polygons[1])
+    return obstacle
+
+
 def list_from_polygon_array(polygons):
     polygon = []
     for i in polygons:

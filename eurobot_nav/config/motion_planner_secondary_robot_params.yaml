@@ -24,6 +24,7 @@ R_DECELERATION: 1
 exp_const: 0.11
 # power of deceleration factor
 GAMMA: 0.75
+oponent_robot_radius: 0.25
 # params for accurate movements to water towers or cube heaps
 XY_ACCURATE_GOAL_TOLERANCE: 0.005
 YAW_ACCURATE_GOAL_TOLERANCE: 0.01
