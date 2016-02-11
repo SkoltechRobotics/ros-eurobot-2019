@@ -274,7 +274,7 @@ class ReleaseAndBack(bt.SequenceWithMemoryNode):
 
 
 class SetToWall_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, action_client_id, threshold=0.3):
+    def __init__(self, goal, action_client_id, threshold=0.4):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
@@ -284,7 +284,7 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
         self.goal = goal
         self.threshold = bt.BTVariable(threshold)
 
-        self.set_to_wall_node = ActionClientNode("manipulator_wall", action_client_id, name="manipulator_to_wall")
+        self.set_to_wall_node = ActionClientNode("manipulator_wall_pump", action_client_id, name="manipulator_to_wall")
 
         super(SetToWall_ifReachedGoal, self).__init__([
             bt.ConditionNode(self.is_coordinates_reached),

@@ -93,6 +93,8 @@ class Manipulator(object):
             return self.complete_collect_ground()
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
+        elif cmd == "manipulator_wall_pump":
+            return self.set_manipulator_wall_pump()
         elif cmd == "start_collect_wall_without_grabber":
             return self.start_collect_wall_without_grabber()
         elif cmd == "complete_collect_wall":
@@ -227,10 +229,21 @@ class Manipulator(object):
     def set_manipulator_platform(self):
         self.send_command(self.protocol["SET_PLATFORM"])
         return True
-        
+
+    def set_manipulator_wall_pump(self):
+        self.send_command(self.protocol["START_PUMP"])
+        self.send_command(self.protocol["SET_WALL"])
+        return True
+
+    def start_pump(self):
+        self.send_command(self.protocol["START_PUMP"])
+        return True
+
+
     def stop_pump(self):
         self.send_command(self.protocol["STOP_PUMP"])
         return True
+
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -251,7 +264,12 @@ class Manipulator(object):
         if self.robot_name == "secondary_robot":
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
-            return True
+            result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+            if result:
+                return True
+            else:
+                return False
+
 
     def complete_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -264,6 +282,7 @@ class Manipulator(object):
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            self.send_command(self.protocol["START_PUMP"])
             return True
 
     def complete_collect_last_wall(self):
