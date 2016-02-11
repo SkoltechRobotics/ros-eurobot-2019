@@ -122,12 +122,14 @@ class YellowTactics(Tactics):
                                                  self.goldenium_back_pose[1],
                                                  1])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.25,
-                                                    self.chaos_center[1] - 0.15,
-                                                    1.4])
+        # self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.05,
+        #                                             self.chaos_center[1] - 0.6,
+        #                                             1.4])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] - 0.05,
-                                              self.scales_goldenium_PREpos[1] + 0.52,
+        self.scales_goldenium_PREpos = np.array([1.9, self.chaos_center[1] - 0.6, 1.4])
+
+        self.scales_goldenium_pos = np.array([self.chaos_center[0] - 0.3,
+                                              self.chaos_center[1] + 0.37,
                                               1.83])
 
 
@@ -223,12 +225,14 @@ class PurpleTactics(Tactics):
                                                  self.goldenium_back_pose[1],
                                                  2])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,  # 0.25
-                                                    self.chaos_center[1] - 0.15,
-                                                    1.7])
+        # self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.05,  # 0.25
+        #                                             self.chaos_center[1] - 0.6,
+        #                                             1.7])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.05,  # 0.05
-                                              self.scales_goldenium_PREpos[1] + 0.52,
+        self.scales_goldenium_PREpos = np.array([1.1, self.chaos_center[1] - 0.6, 1.7])
+
+        self.scales_goldenium_pos = np.array([self.chaos_center[0] + 0.3,
+                                              self.chaos_center[1] + 0.37,
                                               1.31])
 
 
