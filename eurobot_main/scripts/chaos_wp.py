@@ -103,9 +103,41 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 # bt.ParallelWithMemoryNode([
                 # ], threshold=5),
 
-            ])
+            ]),
+
+            bt.SequenceNode([
+		        bt.Latch(bt_ros.StepperUp("manipulator_client")), 
+		        bt.FallbackNode([
+                    bt.ConditionNode(self.is_robot_empty),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.UnloadAccelerator("manipulator_client"),
+                        bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                    ])
+		        ]),
+		        bt.ConditionNode(self.is_robot_empty_1)
+	        ])
         ])
 
+
+    def is_robot_empty(self):
+        rospy.loginfo("pucks inside")
+        rospy.loginfo(self.collected_pucks.get())
+        if len(self.collected_pucks.get()) == 0:
+            rospy.loginfo('All pucks unloaded')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
+            return bt.Status.FAILED
+
+    def is_robot_empty_1(self):
+        rospy.loginfo("pucks inside")
+        rospy.loginfo(self.collected_pucks.get())
+        if len(self.collected_pucks.get()) == 0:
+            rospy.loginfo('All pucks unloaded')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
+            return bt.Status.RUNNING
 
     @staticmethod
     def get_color(puck):
