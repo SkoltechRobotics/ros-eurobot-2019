@@ -13,7 +13,7 @@ from score_controller import ScoreController
 from visualization_msgs.msg import MarkerArray
 
 
-class CollectChaos(bt.FallbackWithMemoryNode):
+class CollectChaos(bt.FallbackNode):
     def __init__(self, known_chaos_pucks, action_client_id):
         # Init parameters
         self.tfBuffer = tf2_ros.Buffer()
@@ -22,7 +22,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
         self.known_chaos_pucks = bt.BTVariable(np.array([]))
         self.known_chaos_pucks.set(known_chaos_pucks)
 
-        self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
+        # self.is_observed = bt.BTVariable(False)
 
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks, "main_robot")
@@ -51,6 +51,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
         self.nearest_PRElanding = bt.BTVariable()
 
         super(CollectChaos, self).__init__([
+            bt.ConditionNode(self.is_observed)
             bt.SequenceWithMemoryNode([
                 # 1st
                 bt.ActionNode(self.calculate_pucks_configuration),
@@ -130,6 +131,16 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
             ])
 	    ])
+
+    def is_observed(self):
+        rospy.loginfo("is observed?")
+        rospy.loginfo(self.collected_pucks.get())
+        if len(self.collected_pucks.get()) == 0:
+            rospy.loginfo('All pucks unloaded')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
+            return bt.Status.FAILED
 
     @staticmethod
     def get_color(puck):
@@ -252,8 +263,7 @@ class MainRobotBT(object):
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
         self.is_observed = bt.BTVariable(False)
-        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-
+        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
@@ -270,22 +280,19 @@ class MainRobotBT(object):
         #                                     [2.05, 1.05, 4, 1, 0, 0]])
 
         # purple
-        self.known_chaos_pucks = np.array([[0.95, 1.05, 1, 1, 0, 0],
-                                            [1, 1.1, 2, 0, 1, 0],
-                                            [1, 1, 3, 0, 0, 1],
-                                            [1.05, 1.05, 4, 1, 0, 0]])
-
-        # self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
+        # self.known_chaos_pucks = np.array([[0.95, 1.05, 1, 1, 0, 0],
+        #                                     [1, 1.1, 2, 0, 1, 0],
+        #                                     [1, 1, 3, 0, 0, 1],
+        #                                     [1.05, 1.05, 4, 1, 0, 0]])
 
         rospy.sleep(1)
         self.bt = bt.Root(
-                    CollectChaos(self.known_chaos_pucks,
+                    CollectChaos(self.known_chaos_pucks.get(),
                         "move_client"), action_clients={"move_client": self.move_client,
                                                         "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def pucks_callback(self, data):
-        self.is_observed.set(True)
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
         # green (0, 1, 0)
@@ -300,12 +307,18 @@ class MainRobotBT(object):
                                           marker.color.g,
                                           marker.color.b] for marker in data.markers]
 
-                new_observation_pucks = np.array(new_observation_pucks)
+                if len(new_observation_pucks) == 4:
+                    new_observation_pucks = np.array(new_observation_pucks)
 
-                self.known_chaos_pucks.set(new_observation_pucks)
-                rospy.loginfo("Got pucks observation:")
-                rospy.loginfo(self.known_chaos_pucks.get())
-                self.pucks_subscriber.unregister()
+                    self.known_chaos_pucks.set(new_observation_pucks)
+                    # self.is_observed.set(True)
+
+                    # self.collect_chaos.is_observed.set(True)  # find out if possible to do like this FIXME
+
+
+                    rospy.loginfo("Got pucks observation:")
+                    rospy.loginfo(self.known_chaos_pucks.get())
+                    self.pucks_subscriber.unregister()
 
             except Exception:  # FIXME
                 rospy.loginfo("list index out of range - no visible pucks on the field ")
