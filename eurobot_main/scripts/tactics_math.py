@@ -444,3 +444,97 @@ def parse_by_color(new_obs, known):
         list_of_pucks.extend(known)
     return list_of_pucks
 """
+
+    # def compare_to_update_or_ignore(self, new_observation):
+    #     """
+    #     Updates coordinates of the puck if camera sees it and is certain that it was moved
+    #
+    #     In a new list first puck may be absent for at least three reasons:
+    #     - it was collected by our robot
+    #     - it is not visible (but it's still there) either because of robot in the line of view or light conditions
+    #     - it was collected by opponent robot (and it's not there anymore)
+    #
+    #     Updating procedure for my chaos:
+    #     1) Parsing pucks to chaos collections
+    #     if we see every puck left in our chaos than simply update all
+    #     if we see less than calculated, than update only green and blue.
+    #     If we see only one red, it's hard to say which particularly it is, so update red pucks only if both are observed
+    #
+    #     :param new_observation: [(x, y, id, r, g, b), ...]
+    #     :return: [(x, y, id, r, g, b), ...]
+    #     """
+    #
+    #     my_chaos_new = self.my_chaos_pucks.get().copy()
+    #     opp_chaos_new = self.opponent_chaos_pucks.get().copy()
+    #
+    #     observed_my_chaos_collection = []
+    #     observed_opponent_chaos_collection = []
+    #     other_pucks = []
+    #     ref_colors = ['BLUNIUM', 'GREENIUM', 'REDIUM', 'REDIUM']
+    #     colors_of_my_observed_chaos = []
+    #     colors_of_opp_observed = []
+    #     colors_of_my_collected_chaos = []
+    #     colors_of_opp_chaos_collected_by_me = []
+    #
+    #     my_chaos_area = Polygon([self.my_chaos_area[0],
+    #                              self.my_chaos_area[1],
+    #                              self.my_chaos_area[2],
+    #                              self.my_chaos_area[3]])
+    #
+    #     opponent_chaos_area = Polygon([self.opponent_chaos_area[0],
+    #                                    self.opponent_chaos_area[1],
+    #                                    self.opponent_chaos_area[2],
+    #                                    self.opponent_chaos_area[3]])
+    #
+    #     # TODO change to list comprehension
+    #     # for puck in self.my_collected_chaos.get():
+    #     #     colors_of_my_collected_chaos.append(get_color(puck))
+    #
+    #     # TODO change to list comprehension
+    #     # for puck in self.opp_chaos_collected_me.get():
+    #     #     colors_of_opp_chaos_collected_by_me.append(get_color(puck))
+    #
+    #     for puck in new_observation:
+    #         unknown_puck = Point(puck[0], puck[1])
+    #         if unknown_puck.within(my_chaos_area):
+    #             observed_my_chaos_collection.append(puck)
+    #             colors_of_my_observed_chaos.append(get_color(puck))
+    #         elif unknown_puck.within(opponent_chaos_area):
+    #             observed_opponent_chaos_collection.append(puck)
+    #             colors_of_opp_observed.append(get_color(puck))
+    #         else:
+    #             other_pucks.append(puck)
+    #
+    #     # comparison_our = colors_of_my_observed_chaos[:]
+    #     # comparison_our.extend(colors_of_my_collected_chaos)
+    #
+    #     # comparison_opponent = colors_of_opp_observed[:]
+    #     # comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
+    #
+    #     print "MY_chaos_observed", sorted(colors_of_my_observed_chaos)
+    #     print "OPPONENT_chaos_observed", sorted(colors_of_opp_observed)
+    #
+    #     if len(observed_my_chaos_collection) == (4 - len(self.my_collected_chaos.get())):
+    #     #if sorted(comparison_our) == ref_colors:
+    #         print "my chaos, equal"
+    #         my_chaos_new = observed_my_chaos_collection
+    #     # else:
+    #     #     my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
+    #     #     print "my chaos, need to parse!"
+    #
+    #     if len(observed_opponent_chaos_collection) == (4 - len(self.opp_chaos_collected_me.get())):
+    #     #if sorted(comparison_our) == ref_colors:
+    #         print "opp_chaos, equal"
+    #         opp_chaos_new = observed_opponent_chaos_collection
+    #
+    #     # if sorted(comparison_opponent) == ref_colors:
+    #     #     print "opp_chaos, equal"
+    #     #     opp_chaos_new = observed_opponent_chaos_collection
+    #     # else:
+    #     #     opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
+    #     #     print "opp_chaos, need to parse!"
+    #
+    #     my_chaos_new = np.array(my_chaos_new)
+    #     opp_chaos_new = np.array(opp_chaos_new)
+    #
+    #     return my_chaos_new, opp_chaos_new

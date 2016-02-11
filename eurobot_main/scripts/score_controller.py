@@ -43,4 +43,3 @@ class ScoreController(object):
             rospy.loginfo('Pucks to unload: ' + str(self.collected_pucks.get().size) + " " + str(self.collected_pucks.get()))
             self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
-

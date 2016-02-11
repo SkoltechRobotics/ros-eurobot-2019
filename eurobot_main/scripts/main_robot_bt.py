@@ -18,19 +18,21 @@ from shapely.geometry.polygon import Polygon
 import threading
 
 
-class PucksSlave(object):
-    def __init__(self):
-        self.pucks = None
-        self.mutex = threading.Lock()
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+# class PucksSlave(object):
+#     def __init__(self):
+#         self.pucks = None
+#         self.mutex = threading.Lock()
+#         rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
 
-    def pucks_callback(self, data):
-        with self.mutex:
-            self.pucks = data
+#     def pucks_callback(self, data):
+#         # rospy.loginfo("pucks callback, get")
+#         # rospy.loginfo(data)
+#         with self.mutex:
+#             self.pucks = data
 
-    def get_pucks(self):
-        with self.mutex:
-            return self.pucks
+#     def get_pucks(self):
+#         with self.mutex:
+#             return self.pucks
 
 
 class MainRobotBT(object):
@@ -51,7 +53,7 @@ class MainRobotBT(object):
         self.bt = None
         self.bt_timer = None
 
-        self.pucks_slave = PucksSlave()
+        # self.pucks_slave = PucksSlave()
 
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
@@ -69,9 +71,9 @@ class MainRobotBT(object):
     def change_side(self, side):
 
         self.side_status = side
-        self.sberstr = SberStrategy(self.side_status, self.pucks_slave)  # FIXME: add second tree from SuddenBlind
-        self.suddenblind = SuddenBlind(self.side_status, self.pucks_slave)
-        self.testfield = TestField(self.side_status, self.pucks_slave)
+        self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
+        # self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
+        # self.testfield = TestField(self.side_status)  # , self.pucks_slave
 
         self.strategy = self.sberstr
 
@@ -82,10 +84,10 @@ class MainRobotBT(object):
             self.strategy = self.sberstr
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = self.suddenblind
+            # self.strategy = self.suddenblind
         elif num == 2:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = self.testfield
+            # self.strategy = self.testfield
 
     def timer_callback(self, event):
         status = self.bt.tick()
@@ -96,8 +98,8 @@ class MainRobotBT(object):
 
 
 class StrategyConfig(object):
-    def __init__(self, side, pucks_slave):
-        self.pucks_slave = pucks_slave
+    def __init__(self, side):  # pucks_slave
+        # self.pucks_slave = pucks_slave
 
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -293,20 +295,22 @@ class StrategyConfig(object):
                                             self.guard_chaos_loc[1],
                                             1.57 - self.sign * 0.785])  # y/p  0.78/2.35
 
-        self.blind_guard_chaos_finish = np.array([self.our_chaos_center[0] + self.sign * 0.23,
-                                                    self.our_chaos_center[1] - 0.15,
+        self.blind_guard_chaos_finish = np.array([self.guard_chaos_loc[0] + self.sign * 0.23,
+                                                    self.guard_chaos_loc[1] + 0.15,
                                                     self.guard_chaos_rotate[2]])
 
         self.starting_pos = np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                     0.45,
                                     1.57 + self.sign * 1.57])  # y/p 3.14 / 0
 
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+
         # TODO: pucks in front of starting cells are random, so while we aren't using camera
         #       will call them REDIUM  (it doesn't matter, because in this strategy we move them all to acc)
         #       It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
-    def parse_pucks(self):
-        data = self.pucks_slave.get_pucks()
+    def pucks_callback(self):  # parse_pucks
+        # data = self.pucks_slave.get_pucks()
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
         # green (0, 1, 0)
@@ -389,100 +393,6 @@ class StrategyConfig(object):
 
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
-
-    # def compare_to_update_or_ignore(self, new_observation):
-    #     """
-    #     Updates coordinates of the puck if camera sees it and is certain that it was moved
-    #
-    #     In a new list first puck may be absent for at least three reasons:
-    #     - it was collected by our robot
-    #     - it is not visible (but it's still there) either because of robot in the line of view or light conditions
-    #     - it was collected by opponent robot (and it's not there anymore)
-    #
-    #     Updating procedure for my chaos:
-    #     1) Parsing pucks to chaos collections
-    #     if we see every puck left in our chaos than simply update all
-    #     if we see less than calculated, than update only green and blue.
-    #     If we see only one red, it's hard to say which particularly it is, so update red pucks only if both are observed
-    #
-    #     :param new_observation: [(x, y, id, r, g, b), ...]
-    #     :return: [(x, y, id, r, g, b), ...]
-    #     """
-    #
-    #     my_chaos_new = self.my_chaos_pucks.get().copy()
-    #     opp_chaos_new = self.opponent_chaos_pucks.get().copy()
-    #
-    #     observed_my_chaos_collection = []
-    #     observed_opponent_chaos_collection = []
-    #     other_pucks = []
-    #     ref_colors = ['BLUNIUM', 'GREENIUM', 'REDIUM', 'REDIUM']
-    #     colors_of_my_observed_chaos = []
-    #     colors_of_opp_observed = []
-    #     colors_of_my_collected_chaos = []
-    #     colors_of_opp_chaos_collected_by_me = []
-    #
-    #     my_chaos_area = Polygon([self.my_chaos_area[0],
-    #                              self.my_chaos_area[1],
-    #                              self.my_chaos_area[2],
-    #                              self.my_chaos_area[3]])
-    #
-    #     opponent_chaos_area = Polygon([self.opponent_chaos_area[0],
-    #                                    self.opponent_chaos_area[1],
-    #                                    self.opponent_chaos_area[2],
-    #                                    self.opponent_chaos_area[3]])
-    #
-    #     # TODO change to list comprehension
-    #     # for puck in self.my_collected_chaos.get():
-    #     #     colors_of_my_collected_chaos.append(get_color(puck))
-    #
-    #     # TODO change to list comprehension
-    #     # for puck in self.opp_chaos_collected_me.get():
-    #     #     colors_of_opp_chaos_collected_by_me.append(get_color(puck))
-    #
-    #     for puck in new_observation:
-    #         unknown_puck = Point(puck[0], puck[1])
-    #         if unknown_puck.within(my_chaos_area):
-    #             observed_my_chaos_collection.append(puck)
-    #             colors_of_my_observed_chaos.append(get_color(puck))
-    #         elif unknown_puck.within(opponent_chaos_area):
-    #             observed_opponent_chaos_collection.append(puck)
-    #             colors_of_opp_observed.append(get_color(puck))
-    #         else:
-    #             other_pucks.append(puck)
-    #
-    #     # comparison_our = colors_of_my_observed_chaos[:]
-    #     # comparison_our.extend(colors_of_my_collected_chaos)
-    #
-    #     # comparison_opponent = colors_of_opp_observed[:]
-    #     # comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
-    #
-    #     print "MY_chaos_observed", sorted(colors_of_my_observed_chaos)
-    #     print "OPPONENT_chaos_observed", sorted(colors_of_opp_observed)
-    #
-    #     if len(observed_my_chaos_collection) == (4 - len(self.my_collected_chaos.get())):
-    #     #if sorted(comparison_our) == ref_colors:
-    #         print "my chaos, equal"
-    #         my_chaos_new = observed_my_chaos_collection
-    #     # else:
-    #     #     my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
-    #     #     print "my chaos, need to parse!"
-    #
-    #     if len(observed_opponent_chaos_collection) == (4 - len(self.opp_chaos_collected_me.get())):
-    #     #if sorted(comparison_our) == ref_colors:
-    #         print "opp_chaos, equal"
-    #         opp_chaos_new = observed_opponent_chaos_collection
-    #
-    #     # if sorted(comparison_opponent) == ref_colors:
-    #     #     print "opp_chaos, equal"
-    #     #     opp_chaos_new = observed_opponent_chaos_collection
-    #     # else:
-    #     #     opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
-    #     #     print "opp_chaos, need to parse!"
-    #
-    #     my_chaos_new = np.array(my_chaos_new)
-    #     opp_chaos_new = np.array(opp_chaos_new)
-    #
-    #     return my_chaos_new, opp_chaos_new
 
     def is_my_chaos_observed(self):
         # rospy.loginfo("is observed?")
@@ -744,8 +654,8 @@ class StrategyConfig(object):
 
 
 class SuddenBlind(StrategyConfig):
-    def __init__(self, side, pucks_slave):
-        super(SuddenBlind, self).__init__(side, pucks_slave)
+    def __init__(self, side):  # pucks_slave
+        super(SuddenBlind, self).__init__(side)  # pucks_slave
 
         collect_red_cell_puck = bt.SequenceWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
@@ -764,7 +674,7 @@ class SuddenBlind(StrategyConfig):
                                         ]),
                                         bt.ParallelWithMemoryNode([
                                             bt_ros.StopPump("manipulator_client"),
-                                            bt_ros.SetManipulatortoWall("manipulator_client"),
+                                            bt_ros.SetManipulatortoUp("manipulator_client"),
                                             bt.SequenceWithMemoryNode([
                                                 bt_ros.MoveLineToPoint(self.guard_chaos_loc, "move_client"),
                                                 bt_ros.MoveLineToPoint(self.guard_chaos_rotate, "move_client"),
@@ -787,7 +697,7 @@ class SuddenBlind(StrategyConfig):
                                                     bt.ParallelWithMemoryNode([
                                                         bt.SequenceWithMemoryNode([
                                                             bt_ros.CompleteCollectGround("manipulator_client"),
-                                                            bt_ros.SetManipulatortoWall("manipulator_client")
+                                                            bt_ros.SetManipulatortoUp("manipulator_client")
                                                         ]),
                                                         bt.SequenceWithMemoryNode([
                                                             bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
@@ -798,7 +708,7 @@ class SuddenBlind(StrategyConfig):
                                                 bt.ParallelWithMemoryNode([
                                                     bt.SequenceWithMemoryNode([
                                                         bt_ros.StopPump("manipulator_client"),
-                                                        bt_ros.SetManipulatortoWall("manipulator_client")
+                                                        bt_ros.SetManipulatortoUp("manipulator_client")
                                                     ]),
                                                     bt.SequenceWithMemoryNode([
                                                         bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
@@ -860,7 +770,7 @@ class SuddenBlind(StrategyConfig):
                                                             ]),
                                                             bt.SequenceWithMemoryNode([
                                                                 bt_ros.StopPump("manipulator_client"),
-                                                                bt_ros.SetManipulatortoWall("manipulator_client")
+                                                                bt_ros.SetManipulatortoUp("manipulator_client")
                                                             ])
                                                         ])
                                                     ], threshold=2),
@@ -882,7 +792,7 @@ class SuddenBlind(StrategyConfig):
                                                         ]),
                                                         bt.SequenceWithMemoryNode([
                                                             bt_ros.StopPump("manipulator_client"),
-                                                            bt_ros.SetManipulatortoWall("manipulator_client")
+                                                            bt_ros.SetManipulatortoUp("manipulator_client")
                                                         ])
                                                     ])
                                                 ], threshold=2),
@@ -907,7 +817,7 @@ class SuddenBlind(StrategyConfig):
                                                         ]),
                                                         bt.ParallelWithMemoryNode([
                                                             bt_ros.StopPump("manipulator_client"),
-                                                            bt_ros.SetManipulatortoWall("manipulator_client"),
+                                                            bt_ros.SetManipulatortoUp("manipulator_client"),
                                                             bt.SequenceWithMemoryNode([
                                                                 bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                                                                 bt_ros.MoveToVariable(self.closest_landing, "move_client")
@@ -935,7 +845,7 @@ class SuddenBlind(StrategyConfig):
                                                                         ]),
                                                                         bt.SequenceWithMemoryNode([
                                                                             bt_ros.StopPump("manipulator_client"),
-                                                                            bt_ros.SetManipulatortoWall("manipulator_client")
+                                                                            bt_ros.SetManipulatortoUp("manipulator_client")
                                                                         ])
                                                                     ])
                                                                 ], threshold=2),
@@ -1281,11 +1191,12 @@ class SuddenBlind(StrategyConfig):
                                 # move_to_opp_chaos_while_taking_red_collision,
                                 collect_chaos  # FIXME
                             ]),
-                            bt.SequenceWithMemoryNode([
-                                collect_red_cell_puck,
-                                blind_move_chaos_center_collect,
-                                collect_green_cell_puck
-                            ])
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # bt.SequenceWithMemoryNode([
+                            #     collect_red_cell_puck,
+                            #     blind_move_chaos_center_collect,
+                            #     collect_green_cell_puck
+                            # ])
                         ]),
 
                         push_nose_blunium,
@@ -1323,9 +1234,9 @@ class SuddenBlind(StrategyConfig):
         #             ])
 
 
-class SberStrategy(StrategyConfig):
-    def __init__(self, side, pucks_slave):
-        super(SberStrategy, self).__init__(side, pucks_slave)
+class SberStrategy(StrategyConfig):  # pucks_slave
+    def __init__(self, side):
+        super(SberStrategy, self).__init__(side)  # pucks_slave
 
         move_to_guard_zone = bt.SequenceWithMemoryNode([
                                 bt.ParallelWithMemoryNode([
@@ -1526,8 +1437,8 @@ class SberStrategy(StrategyConfig):
                                 bt.ConditionNode(self.is_my_chaos_observed),
                                 move_to_opp_chaos
                             ]),
-                            # bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            move_to_guard_zone
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # move_to_guard_zone
                         ]),
 
                         bt.FallbackWithMemoryNode([
@@ -1535,8 +1446,8 @@ class SberStrategy(StrategyConfig):
                                 bt.ConditionNode(self.is_my_chaos_observed),
                                 collect_chaos
                             ]),
-                            # bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            move_home
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                            # move_home
                         ]),
 
                         finish_chaos_push_nose_blunium,
@@ -1549,8 +1460,8 @@ class SberStrategy(StrategyConfig):
 
 
 class TestField(StrategyConfig):
-    def __init__(self, side, pucks_slave):
-        super(TestField, self).__init__(side, pucks_slave)
+    def __init__(self, side):  # pucks_slave
+        super(TestField, self).__init__(side)  # pucks_slave
 
         collect_red_cell_puck = bt.SequenceWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
@@ -1564,7 +1475,7 @@ class TestField(StrategyConfig):
                                             bt_ros.StopPump("manipulator_client"),
                                             bt_ros.SetManipulatortoWall("manipulator_client"),
                                         ], threshold=2),
-                                    ]),
+                                    ])
                                 ])
 
         collect_green_cell_puck2 = bt.SequenceWithMemoryNode([
@@ -1578,11 +1489,11 @@ class TestField(StrategyConfig):
                                             bt.SequenceWithMemoryNode([
                                                 bt_ros.StartCollectGroundCheck("manipulator_client"),
                                                 bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
-                                                bt_ros.CompleteCollectGround("manipulator_client"),
-                                                ], threshold=2),
+                                                bt_ros.CompleteCollectGround("manipulator_client")
                                             ]),
-                                            bt_ros.StopPump("manipulator_client"),
-                                        ]),
+                                            bt_ros.StopPump("manipulator_client")
+                                        ])
+                                    ])
 
         collect_chaos = bt.SequenceWithMemoryNode([
 

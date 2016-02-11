@@ -337,6 +337,8 @@ class MotionPlannerNode:
             delta_next_point = p[path_point + 1] - p[path_point]
             delta_next_point[2] = wrap_angle(delta_next_point[2])
             t = max(np.abs(delta_next_point / self.velocity_vector))
+            if t == 0:
+                t = 1
         rospy.loginfo("T %s", t)
         delta_path_point = p[path_point] - point
         delta_path_point[2] = wrap_angle(delta_path_point[2])
