@@ -33,7 +33,7 @@ class MotionPlannerNode:
         self.exp_const_move_to_point = rospy.get_param("exp_const_move_to_point")
         self.e_const = self.exp_const
         self.velocity_vector = np.array(rospy.get_param("velocity_vector"))
-        self.acceleration_vector = self.velocity_vector * 4 * self.velocity_vector[2]
+        self.acceleration_vector = self.velocity_vector * 3 * self.velocity_vector[2]
         self.k_linear_wp = rospy.get_param("k_linear_wp")
         self.k_linear_vp = rospy.get_param("k_linear_wp")
         self.RATE = float(rospy.get_param("RATE"))
@@ -474,7 +474,8 @@ class MotionPlannerNode:
             self.collision_avoidance.set_collision_area(obstacle_polygon)
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
             removed_area_ind = self.coords[:2] - obstacle_point
-            semi_ind = np.argmin(np.abs(removed_area_ind))
+            '''
+            semi_ind = np.argmax(np.abs(removed_area_ind))
             if semi_ind == 0:
                 if removed_area_ind[semi_ind] <= 0:
                     robot_polygon[0, 0] = obstacle_polygon[0, 0]
@@ -489,6 +490,7 @@ class MotionPlannerNode:
                 else:
                     robot_polygon[2, 1] = obstacle_polygon[2, 1]
                     robot_polygon[3, 1] = obstacle_polygon[3, 1]
+            '''
             rospy.loginfo("Obstacle polygon %s", obstacle_polygon)
             rospy.loginfo("Robot polygon %s", robot_polygon)
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)

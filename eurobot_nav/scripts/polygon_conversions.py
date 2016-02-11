@@ -5,6 +5,7 @@ import numpy as np
 
 
 def list_from_polygon(polygon):
+    print (type(polygon))
     if type(polygon) is Polygon:
         coords = polygon.exterior.coords.xy
         x = coords[0]
@@ -13,7 +14,10 @@ def list_from_polygon(polygon):
         for i in range(len(x) - 1):
             polygon.append([x[i], y[i]])
     else:
-        coords = polygon.coords.xy
+        if type(polygon) is MultiPolygon:
+            coords = polygon[0].exterior.coords.xy
+        else:
+            coords = polygon.coords.xy
         x = coords[0]
         y = coords[1]
         polygon = []
