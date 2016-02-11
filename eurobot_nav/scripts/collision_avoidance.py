@@ -29,7 +29,7 @@ class CollisionAvoidance(object):
         self.resolution = 0.01
         self.map = np.zeros((self.length_y, self.length_x))
         self.map[144:200, 35:265] = 100
-        self.map[0:30, 45:255] = 100
+        self.map[0:12, 45:255] = 100
         self.map[192:200, 3:43] = 100
         self.map[192:200, 257:298] = 100
         self.map[129:200, 143:157] = 100
