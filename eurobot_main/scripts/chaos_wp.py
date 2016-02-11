@@ -42,7 +42,7 @@ class CollectChaos(bt.SequenceWithMemoryNode):
         self.starting_pos = np.array([0.3, 0.45, 0])
         self.starting_pos_var = bt.BTVariable(self.starting_pos)
 
-        self.guard_chaos_point = np.array([0.85, 0.85, 0.78])  # FIXME move to get_param
+        self.guard_chaos_point = np.array([0.6, 0.6, 0.78])  # FIXME move to get_param
         self.guard_chaos_point = bt.BTVariable(self.guard_chaos_point)
 
         self.closest_landing = bt.BTVariable()
@@ -60,7 +60,7 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                 # ], threshold=2),
 
                 bt_ros.MoveToVariable(self.guard_chaos_point, "move_client"),
-                # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                 bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
