@@ -74,7 +74,7 @@ class MainRobotBT(object):
         # self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
         # self.interviene = SuddenBlind(self.side_status)  # , self.pucks_slave
         # self.testfield = TestField(self.side_status)  # , self.pucks_slave
-        self.russtr = RusStr(self.side_status)
+        self.russtr = TestStr(self.side_status)
         # self.safe = MadSafe(self.side_status)
 
         self.strategy = self.russtr
@@ -1023,158 +1023,158 @@ class RusStr(StrategyConfig):
             final_search_unload2
         ])
 
-# # TEST STRATEGY
-# class TestStr(StrategyConfig):
-#     def __init__(self, side):  # pucks_slave
-#         super(TestStr, self).__init__(side)  # pucks_slave
+# TEST STRATEGY
+class TestStr(StrategyConfig):
+    def __init__(self, side):  # pucks_slave
+        super(TestStr, self).__init__(side)  # pucks_slave
 
-#         if side == SideStatus.PURPLE:
-#             param = "yellow_side"
-#             side_sign = -1
-#         elif side == SideStatus.YELLOW:
-#             param = "purple_side"
-#             side_sign = 1
+        if side == SideStatus.PURPLE:
+            param = "yellow_side"
+            side_sign = -1
+        elif side == SideStatus.YELLOW:
+            param = "purple_side"
+            side_sign = 1
 
-#         self.first_puck = np.array(rospy.get_param("secondary_robot/" + param + "/first_puck_zone"))
-#         self.second_puck = np.array(rospy.get_param("secondary_robot/" + param + "/second_puck_zone"))
-#         self.third_puck = np.array(rospy.get_param("secondary_robot/" + param + "/third_puck_zone"))
-#         self.forth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/forth_puck_zone"))
-#         self.fifth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/fifth_puck_zone"))
-#         self.scales_zone = np.array(rospy.get_param("secondary_robot/" + param + "/scales_zone"))
-#         self.start_zone = np.array(rospy.get_param("secondary_robot/" + param + "/start_zone"))
-#         self.sixth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/sixth_puck_zone"))
-#         self.seventh_puck = np.array(rospy.get_param("secondary_robot/" + param + "/seventh_puck_zone"))
-#         self.eighth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/eighth_puck_zone"))
-#         self.nineth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/nineth_puck_zone"))
-#         self.start_zone = np.array(rospy.get_param("secondary_robot/" + param + "/start_zone"))
-#         self.redium_zone_first = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_first"))
-#         self.redium_zone_second = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_second"))
-#         self.redium_zone_third = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_third"))
-#         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
-#         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
-
-
-#         move_to_opp_chaos_while_taking_red = bt.SequenceWithMemoryNode([
-
-#                                                 bt.ParallelWithMemoryNode([
-#                                                     bt_ros.MoveLineToPoint(self.first_puck_landing_far, "move_client"),
-#                                                     bt.FallbackWithMemoryNode([
-#                                                         bt.SequenceWithMemoryNode([
-#                                                             bt_ros.DelayStartCollectGroundCheck("manipulator_client"),
-#                                                             bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[0]))),
-#                                                             bt_ros.CompleteCollectGround("manipulator_client"),
-#                                                         ]),
-#                                                         bt.SequenceWithMemoryNode([
-#                                                             bt_ros.StopPump("manipulator_client"),
-#                                                             bt_ros.SetManipulatortoUp("manipulator_client")
-#                                                         ])
-#                                                     ])
-#                                                 ], threshold=2),
-
-#                                                 bt.SequenceWithMemoryNode([
-#                                                     bt.ActionNode(self.calculate_pucks_configuration),
-#                                                     bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
-#                                                     bt.ActionNode(self.set_closest_chaos_landing),
-#                                                     bt.ActionNode(self.set_prelanding_to_chaos_landing),
-#                                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
-#                                                     # bt.ActionNode(self.calculate_pucks_configuration),
-
-#                                                     bt.FallbackWithMemoryNode([
-#                                                         bt.SequenceWithMemoryNode([
-#                                                             bt_ros.StartCollectGroundCheck("manipulator_client"),
-#                                                             bt.ActionNode(lambda: self.update_chaos_pucks(side="opponent")),
-#                                                             bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-#                                                             bt.ParallelWithMemoryNode([
-#                                                                 bt_ros.CompleteCollectGround("manipulator_client"),
-#                                                                 bt.SequenceWithMemoryNode([
-#                                                                     bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-#                                                                     bt_ros.MoveToVariable(self.closest_landing, "move_client")
-#                                                                 ])
-#                                                             ], threshold=2),
-#                                                         ]),
-#                                                         bt.ParallelWithMemoryNode([
-#                                                             bt_ros.SetManipulatortoUp("manipulator_client"),
-#                                                             bt.SequenceWithMemoryNode([
-#                                                                 bt_ros.StopPump("manipulator_client"),
-#                                                                 bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-#                                                                 bt_ros.MoveToVariable(self.closest_landing, "move_client")
-#                                                             ])
-#                                                         ], threshold=2)
-#                                                     ])
-#                                                 ])
-#                                             ])
-
-#         first_puck = bt.FallbackWithMemoryNode([
-#             bt.SequenceWithMemoryNode([
-#                 bt.ParallelWithMemoryNode([
-#                     bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.05, 0), "move_client"),
-#                     bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.15, 0), "manipulator_client")
-#                 ], threshold=2),
-#                 bt_ros.StartPump("manipulator_client"),
-#                 bt.ParallelWithMemoryNode([
-#                     bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
-#                     bt_ros.CheckLimitSwitchInf("manipulator_client")
-#                 ], threshold=1),
-#                 bt_ros.TryToPumpWallPuck(self.fifth_puck),
-#                 bt_ros.CompleteTakePuckAndMoveToNext(self.fifth_puck, self.forth_puck, self.score_master, "GREENIUM")
-#             ]),
-#             bt_ros.MoveToNextPuckIfFailedToScales(self.fifth_puck, self.forth_puck)
-#         ])
-
-#         second_puck = bt.FallbackWithMemoryNode([
-#             bt.SequenceWithMemoryNode([
-#                 bt_ros.SetToWall_ifReachedGoal(self.forth_puck + (0, -0.15, 0), "manipulator_client"),
-#                 bt_ros.StartPump("manipulator_client"),
-#                 bt.ParallelWithMemoryNode([
-#                     bt_ros.MoveLineToPoint(self.forth_puck, "move_client"),
-#                     bt_ros.CheckLimitSwitchInf("manipulator_client")
-#                 ], threshold=1),
-#                 bt_ros.TryToPumpWallPuck(self.forth_puck),
-#                 bt_ros.CompleteTakePuckAndMoveToNext(self.forth_puck, self.third_puck, self.score_master, "BLUNIUM")
-#             ]),
-#             bt_ros.MoveToNextPuckIfFailedToScales(self.forth_puck, self.third_puck)
-#         ])
-
-#         third_puck = bt.FallbackWithMemoryNode([
-#             bt.SequenceWithMemoryNode([
-#                 bt_ros.StartPump("manipulator_client"),
-#                 bt.ParallelWithMemoryNode([
-#                     bt_ros.MoveLineToPoint(self.third_puck, "move_client"),
-#                     bt_ros.CheckLimitSwitchInf("manipulator_client")
-#                 ], threshold=1),
-#                 bt_ros.TryToPumpWallPuck(self.third_puck),
-#                 bt.ParallelWithMemoryNode([
-#                     bt.SequenceWithMemoryNode([
-#                         bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
-#                     ]),
-#                     bt.SequenceWithMemoryNode([
-#                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
-#                         bt.ActionNode(lambda: self.score_master.add("GREENIUM"))
-#                     ])
-#                 ], threshold=2),
-#                 bt_ros.StopPump("manipulator_client"),
-#                 bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
-#             ]),
-#             bt.SequenceWithMemoryNode([
-#                 bt_ros.StopPump("manipulator_client"),
-#                 bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
-#                 # bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
-#                 # bt.ParallelWithMemoryNode([
-#                 #     bt_ros.MoveLineToPoint(self.fifth_puck + (side_sign*0.2, -0.1, 0), "move_client"),
-#                 #     bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (side_sign*0.2, -0.15, 0), "manipulator_client")
-#                 # ], threshold = 2)
-#             ])
-
-#         ])
+        self.first_puck = np.array(rospy.get_param("secondary_robot/" + param + "/first_puck_zone"))
+        self.second_puck = np.array(rospy.get_param("secondary_robot/" + param + "/second_puck_zone"))
+        self.third_puck = np.array(rospy.get_param("secondary_robot/" + param + "/third_puck_zone"))
+        self.forth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/forth_puck_zone"))
+        self.fifth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/fifth_puck_zone"))
+        self.scales_zone = np.array(rospy.get_param("secondary_robot/" + param + "/scales_zone"))
+        self.start_zone = np.array(rospy.get_param("secondary_robot/" + param + "/start_zone"))
+        self.sixth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/sixth_puck_zone"))
+        self.seventh_puck = np.array(rospy.get_param("secondary_robot/" + param + "/seventh_puck_zone"))
+        self.eighth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/eighth_puck_zone"))
+        self.nineth_puck = np.array(rospy.get_param("secondary_robot/" + param + "/nineth_puck_zone"))
+        self.start_zone = np.array(rospy.get_param("secondary_robot/" + param + "/start_zone"))
+        self.redium_zone_first = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_first"))
+        self.redium_zone_second = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_second"))
+        self.redium_zone_third = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_third"))
+        self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
+        self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
 
 
-#         self.tree = bt.SequenceWithMemoryNode([
-#             bt.ActionNode(self.update_robot_status),
-#                 move_to_opp_chaos_while_taking_red,
-#                 first_puck,
-#                 second_puck,
-#                 third_puck
-#         ])
+        move_to_opp_chaos_while_taking_red = bt.SequenceWithMemoryNode([
+
+                                                bt.ParallelWithMemoryNode([
+                                                    bt_ros.MoveLineToPoint(self.first_puck_landing_far, "move_client"),
+                                                    bt.FallbackWithMemoryNode([
+                                                        bt.SequenceWithMemoryNode([
+                                                            bt_ros.DelayStartCollectGroundCheck("manipulator_client"),
+                                                            bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[0]))),
+                                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                                        ]),
+                                                        bt.SequenceWithMemoryNode([
+                                                            bt_ros.StopPump("manipulator_client"),
+                                                            bt_ros.SetManipulatortoUp("manipulator_client")
+                                                        ])
+                                                    ])
+                                                ], threshold=2),
+
+                                                bt.SequenceWithMemoryNode([
+                                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                                    bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
+                                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
+                                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                                    # bt.ActionNode(self.calculate_pucks_configuration),
+
+                                                    bt.FallbackWithMemoryNode([
+                                                        bt.SequenceWithMemoryNode([
+                                                            bt_ros.StartCollectGroundCheck("manipulator_client"),
+                                                            bt.ActionNode(lambda: self.update_chaos_pucks(side="opponent")),
+                                                            bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                                                            bt.ParallelWithMemoryNode([
+                                                                bt_ros.CompleteCollectGround("manipulator_client"),
+                                                                bt.SequenceWithMemoryNode([
+                                                                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                                    bt_ros.MoveToVariable(self.closest_landing, "move_client")
+                                                                ])
+                                                            ], threshold=2),
+                                                        ]),
+                                                        bt.ParallelWithMemoryNode([
+                                                            bt_ros.SetManipulatortoUp("manipulator_client"),
+                                                            bt.SequenceWithMemoryNode([
+                                                                bt_ros.StopPump("manipulator_client"),
+                                                                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                                                bt_ros.MoveToVariable(self.closest_landing, "move_client")
+                                                            ])
+                                                        ], threshold=2)
+                                                    ])
+                                                ])
+                                            ])
+
+        first_puck = bt.FallbackWithMemoryNode([
+            bt.SequenceWithMemoryNode([
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.05, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.15, 0), "manipulator_client")
+                ], threshold=2),
+                bt_ros.StartPump("manipulator_client"),
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
+                    bt_ros.CheckLimitSwitchInf("manipulator_client")
+                ], threshold=1),
+                bt_ros.TryToPumpWallPuck(self.fifth_puck),
+                bt_ros.CompleteTakePuckAndMoveToNext(self.fifth_puck, self.forth_puck, self.score_master, "GREENIUM")
+            ]),
+            bt_ros.MoveToNextPuckIfFailedToScales(self.fifth_puck, self.forth_puck)
+        ])
+
+        second_puck = bt.FallbackWithMemoryNode([
+            bt.SequenceWithMemoryNode([
+                bt_ros.SetToWall_ifReachedGoal(self.forth_puck + (0, -0.15, 0), "manipulator_client"),
+                bt_ros.StartPump("manipulator_client"),
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.forth_puck, "move_client"),
+                    bt_ros.CheckLimitSwitchInf("manipulator_client")
+                ], threshold=1),
+                bt_ros.TryToPumpWallPuck(self.forth_puck),
+                bt_ros.CompleteTakePuckAndMoveToNext(self.forth_puck, self.third_puck, self.score_master, "BLUNIUM")
+            ]),
+            bt_ros.MoveToNextPuckIfFailedToScales(self.forth_puck, self.third_puck)
+        ])
+
+        third_puck = bt.FallbackWithMemoryNode([
+            bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.third_puck, "move_client"),
+                    bt_ros.CheckLimitSwitchInf("manipulator_client")
+                ], threshold=1),
+                bt_ros.TryToPumpWallPuck(self.third_puck),
+                bt.ParallelWithMemoryNode([
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                    ]),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.CompleteTakeWallPuck("manipulator_client"),
+                        bt.ActionNode(lambda: self.score_master.add("GREENIUM"))
+                    ])
+                ], threshold=2),
+                bt_ros.StopPump("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
+            ]),
+            bt.SequenceWithMemoryNode([
+                bt_ros.StopPump("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
+                # bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                # bt.ParallelWithMemoryNode([
+                #     bt_ros.MoveLineToPoint(self.fifth_puck + (side_sign*0.2, -0.1, 0), "move_client"),
+                #     bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (side_sign*0.2, -0.15, 0), "manipulator_client")
+                # ], threshold = 2)
+            ])
+
+        ])
+
+
+        self.tree = bt.SequenceWithMemoryNode([
+            bt.ActionNode(self.update_robot_status),
+                move_to_opp_chaos_while_taking_red,
+                first_puck,
+                second_puck,
+                third_puck
+        ])
 
 
 class MadSafe(StrategyConfig):
