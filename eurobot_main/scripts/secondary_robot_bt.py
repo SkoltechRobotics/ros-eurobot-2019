@@ -65,7 +65,9 @@ class SecondaryRobotBT(object):
             self.yellow_strategy = secondary_strategy.HomoStrategy(SideStatus.YELLOW)
         elif num == 2:
             print("CHANGE STRATEGY TO " + str(num))
-            pass
+            self.purple_strategy = secondary_strategy.SemaPidrStrategy(SideStatus.PURPLE)
+            self.yellow_strategy = secondary_strategy.SemaPidrStrategy(SideStatus.YELLOW)
+            
         if self.side_status == SideStatus.PURPLE:
             self.strategy = self.purple_strategy
         elif self.side_status == SideStatus.YELLOW:
