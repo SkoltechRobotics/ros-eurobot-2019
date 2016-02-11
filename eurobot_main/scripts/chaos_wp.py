@@ -25,7 +25,7 @@ class CollectChaos(bt.FallbackNode):
         self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
 
         self.collected_pucks = bt.BTVariable(np.array([]))
-        self.score_master = ScoreController(self.collected_pucks)
+        self.score_master = ScoreController(self.collected_pucks, "main_robot")
 
         self.waypoints = bt.BTVariable(np.array([]))
         self.incoming_puck_color = bt.BTVariable(None)
@@ -44,42 +44,6 @@ class CollectChaos(bt.FallbackNode):
         # Init useful child nodes
         self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
         self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
-
-        # Make BT
-        # super(CollectChaos, self).__init__([
-        #     bt.ConditionNode(self.is_chaos_empty),
-        #     bt.SequenceNode([
-        #         bt.SequenceWithMemoryNode([
-        #             bt.ActionNode(self.calculate_pucks_configuration),
-        #             bt.ActionNode(self.calculate_closest_landing),
-        #             bt.ActionNode(self.calculate_prelanding),
-        #
-        #             bt.FallbackNode([
-        #                 bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
-        #                 bt.SequenceNode([
-        #                     self.choose_new_waypoint_latch,
-        #                     self.move_to_waypoint_node,
-        #                     bt.ActionNode(self.remove_waypoint),
-        #                     bt.ActionNode(self.choose_new_waypoint_latch.reset),
-        #                     bt.ConditionNode(lambda: bt.Status.RUNNING)
-        #                 ])
-        #             ]),
-        #             bt_ros.BlindStartCollectGround("manipulator_client"),
-        #             bt.ActionNode(self.update_chaos_pucks),
-        #             bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #
-        #
-        #         ]),
-        #         # bt_ros.SetManipulatortoWall("manipulator_client"),
-        #         # bt_ros.SetManipulatortoUp("manipulator_client"),
-        #         # # bt.ActionNode(self.calculate_drive_back_point),
-        #
-        #         # bt.ActionNode(self.update_chaos_pucks),
-        #
-        #         bt.ConditionNode(lambda: bt.Status.RUNNING)
-        #     ])
-        # ])
 
         super(CollectChaos, self).__init__([
             bt.ConditionNode(self.is_chaos_empty),
@@ -361,7 +325,7 @@ class MainRobotBT(object):
                                             [2, 1, 3, 0, 0, 1],
                                             [2.05, 1.05, 4, 1, 0, 0]])
 
-        self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
+        self.known_chaos_pucks = self.known_chaos_pucks
 
         self.starting_point_chaos = np.array([0.65, 1, 0])  # yelloo
         self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
