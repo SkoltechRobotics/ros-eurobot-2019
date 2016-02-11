@@ -284,19 +284,20 @@ class ReflectedVovanStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
         self.reflected_last_zone = np.array(rospy.get_param("secondary_robot/" + param + "/reflected_last_zone"))
+        self.ground_puck = np.array(rospy.get_param("secondary_robot/" + param + "/ground_puck"))
 
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.DelayBlindStartCollectGround("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.ground_puck, "move_client"),
+                        bt_ros.StartCollectGround("manipulator_client"), 
                         bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
                         bt_ros.SetManipulatortoWall("manipulator_client")
-                    ]),
-                    bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
+                    
                     # bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
-                ], threshold=2),
+                ]),
+                bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
                 bt_ros.StartPump("manipulator_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
