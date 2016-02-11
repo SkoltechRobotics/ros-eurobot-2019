@@ -891,8 +891,8 @@ class VovanStrategy(Strategy):
             unload,
             sixth_puck,
             seventh_puck,
-            eighth_puck,
-            nineth_puck])
+            eighth_puck])
+            # nineth_puck])
 
 
 class DefenseStrategy(Strategy):

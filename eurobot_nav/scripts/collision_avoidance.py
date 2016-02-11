@@ -104,7 +104,7 @@ class CollisionAvoidance(object):
 
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
-        #rospy.loginfo("Proximity data %s", distances)
+        rospy.loginfo("Proximity data %s", distances)
         distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
@@ -154,8 +154,8 @@ class CollisionAvoidance(object):
         obstacle_points_sensor = self.filter_points(self.obstacle_points_sensor.copy(), coords.copy(), goal.copy())
         self.num_lidar_collision_points = obstacle_points_lidar.shape[0]
         self.num_sensor_collision_points = obstacle_points_sensor.shape[0]
-        #rospy.loginfo("Lidar obstacle points num %s", self.num_lidar_collision_points)
-        #rospy.loginfo("Lidar sensor points num %s", self.num_sensor_collision_points)
+        rospy.loginfo("Lidar obstacle points num %s", self.num_lidar_collision_points)
+        rospy.loginfo("Lidar sensor points num %s", self.num_sensor_collision_points)
         self.obstacle_points = np.concatenate((obstacle_points_lidar.copy(), obstacle_points_sensor.copy()), axis=0)
         self.set_collision_point(self.obstacle_points)
 
@@ -173,17 +173,18 @@ class CollisionAvoidance(object):
         p_lidar = 1
         p_sensor = 1
         self.get_collision_area(coords, goal)
-        #rospy.loginfo(self.obstacle_points)
+        rospy.loginfo("COllision points")
+        rospy.loginfo(self.obstacle_points)
         if self.obstacle_points.shape[0] > 0:
             distances = np.linalg.norm(coords[:2] - self.obstacle_points, axis=1)
             min_ind = np.argmin(distances)
             min_dist_to_obstacle = distances[min_ind]
             obstacle_point = self.obstacle_points[min_ind]
-            #rospy.loginfo("dist %s", min_dist_to_obstacle)
+            rospy.loginfo("dist %s", min_dist_to_obstacle)
             if min_ind < self.num_lidar_collision_points:
-                #rospy.loginfo("Lidar obstacle %s", obstacle_point)
+                rospy.loginfo("Lidar obstacle %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_lidar:
-                    #rospy.loginfo("COLLISION")
+                    rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.7:
@@ -191,9 +192,9 @@ class CollisionAvoidance(object):
                     else:
                         p_lidar = min_dist_to_obstacle/0.7
             else:
-                #rospy.loginfo("Sensor obstacle %s", obstacle_point)
+                rospy.loginfo("Sensor obstacle %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_sensor:
-                    #rospy.loginfo("COLLISION")
+                    rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.4:
