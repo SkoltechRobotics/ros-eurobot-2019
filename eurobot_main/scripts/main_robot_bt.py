@@ -47,25 +47,16 @@ class MainRobotBT(object):
 
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
-    # def change_side(self, side):
-    #     if side == SideStatus.PURPLE:
-    #         self.strategy = self.purple_strategy
-    #     elif side == SideStatus.YELLOW:
-    #         self.strategy = self.yellow_strategy
-    #     else:
-    #         self.strategy = None
-    #     self.side_status = side
-
     def change_side(self, side):
-        if side == SideStatus.PURPLE:
-            self.strategy_config = Strategy(SideStatus.PURPLE)
-        elif side == SideStatus.YELLOW:
-            self.strategy_config = Strategy(SideStatus.YELLOW)
-        else:
-            self.strategy_config = None
+        # if side == SideStatus.PURPLE:
+        #     self.strategy_config = Strategy(SideStatus.PURPLE)
+        # elif side == SideStatus.YELLOW:
+        #     self.strategy_config = Strategy(SideStatus.YELLOW)
+        # else:
+        #     self.strategy_config = None
+        
         self.side_status = side
-
-        # self.strategy = OptimalStrategy()
+        # self.strategy = OptimalStrategy(self.side_status)
         self.strategy = BlindStrategy(self.side_status)
 
     def timer_callback(self, event):
@@ -86,13 +77,13 @@ class Strategy(object):
         self.robot_name = rospy.get_param("robot_name")
 
         # self.sign = 1
-        # self.param = rospy.get_param("start_side")
+        # self.color_side = rospy.get_param("start_side")
 
         if side == SideStatus.PURPLE:
-            self.param = "purple_side"
+            self.color_side = "purple_side"
             self.sign = -1
         elif side == SideStatus.YELLOW:
-            self.param = "yellow_side"
+            self.color_side = "yellow_side"
             self.sign = 1
 
         self.VPAD = rospy.get_param("vertical_pucks_approach_dist")
@@ -112,11 +103,11 @@ class Strategy(object):
         self.main_coords = None
         self.score_master = ScoreController(self.collected_pucks, self.robot_name)
 
-        self.red_cell_puck = rospy.get_param(self.robot_name + "/" + self.param + "/red_cell_puck")
-        self.blunium = rospy.get_param(self.robot_name + "/" + self.param + "/blunium")
-        self.goldenium = rospy.get_param(self.robot_name + "/" + self.param + "/goldenium")
-        self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.param + "/scales_area"))
-        self.chaos_center = rospy.get_param(self.robot_name + "/" + self.param + "/chaos_center")
+        self.red_cell_puck = rospy.get_param(self.robot_name + "/" + self.color_side + "/red_cell_puck")
+        self.blunium = rospy.get_param(self.robot_name + "/" + self.color_side + "/blunium")
+        self.goldenium = rospy.get_param(self.robot_name + "/" + self.color_side + "/goldenium")
+        self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.color_side + "/scales_area"))
+        self.chaos_center = rospy.get_param(self.robot_name + "/" + self.color_side + "/chaos_center")
 
         self.first_puck_landing = np.array([self.red_cell_puck[0] + self.sign * self.HPAD - self.sign * self.delta,
                                             self.red_cell_puck[1],
@@ -203,8 +194,6 @@ class Strategy(object):
         #       It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-        # rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
-        # rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
     def pucks_callback(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
@@ -287,8 +276,6 @@ class Strategy(object):
             rospy.sleep(5)
             return bt.Status.SUCCESS
         else:
-            print("got coords in condition:")
-            print(self.secondary_coords)
             if polygon.contains(point):
                 rospy.loginfo('Landing busy')
                 return bt.Status.RUNNING
