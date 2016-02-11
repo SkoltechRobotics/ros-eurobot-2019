@@ -226,7 +226,7 @@ class SemaPidrStrategy(Strategy):
                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.1, 0), "move_client"),
                 bt_ros.CompleteTakeWallPuck("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.redium_zone_third + (-0.1, 0, 2.08), "move_client")
+                bt_ros.MoveLineToPoint(self.redium_zone_third + (0.1, 0, 2.08), "move_client")
             ])
         ])
 
@@ -234,6 +234,7 @@ class SemaPidrStrategy(Strategy):
             sixth_puck,
             seventh_puck,
             eighth_puck,
+            bt_ros.StepperUp("manipulator_client"),
             unload
         ])
 
