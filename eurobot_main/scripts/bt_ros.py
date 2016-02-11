@@ -582,3 +582,19 @@ class MoveToVariable(bt.SequenceNode):
 
     def set_command(self):
         self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(self.goal.get()))
+
+
+class ArcMoveToVariable(bt.SequenceNode):
+    def __init__(self, bt_var, action_client_id):
+        self.goal = bt_var
+        self.arc_move_to_waypoint_node = ActionClientNode("move_arc 0 0 0", action_client_id, name="move_to_waypoint")
+        self.set_command_latch = bt.Latch(bt.ActionNode(self.set_command))
+
+        super(ArcMoveToVariable, self).__init__([
+            bt.ConditionNode(lambda: bt.Status.SUCCESS if np.all(self.goal.get()[:2] >= 0) else bt.Status.FAILED),
+            self.set_command_latch,
+            self.arc_move_to_waypoint_node
+        ])
+
+    def set_command(self):
+        self.arc_move_to_waypoint_node.cmd.set("move_arc %f %f %f" % tuple(self.goal.get()))

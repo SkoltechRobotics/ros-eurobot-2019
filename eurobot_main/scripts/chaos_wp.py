@@ -71,7 +71,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
 
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                 ], threshold=2),
 
                 bt_ros.MoveToVariable(self.closest_landing, "move_client"),
@@ -87,7 +87,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
 
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
                 ], threshold=2),
 
                 bt_ros.MoveToVariable(self.closest_landing, "move_client"),
@@ -112,25 +112,22 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 #back_to_start
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.CompleteCollectGround("manipulator_client"),
+		                bt_ros.StepperUp("manipulator_client"),
+                        bt_ros.MainSetManipulatortoGround("manipulator_client")
+                    ]),
                     bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
-                ], threshold=2),  # COMA !!
+                ], threshold=2),
 
-                # bt_ros.StepperUp("manipulator_client"),
-                # bt_ros.StepperUp("manipulator_client"),
-                # bt_ros.StepperUp("manipulator_client"),
-                # bt_ros.StepperUp("manipulator_client")
-
-		        bt_ros.StepperUp("manipulator_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.UnloadAccelerator("manipulator_client")  
-
-                # bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
+                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
             ])
 	    ])
 
