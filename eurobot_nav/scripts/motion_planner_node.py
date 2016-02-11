@@ -106,6 +106,7 @@ class MotionPlannerNode:
         self.map[197:200, 262:293] = 100
         self.map[134:200, 148:152] = 100
         self.map[30:120, 255:300] = 100
+        self.map[30:120, 0:45] = 100
 
 
     def get_points_outside_map(self, points):
