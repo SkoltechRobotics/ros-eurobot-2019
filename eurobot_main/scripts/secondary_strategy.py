@@ -10,7 +10,7 @@ import bt_ros
 from bt_controller import SideStatus
 from score_controller import ScoreController
 from tactics_math import get_color, yolo_parse_pucks, initial_parse_pucks
-
+from visualization_msgs.msg import MarkerArray
 
 class Strategy(object):
     def __init__(self, side):
@@ -44,6 +44,8 @@ class Strategy(object):
             self.opponent_side = "purple_side"
             self.sign = 1
 
+        self.strategy_status_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.parse_pucks)
+
     def update_coordinates(self):
         try:
             trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
@@ -72,8 +74,7 @@ class Strategy(object):
         else:
             return bt.Status.FAILED
 
-    def parse_pucks(self):
-        data = self.pucks_slave.get_pucks()
+    def parse_pucks(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
         # green (0, 1, 0)
@@ -102,13 +103,17 @@ class Strategy(object):
                                                             self.purple_cells_area,
                                                             self.yellow_cells_area)
 
+                print ("yellow_pucks_rgb", yellow_pucks_rgb)
+
                 if self.color_side == "purple_side":
                     if len(purple_pucks_rgb) == 3:
                         self.our_pucks_rgb.set(purple_pucks_rgb)
 
                 elif self.color_side == "yellow_side":
                     if len(yellow_pucks_rgb) == 3:
+                        print ("yellow_pucks_rgb", yellow_pucks_rgb)
                         self.our_pucks_rgb.set(yellow_pucks_rgb)
+                        print ("yellow_pucks_rgb",  self.our_pucks_rgb.get())
 
             if self.is_robot_started.get() is True:
                 lost_pucks = yolo_parse_pucks(new_observation_pucks,
@@ -155,7 +160,7 @@ class Strategy(object):
 
 class HomoStrategy(Strategy):
     def __init__(self):
-        super(HomoStrategy, self).__init__()
+        super(HomoStrategy, self).__init__(side)
 
         if self.side == SideStatus.PURPLE:
             param = "purple_side"
@@ -251,7 +256,7 @@ class HomoStrategy(Strategy):
 
 class SemaPidrStrategy(Strategy):
     def __init__(self, side):
-        super(SemaPidrStrategy, self).__init__()
+        super(SemaPidrStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -335,7 +340,7 @@ class SemaPidrStrategy(Strategy):
 
 class ReflectedVovanStrategy(Strategy):
     def __init__(self, side):
-        super(ReflectedVovanStrategy, self).__init__()
+        super(ReflectedVovanStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -371,9 +376,9 @@ class ReflectedVovanStrategy(Strategy):
                     bt_ros.MoveLineToPoint(self.ground_puck, "move_client"),
                     bt.ParallelWithMemoryNode([
                         bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
-                        bt_ros.StartCollectGround("manipulator_client"),
+                        bt_ros.StartCollectGroundCheck("manipulator_client"),
                         bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[0]))),
+                        bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[2]))),
                         bt_ros.SetManipulatortoWall("manipulator_client")
                     ], threshold=5),
                     # bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
@@ -604,7 +609,7 @@ class ReflectedVovanStrategy(Strategy):
 
 class VovanStrategy(Strategy):
     def __init__(self, side):
-        super(VovanStrategy, self).__init__()
+        super(VovanStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -892,7 +897,7 @@ class VovanStrategy(Strategy):
 
 class DefenseStrategy(Strategy):
     def __init__(self, side):
-        super(DefenseStrategy, self).__init__()
+        super(DefenseStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
