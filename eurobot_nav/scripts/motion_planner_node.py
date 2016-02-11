@@ -528,12 +528,12 @@ class MotionPlannerNode:
             #     self.path = self.create_linear_path(self.coords, self.goal)
             if self.is_robot_stopped:
                 self. is_robot_stopped = False
-                if np.linalg.norm(self.way_points[self.way_point_ind, :2] - self.way_points[-1, :2], axis=0) < 0.01:
+                self.way_point_ind += 1
+                if self.way_point_ind >= len(self.way_points) - 1:
                     self.way_point_ind = 1
                     self.goal = self.way_points[-1]
                     self.current_state = "following"
                 else:
-                    self.way_point_ind += 1
                     self.goal = self.way_points[self.way_point_ind]
                 self.path = self.create_linear_path(self.coords, self.goal)
             elif self.delta_dist >= self.min_dist_to_goal_point:

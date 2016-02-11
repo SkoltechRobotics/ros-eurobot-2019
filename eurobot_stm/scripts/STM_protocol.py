@@ -229,7 +229,7 @@ class STMprotocol(object):
                 0x63: "=cc",
                 0x64: "=cc",
 
-                0x70: "=BBBBBB"
+                0x70: "=BBBBB"
             }
 
             self.response_bytes = {
@@ -272,7 +272,7 @@ class STMprotocol(object):
                 0x63: 2,
                 0x64: 2,
 
-                0x70: 6
+                0x70: 5
             }
 
     def send(self, cmd, args):
