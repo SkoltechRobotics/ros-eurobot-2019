@@ -81,15 +81,22 @@ class App:
         # secondary WIRE config
         self.secondary_start_status = StringVar()
         self.secondary_start_status.set("Waiting")
-        self.secondary_wire_frame = Label(self.frame8, bg="gray", height=2, width=13, font=("Helvetica", 40), textvariable=self.secondary_start_status)
+        self.secondary_wire_frame = Label(self.frame8, bg="gray", height=2, width=9, font=("Helvetica", 40), textvariable=self.secondary_start_status)
         self.secondary_wire_frame.pack(side="right")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
         # secondary SIDE config
         self.secondary_side_status = StringVar()
-        self.secondary_side_frame = Label(self.frame9, bg="gray", height=2, width=13, font=("Helvetica", 40), textvariable=self.secondary_side_status)
+        self.secondary_side_frame = Label(self.frame9, bg="gray", height=2, width=9, font=("Helvetica", 40), textvariable=self.secondary_side_status)
         self.secondary_side_status.set("Side")
         self.secondary_side_frame.pack(side="left")
+
+        # secondary STRATEGY config
+        self.secondary_strategy_status = StringVar()
+        self.secondary_strategy_frame = Label(self.frame9, bg="green", height=2, width=9, font=("Helvetica", 40), textvariable=self.secondary_strategy_status)
+        self.secondary_strategy_status.set("Strategy")
+        self.secondary_strategy_frame.pack(side="top")
+
 
         # Secondary block config: name, coords, score
         self.secondary_coords = StringVar()
@@ -117,11 +124,11 @@ class App:
 
     def secondary_side_status_callback(self, data):
         if data.data == "1":
-            self.secondary_side_status.set("Yellow")
+            self.secondary_side_status.set("YELLOW")
             self.secondary_side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[0]))
 
         elif data.data == "0":
-            self.secondary_side_status.set("Purple")
+            self.secondary_side_status.set("PURPLE")
             self.secondary_side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
         self.frame5.after(1000, self.update_secondary_coords)  # start loop  # FIXME
@@ -133,6 +140,15 @@ class App:
         elif data.data == "1":
             self.secondary_start_status.set("GO!")
             self.secondary_wire_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]))
+
+    def secondary_strategy_status_callback(self, data):
+        if data.data == "0":
+            self.secondary_strategy_status.set("0 STR")
+        elif data.data == "1":
+            self.secondary_strategy_status.set("1 STR")
+        elif data.data == "2":
+            self.secondary_strategy_status.set("2 STR")
+    
 
     def secondary_score_callback(self, data):
         """
@@ -181,6 +197,7 @@ if __name__ == '__main__':
     rospy.Subscriber("score", String, app.secondary_score_callback)
     rospy.Subscriber("stm/start_status", String, app.secondary_wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.secondary_side_status_callback)
+    rospy.Subscriber("stm/strategy_status", String, app.secondary_strategy_status_callback)
 
     rate = rospy.Rate(100)
     rospy.loginfo("Start display")
