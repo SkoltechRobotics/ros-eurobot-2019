@@ -183,7 +183,7 @@ class ParticleFilter:
             distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
                                                 (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
             # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4 * BEAC_R)]
-            landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
+            landmarks = landmarks[np.where(distance_landmark_beacons < 3*BEAC_R)[0]]
             self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
             self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 8*BEAC_R)[0]]
             r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
