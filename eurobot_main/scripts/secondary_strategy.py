@@ -589,7 +589,7 @@ class ReflectedVovanStrategy(Strategy):
         leaving_red_zone = bt.SequenceNode([
             bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
             bt_ros.RightMoustacheDefault("manipulator_client"),
-        ]),
+        ])
 
         second_ground_puck = bt.FallbackWithMemoryNode([
                 bt.SequenceWithMemoryNode([
@@ -598,12 +598,12 @@ class ReflectedVovanStrategy(Strategy):
                     bt_ros.StartCollectGroundCheck("manipulator_client"),
                     bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
                     bt.ParallelWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.redium_zone_forth, "move_client"),
-                        bt_ros.PublishScore_ifReachedGoal(self.redium_zone_forth, self.score_master, "RED")
+                        bt_ros.MoveLineToPoint(self.redium_zone_forth + (0, 0, -1.57), "move_client"),
+                        bt_ros.PublishScore_ifReachedGoal(self.redium_zone_forth + (0, 0, -1.57), self.score_master, "RED")
                     ], threshold=2),
                     bt_ros.ReleaseFromManipulator("manipulator_client"),
-                    bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1])))
-            ]),
+                    bt_ros.SetManipulatortoUp("manipulator_client")
+            ])
         ])
 
         self.tree = bt.SequenceWithMemoryNode([
