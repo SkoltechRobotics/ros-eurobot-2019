@@ -127,12 +127,12 @@ class PFNode(object):
         distances = np.linalg.norm(self.robot_pf_point[:2] - self.world_beacons, axis=1)
         min_dist_to_beacon = min(distances)
         if min_dist_to_beacon < 0.4:
-            intense = 4000
+            intense = 2200
         else:
             intense = 4000
         rospy.loginfo("Distances to beacons " + str(distances))
         angles, ranges = self.pf.get_landmarks(self.scan, intense)
-        ranges -=  self.scan_offset
+        #ranges -=  self.scan_offset
         x = ranges * np.cos(angles)
         y = ranges * np.sin(angles)
         points = np.array([x, y]).T
