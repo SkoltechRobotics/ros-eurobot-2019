@@ -78,10 +78,10 @@ class YellowTactics(Tactics):
                                                 -1.57])
 
         self.blunium_collect_pos = np.array([self.blunium[0],
-                                            self.blunium[1] + 0.19,  # 0.225
+                                            self.blunium[1] + 0.185,  # 0.225
                                             self.blunium_collect_PREpos[2]])
 
-        self.blunium_collect_pos_side = np.array([self.blunium[0] - 0.03,
+        self.blunium_collect_pos_side = np.array([self.blunium[0] + 0.03,
                                                     self.blunium_collect_pos[1],
                                                     self.blunium_collect_PREpos[2]])
 
@@ -110,7 +110,7 @@ class YellowTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.19,
+                                               self.goldenium[1] + 0.185,
                                                self.goldenium_2_PREgrab_pos[2]])
 
 
@@ -180,10 +180,10 @@ class PurpleTactics(Tactics):
                                                 -1.57])
 
         self.blunium_collect_pos = np.array([self.blunium[0],
-                                            self.blunium[1] + 0.19,
+                                            self.blunium[1] + 0.185,
                                             self.blunium_collect_PREpos[2]])
 
-        self.blunium_collect_pos_side = np.array([self.blunium[0] + 0.03,
+        self.blunium_collect_pos_side = np.array([self.blunium[0] - 0.03,
                                                     self.blunium_collect_pos[1],
                                                     self.blunium_collect_PREpos[2]])
 
@@ -212,7 +212,7 @@ class PurpleTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.19,  # 0.1
+                                               self.goldenium[1] + 0.185,  # 0.1
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_pose = np.array([self.goldenium[0],
@@ -223,11 +223,11 @@ class PurpleTactics(Tactics):
                                                  self.goldenium_back_pose[1],
                                                  2])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,  # 0.25
                                                     self.chaos_center[1] - 0.15,
                                                     1.7])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.05,
+        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.05,  # 0.05
                                               self.scales_goldenium_PREpos[1] + 0.52,
                                               1.31])
 
@@ -504,7 +504,7 @@ class MainRobotBT(object):
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.first_puck_landing_finish, "move_client"),
-                                ], threshold=2),
+                                ], threshold=2)
                             ]),
                         ])
 
@@ -522,7 +522,7 @@ class MainRobotBT(object):
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.third_puck_landing, "move_client"),
-                                ], threshold=2),
+                                ], threshold=2)
                             ])
                         ])
 
@@ -539,7 +539,7 @@ class MainRobotBT(object):
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
                                     bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
-                                ], threshold=2),
+                                ], threshold=2)
                             ])
                         ])
 
@@ -554,20 +554,20 @@ class MainRobotBT(object):
                                         bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
                                         bt_ros.FinishCollectBlunium("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                        bt_ros.MainSetManipulatortoGround("manipulator_client"),
+                                        bt_ros.MainSetManipulatortoGround("manipulator_client")
                                     ])
 
         approach_acc = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
                             bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
-                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client"),
+                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client")
                         ])
 
         collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
                                     bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
+                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
                                 ])
 
         unload_acc = bt.SequenceNode([
@@ -600,7 +600,7 @@ class MainRobotBT(object):
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
                                     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-                                ], threshold=1),
+                                ], threshold=1)
                             ])
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
@@ -616,7 +616,7 @@ class MainRobotBT(object):
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.03, 0]), "move_client"),
+                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES")),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
@@ -624,6 +624,7 @@ class MainRobotBT(object):
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
+                                    bt_ros.SetManipulatortoUp("manipulator_client")
                                 ])
                             ])
 

@@ -54,16 +54,32 @@ ground_spacing_dist: 0.3
 #   goldenium: [2.22, 0.05]  # outer side of the puck
 #   chaos_center: [1, 1.05]
 
+# trener
+# yellow_side:
+#   red_cell_puck: [2.495, 0.445]
+#   blunium: [1.285, 0.03]  # outer side of the puck
+#   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+#   goldenium: [0.78, 0.05]  # outer side of the puck
+#   chaos_center: [2.0, 1.05]
+
+# purple_side:
+#   red_cell_puck: [0.505, 0.445]
+#   blunium: [1.72, 0.03]  # outer side of the puck
+#   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
+#   goldenium: [2.23, 0.05]  # outer side of the puck
+#   chaos_center: [1, 1.05]
+
+# left
 yellow_side:
   red_cell_puck: [2.495, 0.445]
-  blunium: [1.285, 0.03]  # outer side of the puck
+  blunium: [1.295, 0.03]  # outer side of the puck
   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
-  goldenium: [0.78, 0.05]  # outer side of the puck
+  goldenium: [0.775, 0.05]  # outer side of the puck
   chaos_center: [2.0, 1.05]
 
 purple_side:
-  red_cell_puck: [0.505, 0.445]
-  blunium: [1.72, 0.03]  # outer side of the puck
+  red_cell_puck: [0.50, 0.445]
+  blunium: [1.71, 0.03]  # outer side of the puck
   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
-  goldenium: [2.23, 0.05]  # outer side of the puck
+  goldenium: [2.22, 0.05]  # outer side of the puck
   chaos_center: [1, 1.05]
