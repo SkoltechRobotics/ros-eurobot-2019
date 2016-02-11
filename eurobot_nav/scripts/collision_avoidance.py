@@ -314,7 +314,7 @@ class CollisionAvoidanceSecondaryRobot(object):
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
         rospy.loginfo(distances)
-        distances[np.where(distances == 0.5)] = 1
+        #distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
