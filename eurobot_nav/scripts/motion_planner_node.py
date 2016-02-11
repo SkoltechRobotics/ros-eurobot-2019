@@ -417,7 +417,7 @@ class MotionPlannerNode:
         self.prev_time = curr_time
         self.prev_vel = v_cmd
         self.set_speed(v_cmd)
-        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
+        if np.linalg.norm(self.coords[:2] - self.goal[:2], axis=0) < self.XY_GOAL_TOLERANCE and np.abs(self.coords[2] - self.goal[2]) < self.YAW_GOAL_TOLERANCE:
             self.set_speed(np.zeros(3))
             self.is_robot_stopped = True
 
