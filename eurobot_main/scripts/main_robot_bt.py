@@ -185,6 +185,10 @@ class StrategyConfig(object):
                                             self.red_cell_puck[1],
                                             1.57 + self.sign * 1.57])  # y/p 3.14 / 0
 
+        self.first_puck_landing_far = np.array([self.first_puck_landing[0] - self.sign * 1.5,
+                                                self.first_puck_landing[1],
+                                                self.first_puck_landing[2]])
+
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.14,  # 0.11
                                                      self.blunium[1] + self.robot_outer_radius - 0.03,
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
@@ -714,12 +718,9 @@ class SuddenBlind(StrategyConfig):
 
         ## maybe working
         move_to_opp_chaos_while_taking_red = bt.SequenceWithMemoryNode([
-                                                bt.ActionNode(self.calculate_pucks_configuration),
-                                                bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
 
                                                 bt.ParallelWithMemoryNode([
-                                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
-
+                                                    bt_ros.MoveLineToPoint(self.first_puck_landing_far, "move_client"),
                                                     bt.FallbackWithMemoryNode([
                                                         bt.SequenceWithMemoryNode([
                                                             bt_ros.DelayStartCollectGroundCheck("manipulator_client"),
@@ -735,8 +736,11 @@ class SuddenBlind(StrategyConfig):
 
                                                 bt.SequenceWithMemoryNode([
                                                     bt.ActionNode(self.calculate_pucks_configuration),
+                                                    bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
                                                     bt.ActionNode(self.set_closest_chaos_landing),
                                                     bt.ActionNode(self.set_prelanding_to_chaos_landing),
+                                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                                    # bt.ActionNode(self.calculate_pucks_configuration),
 
                                                     bt.FallbackWithMemoryNode([
                                                         bt.SequenceWithMemoryNode([
@@ -1168,11 +1172,16 @@ class SuddenBlind(StrategyConfig):
 
                         bt.FallbackWithMemoryNode([
                             bt.SequenceNode([
-                                bt.ConditionNode(self.is_my_chaos_observed),
+                                bt.ConditionNode(self.is_opp_chaos_observed),
                                 move_to_opp_chaos_while_taking_red
+                                # move_to_opp_chaos_while_taking_red_collision
                             ]),
                             bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            # move_to_guard_zone
+                            # bt.SequenceWithMemoryNode([
+                            #     collect_red_cell_puck,
+                            #     blind_move_chaos_center_collect,
+                            #     collect_green_cell_puck
+                            # ])
                         ]),
 
                         bt.FallbackWithMemoryNode([
@@ -1182,32 +1191,14 @@ class SuddenBlind(StrategyConfig):
                                 collect_my_chaos_check
                             ]),
                             bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            # move_home
                         ]),
 
-                        # bt.FallbackWithMemoryNode([
-                        #     bt.SequenceNode([
-                        #         bt.ConditionNode(self.is_opp_chaos_observed),
-                        #         # move_to_opp_chaos_while_taking_red,
-                        #         move_to_opp_chaos_blind,
-                        #         # collect_my_chaos_blind
-                        #         # move_to_opp_chaos_while_taking_red_collision,
-                        #         collect_my_chaos_check
-                        #     ]),
-                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        #     # bt.SequenceWithMemoryNode([
-                        #     #     collect_red_cell_puck,
-                        #     #     blind_move_chaos_center_collect,
-                        #     #     collect_green_cell_puck
-                        #     # ])
-                        # ]),
-
-                        # push_nose_blunium,
+                        push_nose_blunium,
                         unload_acc,
-                        # collect_unload_goldenium,
-                        # search_lost_puck_unload_cell,
-                        bt_ros.SetManipulatortoUp("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.starting_pos, "move_client")
+                        collect_unload_goldenium,
+                        search_lost_puck_unload_cell
+                        # bt_ros.SetManipulatortoUp("manipulator_client"),
+                        # bt_ros.MoveLineToPoint(self.starting_pos, "move_client")
                     ])
 
         ## TODO move to sber str
