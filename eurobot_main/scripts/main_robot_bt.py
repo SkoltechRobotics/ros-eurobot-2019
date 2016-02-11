@@ -533,18 +533,18 @@ class MainRobotBT(object):
                                     bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
+                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
                                     ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
-                                    bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
+                                    bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
                                 ], threshold=2)
                             ])
                         ])
 
         move_and_collect_blunium = bt.SequenceWithMemoryNode([
-                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+                                        # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
                                         bt_ros.StartCollectBlunium("manipulator_client"),
                                         bt.ParallelWithMemoryNode([
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
@@ -593,7 +593,7 @@ class MainRobotBT(object):
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.Delay500("manipulator_client"),
-                                bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
+                                # bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
                                 bt_ros.StartCollectGoldenium("manipulator_client"),
 
@@ -609,7 +609,7 @@ class MainRobotBT(object):
                                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
                                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
 
-                                        bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
+                                        # bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
                                         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
                                     ])
 
