@@ -276,6 +276,12 @@ class GrabGoldeniumAndHoldUp(ActionClientNode):
         super(GrabGoldeniumAndHoldUp, self).__init__(cmd, action_client_id)
 
 
+class GoldeniumUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "goldenium_up"
+        super(GoldeniumUp, self).__init__(cmd, action_client_id)
+
+
 class UnloadGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_goldenium_on_scales"

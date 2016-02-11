@@ -135,6 +135,8 @@ class Manipulator(object):
             return self.set_manipulator_ground_main()
         elif cmd == "long_check_limit_switch_infinitely":
             return self.long_check_limit_switch_infinitely()
+        elif cmd == "goldenium_up":
+            return self.goldenium_up()
         # --- secondary robot
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
@@ -372,6 +374,10 @@ class Manipulator(object):
             return True
         else:
             return False
+
+    def goldenium_up(self):
+        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
+        return True
 
     def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])

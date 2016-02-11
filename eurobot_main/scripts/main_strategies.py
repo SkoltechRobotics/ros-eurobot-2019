@@ -1875,6 +1875,66 @@ class SuddenBlind(StrategyConfig):
 
 
 
+        # self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
+        #                                             self.red_cell_puck[1] - 0.04,
+        #                                             1.57])
+
+        # self.second_puck_landing = np.array([self.red_cell_puck[0],
+        #                                      self.red_cell_puck[1] + self.gnd_spacing - self.HPAD + self.delta,
+        #                                      1.57])
+
+        # self.third_puck_landing = np.array([self.red_cell_puck[0],
+        #                                     self.red_cell_puck[1] + 2 * self.gnd_spacing - self.HPAD + self.delta,
+        #                                     1.57])
+
+        # self.third_puck_rotate_pose = np.array([self.our_chaos_center[0],
+        #                                         self.our_chaos_center[1] - 0.3,
+        #                                         -1.57 - self.sign * 0.785])  # y/p -2.35 / -0.78
+
+        # self.blind_chaos_pose = np.array([self.our_chaos_center[0] - self.sign * 0.228,
+        #                                   self.our_chaos_center[1],
+        #                                   1.57 + self.sign * 1.07])  # y/p  /0.5
+
+        # self.blunium_prepose = np.array([self.blunium[0] + self.sign * 0.07,
+        #                                  self.blunium[1] + 0.35,
+        #                                  -0.52])
+
+        # self.blunium_collect_PREpos = np.array([self.blunium[0],
+        #                                         self.blunium[1] + 0.35,
+        #                                         -1.57])
+
+        # self.blunium_collect_pos = np.array([self.blunium[0],
+        #                                      self.blunium[1] + self.VPAD,
+        #                                      self.blunium_collect_PREpos[2]])
+
+        # self.blunium_collect_pos_side = np.array([self.blunium[0] + self.sign * 0.03,
+        #                                             self.blunium_collect_pos[1],
+        #                                             self.blunium_collect_PREpos[2]])
+
+        # self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
+        #                                          self.blunium[1] + self.robot_outer_radius,
+        #                                          self.blunium_prepose[2]])
+
+        # self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] - self.sign * 0.08,
+        #                                        self.blunium_start_push_pose[1],
+        #                                        self.blunium_start_push_pose[2]])
+
+        # self.blunium_get_back_pose = np.array([self.blunium_end_push_pose[0],
+        #                                        self.blunium_end_push_pose[1] + 0.1,
+        #                                        self.blunium_end_push_pose[2]])
+
+        # self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
+        #                                                self.blunium[1] + 0.13,
+        #                                                0.56])
+
+        # self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
+        #                                            self.goldenium[1] + 0.35,
+        #                                            self.accelerator_PREunloading_pos[2]])
+
+        # self.goldenium_back_rot_pose = np.array([self.goldenium[0],
+        #                                          self.goldenium_back_pose[1],
+        #                                          1.57 - self.sign * 0.5])  # y/p 1.07 / 2.07
+
 
 
 

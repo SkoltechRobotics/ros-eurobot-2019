@@ -71,20 +71,20 @@ class MainRobotBT(object):
     def change_side(self, side):
 
         self.side_status = side
-        # self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
-        self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
+        self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
+        # self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
         # self.testfield = TestField(self.side_status)  # , self.pucks_slave
 
-        self.strategy = self.suddenblind
+        self.strategy = self.sberstr
 
     def change_strategy(self, num):
         self.strategy_number = num
         if num == 0:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = self.suddenblind  # sberstr
+            self.strategy = self.sberstr  #  suddenblind
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
-            # self.strategy = self.suddenblind
+            self.strategy = SuddenBlind(self.side_status)
         elif num == 2:
             print("CHANGE STRATEGY TO " + str(num))
             # self.strategy = self.testfield
@@ -144,11 +144,21 @@ class StrategyConfig(object):
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
 
-        self.is_main_robot_started = bt.BTVariable(False)
-        self.is_observed_flag = bt.BTVariable(False)  # FIXME!!!!!!!! remove
+        self.is_robot_started = bt.BTVariable(False)
         self.is_our_chaos_observed_flag = bt.BTVariable(False)
         self.is_opponent_chaos_observed_flag = bt.BTVariable(False)
-        self.is_lost_puck_present_flag = bt.BTVariable(False)
+
+        self.scale_factor = np.array(rospy.get_param("scale_factor"))
+        self.critical_angle = rospy.get_param("critical_angle")
+        self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
+        self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))
+        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
+
+        self.closest_landing = bt.BTVariable()
+        self.nearest_PRElanding = bt.BTVariable()
+        self.next_landing_var = bt.BTVariable()
+        self.next_prelanding_var = bt.BTVariable()
+        self.move_back_pose = bt.BTVariable()
 
         self.is_secondary_responding = False
 
@@ -162,11 +172,9 @@ class StrategyConfig(object):
         self.goldenium = rospy.get_param(self.robot_name + "/" + self.color_side + "/goldenium")
         self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.color_side + "/scales_area"))
         self.chaos_radius = rospy.get_param("chaos_radius")
-
         self.final_search_area = rospy.get_param("final_search_area")
         self.my_chaos_area = rospy.get_param(self.robot_name + "/" + self.color_side + "/area_to_search_chaos")
         self.opponent_chaos_area = rospy.get_param(self.robot_name + "/" + self.opponent_side + "/area_to_search_chaos")
-
         self.purple_cells_area = rospy.get_param(self.robot_name + "/" + "purple_side" + "/purple_cells_area")
         self.yellow_cells_area = rospy.get_param(self.robot_name + "/" + "yellow_side" + "/yellow_cells_area")
 
@@ -177,69 +185,13 @@ class StrategyConfig(object):
                                             self.red_cell_puck[1],
                                             1.57 + self.sign * 1.57])  # y/p 3.14 / 0
 
-        self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
-                                                    self.red_cell_puck[1] - 0.04,
-                                                    1.57])
-
-        self.second_puck_landing = np.array([self.red_cell_puck[0],
-                                             self.red_cell_puck[1] + self.gnd_spacing - self.HPAD + self.delta,
-                                             1.57])
-
-        self.third_puck_landing = np.array([self.red_cell_puck[0],
-                                            self.red_cell_puck[1] + 2 * self.gnd_spacing - self.HPAD + self.delta,
-                                            1.57])
-
-        self.third_puck_rotate_pose = np.array([self.our_chaos_center[0],
-                                                self.our_chaos_center[1] - 0.3,
-                                                -1.57 - self.sign * 0.785])  # y/p -2.35 / -0.78
-
-        self.blind_chaos_pose = np.array([self.our_chaos_center[0] - self.sign * 0.228,
-                                          self.our_chaos_center[1],
-                                          1.57 + self.sign * 1.07])  # y/p  /0.5
-
-        self.blunium_prepose = np.array([self.blunium[0] + self.sign * 0.07,
-                                         self.blunium[1] + 0.35,
-                                         -0.52])
-
-        self.blunium_collect_PREpos = np.array([self.blunium[0],
-                                                self.blunium[1] + 0.35,
-                                                -1.57])
-
-        self.blunium_collect_pos = np.array([self.blunium[0],
-                                             self.blunium[1] + self.VPAD,
-                                             self.blunium_collect_PREpos[2]])
-
-        self.blunium_collect_pos_side = np.array([self.blunium[0] + self.sign * 0.03,
-                                                    self.blunium_collect_pos[1],
-                                                    self.blunium_collect_PREpos[2]])
-
-        self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
-                                                 self.blunium[1] + self.robot_outer_radius,
-                                                 self.blunium_prepose[2]])
-
-        self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] - self.sign * 0.08,
-                                               self.blunium_start_push_pose[1],
-                                               self.blunium_start_push_pose[2]])
-
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.14,  # 0.11
                                                      self.blunium[1] + self.robot_outer_radius - 0.03,
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
-        self.blunium_nose_end_push_pose = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
+        self.blunium_nose_end_push_pose = np.array([self.blunium[0] + self.sign * 0.21,  # 0.22
                                                    self.blunium[1] + self.robot_outer_radius - 0.03,  # self.blunium[1] + 0.13
                                                    self.blunium_nose_start_push_pose[2]])
-
-        self.blunium_get_back_pose = np.array([self.blunium_end_push_pose[0],
-                                               self.blunium_end_push_pose[1] + 0.1,
-                                               self.blunium_end_push_pose[2]])
-
-        self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
-                                                       self.blunium[1] + 0.13,
-                                                       0.56])
-
-        self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
-                                                   self.goldenium[1] + 0.35,
-                                                   self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
                                                    self.goldenium[1] + 0.28,
@@ -253,10 +205,6 @@ class StrategyConfig(object):
                                             self.goldenium_grab_pos[1] + 0.09,
                                             self.goldenium_2_PREgrab_pos[2]])
 
-        self.goldenium_back_rot_pose = np.array([self.goldenium[0],
-                                                 self.goldenium_back_pose[1],
-                                                 1.57 - self.sign * 0.5])  # y/p 1.07 / 2.07
-
         self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.08,
                                                  self.our_chaos_center[1] - 0.6,
                                                  1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
@@ -268,20 +216,6 @@ class StrategyConfig(object):
         self.unload_goldenium_on_blue = np.array([1.5 + self.sign * 1.3,  # y/p 2.7 / 0.3
                                             0.9,
                                             -1.57 + self.sign * 0.785])  # y/p -0.78 / -2.35
-
-        self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
-        self.critical_angle = rospy.get_param("critical_angle")
-        self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
-        self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))  # FIXME
-        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
-        self.closest_landing = bt.BTVariable()
-        self.nearest_PRElanding = bt.BTVariable()
-        self.next_landing_var = bt.BTVariable()
-        self.next_prelanding_var = bt.BTVariable()
-        self.move_back_pose = bt.BTVariable()
-        # self.guard_chaos_loc = bt.BTVariable(np.array([self.our_chaos_center[0] - self.sign * 0.3,
-        #                                                    self.our_chaos_center[1] - 0.25,
-        #                                                    1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
 
         self.red_puck_guard_chaos_prepose = np.array([1.5 + self.sign * 0.27,
                                                         0.7,
@@ -297,7 +231,7 @@ class StrategyConfig(object):
 
         self.blind_guard_chaos_finish = np.array([self.guard_chaos_loc[0] + self.sign * 0.23,
                                                     self.guard_chaos_loc[1] + 0.15,
-                                                    self.guard_chaos_rotate[2]])
+                                                    self.guard_chaos_rotate[2] - self.sign * 0.2])
 
         self.starting_pos = np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                     0.45,
@@ -329,7 +263,7 @@ class StrategyConfig(object):
             # When robots start, there occurs possibility that camera just doesn't see some of pucks or they are already collected:
             # in this case function compare_to_update_or_ignore is used
 
-            if self.is_main_robot_started.get() is False:
+            if self.is_robot_started.get() is False:
 
                 purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(new_observation_pucks,
                                                                                                                   self.purple_chaos_center,
@@ -351,8 +285,8 @@ class StrategyConfig(object):
                         # rospy.loginfo("Got OPP pucks observation:")
                         # print self.opponent_chaos_pucks.get()
                         # print " "
-
-                    self.our_pucks_rgb.set(purple_pucks_rgb)
+                    if len(purple_pucks_rgb) == 3:
+                        self.our_pucks_rgb.set(purple_pucks_rgb)
 
                 elif self.color_side == "yellow_side":
                     if len(yellow_chaos_pucks) == 4:
@@ -367,16 +301,16 @@ class StrategyConfig(object):
                         # rospy.loginfo("Got OPP pucks observation:")
                         # print self.opponent_chaos_pucks.get()
                         # print " "
+                    if len(yellow_pucks_rgb) == 3:
+                        self.our_pucks_rgb.set(yellow_pucks_rgb)
 
-                    self.our_pucks_rgb.set(yellow_pucks_rgb)
-
-            if self.is_main_robot_started.get() is True:
+            if self.is_robot_started.get() is True:
                 lost_pucks = yolo_parse_pucks(new_observation_pucks,
                                                self.final_search_area)
                 self.visible_pucks_on_field.set(lost_pucks)
 
             """
-            if self.is_main_robot_started.get() is True:
+            if self.is_robot_started.get() is True:
                 my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
                 self.my_chaos_pucks.set(my_chaos_pucks)
                 self.opponent_chaos_pucks.set(opp_chaos_pucks)
@@ -389,7 +323,6 @@ class StrategyConfig(object):
             rospy.loginfo("Got OPP pucks observation:")
             print self.opponent_chaos_pucks.get()
             print " "
-            
 
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
@@ -399,10 +332,10 @@ class StrategyConfig(object):
         if self.is_our_chaos_observed_flag.get():
             # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
-        elif not self.is_our_chaos_observed_flag.get() and not self.is_main_robot_started.get():
+        elif not self.is_our_chaos_observed_flag.get() and not self.is_robot_started.get():
             rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.my_chaos_pucks.get())))
             return bt.Status.RUNNING
-        elif not self.is_our_chaos_observed_flag.get() and self.is_main_robot_started.get():
+        elif not self.is_our_chaos_observed_flag.get() and self.is_robot_started.get():
             return bt.Status.FAILED
 
     def is_opp_chaos_observed(self):
@@ -417,10 +350,10 @@ class StrategyConfig(object):
         if self.is_opponent_chaos_observed_flag.get():
             # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
-        elif not self.is_opponent_chaos_observed_flag.get() and not self.is_main_robot_started.get():
+        elif not self.is_opponent_chaos_observed_flag.get() and not self.is_robot_started.get():
             rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.my_chaos_pucks.get())))
             return bt.Status.RUNNING
-        elif not self.is_opponent_chaos_observed_flag.get() and self.is_main_robot_started.get():
+        elif not self.is_opponent_chaos_observed_flag.get() and self.is_robot_started.get():
             return bt.Status.FAILED
 
     def is_lost_puck_present(self):
@@ -611,7 +544,7 @@ class StrategyConfig(object):
         self.move_back_pose.set(self.nearest_PRElanding.get())
 
     def update_robot_status(self):
-        self.is_main_robot_started.set(True)
+        self.is_robot_started.set(True)
         rospy.loginfo('main_robot_started')
 
     def update_main_coords(self):
@@ -1086,9 +1019,9 @@ class SuddenBlind(StrategyConfig):
                                                             bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.03),
                                                         ], threshold=3),
                                                         #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
-                                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                        bt_ros.GoldeniumUp("manipulator_client"),
                                                         bt_ros.SetManipulatortoWall("manipulator_client"),
-                                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                        bt_ros.GoldeniumUp("manipulator_client"),
                                                         bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"),
                                                         bt_ros.UnloadGoldenium("manipulator_client"),
                                                         bt_ros.SetManipulatortoUp("manipulator_client"),
@@ -1120,9 +1053,9 @@ class SuddenBlind(StrategyConfig):
                                                                     bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.03),
                                                                 ], threshold=3),
                                                                 #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
-                                                                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                                bt_ros.GoldeniumUp("manipulator_client"),
                                                                 bt_ros.SetManipulatortoWall("manipulator_client"),
-                                                                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                                bt_ros.GoldeniumUp("manipulator_client"),
                                                                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"),
                                                                 bt_ros.UnloadGoldenium("manipulator_client"),
                                                                 bt_ros.SetManipulatortoUp("manipulator_client"),
@@ -1416,9 +1349,9 @@ class SberStrategy(StrategyConfig):  # pucks_slave
                                     ], threshold=3),
                                     # bt.ActionNode(lambda: self.score_master.unload("SCALES")),
                                     # bt_ros.SetManipulatortoWall("manipulator_client"),
-                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                    bt_ros.GoldeniumUp("manipulator_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
-                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                    bt_ros.GoldeniumUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
                                     bt_ros.SetManipulatortoUp("manipulator_client")
@@ -1693,9 +1626,9 @@ class TestField(StrategyConfig):
                                                             bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.03),
                                                         ], threshold=3),
                                                         #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
-                                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                        bt_ros.GoldeniumUp("manipulator_client"),
                                                         bt_ros.SetManipulatortoWall("manipulator_client"),
-                                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                        bt_ros.GoldeniumUp("manipulator_client"),
                                                         bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"),
                                                         bt_ros.UnloadGoldenium("manipulator_client"),
                                                         bt_ros.SetManipulatortoUp("manipulator_client"),
@@ -1727,9 +1660,9 @@ class TestField(StrategyConfig):
                                                                     bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.05, 0]), self.score_master, "SCALES", threshold=0.03),
                                                                 ], threshold=3),
                                                                 #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
-                                                                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                                bt_ros.GoldeniumUp("manipulator_client"),
                                                                 bt_ros.SetManipulatortoWall("manipulator_client"),
-                                                                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                                bt_ros.GoldeniumUp("manipulator_client"),
                                                                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"),
                                                                 bt_ros.UnloadGoldenium("manipulator_client"),
                                                                 bt_ros.SetManipulatortoUp("manipulator_client"),
