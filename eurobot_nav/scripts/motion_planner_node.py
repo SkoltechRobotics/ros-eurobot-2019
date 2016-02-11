@@ -439,11 +439,11 @@ class MotionPlannerNode:
         rospy.loginfo(self.goal)
         rospy.loginfo(self.collision_avoidance)
         rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
-        self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
-
+        #self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
-        #self.is_collision = False
+        self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
