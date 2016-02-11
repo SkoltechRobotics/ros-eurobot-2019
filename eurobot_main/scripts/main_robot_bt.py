@@ -55,11 +55,6 @@ class MainRobotBT(object):
 
         # self.strategy = Combobombo(self.side_status)
 
-        self.strategy0 = SberStrategy(self.side_status, self.pucks_slave)
-        self.strategy1 = PeacefulStrategy(self.side_status, self.pucks_slave)
-        self.strategy2 = Testing(self.side_status, self.pucks_slave)
-        self.strategy3 = SuddenBlind(self.side_status, self.pucks_slave)
-
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
 
@@ -78,6 +73,11 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         self.side_status = side
+        self.strategy0 = SberStrategy(self.side_status, self.pucks_slave)
+        self.strategy1 = PeacefulStrategy(self.side_status, self.pucks_slave)
+        self.strategy2 = Testing(self.side_status, self.pucks_slave)
+        self.strategy3 = SuddenBlind(self.side_status, self.pucks_slave)
+        
         self.strategy = self.strategy3
 
     def change_strategy(self, num):
@@ -968,10 +968,10 @@ class SuddenBlind(StrategyConfig):
                             collect_one_chaos_puck,
 
                             # # We here arrived to 2nd chaos puck and ready to start collecting
-                            collect_one_chaos_puck,
+                            # collect_one_chaos_puck,
 
                             # # We here arrived to 3rd chaos puck and ready to start collecting
-                            collect_one_chaos_puck,
+                            # collect_one_chaos_puck,
 
                             # # We here arrived to 4th chaos puck and ready to start collecting
                             bt.FallbackWithMemoryNode([
@@ -1140,26 +1140,26 @@ class SuddenBlind(StrategyConfig):
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_opp_chaos_observed),
-                                move_to_opp_chaos_while_taking_red
-                            ]),
-                            bt.ActionNode(lambda: self.insert_waypoint(self.second_puck_landing)),
-                            bt.ActionNode(lambda: self.insert_waypoint(self.first_puck_landing_finish)),
-                            bt.ActionNode(lambda: self.insert_waypoint(self.first_puck_landing)),
-                            collect_red_cell_puck,
-                            collect_green_cell_puck
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_opp_chaos_observed),
+                        #         move_to_opp_chaos_while_taking_red
+                        #     ]),
+                        #     bt.ActionNode(lambda: self.insert_waypoint(self.second_puck_landing)),
+                        #     bt.ActionNode(lambda: self.insert_waypoint(self.first_puck_landing_finish)),
+                        #     bt.ActionNode(lambda: self.insert_waypoint(self.first_puck_landing)),
+                        #     collect_red_cell_puck,
+                        #     collect_green_cell_puck
+                        # ]),
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_my_chaos_observed),
-                                collect_chaos
-                            ]),
-                            bt.ActionNode(lambda: self.insert_waypoint(self.blind_chaos_pose)),
-                            blind_move_chaos_center_collect
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_my_chaos_observed),
+                        #         collect_chaos
+                        #     ]),
+                        #     bt.ActionNode(lambda: self.insert_waypoint(self.blind_chaos_pose)),
+                        #     blind_move_chaos_center_collect
+                        # ]),
 
                         push_nose_blunium,
                         unload_acc,
