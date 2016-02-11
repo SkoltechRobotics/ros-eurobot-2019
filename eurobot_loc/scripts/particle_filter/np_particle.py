@@ -89,8 +89,9 @@ class ParticleFilter:
 
     def measurement_model(self, particles, beacons):
         self.landmarks = beacons
-        #particles_measurement_model = self.get_particle_measurement_model(beacons)
-        #particles = np.concatenate((particles[:990], particles_measurement_model), axis=0)
+        particles_measurement_model = self.get_particle_measurement_model(beacons)
+        if beacons.shape[0] > 0:
+            particles = np.concatenate((particles[:(self.particles_num - self.particles_num_from_measurement_model)], particles_measurement_model), axis=0)
         weights = self.weights(beacons, particles)
         inds = self.resample(weights, self.particles_num)
         # self.min_cost_function = np.mean(self.cost_function)
@@ -98,29 +99,36 @@ class ParticleFilter:
         return particles
 
     def get_particle_measurement_model(self, landmarks):
-            beacons = cvt_global2local(self.beacons[np.newaxis, :], self.particles[:, np.newaxis])
-            buf_beacons = beacons[0, :]
-            distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0]) ** 2 +
-                                                (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1]) ** 2)
-            self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
-            r = (np.sqrt((landmarks[np.newaxis, :, 1]) ** 2 + (landmarks[np.newaxis, :, 0]) ** 2)).T
-            phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0])
-            phi = wrap_angle(phi).T
-            r_lid = r + np.random.normal(0, self.sigma_r, self.particles_num_from_measurement_model)
-            phi_lid = phi + np.random.normal(0, self.sigma_phi, self.particles_num_from_measurement_model)
-            phi_lid = wrap_angle(phi_lid)
-            if (len(self.beacon_ind) > 0 ):
-                y_lid = np.random.uniform(0, 2 * np.pi, self.particles_num_from_measurement_model)
-                x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :5] * np.cos(y_lid)
-                y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :5] * np.sin(y_lid)
-                theta = wrap_angle(y_lid - np.pi - phi_lid[0, :self.particles_num_from_measurement_model])
-                index = (x < 3) & (x > 0) & (y < 2) & (y > 0)
-                return np.array([x, y, theta]).T[index]
+            if landmarks.shape[0] != 0:
+                beacons = cvt_global2local(self.beacons[np.newaxis, :], self.particles[:, np.newaxis])
+                buf_beacons = beacons[0, :]
+                distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0]) ** 2 +
+                                                    (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1]) ** 2)
+                self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
+                r = (np.sqrt((landmarks[np.newaxis, :, 1]) ** 2 + (landmarks[np.newaxis, :, 0]) ** 2)).T
+                phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0])
+                phi = wrap_angle(phi).T
+                r_lid = r + np.random.normal(0, self.sigma_r, self.particles_num_from_measurement_model)
+                phi_lid = phi + np.random.normal(0, self.sigma_phi, self.particles_num_from_measurement_model)
+                phi_lid = wrap_angle(phi_lid)
+                if (len(self.beacon_ind) > 0 ):
+                    y_lid = np.random.uniform(0, 2 * np.pi, self.particles_num_from_measurement_model)
+                    x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :5] * np.cos(y_lid)
+                    y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :5] * np.sin(y_lid)
+                    theta = wrap_angle(y_lid - np.pi - phi_lid[0, :self.particles_num_from_measurement_model])
+                    index = (x < 3) & (x > 0) & (y < 2) & (y > 0)
+                    return np.array([x, y, theta]).T[index]
+                else:
+                    x = np.zeros(self.particles_num_from_measurement_model)
+                    y = np.zeros(self.particles_num_from_measurement_model)
+                    theta = np.zeros(self.particles_num_from_measurement_model)
+                    return np.array([x, y, theta]).T
             else:
-                x = np.zeros(10)
-                y = np.zeros(10)
-                theta = np.zeros(10)
-                return np.array([x, y, theta]).T
+                    x = np.zeros(self.particles_num_from_measurement_model)
+                    y = np.zeros(self.particles_num_from_measurement_model)
+                    theta = np.zeros(self.particles_num_from_measurement_model)
+                    return np.array([x, y, theta]).T
+
 
     def motion_model(self, delta):  # delta = [dx,dy,d_rot]
             if self.num_seeing_beacons > 1:
@@ -175,9 +183,9 @@ class ParticleFilter:
             distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
                                                 (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
             # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4 * BEAC_R)]
-            landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
+            landmarks = landmarks[np.where(distance_landmark_beacons < 8*BEAC_R)[0]]
             self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
-            self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
+            self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 8*BEAC_R)[0]]
             r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
             phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
             phi = wrap_angle(phi).T

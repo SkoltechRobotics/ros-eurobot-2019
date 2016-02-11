@@ -59,6 +59,7 @@ class MotionPlannerNode:
         self.r = rospy.get_param("robot_radius")
         self.num_points_in_path = rospy.get_param("num_points_in_path")
         self.acceleration_vector = self.velocity_vector * 2 * self.velocity_vector[2]
+        #self.acceleration_vector[:2] *= 2
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
@@ -387,6 +388,7 @@ class MotionPlannerNode:
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
             self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+            self.follow_path()
             self.current_state = 'following'
         elif self.current_state == 'trajectory_following':
             self.update_coords()
