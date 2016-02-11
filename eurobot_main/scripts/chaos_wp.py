@@ -42,6 +42,9 @@ class CollectChaos(bt.SequenceWithMemoryNode):
         self.starting_pos = np.array([0.3, 0.45, 0])
         self.starting_pos_var = bt.BTVariable(self.starting_pos)
 
+        self.guard_chaos_point = np.array([0.85, 0.85, 0.78])  # FIXME move to get_param
+        self.guard_chaos_point = bt.BTVariable(self.guard_chaos_point)
+
         self.closest_landing = bt.BTVariable()
         self.nearest_PRElanding = bt.BTVariable()
 
@@ -51,8 +54,14 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                 bt.ActionNode(self.calculate_closest_landing),
                 bt.ActionNode(self.calculate_prelanding),
 
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-                bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                # bt.ParallelWithMemoryNode([
+                #     bt_ros.SetManipulatortoUp("manipulator_client"),
+                #     bt_ros.MoveToVariable(self.guard_chaos_point, "move_client")
+                # ], threshold=2),
+
+                bt_ros.MoveToVariable(self.guard_chaos_point, "move_client"),
+                # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
@@ -120,7 +129,9 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
+                bt.ActionNode(lambda: self.score_master.unload("ACC")),  # COMAAAA
+                bt_ros.SetManipulatortoUp("manipulator_client")
+
             ])
 
     @staticmethod
@@ -245,14 +256,9 @@ class MainRobotBT(object):
         self.is_observed_flag = bt.BTVariable(False)
         self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
-        self.pucks_subscriber = rospy.Subscriber("pucks", MarkerArray, self.pucks_callback, queue_size=1)  # add /
+        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
-
-        # self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
-        #                                     [1.9, 0.9, 2, 0, 1, 0],
-        #                                     [2.1, 0.85, 3, 0, 0, 1],
-        #                                     [1.9, 1.1, 4, 1, 0, 0]])
 
         # yellow
         # self.known_chaos_pucks = np.array([[1.95, 1.05, 1, 1, 0, 0],
@@ -266,7 +272,7 @@ class MainRobotBT(object):
         #                                     [1, 1, 3, 0, 0, 1],
         #                                     [1.05, 1.05, 4, 1, 0, 0]])
 
-        rospy.sleep(1)
+        rospy.sleep(15)
         self.bt = bt.Root(
                     bt.FallbackWithMemoryNode([
                         bt.SequenceNode([
@@ -279,11 +285,14 @@ class MainRobotBT(object):
                                     "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
+
+    ## WORKS
     def pucks_callback(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
         # red (1, 0, 0)
         # green (0, 1, 0)
         # blue (0, 0, 1)
+        rospy.loginfo(data)
 
         if len(self.known_chaos_pucks.get()) == 0:
             try:
@@ -306,10 +315,29 @@ class MainRobotBT(object):
             except Exception:  # FIXME
                 rospy.loginfo("list index out of range - no visible pucks on the field ")
 
+    # def pucks_callback(self, data):
+    #     rospy.loginfo(data)
+
+    #     new_observation_pucks = [[marker.pose.position.x,
+    #                                 marker.pose.position.y,
+    #                                 marker.id,
+    #                                 marker.color.r,
+    #                                 marker.color.g,
+    #                                 marker.color.b] for marker in data.markers]
+
+    #     new_observation_pucks = np.array(new_observation_pucks)
+
+    #     self.known_chaos_pucks.set(new_observation_pucks)
+    #     self.is_observed_flag.set(True)
+    #     rospy.loginfo("Got pucks observation:")
+    #     rospy.loginfo(self.known_chaos_pucks.get())
+    #     rospy.loginfo(self.is_observed_flag.get())
+
+
     def is_observed(self):
-        rospy.loginfo("is observed?")
+        # rospy.loginfo("is observed?")
         if self.is_observed_flag.get():
-            rospy.loginfo('Got all pucks coords')
+            # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
         else:
             rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.known_chaos_pucks.get())))
