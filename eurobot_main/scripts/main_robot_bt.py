@@ -84,10 +84,10 @@ class MainRobotBT(object):
             self.strategy = self.suddenblind  #  suddenblind
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = TestField(self.side_status)
+            self.strategy = self.suddenblind
         elif num == 2:
             print("CHANGE STRATEGY TO " + str(num))
-            # self.strategy = self.testfield
+            self.strategy = TestField(self.side_status)
 
     def timer_callback(self, event):
         status = self.bt.tick()
@@ -1027,7 +1027,7 @@ class SuddenBlind(StrategyConfig):
         safe_chaoses = bt.FallbackWithMemoryNode([
                             bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_my_chaos_observed),
-                                move_guard_our_chaos_while_taking_red
+                                move_guard_our_chaos_while_taking_red,
                                 collect_my_chaos_check,
                                 collect_green_cell_puck2
                             ]),
