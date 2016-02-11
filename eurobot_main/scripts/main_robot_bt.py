@@ -432,6 +432,14 @@ class Strategy(object):
                 rospy.loginfo("hull is not safe to approach, sorted by angle")
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
+
+        if len(self.our_chaos_pucks.get()) == 2:
+            known_chaos_pucks = list(known_chaos_pucks)
+            known_chaos_pucks.sort(key=lambda t: t[1])
+            rospy.loginfo("rolled when two left __----------------______---------------------- _----___-___--__---_-_--_")
+            known_chaos_pucks = np.array(known_chaos_pucks)
+            
+            self.our_chaos_pucks.set(known_chaos_pucks)
         rospy.loginfo("Known pucks sorted: " + str(self.our_chaos_pucks.get()))
 
     #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
@@ -441,6 +449,7 @@ class Strategy(object):
 
     def calculate_closest_landing(self):
         """
+        Don't sort here, sort in calculate_config!
 
         :return: [(x, y, theta), ...]
         """
@@ -453,8 +462,6 @@ class Strategy(object):
             landings = unleash_power_of_geometry(self.our_chaos_pucks.get()[:, :2],
                                                  self.scale_factor,
                                                  self.HPAD)
-            if len(self.our_chaos_pucks.get()) == 2:
-                landings.sort(key=lambda t: t[1])
 
         self.closest_landing.set(landings[0])
         rospy.loginfo("Inside calculate_closest_landing, closest_landing is : ")
@@ -685,15 +692,15 @@ class SberStrategy(Strategy):
                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
-                                        # bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
+                                        bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
 
-                                        bt.SequenceWithMemoryNode([
-                                            bt.ActionNode(self.calculate_pucks_configuration),
-                                            bt.ActionNode(self.calculate_closest_landing),
-                                            bt.ActionNode(self.calculate_prelanding),
-                                            bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-                                            bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
-                                        ])
+                                        # bt.SequenceWithMemoryNode([
+                                        #     bt.ActionNode(self.calculate_pucks_configuration),
+                                        #     bt.ActionNode(self.calculate_closest_landing),
+                                        #     bt.ActionNode(self.calculate_prelanding),
+                                        #     bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                        #     bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
+                                        # ])
                                     ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
@@ -705,12 +712,12 @@ class SberStrategy(Strategy):
 
         collect_chaos = bt.SequenceWithMemoryNode([
                     # 1st, but done in finishing red
-                    # bt.ActionNode(self.calculate_pucks_configuration),
-                    # bt.ActionNode(self.calculate_closest_landing),
-                    # bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.calculate_pucks_configuration),
+                    bt.ActionNode(self.calculate_closest_landing),
+                    bt.ActionNode(self.calculate_prelanding),
 
-                    # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-                    # bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
+                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                    bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
                     bt_ros.BlindStartCollectGround("manipulator_client"),
                     bt.ActionNode(self.update_chaos_pucks),
                     bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
