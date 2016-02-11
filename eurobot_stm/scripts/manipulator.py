@@ -316,7 +316,7 @@ class Manipulator(object):
         else:
             return False
 
-    def delay_complete_collect_ground(self, delay=2):
+    def delay_complete_collect_ground(self, delay=1):
         rospy.sleep(delay)
         self.send_command(self.protocol["SET_PLATFORM"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
