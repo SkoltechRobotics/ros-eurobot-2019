@@ -289,15 +289,16 @@ class ReflectedVovanStrategy(Strategy):
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.ground_puck, "move_client"),
-                        bt_ros.StartCollectGround("manipulator_client"), 
-                        bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
-                        bt_ros.SetManipulatortoWall("manipulator_client")
-                    
+                        bt_ros.MoveLineToPoint(self.ground_puck + (side_sign*0.03, -0.03, -0.78), "move_client"),
+                        bt.ParallelWithMemoryNode([
+                            bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
+                            bt_ros.StartCollectGround("manipulator_client"), 
+                            bt_ros.CompleteCollectGround("manipulator_client"),
+                            bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                            bt_ros.SetManipulatortoWall("manipulator_client")
+                        ], threshold=5),
                     # bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
                 ]),
-                bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
                 bt_ros.StartPump("manipulator_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
@@ -334,14 +335,14 @@ class ReflectedVovanStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
                         bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                        bt_ros.StopPump("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GREENIUM"))
                     ])
-                ], threshold=2),
-                bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
+                ], threshold=2)
             ]),
             bt.SequenceWithMemoryNode([
                 bt_ros.StopPump("manipulator_client"),
@@ -466,12 +467,12 @@ class ReflectedVovanStrategy(Strategy):
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.4, -0.1, 0), "move_client"),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.4, -0.1, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
+                    ]),
                     bt_ros.CompleteTakeWallPuck("manipulator_client"),
                 ], threshold=2),
-
-                bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
-
             ])
         ])
 
@@ -500,6 +501,11 @@ class ReflectedVovanStrategy(Strategy):
             bt.ConditionNode(self.is_no_pucks_1)
         ])
 
+        leaving_red_zone = bt.SequenceNode([
+            bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
+            bt_ros.RightMoustacheDefault("manipulator_client"),
+        ])
+
         self.tree = bt.SequenceWithMemoryNode([
             first_puck,
             second_puck,
@@ -508,14 +514,15 @@ class ReflectedVovanStrategy(Strategy):
             fifth_puck,            
             unload,
             bt_ros.StepperDown("manipulator_client"),
-            sixth_puck,
+            bt_ros.SetReleaserSpeedToLow("manipulator_client"),
+            sixth_puck,  
             seventh_puck,
             eighth_puck,
             nineth_puck,
             bt_ros.StepperUp("manipulator_client"),
-            bt_ros.SetReleaserSpeedToLow("manipulator_client"),
             bt_ros.RightMoustacheDown("manipulator_client"),
-            unload_to_red])
+            unload_to_red,
+            leaving_red_zone])
 
 class VovanStrategy(Strategy):
     def __init__(self, side):
