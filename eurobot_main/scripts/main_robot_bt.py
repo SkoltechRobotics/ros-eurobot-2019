@@ -195,7 +195,7 @@ class StrategyConfig(object):
                                                  self.blunium[1] + self.robot_outer_radius + 0.2,
                                                  0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
-        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.14,  # 0.11
+        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.11,  # 0.11
                                                      self.blunium[1] + self.robot_outer_radius - 0.025, # 0.03 to close
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
@@ -219,9 +219,13 @@ class StrategyConfig(object):
                                             self.goldenium_grab_pos[1] + 0.09,
                                             self.goldenium_2_PREgrab_pos[2]])
 
-        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.08,
-                                                 self.our_chaos_center[1] - 0.6,
+        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] + self.sign * 0.22,
+                                                 self.our_chaos_center[1],  # 0.6
                                                  1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
+
+        # self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.08,
+        #                                          self.our_chaos_center[1] - 0.6,
+        #                                          1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
 
         self.scales_goldenium_pos = np.array([self.our_chaos_center[0] - self.sign * 0.29,  # 0.3
                                               self.our_chaos_center[1] + 0.37,
@@ -251,8 +255,8 @@ class StrategyConfig(object):
                                                     self.guard_chaos_loc[1] + 0.3,
                                                     self.guard_chaos_rotate[2] + self.sign * 0.3])
 
-        self.chaos_after_first = np.array([1.5 + self.sign * 0.2,
-                                            0.7,
+        self.chaos_after_first = np.array([1.5 + self.sign * 0.25,
+                                            0.75,
                                             1.57 - self.sign * 0.785])
 
         self.starting_pos = np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
@@ -1421,7 +1425,11 @@ class SafeStrategy(StrategyConfig):
                                             bt.SequenceWithMemoryNode([
                                                 bt_ros.StartCollectGroundCheck("manipulator_client"),
                                                 bt.ActionNode(lambda: self.score_master.add("UNDEFINED")),
-                                                bt_ros.MoveLineToPoint(self.guard_chaos_rotate, "move_client"),
+
+
+                                                bt_ros.MoveLineToPoint(self.chaos_after_first, "move_client"),
+
+                                                
                                                 bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
                                                 bt.ActionNode(self.calculate_next_prelanding),
 
@@ -1442,7 +1450,7 @@ class SafeStrategy(StrategyConfig):
                                                     bt_ros.SetManipulatortoUp("manipulator_client")
                                                 ]),
                                                 bt.SequenceWithMemoryNode([
-                                                    bt_ros.MoveLineToPoint(self.guard_chaos_rotate, "move_client"),
+                                                    bt_ros.MoveLineToPoint(self.chaos_after_first, "move_client"),
                                                     bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
                                                     bt.ActionNode(self.calculate_next_prelanding),
                                                     bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
@@ -1765,7 +1773,6 @@ class SafeStrategy(StrategyConfig):
                             ])
                         ])
 
-        # CHANGED, ADD TO INTERVIENE
         try_push_blunium = bt.SequenceWithMemoryNode([
                                 bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.6, "stm_client"),
                                 #bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.6, "stm_client"),
@@ -1780,7 +1787,6 @@ class SafeStrategy(StrategyConfig):
                                 bt.ActionNode(self.set_flag_blunium_pushed)
                             ])
 
-        # CHANGED!
         move_to_unload_first = bt.SequenceWithMemoryNode([
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.StepperUp("manipulator_client"),
