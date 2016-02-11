@@ -94,7 +94,7 @@ class YellowTactics(Tactics):
                                                self.blunium_end_push_pose[2]])
 
         self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] - 0.22,
-                                                       self.blunium_end_push_pose[1] - 0.05,
+                                                       self.blunium[1] + 0.13,
                                                        0.56])
 
         self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
@@ -192,7 +192,7 @@ class PurpleTactics(Tactics):
                                                self.blunium_end_push_pose[2]])
 
         self.accelerator_PREunloading_pos = np.array([self.blunium_end_push_pose[0] + 0.22,
-                                                       self.blunium_end_push_pose[1] - 0.05,
+                                                       self.blunium[1] + 0.13,  # center of robot
                                                        0.56])
 
         self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
@@ -551,7 +551,7 @@ class MainRobotBT(object):
         approach_acc = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
                             bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
-                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.6, "stm_client"),
+                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.9, "stm_client"),
                         ])
 
         collect_unload_first_in_acc = bt.SequenceWithMemoryNode([

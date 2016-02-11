@@ -218,8 +218,6 @@ class Manipulator(object):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
-                print counter
-                print "counter is"
             if counter > 0:
                 return True
         return False
