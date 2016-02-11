@@ -4,7 +4,7 @@ num_points_in_path: 100
 robot_radius: 0.14
 k_linear_wp: 1.5
 k_linear_vp: 1.5
-k : 0.2
+k : 0.15
 min_dist_to_goal_point: 0.2
 # max rate of the planner
 RATE: 25
