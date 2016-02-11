@@ -25,7 +25,7 @@ class CollectChaos(bt.FallbackNode):
         self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
 
         self.collected_pucks = bt.BTVariable(np.array([]))
-        self.score_master = ScoreController(self.collected_pucks)
+        self.score_master = ScoreController(self.collected_pucks, "main_robot")
 
         self.waypoints = bt.BTVariable(np.array([]))
         self.incoming_puck_color = bt.BTVariable(None)
@@ -88,6 +88,7 @@ class CollectChaos(bt.FallbackNode):
                     bt.ActionNode(self.calculate_pucks_configuration),
                     bt.ActionNode(self.calculate_closest_landing),
                     bt.ActionNode(self.calculate_prelanding),
+                    # bt.ActionNode(self.calculate_drive_back_point),
 
                     bt.FallbackNode([
                         bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
@@ -102,11 +103,10 @@ class CollectChaos(bt.FallbackNode):
                     bt_ros.BlindStartCollectGround("manipulator_client"),
                     bt.ActionNode(self.update_chaos_pucks),
                     bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                    bt.ActionNode(self.calculate_drive_back_point),
-                    self.choose_new_waypoint_latch,
-                    self.move_to_waypoint_node,
-                    bt.ActionNode(self.clear_waypoints),
-                    bt.ActionNode(self.choose_new_waypoint_latch.reset),
+                    # self.choose_new_waypoint_latch,
+                    # self.move_to_waypoint_node,
+                    # bt.ActionNode(self.clear_waypoints),
+                    # bt.ActionNode(self.choose_new_waypoint_latch.reset),
                     bt_ros.CompleteCollectGround("manipulator_client"),
                 ]),
 
@@ -329,15 +329,15 @@ class CollectChaos(bt.FallbackNode):
         # nearest_landing = self.waypoints.get()[-1]
         self.update_main_coords()
         drive_back_point = cvt_local2global(self.drive_back_vec, self.main_coords)
-        self.waypoints.set(drive_back_point)
-        # self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
+        # self.waypoints.set(drive_back_point)
+        self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
         rospy.loginfo("Inside calculate_drive_back_point, drive_back_point is : ")
         print self.waypoints.get()
 
     def choose_new_waypoint(self):
         current_waypoint = self.waypoints.get()[0]
         rospy.loginfo("current_waypoint: " + str(current_waypoint))
-        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))  # FIXME arc
+        self.move_to_waypoint_node.cmd.set("move_arc %f %f %f" % tuple(current_waypoint))  # FIXME arc
 
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])
@@ -383,12 +383,19 @@ class MainRobotBT(object):
         #                                     [2.1, 0.85, 3, 0, 0, 1],
         #                                     [1.9, 1.1, 4, 1, 0, 0]])
 
-        self.known_chaos_pucks = np.array([[1.95, 1.05, 1, 1, 0, 0],
-                                            [2, 1.1, 2, 0, 1, 0],
-                                            [2, 1, 3, 0, 0, 1],
-                                            [2.05, 1.05, 4, 1, 0, 0]])
+        # yellow
+        # self.known_chaos_pucks = np.array([[1.95, 1.05, 1, 1, 0, 0],
+        #                                     [2, 1.1, 2, 0, 1, 0],
+        #                                     [2, 1, 3, 0, 0, 1],
+        #                                     [2.05, 1.05, 4, 1, 0, 0]])
 
-        self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
+        # purple
+        self.known_chaos_pucks = np.array([[0.95, 1.05, 1, 1, 0, 0],
+                                            [1, 1.1, 2, 0, 1, 0],
+                                            [1, 1, 3, 0, 0, 1],
+                                            [1.05, 1.05, 4, 1, 0, 0]])
+
+        # self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
 
         rospy.sleep(1)
         self.bt = bt.Root(
