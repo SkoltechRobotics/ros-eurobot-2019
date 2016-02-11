@@ -41,9 +41,14 @@ class CollectChaos(bt.FallbackWithMemoryNode):
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
 
+        # Init useful child nodes
+        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
+        self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
+
         self.starting_point_chaos = np.array([0.65, 1, 0]) #yelloo
         self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
-
+        self.chaos_center = np.array([1,1,0])
+        self.next_chaos_puck = bt.BTVariable()
         self.closest_landing = bt.BTVariable()
         self.nearest_PRElanding = bt.BTVariable()
 
@@ -56,7 +61,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 bt.ActionNode(self.calculate_closest_landing),
                 bt.ActionNode(self.calculate_prelanding),
 
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                 bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
@@ -103,9 +108,159 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 # bt.ParallelWithMemoryNode([
                 # ], threshold=5),
 
-            ])
         ])
 
+        ## WORKS
+        # super(CollectChaos, self).__init__([
+        #     bt.ConditionNode(self.is_chaos_empty),
+        #     bt.SequenceNode([
+        #         bt.SequenceWithMemoryNode([
+        #             bt.ActionNode(self.calculate_pucks_configuration),
+        #             bt.ActionNode(self.calculate_closest_landing),
+        #             bt.ActionNode(self.calculate_prelanding),
+        #             # bt.ActionNode(self.calculate_drive_back_point),
+
+        #             bt.FallbackNode([
+        #                 bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
+        #                 bt.SequenceNode([
+        #                     self.choose_new_waypoint_latch,
+        #                     self.move_to_waypoint_node,
+        #                     bt.ActionNode(self.remove_waypoint),
+        #                     bt.ActionNode(self.choose_new_waypoint_latch.reset),
+        #                     bt.ConditionNode(lambda: bt.Status.RUNNING)
+        #                 ])
+        #             ]),
+        #             bt_ros.BlindStartCollectGround("manipulator_client"),
+        #             bt.ActionNode(self.update_chaos_pucks),
+        #             bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+        #             # bt.ActionNode(self.calculate_drive_back_point),
+        #             # self.choose_new_waypoint_latch,
+        #             # self.move_to_waypoint_node,
+        #             # bt.ActionNode(self.clear_waypoints),
+        #             # bt.ActionNode(self.choose_new_waypoint_latch.reset),
+        #             bt_ros.CompleteCollectGround("manipulator_client"),
+        #         ]),
+
+        #         bt.ConditionNode(lambda: bt.Status.RUNNING)
+        #     ])
+        # ])
+
+
+        # when list of known already updated
+        # bt.SequenceWithMemoryNode([
+        #     bt.ConditionNode(self.is_not_first),
+        #     bt.ActionNode(self.calculate_drive_back_point),
+        #     bt.ActionNode(self.calculate_closest_landing),
+        #     bt.ActionNode(self.calculate_prelanding),
+        #
+        #
+        # ])
+        #
+        # bt.ParallelWithMemoryNode([
+        #     self.move_to_waypoint_node,
+        #
+        # ])
+
+        # TODO take into account, that when colecting 7 pucks, don't make step down
+        # collect_chaos = bt.SequenceNode([
+        #                     bt.FallbackNode([
+        #                         # completely?
+        #                         bt.ConditionNode(self.is_chaos_collected_completely),
+        #
+        #                         # if last puck, just collect it, return success and get fuck out of here
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt.ConditionNode(self.is_last_puck),
+        #                             bt.SequenceWithMemoryNode([
+        #                                 bt_ros.StartCollectGround("manipulator_client"),
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
+        #                             ])
+        #                         ]),
+        #
+        #                         # calc config and start collect
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt_ros.StartCollectGround("manipulator_client"),
+        #                             self.calculate_drive_back_point_latch,
+        #                             self.move_to_waypoint_node, # FIXME make it closer
+        #
+        #                             # calc new landing
+        #                             bt.ActionNode(self.calculate_pucks_configuration),
+        #                             bt.ActionNode(self.calculate_landings),
+        #
+        #                             # drive back, collect and move to new prelanding
+        #                             bt.ParallelWithMemoryNode([
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+        #                                 self.calculate_prelanding_latch,
+        #                                 self.move_to_waypoint_node,
+        #                             ], threshold=5),
+        #
+        #                             bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
+        #                         ]),
+        #                     ]),
+        #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
+        #                 ])
+
+
+    # def pucks_callback(self, data):
+    #     self.is_observed.set(True)
+    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+    #     # red (1, 0, 0)
+    #     # green (0, 1, 0)
+    #     # blue (0, 0, 1)
+    #
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         try:
+    #             new_observation_pucks = [[marker.pose.position.x,
+    #                                       marker.pose.position.y,
+    #                                       marker.id,
+    #                                       marker.color.r,
+    #                                       marker.color.g,
+    #                                       marker.color.b] for marker in data.markers]
+    #
+    #             self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
+    #             rospy.loginfo("Got pucks observation:")
+    #             rospy.loginfo(self.known_chaos_pucks.get())
+    #             self.pucks_subscriber.unregister()
+    #
+    #         except Exception:  # FIXME
+    #             rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    # def is_chaos_collected_completely(self):
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         rospy.loginfo("Chaos collected completely")
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.FAILED
+    #
+    # def is_chaos_collected_completely1(self):
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         rospy.loginfo("Chaos collected completely")
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.RUNNING
+
+
+    # def is_last_puck(self):
+    #     if len(self.known_chaos_pucks.get()) == 1:
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.RUNNING
+
+    # def is_chaos_observed(self):
+    #     if self.is_observed.get():
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.RUNNING
+
+    # def is_chaos_empty(self):
+    #     # print self.known_chaos_pucks.get()
+    #     if len(self.known_chaos_pucks.get()) > 0:
+    #         return bt.Status.FAILED
+    #     else:
+    #         return bt.Status.SUCCESS
 
     @staticmethod
     def get_color(puck):
@@ -195,11 +350,40 @@ class CollectChaos(bt.FallbackWithMemoryNode):
         # print self.waypoints.get()
         print " "
 
+    # def calculate_prelanding(self):
+    #     nearest_landing = self.waypoints.get()
+    #     nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
+    #     self.waypoints.set(np.stack((nearest_PRElanding, self.waypoints.get())))
+    #     # rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
+    #     rospy.loginfo("Waypoints after concatenation: ")
+    #     print self.waypoints.get()
+    #     print " "
+
     def calculate_prelanding(self):
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.closest_landing.get())
         self.nearest_PRElanding.set(nearest_PRElanding)
-        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding))
+        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding)
         print " "
+
+    # def calculate_drive_back_point(self):
+    #     # nearest_landing = self.waypoints.get()[-1]
+    #     self.update_main_coords()
+    #     drive_back_point = cvt_local2global(self.drive_back_vec, self.main_coords)
+    #     # self.waypoints.set(drive_back_point)
+    #     self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
+    #     rospy.loginfo("Inside calculate_drive_back_point, drive_back_point is : ")
+    #     print self.waypoints.get()
+
+    # def choose_new_waypoint(self):
+    #     current_waypoint = self.waypoints.get()[0]
+    #     rospy.loginfo("current_waypoint: " + str(current_waypoint))
+    #     self.move_to_waypoint_node.cmd.set("move_arc %f %f %f" % tuple(current_waypoint))  # FIXME arc
+
+    # def remove_waypoint(self):
+    #     self.waypoints.set(self.waypoints.get()[1:])
+
+    # def clear_waypoints(self):
+    #     self.waypoints.set(np.array([]))
 
     def update_main_coords(self):
         try:
