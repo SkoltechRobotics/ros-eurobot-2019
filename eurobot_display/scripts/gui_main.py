@@ -90,7 +90,7 @@ class App:
         # --------------------------------------------------
 
         # Heartbeat config
-        self.heartbeat = Label(self.frame5, bg="red", height=1, width=3, font=("Helvetica", 10))
+        self.heartbeat = Label(self.frame5, bg="red", height=2, width=4, font=("Helvetica", 15))
         self.heartbeat.pack(side="top")
 
         # main SIDE config
