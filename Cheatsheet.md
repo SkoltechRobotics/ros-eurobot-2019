@@ -344,3 +344,5 @@ GOALS
 # Выключить насос
 
 
+# required packages:
+ros-laser-scan-matcher

@@ -122,16 +122,6 @@ class ReleaseFromManipulator(ActionClientNode):
         cmd = "release_from_manipulator"
         super(ReleaseFromManipulator, self).__init__(cmd, action_client_id)
 
-class CompleteTakeWallPuck(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_wall"
-        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
-
-class CompleteCollectLastWall(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_last_wall"
-        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
-
 
 class CompleteCollectLastPuck(ActionClientNode):
     def __init__(self, action_client_id):
@@ -151,10 +141,7 @@ class MoveArcToPoint(ActionClientNode):
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
 
-class ReleaseFivePucks(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "release_5"
-        super(ReleaseFivePucks, self).__init__(cmd, action_client_id)
+
 
 # ===========================================================
 
@@ -213,6 +200,78 @@ class SetManipulatortoGoldenium(ActionClientNode):
         cmd = "set_angle_to_grab_goldenium"
         super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
 
+#-------------
+
+class ReleaseSomePucks(ActionClientNode):
+    def __init__(self, pucks_inside, action_client_id):
+        self.pucks_inside = pucks_inside
+
+        cmd = "release_" + str(pucks_inside)
+        super(ReleaseSomePucks, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        
+        cmd = "release_" + str(len(self.pucks_inside))
+        self.cmd = bt.BTVariable(cmd)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+
+class CompleteCollectLastWall(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_last_wall"
+        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        
+
+class ReleaseAndBack(bt.SequenceWithMemoryNode):
+    def __init__(self, pucks_inside, scales_zone, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.scales_zone = scales_zone
+
+        super(ReleaseAndBack, self).__init__([
+            ReleaseSomePucks(self.pucks_inside, "manipulator_client"),
+            MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client")
+        ])
+
 
 class SetToWall_ifReachedGoal(bt.SequenceNode):
     def __init__(self, goal, action_client_id, threshold=0.3):
@@ -251,14 +310,11 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return False
 
     def is_coordinates_reached(self):
-        # FIXME:: self.update_coordinates() replace???!!!
         self.update_coordinates()
         if self.robot_coordinates is None:
             return bt.Status.RUNNING
         distance, _ = calculate_distance(self.robot_coordinates, self.goal)
         norm_distance = np.linalg.norm(distance)
-        print("_______________________________________")
-        print ("DISTANCE=",norm_distance)
         if norm_distance < self.threshold.get():
             return bt.Status.SUCCESS
         else:

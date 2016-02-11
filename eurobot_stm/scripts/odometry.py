@@ -4,7 +4,7 @@ import geometry_msgs.msg
 import tf_conversions
 import tf2_ros
 import nav_msgs.msg 
-
+from std_msgs.msg import String
 class Odometry():
     def __init__(self, stm_protocol, rate):
         self.robot_name = rospy.get_param("robot_name")
@@ -19,6 +19,7 @@ class Odometry():
         self.stm_protocol = stm_protocol
 
         self.odom_publisher = rospy.Publisher("odom", nav_msgs.msg.Odometry, queue_size = 1)
+        self.pucks_publisher = rospy.Publisher("pucks_sucks", String, queue_size = 1)
         rospy.Timer(rospy.Duration(1. / rate), self.odom_callback)
         
     
@@ -26,6 +27,10 @@ class Odometry():
         successfully, values = self.stm_protocol.send(0x0F, args=None)
         if successfully:
             self.send_odometry(values)
+
+        successfully, values = self.stm_protocol.send(0x28, args=None)
+        if successfully:
+            self.pucks_publisher.publish(str(values))
 
 
     def send_odometry(self, values):
