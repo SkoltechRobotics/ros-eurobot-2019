@@ -281,7 +281,7 @@ class Manipulator(object):
         else:
             return False
 
-    def delay_start_collect_ground(self, delay=1):  # 0.6
+    def delay_start_collect_ground(self, delay=1.2):  # 0.6
         rospy.sleep(delay)
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_GROUND"])

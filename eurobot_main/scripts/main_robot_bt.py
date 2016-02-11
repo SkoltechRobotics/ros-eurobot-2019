@@ -504,7 +504,7 @@ class StrategyConfig(object):
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
 
-        if len(self.my_chaos_pucks.get()) == 3:  # or len(self.my_chaos_pucks.get()) == 3:
+        if len(self.my_chaos_pucks.get()) == 2:  # or len(self.my_chaos_pucks.get()) == 3:
             my_known_chaos_pucks = list(my_known_chaos_pucks)  # FIXME .tolist ?
             my_known_chaos_pucks.sort(key=lambda t: t[1])
             rospy.loginfo("rolled when two left")
@@ -768,11 +768,11 @@ class SuddenBlind(StrategyConfig):
                                             ])
 
         collect_opp_chaos_take_red_collision_delay = bt.SequenceWithMemoryNode([
-                                                        bt.ActionNode(self.calculate_pucks_configuration),
-                                                        bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
+                                                        #bt.ActionNode(self.calculate_pucks_configuration),
+                                                        #bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
                                                         bt.ParallelWithMemoryNode([
-                                                            bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
-                                                            # bt_ros.MoveLineToPoint(self.first_puck_landing_far, "move_client"),
+                                                            # bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                                            bt_ros.MoveLineToPoint(self.first_puck_landing_far, "move_client"),
                                                             bt.FallbackWithMemoryNode([
                                                                 bt.SequenceWithMemoryNode([
                                                                     bt_ros.DelayStartCollectGroundCheck("manipulator_client"),
@@ -788,11 +788,11 @@ class SuddenBlind(StrategyConfig):
 
                                                         bt.SequenceWithMemoryNode([
                                                             bt.ActionNode(self.calculate_pucks_configuration),
-                                                            # bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
-                                                            bt.ActionNode(self.set_closest_chaos_landing),
-                                                            bt.ActionNode(self.set_prelanding_to_chaos_landing),
-                                                            # bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                                            bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
+                                                            bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
                                                             # bt.ActionNode(self.calculate_pucks_configuration),
+                                                            # bt.ActionNode(self.set_closest_chaos_landing),
+                                                            # bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                                                             bt.FallbackWithMemoryNode([
                                                                 bt.SequenceWithMemoryNode([
@@ -1002,42 +1002,46 @@ class SuddenBlind(StrategyConfig):
                                     ])
                                 ])
 
-        interv_chaoses = bt.FallbackWithMemoryNode([
-                            bt.SequenceWithMemoryNode([
-                                # if opp chaos observed, move to their zone
-                                bt.ConditionNode(self.is_opp_chaos_observed),
-                                collect_opp_chaos_take_red_collision_delay,
+        # interv_chaoses = bt.FallbackWithMemoryNode([
+        #                     bt.SequenceWithMemoryNode([
+        #                         # if opp chaos observed, move to their zone
+        #                         bt.ConditionNode(self.is_opp_chaos_observed),
+        #                         collect_opp_chaos_take_red_collision_delay,
 
-                                # # what'll happen first: time limit or finish collecting opponents' chaos
-                                # bt.ParallelWithMemoryNode([
+        #                         # # what'll happen first: time limit or finish collecting opponents' chaos
+        #                         # bt.ParallelWithMemoryNode([
 
-                                #     # bt_ros.DelayCollision("manipulator_client"),
-                                # ], threshold=1),
+        #                         #     # bt_ros.DelayCollision("manipulator_client"),
+        #                         # ], threshold=1),
                                 
-                                collect_my_chaos_check
-                            ]),
+        #                         collect_my_chaos_check
+        #                     ]),
 
-                            bt.SequenceWithMemoryNode([
-                                collect_red_cell_puck,
-                                move_chaos_center_collect,
-                                collect_green_cell_puck
-                            ])
-                        ])
+        #                     bt.SequenceWithMemoryNode([
+        #                         collect_red_cell_puck,
+        #                         move_chaos_center_collect,
+        #                         collect_green_cell_puck
+        #                     ])
+        #                 ])
 
-        safe_chaoses = bt.FallbackWithMemoryNode([
+
+
+        safe_chaose = bt.FallbackWithMemoryNode([
                             bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_my_chaos_observed),
                                 move_guard_our_chaos_while_taking_red,
                                 collect_my_chaos_check,
-                                collect_green_cell_puck2
+                                collect_green_cell_puck
                             ]),
 
                             bt.SequenceWithMemoryNode([
                                 collect_red_cell_puck,
                                 move_chaos_center_collect,
-                                collect_green_cell_puck
+                                collect_green_cell_puck2
                             ])
                         ])
+
+
 
         push_nose_blunium = bt.SequenceWithMemoryNode([
                                 bt.ParallelWithMemoryNode([
@@ -1167,12 +1171,12 @@ class SuddenBlind(StrategyConfig):
         ## INTERVIENE STRATEGY
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
-                        interv_chaoses,
-                        # safe_chaoses,
+                        # interv_chaoses,
+                        safe_chaose,
                         push_nose_blunium,
                         unload_acc,
 
-                        # collect_unload_goldenium,
+                        collect_unload_goldenium,
                         search_lost_puck_unload_cell
                         # bt_ros.SetManipulatortoUp("manipulator_client"),
                         # bt_ros.MoveLineToPoint(self.starting_pos, "move_client")

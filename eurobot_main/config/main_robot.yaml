@@ -8,7 +8,7 @@ approach_delta: 0.01  # additional offset to approach cell pucks
 
 vertical_pucks_approach_dist: 0.185
 robot_outer_radius: 0.165  # FIXME
-drive_back_dist: 0.1  # 0.09 good when sorting pucks as usual
+drive_back_dist: 0.09  # 0.09 good when sorting pucks as usual
 RATE: 10
 scale_factor: 10
 coords_threshold: 0.01
