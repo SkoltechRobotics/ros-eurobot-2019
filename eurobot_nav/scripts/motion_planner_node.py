@@ -465,7 +465,7 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif self.is_collision or self.current_state == "move_to_point":
+        elif self.is_collision:
             self.set_speed(np.zeros(3))
             self.prev_vel = np.zeros(3)
             self.goal = self.buf_goal.copy()

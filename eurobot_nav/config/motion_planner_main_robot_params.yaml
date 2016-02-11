@@ -5,15 +5,18 @@ robot_radius: 0.20
 k_linear_wp: 2.5
 k_linear_vp: 1.5
 
-k : 0.2
+k : 0.15
 min_dist_to_goal_point: 0.2  # 0.1
 # max rate of the planner
-RATE: 40
+RATE: 15
 # goal tolerance
 XY_GOAL_TOLERANCE: 0.012
 YAW_GOAL_TOLERANCE: 0.012
+XY_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
+YAW_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
+exp_const_move_to_point: 0.2
 # maximum speed
-V_MAX: 0.5
+V_MAX: 0.6
 W_MAX: 1.5
 AV_MAX: 1
 AW_MAX: 0.8

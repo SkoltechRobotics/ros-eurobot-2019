@@ -44,7 +44,7 @@ main_robot:
   yellow_side:
     red_cell_puck: [2.51, 0.45]
     blunium: [1.29, 0.025]  # outer side of the puck
-    scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+    scales_area: [[1.4, 1], [1.4, 1.6], [2, 1.6], [2, 1]]
     yellow_cells_area: [[2.4, 0.3], [2.4, 1.2], [2.7, 1.2], [2.7, 0.3]]
     goldenium: [0.775, 0.05]  # outer side of the puck
     chaos_center: [2.01, 1.05]
@@ -53,7 +53,7 @@ main_robot:
   purple_side:
     red_cell_puck: [0.5, 0.45]
     blunium: [1.71, 0.025]  # outer side of the puck
-    scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
+    scales_area: [[1.6, 1.2], [1.6, 1.6], [1, 1.6], [1, 1.2]]
     purple_cells_area: [[0.4, 0.3], [0.4, 1.2], [0.7, 1.2], [0.7, 0.3]]
     goldenium: [2.23, 0.05]  # outer side of the puck
     chaos_center: [1, 1.05]

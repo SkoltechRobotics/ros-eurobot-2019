@@ -148,6 +148,7 @@ class StrategyConfig(object):
         self.is_our_chaos_observed_flag = bt.BTVariable(False)
         self.is_opponent_chaos_observed_flag = bt.BTVariable(False)
         self.is_blunium_pushed_flag = bt.BTVariable(False)
+        self.is_blunium_approached_flag = bt.BTVariable(False)
 
         self.scale_factor = np.array(rospy.get_param("scale_factor"))
         self.critical_angle = rospy.get_param("critical_angle")
@@ -573,13 +574,26 @@ class StrategyConfig(object):
 
     def set_flag_blunium_pushed(self):
         self.is_blunium_pushed_flag.set(True)
+        rospy.loginfo('is_blunium_pushed_flag set to TRUE')
+
+    def set_flag_blunium_approached(self):
+        self.is_blunium_approached_flag.set(True)
+        rospy.loginfo('is_blunium_approached_flag set to TRUE')
+
+    def is_blunium_approached(self):
+        if self.is_blunium_approached_flag.get():
+            rospy.loginfo('YES, blunium was PUSHED!')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo("BLUNIUM MISSED")
+            return bt.Status.FAILED
 
     def is_blunium_pushed(self):
         if self.is_blunium_pushed_flag.get():
-            rospy.loginfo('blunium pushed')
+            rospy.loginfo('YES, blunium was PUSHED!')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo("blunium missed")
+            rospy.loginfo("BLUNIUM MISSED")
             return bt.Status.FAILED
 
     def update_main_coords(self):
@@ -1080,7 +1094,7 @@ class SuddenBlind(StrategyConfig):
                             ])
                         ])
 
-        push_nose_blunium = bt.SequenceWithMemoryNode([
+        try_push_blunium = bt.SequenceWithMemoryNode([
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.StepperUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
@@ -1088,8 +1102,20 @@ class SuddenBlind(StrategyConfig):
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client")  # [0, -0.1, 0]
+                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0]
+                                bt.ActionNode(self.set_flag_blunium_pushed)
                             ])
+
+        move_to_unload_first = bt.SequenceWithMemoryNode([
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.StepperUp("manipulator_client"),
+                                        bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
+                                    ], threshold=2),
+                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0],
+                                    bt_ros.UnloadAccelerator("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
+                                ])
 
         unload_acc = bt.SequenceNode([
                         bt.FallbackNode([
@@ -1102,40 +1128,23 @@ class SuddenBlind(StrategyConfig):
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
-        try_push_blunium = bt.SequenceWithMemoryNode([
-                                bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
-                                bt.ParallelWithMemoryNode([
-                                    bt_ros.StepperUp("manipulator_client"),
-                                    bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
-                                ], threshold=2),
-                                bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0],
-                                bt.ActionNode(self.set_flag_blunium_pushed)
-                            ])
-
-        move_to_unload_first = bt.SequenceWithMemoryNode([
-
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.StepperUp("manipulator_client"),
-                                        bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
-                                    ], threshold=2),
-                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0],
-                                    bt_ros.UnloadAccelerator("manipulator_client"),
-                                    bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                    bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
-                                ])
+        get_to_blunium_set_flag = bt.SequenceWithMemoryNode([
+                                        t_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
+                                        bt.ActionNode(self.set_flag_blunium_approached)
+                                    ])
 
         push_blunium_collision_delay = bt.SequenceWithMemoryNode([
 
                                             bt.ParallelWithMemoryNode([
-                                                try_push_blunium,
+                                                get_to_blunium_set_flag,
                                                 bt_ros.DelayNode(7)
                                             ], threshold=1),
 
                                             bt.FallbackWithMemoryNode([
-                                                bt.ConditionNode(self.is_blunium_pushed_flag),
+                                                bt.SequenceWithMemoryNode([
+                                                    bt.ConditionNode(self.is_blunium_approached),
+                                                    try_push_blunium
+                                                ]),
                                                 move_to_unload_first
                                             ]),
 
@@ -1745,7 +1754,6 @@ class SafeStrategy(StrategyConfig):
                         ])
 
         try_push_blunium = bt.SequenceWithMemoryNode([
-                                bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.StepperUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
@@ -1753,12 +1761,11 @@ class SafeStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0],
+                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0]
                                 bt.ActionNode(self.set_flag_blunium_pushed)
                             ])
 
         move_to_unload_first = bt.SequenceWithMemoryNode([
-
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.StepperUp("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
@@ -1780,15 +1787,23 @@ class SafeStrategy(StrategyConfig):
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
+        get_to_blunium_set_flag = bt.SequenceWithMemoryNode([
+                                        bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
+                                        bt.ActionNode(self.set_flag_blunium_approached)
+                                    ])
+
         push_blunium_collision_delay = bt.SequenceWithMemoryNode([
 
                                             bt.ParallelWithMemoryNode([
-                                                try_push_blunium,
+                                                get_to_blunium_set_flag,
                                                 bt_ros.DelayNode(7)
                                             ], threshold=1),
 
                                             bt.FallbackWithMemoryNode([
-                                                bt.ConditionNode(self.is_blunium_pushed_flag),
+                                                bt.SequenceWithMemoryNode([
+                                                    bt.ConditionNode(self.is_blunium_approached),
+                                                    try_push_blunium
+                                                ]),
                                                 move_to_unload_first
                                             ]),
 
@@ -2005,6 +2020,7 @@ class SafeStrategy(StrategyConfig):
                         bt.ActionNode(self.update_robot_status),
                         safe_chaos,
                         #push_nose_blunium,
+                        
                         push_blunium_collision_delay,
                         collect_goldenium,
                         #search_lost_puck_unload_cell,
@@ -2306,23 +2322,24 @@ class TestField(StrategyConfig):
                         bt.ActionNode(self.update_robot_status),
 
                         collect_red_cell_puck,
+                        collect_green_cell_puck2,
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_my_chaos_observed),
-                                collect_chaos,
-                            ]),
-                            collect_green_cell_puck2
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_my_chaos_observed),
+                        #         collect_chaos,
+                        #     ]),
+                        #     collect_green_cell_puck2
+                        # ]),
 
                         bt_ros.MoveLineToPoint(self.guard_chaos_loc, "move_client"),
                         bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
 
                         push_nose_blunium,
                         unload_acc,
-                        collect_unload_goldenium,
-                        bt_ros.SetManipulatortoUp("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.starting_pos, "move_client")
+                        collect_unload_goldenium
+                        # bt_ros.SetManipulatortoUp("manipulator_client"),
+                        # bt_ros.MoveLineToPoint(self.starting_pos, "move_client")
                     ])
 
 
