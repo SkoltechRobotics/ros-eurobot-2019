@@ -5,8 +5,9 @@ memtotal=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`;
 echo $memfree
 echo $memtotal
 mem=`bc  <<< "$memfree*100/$memtotal"`
-
-if [ $mem -gt 80 ]
+echo $mem
+if [ $mem -gt 60 ]
 then
-    rm -rf ~/.ros/log/
+    echo "asdasd"
+    rm -rf /home/odroid/.ros/log/*
 fi
