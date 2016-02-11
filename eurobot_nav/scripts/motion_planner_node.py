@@ -261,6 +261,7 @@ class MotionPlannerNode:
         self.cmd_id = cmd_id
         self.current_cmd = cmd_type
         self.goal = goal
+        self.buf_goal = self.goal.copy()
         self.update_coords()
         rospy.loginfo(rospy.Time.now().to_sec())
         self.current_state = "start"
@@ -438,21 +439,24 @@ class MotionPlannerNode:
         rospy.loginfo(self.goal)
         rospy.loginfo(self.collision_avoidance)
         rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
-        #self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
-        self.is_collision = False
+        #self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif self.is_collision and self.current_state != "move_to_point":
+        elif self.is_collision:
             self.set_speed(np.zeros(3))
             self.prev_vel = np.zeros(3)
+            self.goal = self.buf_goal.copy()
             self.prev_time = rospy.Time.now().to_sec()
             obstacle_polygon = self.get_polygon_from_point(obstacle_point, self.oponent_robot_radius + self.robot_radius)
+            self.collision_avoidance.set_collision_area(obstacle_polygon)
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)
             obstacle_polygon = list_from_polygon(obstacle_polygon)
@@ -533,7 +537,7 @@ class MotionPlannerNode:
             if self.is_robot_stopped:
                 self. is_robot_stopped = False
                 self.way_point_ind += 1
-                if self.way_point_ind >= len(self.way_points) - 1:
+                if self.way_point_ind >= (len(self.way_points) - 1):
                     self.way_point_ind = 1
                     self.goal = self.way_points[-1]
                     self.current_state = "following"
