@@ -8,10 +8,10 @@ k_linear_vp: 1.5
 k : 0.15
 min_dist_to_goal_point: 0.2  # 0.1
 # max rate of the planner
-RATE: 15
+RATE: 25
 # goal tolerance
-XY_GOAL_TOLERANCE: 0.012
-YAW_GOAL_TOLERANCE: 0.012
+XY_GOAL_TOLERANCE: 0.007
+YAW_GOAL_TOLERANCE: 0.007
 XY_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
 YAW_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
 exp_const_move_to_point: 0.2

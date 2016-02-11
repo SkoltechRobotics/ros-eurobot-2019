@@ -33,7 +33,7 @@ class MotionPlannerNode:
         self.exp_const_move_to_point = rospy.get_param("exp_const_move_to_point")
         self.e_const = self.exp_const
         self.velocity_vector = np.array(rospy.get_param("velocity_vector"))
-        self.acceleration_vector = self.velocity_vector * 4 * self.velocity_vector[2]
+        self.acceleration_vector = self.velocity_vector * 3 * self.velocity_vector[2]
         self.k_linear_wp = rospy.get_param("k_linear_wp")
         self.k_linear_vp = rospy.get_param("k_linear_wp")
         self.RATE = float(rospy.get_param("RATE"))

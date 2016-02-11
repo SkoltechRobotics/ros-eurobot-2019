@@ -104,6 +104,7 @@ class CollisionAvoidance(object):
 
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
+        distances[np.where(distances == 0)] = 100
         rospy.loginfo("Proximity data %s", distances)
         distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))

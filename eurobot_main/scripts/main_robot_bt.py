@@ -211,6 +211,10 @@ class StrategyConfig(object):
                                             self.goldenium[1] + self.VPAD,  # 0.185
                                             self.goldenium_2_PREgrab_pos[2]])
 
+        self.goldenium_blind_move_pose = np.array([self.goldenium[0],
+                                                    self.goldenium[1] + 0.15,  # 0.185
+                                                    self.goldenium_2_PREgrab_pos[2]])
+
         self.goldenium_back_pose = np.array([self.goldenium[0],
                                             self.goldenium_grab_pos[1] + 0.09,
                                             self.goldenium_2_PREgrab_pos[2]])
@@ -1178,11 +1182,19 @@ class SuddenBlind(StrategyConfig):
         collect_goldenium = bt.SequenceWithMemoryNode([
                                         bt_ros.Delay500("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.goldenium_2_PREgrab_pos, "move_client"),
+                                        bt_ros.Delay500("manipulator_client"),  # FIXME remove?
                                         bt_ros.StartCollectGoldenium("manipulator_client"),
-                                        bt.ParallelWithMemoryNode([
-                                            bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
-                                            bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+
+                                        bt.ParallelNode([
+                                            bt_ros.CheckBarometr("manipulator_client"),
+                                            bt.Latch(bt_ros.MoveLineToPoint(self.goldenium_blind_move_pose, "move_client"))
                                         ], threshold=1),
+
+                                        # bt.ParallelWithMemoryNode([
+                                        #     bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
+                                        #     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                        # ], threshold=1),
+
                                         bt_ros.MoveLineToPoint(self.goldenium_back_pose, "move_client"),
 
                                         bt.FallbackWithMemoryNode([
@@ -1753,7 +1765,10 @@ class SafeStrategy(StrategyConfig):
                             ])
                         ])
 
+        # CHANGED, ADD TO INTERVIENE
         try_push_blunium = bt.SequenceWithMemoryNode([
+                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.6, "stm_client"),
+                                #bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.6, "stm_client"),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.StepperUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
@@ -1761,16 +1776,17 @@ class SafeStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0]
+                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.2, "stm_client"),  # 0.9
                                 bt.ActionNode(self.set_flag_blunium_pushed)
                             ])
 
+        # CHANGED!
         move_to_unload_first = bt.SequenceWithMemoryNode([
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.StepperUp("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
                                     ], threshold=2),
-                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),  # [0, -0.1, 0],
+                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.2, "stm_client"),  # 0.9
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
@@ -1846,13 +1862,22 @@ class SafeStrategy(StrategyConfig):
                                         ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
+
                                         bt_ros.Delay500("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.goldenium_2_PREgrab_pos, "move_client"),
+                                        bt_ros.Delay500("manipulator_client"),  # FIXME remove?
                                         bt_ros.StartCollectGoldenium("manipulator_client"),
-                                        bt.ParallelWithMemoryNode([
-                                            bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
-                                            bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+
+                                        bt.ParallelNode([
+                                            bt_ros.CheckBarometr("manipulator_client"),
+                                            bt.Latch(bt_ros.MoveLineToPoint(self.goldenium_blind_move_pose, "move_client"))
                                         ], threshold=1),
+
+                                        # bt.ParallelWithMemoryNode([
+                                        #     bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
+                                        #     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                        # ], threshold=1),
+
                                         bt_ros.MoveLineToPoint(self.goldenium_back_pose, "move_client"),
 
                                         bt.FallbackWithMemoryNode([

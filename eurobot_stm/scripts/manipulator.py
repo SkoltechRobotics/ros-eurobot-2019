@@ -180,7 +180,10 @@ class Manipulator(object):
                     self.id_command += 1
                     return False
                 else:
+                    self.id_command += 1
                     rospy.loginfo("Error in send_command()->manipulator.py->is_okay_answer")
+                    return False
+                    
 
     def send_command(self, cmd, args=None):
         while True:
@@ -233,7 +236,7 @@ class Manipulator(object):
         # cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
         cmd = self.protocol["GET_BAROMETR_STATUS"]
         counter = 0
-        for i in range(70):
+        for i in range(80):  # 70
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
