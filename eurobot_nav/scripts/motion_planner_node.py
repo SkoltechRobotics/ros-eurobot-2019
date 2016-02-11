@@ -165,6 +165,7 @@ class MotionPlannerNode:
             self.world_publisher.publish(markers)
 
     def get_polygon_from_point(self, point, radius):
+        rospy.loginfo("point polygon %s", point)
         return np.array([[point[0] - radius, point[1] - radius],
                          [point[0] - radius, point[1] + radius],
                          [point[0] + radius, point[1] + radius],
@@ -253,7 +254,7 @@ class MotionPlannerNode:
             self.xy_tolerance = self.XY_GOAL_TOLERANCE_MOVE_TO_POINT
             self.yaw_tolerance = self.YAW_GOAL_TOLERANCE_MOVE_TO_POINT
             self.e_const = self.exp_const_move_to_point
-            self.obstacle_polygon = np.array([[1.7, 1.], [1.7, 1.8], [2, 1.8], [2, 1]])
+           # self.obstacle_polygon = np.array([[1.7, 1.], [1.7, 1.8], [2, 1.8], [2, 1]])
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
             # self.publish_world(np.array([world]))
             # self.collision_avoidance.set_collision_point([self.world[1, :]])
@@ -469,11 +470,13 @@ class MotionPlannerNode:
             self.prev_vel = np.zeros(3)
             self.goal = self.buf_goal.copy()
             self.prev_time = rospy.Time.now().to_sec()
+            rospy.loginfo("Obs point %s", obstacle_point)
             obstacle_polygon = self.get_polygon_from_point(obstacle_point, self.oponent_robot_radius + self.robot_radius)
             self.collision_avoidance.set_collision_area(obstacle_polygon)
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
             removed_area_ind = self.coords[:2] - obstacle_point
             semi_ind = np.argmin(np.abs(removed_area_ind))
+            '''
             if semi_ind == 0:
                 if removed_area_ind[semi_ind] <= 0:
                     robot_polygon[0, 0] = obstacle_polygon[0, 0]
@@ -488,6 +491,7 @@ class MotionPlannerNode:
                 else:
                     robot_polygon[2, 1] = obstacle_polygon[2, 1]
                     robot_polygon[3, 1] = obstacle_polygon[3, 1]
+            '''
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)
             obstacle_polygon = list_from_polygon(obstacle_polygon)
             self.collision_avoidance.set_collision_area(obstacle_polygon)

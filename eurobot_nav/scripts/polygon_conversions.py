@@ -3,7 +3,7 @@ from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import cascaded_union
 import numpy as np
 
-
+'''
 def list_from_polygon(polygon):
     if type(polygon) is Polygon:
         coords = polygon.exterior.coords.xy
@@ -14,6 +14,29 @@ def list_from_polygon(polygon):
             polygon.append([x[i], y[i]])
     else:
         coords = polygon.coords.xy
+        x = coords[0]
+        y = coords[1]
+        polygon = []
+        for i in range(len(x) - 1):
+            polygon.append([x[i], y[i]])
+    return polygon
+'''
+
+
+def list_from_polygon(polygon):
+    print (type(polygon))
+    if type(polygon) is Polygon:
+        coords = polygon.exterior.coords.xy
+        x = coords[0]
+        y = coords[1]
+        polygon = []
+        for i in range(len(x) - 1):
+            polygon.append([x[i], y[i]])
+    else:
+        if type(polygon) is MultiPolygon:
+            coords = polygon[0].exterior.coords.xy
+        else:
+            coords = polygon.coords.xy
         x = coords[0]
         y = coords[1]
         polygon = []
