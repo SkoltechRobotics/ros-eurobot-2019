@@ -1,15 +1,15 @@
-velocity_vector: [0.6, 0.6, 1.2]
+velocity_vector: [0.55, 0.55, 1.2]
 robot_name: "main_robot"
 num_points_in_path: 100
 robot_radius: 0.20
 k_linear_wp: 2.5
 k_linear_vp: 1.5
 k : 0.15
-min_dist_to_goal_point: 0.1  # 0.1
+min_dist_to_goal_point: 0.2  # 0.1
 # max rate of the planner
 RATE: 25
 # goal tolerance
-XY_GOAL_TOLERANCE: 0.005
+XY_GOAL_TOLERANCE: 0.01
 YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
 V_MAX: 0.5
@@ -19,15 +19,15 @@ AW_MAX: 0.8
 # acceleration at beginning of movements
 ACCELERATION: 1.0
 # goal distance for deceleration
-D_DECELERATION: 0.15
+D_DECELERATION: 0.2
 R_DECELERATION: 1
-exp_const: 0.08
+exp_const: 0.05
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
 XY_ACCURATE_GOAL_TOLERANCE: 0.005
 YAW_ACCURATE_GOAL_TOLERANCE: 0.05
-D_ACCURATE_DECELERATION: 0.20
+D_ACCURATE_DECELERATION: 0.15
 NUM_RANGEFINDERS: 16
 COLLISION_STOP_DISTANCE: 150
 COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
@@ -37,6 +37,6 @@ collision:
     min_dist_to_obstacle_lidar: 0.7
     min_dist_to_obstacle_sensor: 0.20
     sensor_position: [[-0.1179, 0.05113, 2.0944], [0.03641, 0.13743, 2.0944], [-0.15573, 0., 3.1415], [0.01804, -0.12962, 4.19],
-[-0.12926, -0.04457, 4.19], [0.09281, 0.07027, 0.], [0.06798,-0.12699, 0], [0.06898, 0.12872, 1.0472], [0.09281, -0.08255, 5.23599 ]]
+[-0.12926, -0.04457, 4.19], [0.09281, 0.07027, 0.], [0.09281, -0.08255, 0], [0.06798, -0.12699, 5.23599 ], [0.06898, 0.12872, 1.0472]]
     angle_sensor: 0.
 

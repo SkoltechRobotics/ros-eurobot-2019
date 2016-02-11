@@ -95,6 +95,17 @@ class CollisionAvoidanceMainRobot(object):
         index *= obstacles[:, 1] < area[2, 1]
         return np.where(index > 0)
 
+    @staticmethod
+    def alpha_filter(cloud, min_sin_angle):
+        x, y = cloud.T
+        x0, y0 = 0, 0
+        x1, y1 = np.roll(x, 1), np.roll(y, 1)
+        cos_angle = ((x - x0) * (x - x1) + (y - y0) * (y - y1)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+                                                                   * np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1)))
+        sin_angle = np.sqrt(1 - cos_angle * cos_angle)
+        index = sin_angle >= min_sin_angle
+        return index
+
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
         rospy.loginfo(distances)
@@ -112,8 +123,8 @@ class CollisionAvoidanceMainRobot(object):
         y = distances * np.sin(angles)
         self.obstacle_points_lidar = np.zeros((0, 2))
         landmarks = (np.array([x, y])).T
-        if landmarks.size > 0:
-            self.obstacle_points_lidar = landmarks
+        if len(landmarks) > 0:
+            self.obstacle_points_lidar = landmarks[self.alpha_filter(landmarks, 0.4)]
 
     def get_collision_area(self, coords, goal):
         rospy.loginfo("GOAL %s", goal)
