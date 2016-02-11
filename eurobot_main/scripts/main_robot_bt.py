@@ -393,12 +393,13 @@ class StrategyConfig(object):
         print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
         # print "colors_of_opp_observed", sorted(colors_of_opp_observed)
 
-        if sorted(comparison_our) == ref_colors:
+        if len(observed_my_chaos_collection) == (4 - len(self.my_collected_chaos.get())):
+        #if sorted(comparison_our) == ref_colors:
             print "my chaos, equal"
             my_chaos_new = observed_my_chaos_collection
-        else:
-            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
-            print "my chaos, need to parse!"
+        # else:
+        #     my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
+        #     print "my chaos, need to parse!"
 
         # if sorted(comparison_opponent) == ref_colors:
         #     print "opp_chaos, equal"
@@ -748,6 +749,8 @@ class SberStrategy(StrategyConfig):
                                     bt_ros.CompleteCollectGround("manipulator_client"),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                        bt.ActionNode(self.calculate_pucks_configuration),
+                                        bt.ActionNode(self.calculate_closest_landing),
                                         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                                     ])
                                 ], threshold=2),
@@ -901,9 +904,13 @@ class SberStrategy(StrategyConfig):
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
-                                    bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
+                                        bt_ros.SetToWall_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), "manipulator_client", threshold=0.15),
+                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.15),
+                                    ], threshold=3),
+                                    # bt.ActionNode(lambda: self.score_master.unload("SCALES")),
+                                    # bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
@@ -916,30 +923,30 @@ class SberStrategy(StrategyConfig):
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
 
-                        # move_to_opp_chaos,
-                        # collect_chaos,
+                        # # move_to_opp_chaos,
+                        # # collect_chaos,
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_observed),
-                                move_to_opp_chaos
-                            ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            # move_to_guard_zone
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_observed),
+                        #         move_to_opp_chaos
+                        #     ]),
+                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                        #     # move_to_guard_zone
+                        # ]),
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_observed),
-                                collect_chaos
-                            ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            # move_home
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_observed),
+                        #         collect_chaos
+                        #     ]),
+                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                        #     # move_home
+                        # ]),
 
-                        finish_chaos_push_nose_blunium,
-                        approach_acc,
-                        unload_acc,
+                        # finish_chaos_push_nose_blunium,
+                        # approach_acc,
+                        # unload_acc,
                         collect_goldenium,
                         move_to_goldenium_prepose,
                         unload_goldenium
