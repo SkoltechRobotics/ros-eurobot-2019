@@ -48,6 +48,10 @@ class Manipulator(object):
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,
             "RELEASER_THROW_SECONDARY" : 0x21,
+            "LEFT_MOUSTACHE_DEFAULT" : 0x22,
+            "LEFT_MOUSTACHE_DOWN" : 0x23,
+            "RIGHT_MOUSTACHE_DEFAULT" : 0x24,
+            "RIGHT_MOUSTACHE_DOWN" : 0x25,
     
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
@@ -88,6 +92,14 @@ class Manipulator(object):
             return self.start_pump()
         elif cmd == "stop_pump":
             return self.stop_pump()
+        elif cmd == "left_moustache_default":
+            return self.left_moustache_default()
+        elif cmd == "left_moustache_down":
+            return self.left_moustache_down()
+        elif cmd == "right_moustache_default":
+            return self.right_moustache_default()
+        elif cmd == "right_moustache_down":
+            return self.right_moustache_down()
         elif cmd == "moving_default":
             return self.moving_default()
         elif cmd == "stepper_up":
@@ -348,6 +360,22 @@ class Manipulator(object):
 
     def stop_pump(self):
         self.send_command(self.protocol["STOP_PUMP"])
+        return True
+
+    def left_moustache_default(self):
+        self.send_command(self.protocol["LEFT_MOUSTACHE_DEFAULT"])
+        return True
+    
+    def left_moustache_down(self):
+        self.send_command(self.protocol["LEFT_MOUSTACHE_DOWN"])
+        return True
+
+    def right_moustache_default(self):
+        self.send_command(self.protocol["RIGHT_MOUSTACHE_DEFAULT"])
+        return True
+
+    def right_moustache_down(self):
+        self.send_command(self.protocol["RIGHT_MOUSTACHE_DOWN"])
         return True
 
     def moving_default(self):

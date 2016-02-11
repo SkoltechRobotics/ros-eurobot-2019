@@ -488,6 +488,7 @@ class ReflectedVovanStrategy(Strategy):
             eighth_puck,
             nineth_puck,
             bt_ros.StepperUp("manipulator_client"),
+            bt_ros.RightMoustacheDown("manipulator_client"),
             unload_to_red])
 
 class VovanStrategy(Strategy):
