@@ -295,7 +295,8 @@ class MainRobotBT(object):
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-        self.starting_point_chaos = np.array([0.5, 1, 0]) #yelloo
+        self.starting_point_chaos = np.array([0.65, 1, 0]) #yelloo
+	self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
         self.chaos_center = np.array([1,1,0])
         self.next_chaos_puck = bt.BTVariable()
 
@@ -654,16 +655,20 @@ class MainRobotBT(object):
 
 
     def get_closest_in_chaos(self, pucks, me):
-        pucks = filter(lambda p: np.linalg.norm(p - self.chaos_center) < 0.3, pucks)
+        pucks = filter(lambda p: np.linalg.norm(p - self.chaos_center) < 0.5, pucks)
         closest_puck = np.array([-1,-1,0])
+	rospy.loginfo("I see %d pucks" % len(pucks))
         if len(pucks) > 0:
-            closest_puck = pucks[np.argmin(np.linalg.norm(pucks-self.starting_point_chaos))]
+            closest_puck = pucks[np.argmin(np.linalg.norm(pucks-self.starting_point_chaos,axis=1))]
             diff = closest_puck - self.starting_point_chaos
-            closest_puck[2] = np.arctan2(diff[0], diff[1])
+            closest_puck[2] = np.arctan2(diff[1], diff[0])
+	    diff_norm = np.linalg.norm(diff[:2])
+	    diff = diff * (diff_norm - 0.09)/diff_norm
+	    closest_puck[:2] = self.starting_point_chaos[:2] + diff[:2]
+	rospy.loginfo("Calculated closest point")
         return closest_puck
 
-    def pucks_callback(self, msg):
-        data = msg.data
+    def pucks_callback(self, data):
         if len(self.known_chaos_pucks.get()) == 0:
             try:
                 new_observation_pucks = [[marker.pose.position.x,
@@ -672,19 +677,65 @@ class MainRobotBT(object):
 
                 new_observation_pucks = np.array(new_observation_pucks)
                 self.next_chaos_puck.set(self.get_closest_in_chaos(new_observation_pucks, self.starting_point_chaos))
-
+		new_starting_point = self.starting_point_chaos.copy()
+		new_starting_point[2] = self.next_chaos_puck.get()[2]
+		self.starting_point_var.set(new_starting_point)
             except Exception:  # FIXME
                 rospy.loginfo("list index out of range - no visible pucks on the field ")
 
     def strategy_chaos(self):
         return bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt_ros.MoveLineToPoint(self.starting_point, "move_client"),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
                 bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),
+		
+                bt_ros.Delay500("manipulator_client"),
+		#bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
+                bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
+                bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),
+
+                bt_ros.Delay500("manipulator_client"),
+		bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
+                bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),
+
+                bt_ros.Delay500("manipulator_client"),
+		bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
+                bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),
+
+                bt_ros.Delay500("manipulator_client"),
+		bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
+                bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                bt_ros.MoveToVariable(self.starting_point_var, "move_client"),
                 bt_ros.CompleteCollectGround("manipulator_client")
+
             ]),
-            bt.ConditionNode(lambda: bt.Status.SUCCESS)
+            bt.SequenceNode([
+		bt.Latch(bt_ros.StepperUp("manipulator_client")), 
+		bt.FallbackNode([
+		    bt.ConditionNode(self.is_robot_empty),
+		    bt.SequenceWithMemoryNode([
+			bt_ros.UnloadAccelerator("manipulator_client"),
+			bt.ActionNode(lambda: self.score_master.unload("ACC")),
+		    ])
+		]),
+		bt.ConditionNode(self.is_robot_empty_1)
+	    ])
+
+
         ])
 
     def start(self):
