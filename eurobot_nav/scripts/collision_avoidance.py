@@ -197,10 +197,10 @@ class CollisionAvoidance(object):
                     rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point
                 else:
-                    if min_dist_to_obstacle > 0.4:
+                    if min_dist_to_obstacle > 0.2:
                         p_sensor = 1
                     else:
-                        p_sensor = min_dist_to_obstacle/0.4
+                        p_sensor = min_dist_to_obstacle/0.2
             return False, min(p_lidar, p_sensor), obstacle_point
         else:
             return False, self.p, self.default_obstacle_point
