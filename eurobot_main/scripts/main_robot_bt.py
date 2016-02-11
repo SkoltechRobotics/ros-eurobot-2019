@@ -56,7 +56,7 @@ class MainRobotBT(object):
         status = self.bt.tick()
         if status != bt.Status.RUNNING:
             self.bt_timer.shutdown()
-        print("============== BT LOG ================")
+        # print("============== BT LOG ================")
         self.bt.log(0)
 
 
@@ -193,8 +193,8 @@ class Strategy(object):
         self.nearest_PRElanding = bt.BTVariable()
         self.next_landing_var = bt.BTVariable()
 
-        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] - self.sign * 0.15,
-                                                         self.chaos_center[1] - 0.2,
+        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] - self.sign * 0.2,
+                                                         self.chaos_center[1] - 0.3,
                                                          1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
 
         self.starting_pos_var = bt.BTVariable(np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
@@ -246,20 +246,33 @@ class Strategy(object):
             rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.known_chaos_pucks.get())))
             return bt.Status.FAILED
 
+    # FIXME move to math
     def calculate_next_landing(self, puck):
         """
         calculates closest landing to point wrt to current robot position
         :param point: [x,y]
         :return: [xl,yl,thetal]
         """
-        point = puck[0][:2]  # added [:2] because we don't give a shit about color
+        while not self.update_main_coords():
+            print "no coords available"
+            rospy.sleep(0.5)
 
-        dist, _ = calculate_distance(robot_coords, point)  # return deltaX and deltaY coords
+        print(self.main_coords)
+        print "puck is"
+        print puck
+        print " "
+
+        dist, _ = calculate_distance(self.main_coords, puck)  # return deltaX and deltaY coords
         gamma = np.arctan2(dist[1], dist[0])
-        point = np.hstack((point, gamma))
-        landing = cvt_local2global(approach_vec, point)
-        landing = landing[np.newaxis, :]
+        puck = np.hstack((puck, gamma))
+        landing = cvt_local2global(self.approach_vec, puck)
+        # landing = landing[np.newaxis, :]
         self.next_landing_var.set(landing)
+
+        rospy.loginfo("calculated next landing")
+        print "calculated next landing"
+        print self.next_landing_var.get()
+        rospy.loginfo(self.next_landing_var.get())
 
     def is_robot_empty(self):
         rospy.loginfo("pucks inside")
@@ -439,7 +452,7 @@ class Combobombo(Strategy):
                             ]),
                         ])
 
-        chaos = bt.SequenceWithMemoryNode([
+        collect_chaos = bt.SequenceWithMemoryNode([
                     # 1st
                     bt.ActionNode(self.calculate_pucks_configuration),
                     bt.ActionNode(self.calculate_closest_landing),
@@ -501,25 +514,28 @@ class Combobombo(Strategy):
                     bt.ActionNode(self.update_chaos_pucks),
                     bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
 
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    bt_ros.StepperUp("manipulator_client")
+
                     # back_to_start
-                    bt.ParallelWithMemoryNode([
-                        bt.SequenceWithMemoryNode([
-                            bt_ros.CompleteCollectGround("manipulator_client"),
-                            bt_ros.StepperUp("manipulator_client"),
-                            bt_ros.MainSetManipulatortoGround("manipulator_client")
-                        ]),
-                        bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
-                    ], threshold=2)
+                    # bt.ParallelWithMemoryNode([
+                    #     bt.SequenceWithMemoryNode([
+                    #         bt_ros.CompleteCollectGround("manipulator_client"),
+                    #         bt_ros.StepperUp("manipulator_client"),
+                    #         # bt_ros.MainSetManipulatortoGround("manipulator_client")
+                    #     ]),
+                    #     # bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
+                    # ], threshold=1)
         ])
 
         green_cell_puck = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(self.calculate_next_landing(self.green_cell_puck)), 
+                            bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)), 
 
                             bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
                             # bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
                             bt.FallbackWithMemoryNode([
                                 bt.SequenceWithMemoryNode([
-                                    bt.ActionNode(self.calculate_next_landing(self.blue_cell_puck)), 
+                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)), 
                                     bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
@@ -533,6 +549,25 @@ class Combobombo(Strategy):
                                 ], threshold=2)
                             ])
                         ])
+
+        blue_cell_puck = bt.SequenceWithMemoryNode([
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        # bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
+                                    ], threshold=1),
+                                ]),
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
+                                    bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
+                                ], threshold=2)  # if fail, FIXME never happens now
+                            ])
+                        ])
+
+        move_home = bt_ros.MoveToVariable(self.starting_pos_var, "move_client")
 
         unload_acc = bt.SequenceNode([
                         bt.FallbackNode([
@@ -548,16 +583,16 @@ class Combobombo(Strategy):
         self.tree = bt.SequenceWithMemoryNode([
                         red_cell_puck,
 
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_observed),
+                        #         collect_chaos
+                        #     ]),
+                        #     bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
+                        # ]),
                         green_cell_puck,
-
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_observed),
-                                chaos
-                            ]),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                        ]),
-
+                        blue_cell_puck,
+                        move_home,
                         unload_acc
                     ])
 
