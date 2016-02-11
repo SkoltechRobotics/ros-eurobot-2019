@@ -202,6 +202,7 @@ class STMprotocol(object):
                 0x25: "=cc",
                 0x26: "=cc",
                 0x27: "=cc",                
+
                 # main
                 0x30: "=",
                 0x31: "=",

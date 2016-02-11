@@ -273,9 +273,11 @@ class ReflectedVovanStrategy(Strategy):
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt.ParallelWithMemoryNode([
+                    bt_ros.DelayBlindStartCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.05, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.15, 0), "manipulator_client")
-                ], threshold=2),
+                    bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
+                ], threshold=3),
+                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
                 bt_ros.StartPump("manipulator_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
