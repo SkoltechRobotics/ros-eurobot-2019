@@ -119,8 +119,8 @@ class Manipulator(object):
             return self.finish_collect_blunium()
         elif cmd == "set_manipulator_ground_main":
             return self.set_manipulator_ground_main()
-        # elif cmd == "long_check_limit_switch_infinitely":
-        #     return self.long_check_limit_switch_infinitely()
+        elif cmd == "long_check_limit_switch_infinitely":
+            return self.long_check_limit_switch_infinitely()
         # --- secondary robot
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
@@ -211,6 +211,17 @@ class Manipulator(object):
                 return True
         return False
 
+    def long_check_limit_switch_infinitely(self):
+        cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        counter = 0
+        for i in range(90):
+            self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
+            if self.is_success_status(self.status_command):
+                counter += 1
+            if counter > 0:
+                return True
+        return False
+
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
             self.send_command(self.protocol["START_CALIBRATION"])
@@ -294,7 +305,6 @@ class Manipulator(object):
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         rospy.sleep(0.2)
-        self.send_command(self.protocol["SET_GROUND"])
         return True
 
     def goldenium_up_and_hold(self):

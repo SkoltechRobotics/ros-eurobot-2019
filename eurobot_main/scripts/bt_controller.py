@@ -41,6 +41,3 @@ class BTController(object):
             self.behavior_tree.start()
             self.start_status_subscriber.unregister()
             self.side_status_subscriber.unregister()
-
-
-    
