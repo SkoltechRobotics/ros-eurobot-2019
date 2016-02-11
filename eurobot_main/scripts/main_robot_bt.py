@@ -195,7 +195,7 @@ class StrategyConfig(object):
                                                  self.blunium[1] + self.robot_outer_radius + 0.2,
                                                  0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
-        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.11,  # 0.11
+        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.12,  # 0.11
                                                      self.blunium[1] + self.robot_outer_radius - 0.025, # 0.03 to close
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
@@ -219,7 +219,7 @@ class StrategyConfig(object):
                                             self.goldenium_grab_pos[1] + 0.09,
                                             self.goldenium_2_PREgrab_pos[2]])
 
-        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] + self.sign * 0.22,
+        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] + self.sign * 0.12,
                                                  self.our_chaos_center[1],  # 0.6
                                                  1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
 
@@ -1419,6 +1419,29 @@ class SafeStrategy(StrategyConfig):
                                     ])
                                 ])
 
+        collect_red_when_blind = bt.SequenceWithMemoryNode([
+
+                                    bt.ParallelWithMemoryNode([
+                                        bt.SequenceWithMemoryNode([
+                                            # bt_ros.MoveLineToPoint(self.red_puck_guard_chaos_prepose, "move_client"),
+                                            bt_ros.MoveLineToPoint(self.guard_chaos_loc, "move_client"),
+                                            bt_ros.MoveLineToPoint(self.guard_chaos_rotate, "move_client"),
+                                            bt_ros.MoveLineToPoint(self.blind_guard_chaos_finish, "move_client")
+                                        ]),
+                                        bt.FallbackWithMemoryNode([
+                                            bt.SequenceWithMemoryNode([
+                                                bt_ros.DelayStartCollectGroundCheck("manipulator_client"),
+                                                bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[0]))),
+                                                bt_ros.CompleteCollectGround("manipulator_client"),
+                                            ]),
+                                            bt.SequenceWithMemoryNode([
+                                                bt_ros.StopPump("manipulator_client"),
+                                                bt_ros.SetManipulatortoUp("manipulator_client")
+                                            ])
+                                        ])
+                                    ], threshold=2),
+                                ])
+
         move_chaos_center_collect = bt.SequenceWithMemoryNode([
 
                                         bt.FallbackWithMemoryNode([
@@ -1429,7 +1452,7 @@ class SafeStrategy(StrategyConfig):
 
                                                 bt_ros.MoveLineToPoint(self.chaos_after_first, "move_client"),
 
-                                                
+
                                                 bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
                                                 bt.ActionNode(self.calculate_next_prelanding),
 
@@ -1503,7 +1526,8 @@ class SafeStrategy(StrategyConfig):
                                                         ])
                                                     ], threshold=2),
                                                 ])
-
+                                                
+        # sometimes doesn't take because of loc
         collect_red_move_guard = bt.SequenceWithMemoryNode([
 
                                     bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
@@ -1759,15 +1783,16 @@ class SafeStrategy(StrategyConfig):
         safe_chaos = bt.FallbackWithMemoryNode([
                             bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_my_chaos_observed),
-                                # move_guard_our_chaos_while_taking_red,
-                                collect_red_move_guard,
+                                move_guard_our_chaos_while_taking_red,
+                                # collect_red_move_guard,
 
                                 collect_my_chaos_check_safe,
                                 collect_green_cell_puck
                             ]),
 
                             bt.SequenceWithMemoryNode([
-                                collect_red_cell_puck,
+                                # collect_red_cell_puck,
+                                collect_red_when_blind,
                                 move_chaos_center_collect,
                                 collect_green_cell_puck2
                             ])
@@ -1783,7 +1808,7 @@ class SafeStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.2, "stm_client"),  # 0.9
+                                bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.4, "stm_client"),  # 0.9
                                 bt.ActionNode(self.set_flag_blunium_pushed)
                             ])
 
@@ -1792,7 +1817,7 @@ class SafeStrategy(StrategyConfig):
                                         bt_ros.StepperUp("manipulator_client"),
                                         bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
                                     ], threshold=2),
-                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.2, "stm_client"),  # 0.9
+                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.4, "stm_client"),  # 0.9
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))

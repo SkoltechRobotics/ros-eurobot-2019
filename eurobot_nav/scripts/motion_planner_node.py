@@ -476,7 +476,7 @@ class MotionPlannerNode:
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
             removed_area_ind = self.coords[:2] - obstacle_point
             semi_ind = np.argmin(np.abs(removed_area_ind))
-            '''
+            ''' 
             if semi_ind == 0:
                 if removed_area_ind[semi_ind] <= 0:
                     robot_polygon[0, 0] = obstacle_polygon[0, 0]
