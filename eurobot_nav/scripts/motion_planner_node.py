@@ -166,6 +166,9 @@ class MotionPlannerNode:
 
     def get_polygon_from_point(self, point, radius):
         rospy.loginfo("point polygon %s", point)
+        rospy.loginfo("len %s", len(point))
+        rospy.loginfo(point[0])
+        rospy.loginfo(point[1])
         return np.array([[point[0] - radius, point[1] - radius],
                          [point[0] - radius, point[1] + radius],
                          [point[0] + radius, point[1] + radius],
@@ -465,7 +468,7 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif self.is_collision or self.current_state == "move_to_point":
+        elif self.is_collision:
             self.set_speed(np.zeros(3))
             self.prev_vel = np.zeros(3)
             self.goal = self.buf_goal.copy()
