@@ -89,9 +89,9 @@ class ParticleFilter:
 
     def measurement_model(self, particles, beacons):
         self.landmarks = beacons
-        particles_measurement_model = self.get_particle_measurement_model(beacons)
-        if beacons.shape[0] > 0:
-            particles = np.concatenate((particles[:(self.particles_num - self.particles_num_from_measurement_model)], particles_measurement_model), axis=0)
+        #particles_measurement_model = self.get_particle_measurement_model(beacons)
+        #if beacons.shape[0] > 0:
+        #    particles = np.concatenate((particles[:(self.particles_num - self.particles_num_from_measurement_model)], particles_measurement_model), axis=0)
         weights = self.weights(beacons, particles)
         inds = self.resample(weights, self.particles_num)
         # self.min_cost_function = np.mean(self.cost_function)

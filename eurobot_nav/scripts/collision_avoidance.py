@@ -44,8 +44,6 @@ class CollisionAvoidanceMainRobot(object):
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
-#       init publishers
-#         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
 
     @staticmethod
@@ -254,11 +252,11 @@ class CollisionAvoidanceSecondaryRobot(object):
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
-        rospy.Subscriber("obstacle_point", String, self.obstacle_callback, queue_size=1)
+        #rospy.Subscriber("obstacle_point", String, self.obstacle_callback, queue_size=1)
 #       init publishers
-#         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
+        self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
-        self.point_publisher = rospy.Publisher("obstacle_point_", MarkerArray, queue_size=1)
+        #self.point_publisher = rospy.Publisher("obstacle_point_", MarkerArray, queue_size=1)
 
     def obstacle_callback(self, point):
         self.obstacle_points = np.array([point.data.split()]).astype(float)
@@ -313,7 +311,6 @@ class CollisionAvoidanceSecondaryRobot(object):
 
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
-        rospy.loginfo(distances)
         #distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
@@ -342,8 +339,9 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.collision_area = cvt_local2global(points, np.array(
             [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
         self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
+        #self.set_collision_point(cvt_local2global(self.obstacle_points.copy(), coords))
         self.obstacle_points = self.filter_points(self.obstacle_points.copy(), coords.copy(), goal.copy())
-        # self.set_collision_point(self.obstacle_points)
+
 
     def filter_points(self, points, coords, goal):
         filtered_points = cvt_local2global(points.copy(), coords.copy())
@@ -379,7 +377,7 @@ class CollisionAvoidanceSecondaryRobot(object):
             point.header.stamp = rospy.Time.now()
             point.header.frame_id = "map"
             point.id = i
-            point.type = 1
+            point.type = 3
             point.ns = "obstacle"
             #
             #rospy.loginfo(position)

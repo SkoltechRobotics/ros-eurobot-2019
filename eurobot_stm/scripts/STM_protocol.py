@@ -98,7 +98,7 @@ class STMprotocol(object):
                 0x63: "=cc",
                 0x64: "=cc",
 
-                0x70: "=BBBBBBB"
+                0x70: "=BBBBBBBBB"
             }
 
             self.response_bytes = {
@@ -141,7 +141,7 @@ class STMprotocol(object):
                 0x63: 2,
                 0x64: 2,
 
-                0x70: 7
+                0x70: 9
             }
 
         if self.robot_name == "secondary_robot":

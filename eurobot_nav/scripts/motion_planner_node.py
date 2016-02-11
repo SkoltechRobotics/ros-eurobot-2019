@@ -9,7 +9,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, Point
@@ -100,9 +100,10 @@ class MotionPlannerNode:
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
         self.world_publisher = rospy.Publisher("world", MarkerArray, queue_size=1)
+        self.twist_stamped_publihser = rospy.Publisher("velocity_vectors", TwistStamped, queue_size=1)
 #       init rospy subscribers
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
-        rospy.Subscriber("obstacle", String, self.obstacle_callback, queue_size=1)
+        #rospy.Subscriber("obstacle", String, self.obstacle_callback, queue_size=1)
 #       init collision avoidance
         if self.robot_name == "secondary_robot":
             self.collision_avoidance = CollisionAvoidanceSecondaryRobot()
@@ -355,6 +356,7 @@ class MotionPlannerNode:
         dt = curr_time - self.prev_time
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
+        rospy.loginfo("Decelation coefficietn %s", deceleration_coefficient)
         self.result_vel = self.constraint(self.prev_vel.copy(), self.result_vel.copy(), dt)
         self.result_vel *= deceleration_coefficient
         self.prev_vel = self.result_vel.copy()
@@ -396,9 +398,9 @@ class MotionPlannerNode:
         :return:
         """
         v = self.V_MAX
-        w = 0
         if np.abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
+            rospy.loginfo("orientation is the same, start arcline move")
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
             if R != 0:
@@ -408,6 +410,8 @@ class MotionPlannerNode:
         beta = wrap_angle(self.gamma - self.theta_diff / 2)
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
+        rospy.loginfo("DEC coeff move_arc %s", deceleration_coefficient)
+
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
         vx, vy = cvt_local2global(np.array([vx, vy]), np.array([0., 0., -self.coords[2]]))
@@ -418,7 +422,7 @@ class MotionPlannerNode:
         self.prev_time = curr_time
         self.prev_vel = v_cmd
         self.set_speed(v_cmd)
-        if np.linalg.norm(self.coords[:2] - self.goal[:2], axis=0) < self.XY_GOAL_TOLERANCE and np.abs(self.coords[2] - self.goal[2]) < self.YAW_GOAL_TOLERANCE:
+        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
             self.set_speed(np.zeros(3))
             self.is_robot_stopped = True
 
@@ -434,10 +438,10 @@ class MotionPlannerNode:
         rospy.loginfo(self.goal)
         rospy.loginfo(self.collision_avoidance)
         rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
-        self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        #self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
-        # self.is_collision = False
+        self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
@@ -558,10 +562,15 @@ class MotionPlannerNode:
 
     def set_speed_simulation(self, vx, vy, w):
         tw = Twist()
+        twist_stamped = TwistStamped()
         tw.linear.x = vx
         tw.linear.y = vy
         tw.angular.z = w
+        twist_stamped.header.stamp = rospy.Time.now()
+        twist_stamped.header.frame_id = self.robot_name
         self.twist_publisher.publish(tw)
+        twist_stamped.twist = tw
+        self.twist_stamped_publihser.publish(twist_stamped)
 
     def update_coords(self):
         try:

@@ -5,12 +5,12 @@ robot_radius: 0.15
 k_linear_wp: 1.5
 k_linear_vp: 1.5
 k : 0.15
-min_dist_to_goal_point: 0.15
+min_dist_to_goal_point: 0.2
 # max rate of the planner
 RATE: 15
 # goal tolerance
 XY_GOAL_TOLERANCE: 0.01
-YAW_GOAL_TOLERANCE: 0.01
+YAW_GOAL_TOLERANCE: 0.007
 # maximum speed
 V_MAX: 0.7
 W_MAX: 1.2
@@ -19,9 +19,9 @@ AW_MAX: 1.5
 # acceleration at beginning of movements
 ACCELERATION: 1.0
 # goal distance for deceleration
-D_DECELERATION: 0.15
+D_DECELERATION: 0.05
 R_DECELERATION: 1
-exp_const: 0.11
+exp_const: 0.17
 # power of deceleration factor
 GAMMA: 0.75
 oponent_robot_radius: 0.25
