@@ -523,7 +523,8 @@ class MotionPlannerNode:
             rospy.loginfo("WAY POINT IND %s", self.way_point_ind)
             if self.is_robot_stopped:
                 self. is_robot_stopped = False
-                if self.way_point_ind == len(self.way_points) - 2:
+                self.way_point_ind += 1
+                if self.way_point_ind >= len(self.way_points) - 1:
                     self.way_point_ind = 1
                     self.goal = self.way_points[-1]
                     self.current_state = "following"

@@ -63,6 +63,15 @@ class STMstatus(object):
 
     def update_status(self, event):
         try:
+            successfully, values = self.stm_protocol.send(0x70, args=None)
+
+            message = ""
+            for val in values:
+                message += str(val) + " "
+            if successfully:
+                self.proximity_status_publisher.publish(message)
+
+
             if not self.start_flag:
                 successfully, values = self.stm_protocol.send(0x3, args=None)
             
@@ -86,16 +95,9 @@ class STMstatus(object):
                 if successfully:
                     self.side_status_publisher.publish(message)
 
+
+
             else:
-                successfully, values = self.stm_protocol.send(0x70, args=None)
-
-                message = ""
-                for val in values:
-                    message += str(val) + " "
-                if successfully:
-                    self.proximity_status_publisher.publish(message)
-
-
                 successfully, values = self.stm_protocol.send(0x19, args=None)
 
                 message = ""
