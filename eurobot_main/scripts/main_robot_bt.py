@@ -206,9 +206,13 @@ class Strategy(object):
         self.next_landing_var = bt.BTVariable()
         self.next_prelanding_var = bt.BTVariable()
 
-        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.our_chaos_center[0] - self.sign * 0.3,
-                                                           self.our_chaos_center[1] - 0.25,
-                                                           1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
+        # self.guard_chaos_loc_var = bt.BTVariable(np.array([self.our_chaos_center[0] - self.sign * 0.3,
+        #                                                    self.our_chaos_center[1] - 0.25,
+        #                                                    1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
+
+        self.guard_chaos_loc_var = bt.BTVariable(np.array([1.35,
+                                                           0.9,
+                                                           1.57 - self.sign * 1.57]))  # FIXME change to another angle and loc * 0.785
 
         self.starting_pos_var = bt.BTVariable(np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                                         0.45,
@@ -684,6 +688,11 @@ class SberStrategy(Strategy):
     def __init__(self, side):
         super(SberStrategy, self).__init__(side)
 
+        move_immidiately_to_chaos = bt.SequenceWithMemoryNode([
+                                        bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client")
+
+        ])
+
         red_cell_puck = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
                             bt.FallbackWithMemoryNode([
@@ -943,7 +952,8 @@ class SberStrategy(Strategy):
                             ])
 
         self.tree = bt.SequenceWithMemoryNode([
-                        red_cell_puck,
+                        move_immidiately_to_chaos,
+                        # red_cell_puck,
 
                         bt.FallbackWithMemoryNode([
                             bt.SequenceNode([
