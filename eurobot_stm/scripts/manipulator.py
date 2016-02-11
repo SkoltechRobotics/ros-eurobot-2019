@@ -316,7 +316,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
-        rospy.sleep(0.4)
+        rospy.sleep(0.5)
         return True
 
     def release_goldenium_on_scales(self):
