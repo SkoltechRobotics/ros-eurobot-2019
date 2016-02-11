@@ -13,7 +13,7 @@ from geometry_msgs.msg import Twist, TwistStamped
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, Point
-from collision_avoidance import CollisionAvoidanceMainRobot, CollisionAvoidanceSecondaryRobot
+from collision_avoidance import CollisionAvoidance
 from path_planner import PathPlanning
 from polygon_conversions import list_from_polygon, list_from_polygon_array, polygon_list_from_numpy, get_collision_polygon
 
@@ -105,10 +105,7 @@ class MotionPlannerNode:
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         #rospy.Subscriber("obstacle", String, self.obstacle_callback, queue_size=1)
 #       init collision avoidance
-        if self.robot_name == "secondary_robot":
-            self.collision_avoidance = CollisionAvoidanceSecondaryRobot()
-        elif self.robot_name == "main_robot":
-            self.collision_avoidance = CollisionAvoidanceMainRobot()
+        self.collision_avoidance = CollisionAvoidance()
 #       init path planner
         rospy.sleep(3)
         self.world = np.array([[self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],

@@ -22,7 +22,7 @@ ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.15
 R_DECELERATION: 1
-exp_const: 0.11
+exp_const: 0.08
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
