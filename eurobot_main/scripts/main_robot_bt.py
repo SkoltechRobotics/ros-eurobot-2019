@@ -203,12 +203,12 @@ class StrategyConfig(object):
                                                  self.blunium[1] + self.robot_outer_radius + 0.2,
                                                  0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
-        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.12,  # 0.11
+        self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.135,  # 0.11
                                                      self.blunium[1] + self.robot_outer_radius - 0.025, # 0.03 to close
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
         self.blunium_nose_end_push_pose = np.array([self.blunium[0] - self.sign * 0.22,  # 0.22
-                                                   self.blunium_nose_start_push_pose[1],  # self.blunium[1] + 0.13
+                                                   self.blunium_nose_start_push_pose[1] - 0.01,  # self.blunium[1] + 0.13
                                                    self.blunium_nose_start_push_pose[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
@@ -242,10 +242,14 @@ class StrategyConfig(object):
         self.scales_goldenium_pos = np.array([self.our_chaos_center[0] - self.sign * 0.29,  # 0.3
                                               self.our_chaos_center[1] + 0.37,
                                               1.57 + self.sign * 0.26])  # y/p 1.83 / 1.31
+        
+        self.scales_back_rotate = np.array([self.scales_goldenium_pos[0] + self.sign * 0.05,
+                                            self.scales_goldenium_pos[1] - 0.25,
+                                            -1.57 + self.sign * 0.785])
 
         self.unload_goldenium_on_blue = np.array([1.5 + self.sign * 1.3,  # y/p 2.7 / 0.3
                                                     0.9,
-                                                    -1.57 + self.sign * 0.785])  # y/p -0.78 / -2.35
+                                                    -1.57 + self.sign * 0.95])  # y/p -0.78 / -2.35
 
         self.red_puck_guard_chaos_prepose = np.array([1.5 + self.sign * 0.27,
                                                         0.7,
@@ -478,7 +482,7 @@ class StrategyConfig(object):
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
         if not self.is_secondary_responding:
-            rospy.sleep(5)
+            rospy.sleep(0)
             return bt.Status.SUCCESS
         else:
             if polygon.contains(point):
@@ -692,22 +696,27 @@ class RusStr(StrategyConfig):
                                     bt.ActionNode(lambda: self.calculate_next_landing(self.green_cell_puck)),
                                     bt.ActionNode(self.calculate_next_prelanding),
 
-                                    #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                    bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
+
                                     bt.FallbackWithMemoryNode([
                                         bt.SequenceWithMemoryNode([
                                             bt_ros.StartCollectGroundCheck("manipulator_client"),
                                             #bt_ros.StartCollectGroundCheck("manipulator_client"),
                                             bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
-                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt.ParallelWithMemoryNode([
+                                                bt_ros.CompleteCollectGround("manipulator_client"),
+                                                bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+                                            ], threshold=2)
                                         ]),
                                         bt.SequenceWithMemoryNode([
                                             bt_ros.StopPump("manipulator_client"),
-                                            bt_ros.SetManipulatortoUp("manipulator_client")
+                                            bt_ros.SetManipulatortoUp("manipulator_client"),
+                                            bt_ros.MoveToVariable(self.next_landing_var, "move_client")
                                         ])
                                     ]),
-                                    bt.ActionNode(lambda: self.calculate_next_landing(self.blue_cell_puck)),
-                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client")
+                                    # bt_ros.MoveToVariable(self.next_landing_var, "move_client")
                                 ])
 
 
@@ -837,7 +846,7 @@ class RusStr(StrategyConfig):
                                                         bt.SequenceWithMemoryNode([
                                                             bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"),
                                                             bt.ConditionNode(self.is_scales_landing_free),
-                                                            bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.06, 0]), "move_client")
+                                                            bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.07, 0]), "move_client")
                                                             # bt.ParallelWithMemoryNode([
                                                                 # bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
                                                                 # bt_ros.MoveLineToPoint(self.scales_goldenium_pos + np.array([0, -0.04, 0]), "move_client"),
@@ -848,7 +857,7 @@ class RusStr(StrategyConfig):
                                                         ])
                                                     )
                                                 ]),
-                                                bt_ros.SetSpeedSTM([0.15, 0, 0], 1.5, "stm_client"),
+                                                bt_ros.SetSpeedSTM([0.15, 0, 0], 1.9, "stm_client"),
                                                 bt.ActionNode(lambda: self.score_master.unload("SCALES")),
                                                 bt_ros.GoldeniumUp("manipulator_client"),
                                                 #bt_ros.SetManipulatortoWall("manipulator_client"),
@@ -867,12 +876,15 @@ class RusStr(StrategyConfig):
                                         ])
                             ])
 
+        scales_back_rotate = bt_ros.MoveLineToPoint(self.scales_back_rotate, "move_client")
+
+
         search_lost_puck_unload_cell = bt.SequenceWithMemoryNode([
                                             bt.ConditionNode(self.is_lost_puck_present),
                                             bt.ActionNode(self.sort_lost_wrt_robot),
                                             bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field_sorted.get()[0])),
-                                            #bt.ActionNode(self.calculate_next_prelanding),
-                                            #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                            bt.ActionNode(self.calculate_next_prelanding),
+                                            bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                             bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
 
                                             bt.FallbackWithMemoryNode([
@@ -890,7 +902,8 @@ class RusStr(StrategyConfig):
                                                 ]),
                                                 bt.SequenceWithMemoryNode([
                                                     bt_ros.StopPump("manipulator_client"),
-                                                    bt_ros.SetManipulatortoUp("manipulator_client")
+                                                    bt_ros.SetManipulatortoUp("manipulator_client"),
+                                                    bt_ros.MoveLineToPoint(self.scales_back_rotate, "move_client")
                                                 ])
                                             ])
                                         ])
@@ -899,8 +912,8 @@ class RusStr(StrategyConfig):
                                 bt.ConditionNode(self.is_lost_puck_present),
                                 bt.ActionNode(self.sort_lost_wrt_robot),
                                 bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field_sorted.get()[0])),
-                                #bt.ActionNode(self.calculate_next_prelanding),
-                                #bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                bt.ActionNode(self.calculate_next_prelanding),
+                                bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
                                 bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
 
                                 bt.FallbackWithMemoryNode([
@@ -912,7 +925,7 @@ class RusStr(StrategyConfig):
                                             bt_ros.CompleteCollectGround("manipulator_client"),
                                             bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client")
                                         ], threshold=2),
-                                        bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),
+                                        bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.1, "stm_client"),
                                         bt_ros.UnloadAccelerator("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.unload("ACC"))
                                     ]),
@@ -940,7 +953,7 @@ class RusStr(StrategyConfig):
                                             bt_ros.CompleteCollectGround("manipulator_client"),
                                             bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client")
                                         ], threshold=2),
-                                        bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),
+                                        bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 1.1, "stm_client"),
                                         bt_ros.UnloadAccelerator("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.unload("ACC"))
                                     ]),
@@ -956,8 +969,9 @@ class RusStr(StrategyConfig):
                         collect_red_cell_puck,
                         collect_green_cell_puck,
                         collect_blue_cell_puck,
-                        # push_blunium_collision_delay,
-                        # collect_goldenium,
+                        push_blunium_collision_delay,
+                        collect_goldenium,
+                        scales_back_rotate,
                         search_lost_puck_unload_cell,
                         final_search_unload,
                         final_search_unload2
