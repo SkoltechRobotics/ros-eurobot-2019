@@ -464,7 +464,7 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
 
 
 class PublishScore_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, score_controller, unload_zone ,threshold=0.3):
+    def __init__(self, goal, score_controller, unload_zone ,threshold=0.15):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
