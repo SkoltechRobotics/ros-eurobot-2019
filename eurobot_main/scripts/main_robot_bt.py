@@ -497,6 +497,7 @@ class StrategyConfig(object):
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
 
+
         if len(self.my_chaos_pucks.get()) == 2:
             my_known_chaos_pucks = list(my_known_chaos_pucks)  # FIXME .tolist ?
             my_known_chaos_pucks.sort(key=lambda t: t[1])
