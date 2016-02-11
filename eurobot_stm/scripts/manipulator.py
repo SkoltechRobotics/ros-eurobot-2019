@@ -109,6 +109,8 @@ class Manipulator(object):
             return self.small_delay_start_collect_ground()    
         elif cmd == "delay_start_collect_ground":
             return self.delay_start_collect_ground()
+        elif cmd == "delay_complete_collect_ground":
+            return self.delay_complete_collect_ground()
         elif cmd == "blind_start_collect_ground":
             return self.blind_start_collect_ground()
         elif cmd == "delay_blind_start_collect_ground":
@@ -313,6 +315,17 @@ class Manipulator(object):
             return True
         else:
             return False
+
+    def delay_complete_collect_ground(self, delay=2):
+        rospy.sleep(delay)
+        self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        rospy.sleep(0.2)  # FIXME 0.2
+        return True
 
     def complete_collect_ground(self):
         self.send_command(self.protocol["SET_PLATFORM"])
