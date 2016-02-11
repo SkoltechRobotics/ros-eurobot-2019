@@ -347,7 +347,7 @@ class MotionPlannerNode:
         self.prev_time = curr_time
         self.prev_vel = v_cmd
         self.set_speed(v_cmd)
-        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
+        if np.linalg.norm(self.goal[:2] - self.coords[:2], axis=0) < self.XY_GOAL_TOLERANCE and np.abs(wrap_angle(self.goal[2] - self.coords[2])) < self.YAW_GOAL_TOLERANCE:
             self.set_speed(np.zeros(3))
             self.is_robot_stopped = True
 
@@ -357,8 +357,8 @@ class MotionPlannerNode:
         delta_coords[2] = wrap_angle(delta_coords[2])
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
-        self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
-        #self.is_collision = False
+        #self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
@@ -453,7 +453,7 @@ class MotionPlannerNode:
 
     def update_coords(self):
         try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
+            trans = self.tfBuffer.lookup_transform('main_robot_odom', self.robot_name, rospy.Time(0))
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
                  trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
