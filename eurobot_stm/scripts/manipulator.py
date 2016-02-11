@@ -214,10 +214,12 @@ class Manipulator(object):
     def long_check_limit_switch_infinitely(self):
         cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
         counter = 0
-        for i in range(90):
+        for i in range(70):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
+                print counter
+                print "counter is"
             if counter > 0:
                 return True
         return False
