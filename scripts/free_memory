@@ -1,0 +1,12 @@
+#! /bin/bash
+
+memfree=`cat /proc/meminfo | grep MemFree | awk '{print $2}'`;
+memtotal=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`;
+echo $memfree
+echo $memtotal
+mem=`bc  <<< "$memfree*100/$memtotal"`
+
+if [ $mem -gt 80 ]
+then
+    rm -rf ~/.ros/log/
+fi
