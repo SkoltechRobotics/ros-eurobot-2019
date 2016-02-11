@@ -92,6 +92,8 @@ class Manipulator(object):
             return self.moving_default()
         elif cmd == "stepper_up":
             return self.stepper_up()
+        elif cmd == "stepper_down":
+            return self.stepper_down()
         elif cmd == "delay_500":
             return self.delay_500()
         # --- main_robot
@@ -356,6 +358,10 @@ class Manipulator(object):
 
     def stepper_up(self):
         self.send_command(self.protocol["MAKE_STEP_UP"])
+        return True
+
+    def stepper_down(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
     def delay_500(self):
