@@ -11,8 +11,8 @@ RATE: 15
 # goal tolerance
 XY_GOAL_TOLERANCE: 0.012
 YAW_GOAL_TOLERANCE: 0.012
-XY_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
-YAW_GOAL_TOLERANCE_MOVE_TO_POINT: 0.1
+XY_GOAL_TOLERANCE_MOVE_TO_POINT: 0.015
+YAW_GOAL_TOLERANCE_MOVE_TO_POINT: 0.015
 # maximum speed
 V_MAX: 0.7
 W_MAX: 1.2
@@ -26,14 +26,14 @@ R_DECELERATION: 1
 exp_const: 0.13
 exp_const_move_to_point: 0.3
 # power of deceleration factor
-GAMMA: 0.75
-oponent_robot_radius: 0.2
+GAMMA: 0.7
+oponent_robot_radius: 0.08
 # params for accurate movements to water towers or cube heaps
 XY_ACCURATE_GOAL_TOLERANCE: 0.005
 YAW_ACCURATE_GOAL_TOLERANCE: 0.01
 D_ACCURATE_DECELERATION: 0.20
 collision:
-    min_dist_to_obstacle_lidar: 0.6
+    min_dist_to_obstacle_lidar: 0.7
     min_dist_to_obstacle_sensor: 0.35
     sensor_position: [[-0.131, 0., 3.14159265359], [0.06568, 0.11377, 1.0471975512], [0.06592, -0.11363, 5.21],
     [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08]]

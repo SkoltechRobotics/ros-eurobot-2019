@@ -219,6 +219,7 @@ class MotionPlannerNode:
         """
 
         self.mutex.acquire()
+        self.publish_world(np.array([self.world]))
         #rospy.loginfo("CMD CALLBACK")
         #rospy.loginfo(data.data)
         #rospy.loginfo(rospy.Time.now().to_sec())
@@ -252,6 +253,7 @@ class MotionPlannerNode:
             self.xy_tolerance = self.XY_GOAL_TOLERANCE_MOVE_TO_POINT
             self.yaw_tolerance = self.YAW_GOAL_TOLERANCE_MOVE_TO_POINT
             self.e_const = self.exp_const_move_to_point
+            self.obstacle_polygon = np.array([[1.7, 1.], [1.7, 1.8], [2, 1.8], [2, 1]])
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
             # self.publish_world(np.array([world]))
             # self.collision_avoidance.set_collision_point([self.world[1, :]])
@@ -310,6 +312,7 @@ class MotionPlannerNode:
         #rospy.loginfo(self.current_state)
         if not self.update_coords():
             rospy.logwarn("NOT COORDS UPDATED")
+        rospy.loginfo("robot coords %s", self.coords)
         self.distance_map_frame, self.theta_diff = calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
@@ -321,7 +324,7 @@ class MotionPlannerNode:
         #rospy.loginfo("Robot has stopped.")
         self.update_coords()
         #rospy.loginfo("GOAL POINT %s", self.goal)
-        #rospy.loginfo("REACHED POINT %s", self.coords)
+        rospy.loginfo("REACHED POINT %s", self.coords)
         answer = str(self.cmd_id) + " success"
         self.response_publisher.publish(answer)
 
@@ -437,8 +440,7 @@ class MotionPlannerNode:
         self.prev_vel = v_cmd
         self.set_speed(v_cmd)
         if self.path_left < self.xy_tolerance and self.path_left < self.yaw_tolerance:
-            if self.cmd_type != "move_to_point":
-                self.set_speed(np.zeros(3))
+            self.set_speed(np.zeros(3))
             self.is_robot_stopped = True
 
     def move(self):
@@ -454,7 +456,6 @@ class MotionPlannerNode:
         #rospy.loginfo(self.collision_avoidance)
         #rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
         self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
-
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
         #self.is_collision = False
@@ -472,9 +473,30 @@ class MotionPlannerNode:
             obstacle_polygon = self.get_polygon_from_point(obstacle_point, self.oponent_robot_radius + self.robot_radius)
             self.collision_avoidance.set_collision_area(obstacle_polygon)
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
+            removed_area_ind = self.coords[:2] - obstacle_point
+            semi_ind = np.argmin(np.abs(removed_area_ind))
+            if semi_ind == 0:
+                if removed_area_ind[semi_ind] <= 0:
+                    robot_polygon[0, 0] = obstacle_polygon[0, 0]
+                    robot_polygon[3, 0] = obstacle_polygon[3, 0]
+                else:
+                    robot_polygon[1, 0] = obstacle_polygon[1, 0]
+                    robot_polygon[2, 0] = obstacle_polygon[2, 0]
+            else:
+                if removed_area_ind[semi_ind] <= 0:
+                    robot_polygon[0, 1] = obstacle_polygon[0, 1]
+                    robot_polygon[1, 1] = obstacle_polygon[1, 1]
+                else:
+                    robot_polygon[2, 1] = obstacle_polygon[2, 1]
+                    robot_polygon[3, 1] = obstacle_polygon[3, 1]
+            rospy.loginfo("Obstacle polygon %s", obstacle_polygon)
+            rospy.loginfo("Robot polygon %s", robot_polygon)
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)
             obstacle_polygon = list_from_polygon(obstacle_polygon)
+            self.collision_avoidance.set_collision_area(obstacle_polygon)
+            rospy.loginfo("Obstacle polygon %s", obstacle_polygon)
             self.way_points = self.path_planner.create_path(self.coords.copy(), self.goal.copy(), obstacle_polygon)
+            rospy.loginfo(self.way_points)
             self.way_points[:-1, 2] = self.coords[2]
             self.way_points[-1, 2] = self.goal[2]
             self.create_path_from_way_points()
