@@ -5,10 +5,14 @@ import numpy as np
 from Tkinter import *
 import tf2_ros
 from tf.transformations import euler_from_quaternion
+from visualization_msgs.msg import MarkerArray
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
                         [255, 0, 255],  # purple
                         [124, 252, 0]])  # green
+
+HEARTBEAT = np.array([[255, 0, 0],  # red
+                      [124, 252, 0]])  # green
 
 
 class Prediction:
@@ -53,6 +57,7 @@ class App:
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.main_coords_array = np.array([0, 0, 0])
+        self.signal_color = HEARTBEAT[0]
 
         # Master page
         frame = Frame(master, bg="white", colormap="new")
@@ -124,11 +129,11 @@ class App:
         Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_main_and_exp, font=("Helvetica", 120)).pack(side="bottom")
 
     def heartbeat_loop(self):
-        if self.heartbeat["bg"] == "red":
-            self.heartbeat.config(bg="white")
+        if self.heartbeat["bg"] == '#%02x%02x%02x' % tuple(self.signal_color):  # "red"
+            self.heartbeat.config(bg="white")  # "white"
             self.frame4.after(0, self.update_main_coords)
         else:
-            self.heartbeat.config(bg="red")
+            self.heartbeat.config(bg='#%02x%02x%02x' % tuple(self.signal_color))  # "red"
 
         self.frame5.after(800, self.heartbeat_loop)
 
@@ -171,6 +176,22 @@ class App:
         print points
         self.score_main_and_exp.set(self.score_main_and_exp.get() + int(points))
 
+    def main_pucks_callback(self, data):
+
+        try:
+            new_observation_pucks = [[marker.pose.position.x,
+                                      marker.pose.position.y,
+                                      marker.id,
+                                      marker.color.r,
+                                      marker.color.g,
+                                      marker.color.b] for marker in data.markers]
+
+            if len(new_observation_pucks) > 8:
+                self.signal_color = HEARTBEAT[1]
+
+        except Exception:  # FIXME
+            rospy.loginfo("list index out of range - no visible pucks on the field ")
+
     def update_main_coords(self):
         try:
             trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))
@@ -210,6 +231,7 @@ if __name__ == '__main__':
     rospy.Subscriber("stm/start_status", String, app.main_wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.main_side_status_callback)
     rospy.Subscriber("stm/strategy_status", String, app.main_strategy_status_callback)
+    rospy.Subscriber("/pucks", MarkerArray, app.main_pucks_callback, queue_size=1)
 
     rate = rospy.Rate(100)
     rospy.loginfo("Start display")

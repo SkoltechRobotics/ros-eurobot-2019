@@ -2,6 +2,7 @@
 import visilibity as vg
 import numpy as np
 from polygon_conversions import list_from_polygon, list_from_polygon_array, polygon_list_from_numpy, get_map
+from shapely.geometry import Polygon
 
 
 class PathPlanning(object):
@@ -25,6 +26,8 @@ class PathPlanning(object):
     @staticmethod
     def points2vis_graph(points):
         points_list = []
+        if type(points) is Polygon:
+            points = [points]
         for point in points:
             print point
             points_list.append([vg.Point(x[0], x[1]) for x in point])
