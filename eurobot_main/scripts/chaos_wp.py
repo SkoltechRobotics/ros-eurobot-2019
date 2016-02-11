@@ -44,7 +44,7 @@ class CollectChaos(bt.FallbackWithMemoryNode):
         self.starting_point_chaos = np.array([0.65, 1, 0]) #yelloo
         self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
 
-        self.starting_pos = np.array([0.25, 0.45, 0]) #yelloo
+        self.starting_pos = np.array([0.3, 0.45, 0])
         self.starting_pos_var = bt.BTVariable(self.starting_pos)
 
         self.closest_landing = bt.BTVariable()
@@ -52,7 +52,6 @@ class CollectChaos(bt.FallbackWithMemoryNode):
 
         super(CollectChaos, self).__init__([
             bt.SequenceWithMemoryNode([
-                
                 # 1st
                 bt.ActionNode(self.calculate_pucks_configuration),
                 bt.ActionNode(self.calculate_closest_landing),
@@ -110,21 +109,28 @@ class CollectChaos(bt.FallbackWithMemoryNode):
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
 
-                # back_to_start
+                #back_to_start
+
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
-                ], threshold=2),
+                ], threshold=2),  # COMA !!
+
+                # bt_ros.StepperUp("manipulator_client"),
+                # bt_ros.StepperUp("manipulator_client"),
+                # bt_ros.StepperUp("manipulator_client"),
+                # bt_ros.StepperUp("manipulator_client")
 
 		        bt_ros.StepperUp("manipulator_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC"))
+                # bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                bt_ros.UnloadAccelerator("manipulator_client")  
+
+                # bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
             ])
 	    ])
 
@@ -198,27 +204,6 @@ class CollectChaos(bt.FallbackWithMemoryNode):
 		#         bt.ConditionNode(self.is_robot_empty_1)
 	    #     ])
         # ])
-
-
-    def is_robot_empty(self):
-        rospy.loginfo("pucks inside")
-        rospy.loginfo(self.collected_pucks.get())
-        if len(self.collected_pucks.get()) == 0:
-            rospy.loginfo('All pucks unloaded')
-            return bt.Status.SUCCESS
-        else:
-            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
-            return bt.Status.FAILED
-
-    def is_robot_empty_1(self):
-        rospy.loginfo("pucks inside")
-        rospy.loginfo(self.collected_pucks.get())
-        if len(self.collected_pucks.get()) == 0:
-            rospy.loginfo('All pucks unloaded')
-            return bt.Status.SUCCESS
-        else:
-            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
-            return bt.Status.RUNNING
 
     @staticmethod
     def get_color(puck):
@@ -410,6 +395,7 @@ class MainRobotBT(object):
 if __name__ == '__main__':
     try:
         rospy.init_node("main_robot_BT")
+        rospy.sleep(1)
         main_robot_bt = MainRobotBT()
         rospy.spin()
     except rospy.ROSInterruptException:
