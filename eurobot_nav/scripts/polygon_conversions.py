@@ -61,5 +61,6 @@ def get_map(world, polygons):
         obstacle = world_map.interiors
         world_map = world_map.exterior
         world_map = list_from_polygon(world_map)
+        print world_map
         #obstacle = list_from_polygon(obstacle)
         return world_map, obstacle
