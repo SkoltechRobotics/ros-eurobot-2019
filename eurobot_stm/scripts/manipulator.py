@@ -49,10 +49,10 @@ class Manipulator(object):
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,
             "RELEASER_THROW_SECONDARY" : 0x21,
-            "LEFT_MOUSTACHE_DEFAULT" : 0x22,
-            "LEFT_MOUSTACHE_DOWN" : 0x23,
-            "RIGHT_MOUSTACHE_DEFAULT" : 0x24,
-            "RIGHT_MOUSTACHE_DOWN" : 0x25,
+            "UPPER_MOUSTACHE_DEFAULT" : 0x22,
+            "UPPER_MOUSTACHE_OPEN" : 0x23,
+            "LOWER_MOUSTACHE_DEFAULT" : 0x24,
+            "LOWER_MOUSTACHE_OPEN" : 0x25,
             "SET_RELEASER_SPEED_TO_HIGH" : 0x26,
             "SET_RELEASER_SPEED_TO_LOW" : 0x27,
 
@@ -95,14 +95,14 @@ class Manipulator(object):
             return self.start_pump()
         elif cmd == "stop_pump":
             return self.stop_pump()
-        elif cmd == "left_moustache_default":
-            return self.left_moustache_default()
-        elif cmd == "left_moustache_down":
-            return self.left_moustache_down()
-        elif cmd == "right_moustache_default":
-            return self.right_moustache_default()
-        elif cmd == "right_moustache_down":
-            return self.right_moustache_down()
+        elif cmd == "upper_moustache_default":
+            return self.upper_moustache_default()
+        elif cmd == "upper_moustache_open":
+            return self.upper_moustache_open()
+        elif cmd == "lower_moustache_default":
+            return self.lower_moustache_default()
+        elif cmd == "lower_moustache_open":
+            return self.lower_moustache_open()
         elif cmd == "moving_default":
             return self.moving_default()
         elif cmd == "stepper_up":
@@ -432,20 +432,20 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         return True
 
-    def left_moustache_default(self):
-        self.send_command(self.protocol["LEFT_MOUSTACHE_DEFAULT"])
+    def upper_moustache_default(self):
+        self.send_command(self.protocol["UPPER_MOUSTACHE_DEFAULT"])
         return True
 
-    def left_moustache_down(self):
-        self.send_command(self.protocol["LEFT_MOUSTACHE_DOWN"])
+    def upper_moustache_open(self):
+        self.send_command(self.protocol["UPPER_MOUSTACHE_OPEN"])
         return True
 
-    def right_moustache_default(self):
-        self.send_command(self.protocol["RIGHT_MOUSTACHE_DEFAULT"])
+    def lower_moustache_default(self):
+        self.send_command(self.protocol["LOWER_MOUSTACHE_DEFAULT"])
         return True
 
-    def right_moustache_down(self):
-        self.send_command(self.protocol["RIGHT_MOUSTACHE_DOWN"])
+    def lower_moustache_open(self):
+        self.send_command(self.protocol["LOWER_MOUSTACHE_OPEN"])
         return True
 
     def set_releaser_speed_to_high(self):

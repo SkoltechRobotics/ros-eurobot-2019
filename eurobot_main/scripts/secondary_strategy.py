@@ -330,7 +330,7 @@ class SemaPidrStrategy(Strategy):
             eighth_puck,
             bt_ros.SetReleaserSpeedToLow("manipulator_client"),
             bt_ros.StepperUp("manipulator_client"),
-            bt_ros.RightMoustacheDown("manipulator_client"),
+            bt_ros.LowerMoustacheDefault("manipulator_client"),
             unload
         ])
 
@@ -374,7 +374,7 @@ class ReflectedVovanStrategy(Strategy):
                     bt_ros.MoveLineToPoint(self.third_ground_puck, "move_client"),
                     bt.FallbackWithMemoryNode([
                         bt.ParallelWithMemoryNode([
-                            bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
+                            bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.05, 0), "move_client"),
                             bt.SequenceWithMemoryNode([
                                 bt_ros.StartCollectGroundCheck("manipulator_client"),
                                 bt_ros.CompleteCollectGround("manipulator_client"),
@@ -525,8 +525,8 @@ class ReflectedVovanStrategy(Strategy):
         sixth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.08, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client")
+                    bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.06, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client", 0.1)
                 ], threshold=2),
                 bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
@@ -580,10 +580,12 @@ class ReflectedVovanStrategy(Strategy):
                 bt.ConditionNode(self.is_no_pucks),
                 bt.SequenceWithMemoryNode([
                     bt_ros.ReleaseOnePuck("manipulator_client"),
+                    bt_ros.UpperMoustacheDefault("manipulator_client"),
                     bt.ActionNode(lambda: self.score_master.unload("RED")),
-                    bt_ros.RightMoustacheDown("manipulator_client"),
+                    bt_ros.LowerMoustacheOpen("manipulator_client"),
                     bt_ros.Delay500("manipulator_client"),
-                    bt_ros.RightMoustacheDefault("manipulator_client"),
+                    bt_ros.UpperMoustacheOpen("manipulator_client"),
+                    bt_ros.LowerMoustacheDefault("manipulator_client")
                 ])
             ]),
             bt.ConditionNode(self.is_no_pucks_1)
@@ -591,7 +593,8 @@ class ReflectedVovanStrategy(Strategy):
 
         leaving_red_zone = bt.SequenceNode([
             bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
-            bt_ros.RightMoustacheDefault("manipulator_client"),
+            bt_ros.UpperMoustacheDefault("manipulator_client"),
+            bt_ros.LowerMoustacheDefault("manipulator_client")
         ])
 
         second_ground_puck = bt.FallbackWithMemoryNode([
@@ -623,7 +626,7 @@ class ReflectedVovanStrategy(Strategy):
             eighth_puck,
             nineth_puck,
             bt_ros.StepperUp("manipulator_client"),
-            bt_ros.LeftMoustacheDown("manipulator_client"),
+            bt_ros.UpperMoustacheOpen("manipulator_client"),
             unload_to_red,
             leaving_red_zone,
             second_ground_puck])

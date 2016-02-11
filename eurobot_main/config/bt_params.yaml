@@ -37,9 +37,9 @@ secondary_robot:
     redium_zone_first: [2.78, 0.35, 0]
     redium_zone_second: [2.78, 0.43, 0]
     redium_zone_third: [2.78, 0.51, 0]
-    redium_zone_forth: [2.75, 0.4, 1.57]
+    redium_zone_forth: [2.65, 0.4, 1.57]
 
-    reflected_last_zone : [2.83, 0.55, 1.37]
+    reflected_last_zone : [2.76, 0.55, 1.37]
     third_ground_puck : [2.55, 1.05, 3.14]
     second_ground_puck : [2.55, 0.75, 3.14]
 
