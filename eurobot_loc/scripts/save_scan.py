@@ -17,7 +17,7 @@ if __name__ == '__main__':
         f = True
         rospy.init_node('save_scan', anonymous=True)
 
-        rospy.Subscriber("/main_robot/scan", LaserScan, scan_callback, queue_size=1)  # lidar data
+        rospy.Subscriber("/secondary_robot/scan", LaserScan, scan_callback, queue_size=1)  # lidar data
         rospy.sleep(0.5)
     except rospy.ROSInterruptException:
 pass
