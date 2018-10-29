@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="field/color" value="orange" />
+  <include file="$(find eurobot_sim)/launch/visualization.launch"/>
+  <rosparam file="$(find eurobot_loc)launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+  <rosparam param="use_sim_time">true</rosparam>
+  <node pkg="rosbag" type="play" name="rosbag" args="--clock /home/egorpristanskiy/.ros/filter.bag"/>
+  <group ns="secondary_robot">
+    <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="screen"/>
+  </group>
+</launch>
+
