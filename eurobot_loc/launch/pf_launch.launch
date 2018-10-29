@@ -6,7 +6,7 @@
   <node pkg="rosbag" type="play" name="player" args="--clock /home/egorpristanskiy/.ros/filterbag.bag"/>
   <include file="$(find eurobot_sim)/launch/visualization.launch" />
   <group ns = "secondary_robot">
-	  <node pkg="eurobot" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="screen"/>
+    <node pkg="eurobot" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="screen"/>
   </group>
 </launch>
 
