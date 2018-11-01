@@ -9,3 +9,4 @@
     <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="screen"/>
   </group>
 </launch>
+
