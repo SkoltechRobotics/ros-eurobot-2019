@@ -2,8 +2,8 @@ image_width: 2448
 image_height: 2048
 camera_name: head_camera
 camera_matrix:
-  rows:  3
-  cols:  3
+  rows: 3
+  cols: 3
   data: [677.6822465383319, 0.0, 1235.2606710441592, 0.0, 679.4732022197448, 1044.1071828902486, 0.0, 0.0, 1.0]
 distortion_model: fish_eye
 distortion_coefficients:

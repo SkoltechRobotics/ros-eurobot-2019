@@ -49,8 +49,8 @@ def calibration(images, config_file):
 		          'image_height: '+ str(gray.shape[0]) +'\n' +
 		          'camera_name: head_camera\n' +
 		          'camera_matrix:\n' +
-		          '  rows:  '+ str(K.shape[1]) +'\n' +
-		          '  cols:  '+ str(K.shape[0]) +'\n' +
+		          '  rows: '+ str(K.shape[1]) +'\n' +
+		          '  cols: '+ str(K.shape[0]) +'\n' +
 		          '  data: ' +  '[%s]' % ', '.join(( str(num) for num in K.flatten() ))   + '\n' +
 		          'distortion_model: fish_eye\n' +
 		          'distortion_coefficients:\n' +
