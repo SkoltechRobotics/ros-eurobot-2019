@@ -1,19 +1,19 @@
 import cv2
 import numpy as np
-import os, sys
+import sys
 import re
 import glob
 
 CHECKERBOARD = (7,4)
 
-#TERM_CRITERIA_EPS = precision
-#TERM_CRITERIA_MAX_ITER = max number of iteration to find corners
+# TERM_CRITERIA_EPS = precision
+# TERM_CRITERIA_MAX_ITER = max number of iteration to find corners
 criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6)
-#CALIB_USE_INTRINSIC_GUESS cameraMatrix contains valid initial values of fx, fy, cx, cy that are optimized further.
-#Otherwise, (cx, cy) is initially set to the image center ( imageSize is used), and focal distances are computed in a least-squares fashion.
-#CALIB_RECOMPUTE_EXTRINSIC Extrinsic will be recomputed after each iteration of intrinsic optimization.
-#CALIB_CHECK_COND The functions will check validity of condition number.
-#CALIB_FIX_SKEW Skew coefficient (alpha) is set to zero and stay zero.
+# CALIB_USE_INTRINSIC_GUESS cameraMatrix contains valid initial values of fx, fy, cx, cy that are optimized further.
+# Otherwise, (cx, cy) is initially set to the image center ( imageSize is used), and focal distances are computed in a least-squares fashion.
+# CALIB_RECOMPUTE_EXTRINSIC Extrinsic will be recomputed after each iteration of intrinsic optimization.
+# CALIB_CHECK_COND The functions will check validity of condition number.
+# CALIB_FIX_SKEW Skew coefficient (alpha) is set to zero and stay zero.
 calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
 def calibration(images, config_file):
 	objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
@@ -36,34 +36,35 @@ def calibration(images, config_file):
 		cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),criteria)
 		imgpoints.append(corners)
 
-	K = np.zeros((3, 3)) #camera matrix
-	D = np.zeros((4, 1)) #distorion coefficents matrix
-	rvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(len(objpoints))] #rotation matrix for each frame
-	tvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(len(objpoints))] #transaltion matrix for each frame
+	K = np.zeros((3, 3)) # camera matrix
+	D = np.zeros((4, 1)) # distorion coefficents matrix
+	rvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(len(objpoints))] # rotation matrix for each frame
+	tvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(len(objpoints))] # transaltion matrix for each frame
 
 	rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(objpoints,imgpoints,gray.shape[:2],K,D,
 		                                        rvecs,tvecs,calibration_flags,criteria)
 
-	config_file.write('image_width: 2448\r\n' +
-		          'image_height: 2048\r\n' +
-		          'camera_name: head_camera\r\n' +
-		          'camera_matrix:\r\n' +
-		          '  rows: 3\r\n' +
-		          '  cols: 3\r\n' +
-		          '  data: ' +  '[%s]' % ', '.join(( str(num) for num in K.flatten() ))   + '\r\n' +
-		          'distortion_model: fish_eye\r\n' +
-		          'distortion_coefficients:\r\n' +
-		          '  rows: 1\r\n' +
-		          '  cols: 5\r\n' +
-		          '  data: ' +  '[%s]' % ', '.join(( str(num) for num in D.flatten() ))   + '\r\n' +
-		          'rectification_matrix:\r\n' +
-		          '  rows: 3\r\n' +
-		          '  cols: 3\r\n' +
-		          '  data: [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 1.000000]\r\n' +
-		          'projection_matrix:\r\n' +
-		          '  rows: 3\r\n' +
-		          '  cols: 4\r\n' +
-		          '  data: [503.124786, 0.000000, 1199.591668, 0.000000, 0.000000, 494.065338, 1043.002703, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]\r\n')
+    # FIXME::Projection matrix was given from old config file. Need to calculate it
+	config_file.write('image_width: '+ str(gray.shape[1]) +'\n' +
+		          'image_height: '+ str(gray.shape[0]) +'\n' +
+		          'camera_name: head_camera\n' +
+		          'camera_matrix:\n' +
+		          '  rows:  '+ str(K.shape[1]) +'\n' +
+		          '  cols:  '+ str(K.shape[0]) +'\n' +
+		          '  data: ' +  '[%s]' % ', '.join(( str(num) for num in K.flatten() ))   + '\n' +
+		          'distortion_model: fish_eye\n' +
+		          'distortion_coefficients:\n' +
+		          '  rows: '+ str(D.shape[1]) +'\n' +
+		          '  cols: '+ str(D.shape[0]+1) +'\n' +
+		          '  data: ' +  '[%s, 0.000000]' % ', '.join(( str(num) for num in D.flatten() ))   + '\n' +
+		          'rectification_matrix:\n' +
+		          '  rows: 3\n' +
+		          '  cols: 3\n' +
+		          '  data: [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 1.000000]\n' +
+		          'projection_matrix:\n' +
+		          '  rows: 3\n' +
+		          '  cols: 4\n' +
+		          '  data: [503.124786, 0.000000, 1199.591668, 0.000000, 0.000000, 494.065338, 1043.002703, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]\n')
 
 	config_file.close()
 
@@ -77,7 +78,7 @@ if __name__ == '__main__':
 		if img_path_reg.match(elem):
 			images = glob.glob(elem[9:] + '*.png')
 			if not (images):
-				if config_file:
+				if config_file: # If config file was created before need to delete
 						try:
 							os.remove(config_file.name)
 						except OSError:
@@ -85,17 +86,23 @@ if __name__ == '__main__':
 				sys.exit('Incorrect argument img_path=. It is the directory of images. Also, images need to be png format')
 		if conf_path_reg.match(elem):
 			try:
-				config_file = open(elem[12:],'w') #Create camera configfile
+				config_file = open(elem[12:],'w') # Create camera configfile
 			except IOError as err:
 				sys.exit('Incorrect argument config_path=')
 
 	if not images:
 		print('Using default path for calibration images')
 		images = glob.glob('./calibration_images/*.png')
+        if not images:
+            sys.exit("Couldn't find images")
+        
 
 	if not config_file:
 		print('Using default path for config file')
-		config_file = open('../configs/calibration.yaml','w') #Create camera configfile
+		try:
+            		config_file = open('../configs/calibration.yaml','w') # Create camera configfile
+        	except IOError as err:
+            		print (err)
 	
 	calibration(images, config_file)
 
