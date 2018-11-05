@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import cv2
 import numpy as np
 import sys
@@ -44,7 +46,6 @@ def calibration(images, config_file):
 	rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(objpoints,imgpoints,gray.shape[:2],K,D,
 		                                        rvecs,tvecs,calibration_flags,criteria)
 
-    # FIXME::Projection matrix was given from old config file. Need to calculate it
 	config_file.write('image_width: '+ str(gray.shape[1]) +'\n' +
 		          'image_height: '+ str(gray.shape[0]) +'\n' +
 		          'camera_name: head_camera\n' +
@@ -64,7 +65,7 @@ def calibration(images, config_file):
 		          'projection_matrix:\n' +
 		          '  rows: 3\n' +
 		          '  cols: 4\n' +
-		          '  data: [503.124786, 0.000000, 1199.591668, 0.000000, 0.000000, 494.065338, 1043.002703, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]\n')
+		          '  data: [1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]\n')
 
 	config_file.close()
 
@@ -96,7 +97,6 @@ if __name__ == '__main__':
         if not images:
             sys.exit("Couldn't find images")
         
-
 	if not config_file:
 		print('Using default path for config file')
 		try:
