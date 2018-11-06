@@ -3,12 +3,22 @@ import numpy as np
 
 
 def cvt_local2global(local_point, src_point):
-    x, y, a = local_point.T
+    size = local_point.shape[-1]
+    x, y, a = 0, 0, 0
+    if size == 3:
+        x, y, a = local_point.T
+    elif size == 2:
+        x, y = local_point.T
     X, Y, A = src_point.T
     x1 = x * np.cos(A) - y * np.sin(A) + X
     y1 = x * np.sin(A) + y * np.cos(A) + Y
-    a1 = (a + A) % (2 * np.pi)
-    return np.array([x1, y1, a1]).T
+    a1 = (a + A + np.pi) % (2 * np.pi) - np.pi
+    if size == 3:
+        return np.array([x1, y1, a1]).T
+    elif size == 2:
+        return np.array([x1, y1]).T
+    else:
+        return
 
 
 def cvt_global2local(global_point, src_point):
@@ -30,12 +40,12 @@ def find_src(global_point, local_point):
 
 
 # Dimensions of the playing field
-WORLD_X = 3000
-WORLD_Y = 2000
-WORLD_BORDER = 22
-BEAC_R = 96.0 / 2
-BEAC_L = 100.0
-BEAC_BORDER = 22.0
+WORLD_X = 3
+WORLD_Y = 2
+WORLD_BORDER = 0.022
+BEAC_R = 0.096 / 2
+BEAC_L = 0.100
+BEAC_BORDER = 0.022
 
 ORANGE_BEACONS = np.array([[WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y / 2.],
                            [-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y - BEAC_L / 2.],
@@ -52,9 +62,9 @@ LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
 
 
 class ParticleFilter:
-    def __init__(self, particles_num=500, sense_noise=50, distance_noise=5, angle_noise=0.02,
-                 start_x=293, start_y=425, start_angle=3 * np.pi / 2, color='orange', min_intens=3500.0,
-                 max_dist=3700.0, beac_dist_thresh=200, k_angle=2, num_is_near_thresh=0.1, distance_noise_1_beacon=1,
+    def __init__(self, particles_num=500, sense_noise=0.0050, distance_noise=5, angle_noise=0.02,
+                 start_x=0.293, start_y=0.425, start_angle=3 * np.pi / 2, color='orange', min_intens=3500.0,
+                 max_dist=3.7, beac_dist_thresh=0.200, k_angle=2, num_is_near_thresh=0.1, distance_noise_1_beacon=0.001,
                  angle_noise_1_beacon=0.05, k_bad=1):
 
         self.start_coords = np.array([start_x, start_y, start_angle])
@@ -91,7 +101,7 @@ class ParticleFilter:
         self.min_cost_function = 0
 
     @staticmethod
-    def gaus(x, mu=0, sigma=1):
+    def gaus(x, mu=0, sigma=1.):
         """calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma"""
         return np.exp(- ((x - mu) ** 2) / (sigma ** 2) / 2.0) / np.sqrt(2.0 * np.pi * (sigma ** 2))
 
@@ -130,24 +140,61 @@ class ParticleFilter:
         noise = np.array([x_noise, y_noise, angle_noise]).T
         move_point = delta + noise
         self.particles = cvt_local2global(move_point, self.particles)
-        self.particles[self.particles[:, 1] > 2000 - 120, 1] = 2000 - 120
+        self.particles[self.particles[:, 1] > 2 - 0.120, 1] = 2 - 0.120
         self.particles[self.particles[:, 1] < 0, 1] = 0
-        self.particles[self.particles[:, 0] > 3000 - 120, 0] = 3000 - 120
-        self.particles[self.particles[:, 0] < 120, 0] = 120
+        self.particles[self.particles[:, 0] > 3 - 0.120, 0] = 3 - 0.120
+        self.particles[self.particles[:, 0] < 0.120, 0] = 0.120
+
+    #
+    # def resample(self, weights):
+    #     indices = []
+    #     weights = np.array(weights)
+    #     c = weights[0]
+    #     j = 0
+    #     m = self.particles_num
+    #     M = 1./m
+    #     r = np.random.uniform(0, M)
+    #     for i in range(m):
+    #         u = r + i*M
+    #         while u > c:
+    #             j += 1
+    #             c = c + weights[j]
+    #         indices.append(j-1)
+    #     return indices
+
 
     def resample(self, weights):
-        """ according to weights """
-        n = self.particles_num
-        weigths = np.array(weights)
-        indices = []
-        C = np.append([0.], np.cumsum(weigths))
+        indices_buf = []
+        weights = np.array(weights)
+        c = weights[0]
         j = 0
-        u0 = (np.random.rand() + np.arange(n)) / n
-        for u in u0:
-            while j < len(C) and u > C[j]:
+        m = self.particles_num
+        M = 1./m
+        r = np.random.uniform(0, M/100000)
+        for i in range(m):
+            u = r + i*M
+            while u > c:
                 j += 1
-            indices += [j - 1]
-        return indices
+                c = c + weights[j]
+            indices_buf.append(j)
+        return indices_buf
+
+
+
+    # def resample(self, weights):
+    #     """ according to weights """
+    #     n = self.particles_num
+    #     weigths = np.array(weights)
+    #     indices = []
+    #     C = np.append([0.], np.cumsum(weigths))
+    #     j = 0
+    #     u0 = (np.random.rand() + np.arange(n)) / n
+    #     for u in u0:
+    #         while j < len(C) and u > C[j]:
+    #             j += 1
+    #         indices += [j - 1]
+    #     return indices
+
 
     def calculate_main(self):
         x = np.mean(self.particles[:, 0])
@@ -226,7 +273,7 @@ class ParticleFilter:
         if num_good_landmarks:
             self.cost_function = np.sqrt(sum_errors) / num_good_landmarks
         else:
-            self.cost_function = np.ones(sum_errors.shape[0]) * 1000
+            self.cost_function = np.ones(sum_errors.shape[0])
         weights = self.gaus(self.cost_function, mu=0, sigma=self.sense_noise)
         if np.sum(weights) > 0:
             weights /= np.sum(weights)
