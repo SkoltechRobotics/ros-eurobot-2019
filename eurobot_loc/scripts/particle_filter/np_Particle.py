@@ -155,53 +155,21 @@ class ParticleFilter:
         self.particles[self.particles[:, 0] > 3 - 0.120, 0] = 3 - 0.120
         self.particles[self.particles[:, 0] < 0.120, 0] = 0.120
 
-    #
-    # def resample(self, weights):
-    #     indices = []
-    #     weights = np.array(weights)
-    #     c = weights[0]
-    #     j = 0
-    #     m = self.particles_num
-    #     M = 1./m
-    #     r = np.random.uniform(0, M)
-    #     for i in range(m):
-    #         u = r + i*M
-    #         while u > c:
-    #             j += 1
-    #             c = c + weights[j]
-    #         indices.append(j-1)
-    #     return indices
-
-
     def resample(self, weights):
         indices_buf = []
         weights = np.array(weights)
         c = weights[0]
         j = 0
         m = self.particles_num
-        M = 1./m
-        r = np.random.uniform(0, M/100000)
+        M = 1. / m
+        r = np.random.uniform(0, M / 100000)
         for i in range(m):
-            u = r + i*M
+            u = r + i * M
             while u > c:
                 j += 1
                 c = c + weights[j]
             indices_buf.append(j)
         return indices_buf
-
-    # def resample(self, weights):
-    #     """ according to weights """
-    #     n = self.particles_num
-    #     weigths = np.array(weights)
-    #     indices = []
-    #     C = np.append([0.], np.cumsum(weigths))
-    #     j = 0
-    #     u0 = (np.random.rand() + np.arange(n)) / n
-    #     for u in u0:
-    #         while j < len(C) and u > C[j]:
-    #             j += 1
-    #         indices += [j - 1]
-    #     return indices
 
     def calculate_main(self):
         x = np.mean(self.particles[:, 0])
@@ -214,36 +182,40 @@ class ParticleFilter:
 
     def weights(self, landmarks, particles):
         """Calculate particle weights based on their pose and landmarks"""
-        # determines 3 beacon positions (x,y) for every particle in it's local coords
-        beacons = cvt_local2global(self.beacons[np.newaxis, :], particles[:, np.newaxis])
-        print(beacons)
+        # determines beacon positions (x,y) for every particle in it's local coords
+        res = self.beacons[np.newaxis, :, :] - particles[:, np.newaxis, :2]
+        X = (res[:, :, 0] * np.cos(particles[:, 2])[:, np.newaxis]
+                + res[:, :, 1] * np.sin(particles[:, 2])[:, np.newaxis])
+        Y = (-res[:, :, 0] * np.sin(particles[:, 2])[:, np.newaxis]
+                + res[:, :, 1] * np.cos(particles[:, 2])[:, np.newaxis])
+        beacons = np.concatenate((X[:, :, np.newaxis], Y[:, :, np.newaxis]), axis=2)
         # find closest beacons to landmark
         dist_from_beacon = np.linalg.norm(beacons[:, np.newaxis, :, :] -
-                                          landmarks[np.newaxis, :, np.newaxis, :], axis=3)
+                                            landmarks[np.newaxis, :, np.newaxis, :], axis=3)
         ind_closest_beacon = np.argmin(dist_from_beacon, axis=2)
         closest_beacons = beacons[np.arange(beacons.shape[0])[:, np.newaxis], ind_closest_beacon]
+
         # Calculate cos of angle between landmark, beacon and particle
-        dist_from_closest_beacon_to_particle = np.sum(closest_beacons *
-                                                      (closest_beacons - landmarks[np.newaxis, :, :2]), axis=2)
-        dist_from_closest_beacon_to_landmark = (np.linalg.norm(closest_beacons - landmarks[np.newaxis, :, :2], axis=2))
+        dist_from_closest_beacon_to_particle = np.linalg.norm(closest_beacons - particles[:, np.newaxis, :2],
+                                                                axis=2)
+        dist_from_closest_beacon_to_landmark = np.linalg.norm(closest_beacons - landmarks[np.newaxis, :, :2],
+                                                                axis=2)
+        scalar_product_landmark = np.sum(dist_from_closest_beacon_to_particle * dist_from_closest_beacon_to_landmark, axis=0) / \
+                                  (np.linalg.norm(dist_from_closest_beacon_to_particle))
+
+        # Calculate errors of position of landmarks
+        errors = np.abs(dist_from_closest_beacon_to_landmark - BEAC_R) ** 2 + \
+                 self.k_bad * np.where(scalar_product_landmark > 0, 0, scalar_product_landmark) ** 2
+        # Too far real beacons go away: non valid
         is_near = dist_from_closest_beacon_to_landmark < self.beac_dist_thresh
         is_near_sum = np.sum(is_near, axis=0)
         is_near_or = (is_near_sum > is_near.shape[0] * self.num_is_near_thresh)
-        is_beacon_seeing = np.ones(3) * False
-        for i in range(3):
-            is_beacon_seeing[i] = np.any(i == ind_closest_beacon[:, is_near_or])
-        self.num_seeing_beacons = np.sum(is_beacon_seeing)
         num_good_landmarks = np.sum(is_near_or)
-        dist_from_closest_beacon_to_landmark -= BEAC_R
-        dist_from_closest_beacon_to_landmark *= dist_from_closest_beacon_to_landmark
-        self.cost_function = dist_from_closest_beacon_to_landmark
-        d_f_b = dist_from_closest_beacon_to_landmark[:, 0] * dist_from_closest_beacon_to_particle[:, 0]
-        print(np.linalg.norm(beacons[:, 1]))
-        d_f_b /= np.linalg.norm(beacons[:, 1])
-        zero_ind = np.where(d_f_b < 0)[0]
-        np.put(d_f_b, zero_ind, 0)
-        d_f_b = d_f_b[:, np.newaxis]
-        self.cost_function += d_f_b
+        sum_errors = np.sum(errors * is_near_or[np.newaxis, :], axis=1)
+        if num_good_landmarks:
+            self.cost_function = np.sqrt(sum_errors) / num_good_landmarks
+        else:
+            self.cost_function = np.ones(sum_errors.shape[0]) * 1000
         weights = self.gaus(self.cost_function, mu=0, sigma=self.sense_noise)
         if np.sum(weights) > 0:
             weights /= np.sum(weights)
@@ -255,6 +227,7 @@ class ParticleFilter:
         self.best_particles["cost_function"] = self.cost_function[best_particles_inds]
         self.best_particles["num_good_landmarks"] = num_good_landmarks
         self.best_particles["weights"] = weights[best_particles_inds]
+
         return weights
 
     def get_landmarks(self, scan):
