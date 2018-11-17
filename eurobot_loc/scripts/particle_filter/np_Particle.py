@@ -184,24 +184,18 @@ class ParticleFilter:
         """Calculate particle weights based on their pose and landmarks"""
         # determines beacon positions (x,y) for every particle in it's local coords
         #cvt_local2global(self.beacons[np.newaxis, :], particles[:, np.newaxis]) works wrong
-        res = self.beacons[np.newaxis, :, :] - particles[:, np.newaxis, :2]
-        X = (res[:, :, 0] * np.cos(particles[:, 2])[:, np.newaxis]
-                + res[:, :, 1] * np.sin(particles[:, 2])[:, np.newaxis])
-        Y = (-res[:, :, 0] * np.sin(particles[:, 2])[:, np.newaxis]
-                + res[:, :, 1] * np.cos(particles[:, 2])[:, np.newaxis])
-        beacons = np.concatenate((X[:, :, np.newaxis], Y[:, :, np.newaxis]), axis=2)
+        beacons = cvt_global2local(self.beacons[np.newaxis, :], particles[:, np.newaxis])
         # find closest beacons to landmark
         dist_from_beacon = np.linalg.norm(beacons[:, np.newaxis, :, :] -
                                             landmarks[np.newaxis, :, np.newaxis, :], axis=3)
         ind_closest_beacon = np.argmin(dist_from_beacon, axis=2)
         closest_beacons = beacons[np.arange(beacons.shape[0])[:, np.newaxis], ind_closest_beacon]
         # Calculate cos of angle between landmark, beacon and particle
-        dist_from_closest_beacon_to_particle = np.linalg.norm(closest_beacons - particles[:, np.newaxis, :2],
-                                                                axis=2)
+        dist_from_closest_beacon_to_particle = np.linalg.norm(closest_beacons, axis=2)
         dist_from_closest_beacon_to_landmark = np.linalg.norm(closest_beacons - landmarks[np.newaxis, :, :2],
                                                                 axis=2)
-        scalar_product_landmark = np.sum(dist_from_closest_beacon_to_particle * dist_from_closest_beacon_to_landmark, axis=0) / \
-                                  (np.linalg.norm(dist_from_closest_beacon_to_particle))
+        scalar_product_landmark = np.sum(closest_beacons * (closest_beacons - landmarks[np.newaxis, :, :2]), axis=2) / \
+                                  dist_from_closest_beacon_to_particle
         # Calculate errors of position of landmarks
         errors = np.abs(dist_from_closest_beacon_to_landmark - BEAC_R) ** 2 + \
                  self.k_bad * np.where(scalar_product_landmark > 0, 0, scalar_product_landmark) ** 2
