@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<robot name="secondary_robot">
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+
+  <link name="secondary_robot">
+
+    <visual>
+      <origin xyz="0 0.029 .185" rpy="0 0 0" />
+      <geometry>
+        <box size="0.241 0.166 0.35" />
+      </geometry>
+      <material name="blue"/>
+    </visual>
+
+    <visual>
+      <origin xyz="0 -0.083 .135" rpy="0 0 0" />
+      <geometry>
+        <box size="0.241 0.060 0.25" />
+      </geometry>
+      <material name="blue"/>
+    </visual>
+  </link>
+
+</robot>
