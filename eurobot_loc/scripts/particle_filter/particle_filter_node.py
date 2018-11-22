@@ -37,7 +37,6 @@ class PFNode(object):
     # noinspection PyTypeChecker
     def __init__(self):
         # Init params
-        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
         self.tf_buffer = tf2_ros.Buffer()
         self.beacon_radius = 0.096 / 2
         self.beacon_range = 0.2
@@ -73,6 +72,7 @@ class PFNode(object):
         #     k_bad = 0
         # else:
         #     k_bad = 2
+        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
         self.pf = ParticleFilter(color=self.color, start_x=x, start_y=y, start_angle=a, **PF_PARAMS)
         self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
         self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)
@@ -84,13 +84,13 @@ class PFNode(object):
         #rospy.visualization_timer = rospy.Timer(rospy.Duration(1. / 3), self.vis_particles)
 
     def scan_callback(self, scan):
-        self.scan = np.array([np.array(scan.ranges), scan.intensities]).T
+        self.scan = scan
         self.laser_time = scan.header.stamp
         header = scan.header
         points = self.point_cloud_from_scan()
         self.pub_landmarks(points, header)
         beacons, color = self.beacons_detection(points)
-        print(beacons.shape[0])
+        # print(beacons.shape[0])
         self.publish_beacons(beacons, header, color)
 
     def point_cloud_from_scan(self):
@@ -235,8 +235,8 @@ class PFNode(object):
         if f:
             lidar_odom_point = cvt_local2global(self.lidar_point, robot_odom_point)
             delta = cvt_global2local(lidar_odom_point, self.prev_lidar_odom_point)
-            rospy.loginfo("delta")
-            rospy.loginfo(delta)
+            # rospy.loginfo("delta")
+            # rospy.loginfo(delta)
             self.prev_lidar_odom_point = lidar_odom_point.copy()
 
             # rospy.loginfo("odom_point %.4f %.4f %.4f" % tuple(lidar_odom_point))
