@@ -2,7 +2,6 @@
 from core_functions import *
 import numpy as np
 
-
 # Dimensions of the playing field
 WORLD_X = 3
 WORLD_Y = 2
@@ -61,7 +60,7 @@ class ParticleFilter:
         self.landmarks = [[], []]
         self.cost_function = []
         self.best_particles = {}
-
+        self.min_sin = 0.4
         self.min_cost_function = 0
 
     @staticmethod
@@ -137,7 +136,6 @@ class ParticleFilter:
     def weights(self, landmarks, particles):
         """Calculate particle weights based on their pose and landmarks"""
         # determines beacon positions (x,y) for every particle in it's local coords
-        #cvt_local2global(self.beacons[np.newaxis, :], particles[:, np.newaxis]) works wrong
         beacons = cvt_global2local(self.beacons[np.newaxis, :], particles[:, np.newaxis])
         # find closest beacons to landmark
         dist_from_beacon = np.linalg.norm(beacons[:, np.newaxis, :, :] -
@@ -176,9 +174,31 @@ class ParticleFilter:
         self.best_particles["weights"] = weights[best_particles_inds]
         return weights
 
+    def filter_scan(self, scan):
+        ranges = np.array(scan.ranges)
+        intensities = np.array(scan.intensities)
+        cloud = cvt_ros_scan2points(scan)
+        index0 = (intensities > self.min_intens) & (ranges < self.max_dist)
+        index1 = self.alpha_filter(cloud, self.min_sin)
+        index = index0 * index1
+        return np.where(index, ranges, 0)
+
+    @staticmethod
+    def alpha_filter(cloud, min_sin_angle):
+        x, y = cloud.T
+        x0, y0 = 0, 0
+        x1, y1 = np.roll(x, 1), np.roll(y, 1)
+        cos_angle = ((x - x0) * (x - x1) + (y - y0) * (y - y1)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+                                                                   * np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1)))
+        sin_angle = np.sqrt(1 - cos_angle * cos_angle)
+        index = sin_angle >= min_sin_angle
+        return index
+
     def get_landmarks(self, scan):
         """Returns filtrated lidar data"""
-        ind = np.where(np.logical_and(scan[:, 1] > self.min_intens, scan[:, 0] < self.max_dist))[0]
-        angles = (LIDAR_DELTA_ANGLE * ind + LIDAR_START_ANGLE) % (2 * np.pi)
-        distances = scan[ind, 0]
+        ranges = np.array(scan.ranges)
+        ind = self.filter_scan(scan)
+        final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
+        angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
+        distances = ranges[final_ind]
         return angles, distances
