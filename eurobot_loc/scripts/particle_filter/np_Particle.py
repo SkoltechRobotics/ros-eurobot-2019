@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from core_functions import *
 import numpy as np
+np.set_printoptions(threshold=np.nan)
 
 # Dimensions of the playing field
 WORLD_X = 3
@@ -19,6 +20,7 @@ GREEN_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y 
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
 
 # parameters of lidar
+
 LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
 LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
 
@@ -73,16 +75,14 @@ class ParticleFilter:
         y_beac = d * np.sin(a)
         return x_beac, y_beac
 
-    def localisation(self, delta_coords, lidar_data):
+    def localisation(self, delta_coords, lidar_data, beacons):
         self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]])
-        self.particles = self.particle_sense(lidar_data, self.particles)
+        self.particles = self.particle_sense(self.particles, beacons)
         main_robot = self.calculate_main()
         return main_robot
 
-    def particle_sense(self, scan, particles):
-        angle, distance = self.get_landmarks(scan)
-        x_coords, y_coords = self.p_trans(angle, distance)
-        self.landmarks = np.array([x_coords, y_coords]).T
+    def particle_sense(self, particles, beacons):
+        self.landmarks = beacons
         weights = self.weights(self.landmarks, particles)
         inds = self.resample(weights)
         self.min_cost_function = np.mean(self.cost_function)
@@ -135,6 +135,7 @@ class ParticleFilter:
     def weights(self, landmarks, particles):
         """Calculate particle weights based on their pose and landmarks"""
         # determines beacon positions (x,y) for every particle in it's local coords
+        #cvt_local2global(self.beacons[np.newaxis, :], particles[:, np.newaxis]) works wrong
         beacons = cvt_global2local(self.beacons[np.newaxis, :], particles[:, np.newaxis])
         # find closest beacons to landmark
         dist_from_beacon = np.linalg.norm(beacons[:, np.newaxis, :, :] -
@@ -180,6 +181,7 @@ class ParticleFilter:
         index0 = (intensities > self.min_intens) & (ranges < self.max_dist)
         index1 = self.alpha_filter(cloud, self.min_sin)
         index = index0 * index1
+        # print(index0)
         return np.where(index, ranges, 0)
 
     @staticmethod
@@ -198,6 +200,8 @@ class ParticleFilter:
         ranges = np.array(scan.ranges)
         ind = self.filter_scan(scan)
         final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
+        # print(final_ind)
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
         return angles, distances
+

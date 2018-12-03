@@ -6,6 +6,7 @@ from sensor_msgs.msg import LaserScan
 import numpy as np
 from core_functions import cvt_global2local, cvt_local2global, find_src
 from np_Particle import ParticleFilter
+from npTriangulation import find_position_triangulation
 import tf2_ros
 import tf_conversions
 import matplotlib as mpl
@@ -16,8 +17,22 @@ mpl.rcParams["figure.figsize"] = (6, 4)
 mpl.rcParams["figure.dpi"] = 100
 #import matplotlib.pyplot as plt
 #import threading
-
 PF_RATE = 20
+BEAC_R = 0.096 / 2
+WORLD_X = 3
+WORLD_Y = 2
+WORLD_BORDER = 0.022
+BEAC_R = 0.096 / 2
+BEAC_L = 0.100
+BEAC_BORDER = 0.022
+
+ORANGE_BEACONS = np.array([[WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y / 2.],
+                           [-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y - BEAC_L / 2.],
+                           [-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), BEAC_L / 2.]])
+
+GREEN_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y / 2.],
+                          [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y - BEAC_L / 2.],
+                          [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
 
 PF_PARAMS = {"k_bad": 5,
              "particles_num": 1000,
@@ -37,6 +52,11 @@ class PFNode(object):
     # noinspection PyTypeChecker
     def __init__(self):
         # Init params
+        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
+        self.beacons = []
+        beacons = ORANGE_BEACONS
+        self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
+        self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)
         self.tf_buffer = tf2_ros.Buffer()
         self.beacon_radius = 0.096 / 2
         self.beacon_range = 0.2
@@ -66,16 +86,22 @@ class PFNode(object):
         # rospy.loginfo(self.lidar_odom_point_odom)
         self.prev_lidar_odom_time = rospy.Time.now()
         self.laser_time = rospy.Time.now()
-        x, y, a = lidar_odom_point
-
+        self.cost_function = []
+        # x, y, a = lidar_odom_point
+        init_start = lidar_odom_point
+        buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2], **PF_PARAMS)
+        angles, distances = buf_pf.get_landmarks(self.scan)
+        x = distances * np.cos(angles)
+        y = distances * np.sin(angles)
+        landmarks = (np.array([x, y])).T
+        print(landmarks)
+        start_coords = find_position_triangulation(beacons, landmarks, init_start)
         # if self.robot_name == "secondary_robot":
         #     k_bad = 0
         # else:
         #     k_bad = 2
-        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
-        self.pf = ParticleFilter(color=self.color, start_x=x, start_y=y, start_angle=a, **PF_PARAMS)
-        self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
-        self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)
+        self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2], **PF_PARAMS)
+
         self.last_odom = np.zeros(3)
         self.alpha = 1
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)
@@ -86,12 +112,7 @@ class PFNode(object):
     def scan_callback(self, scan):
         self.scan = scan
         self.laser_time = scan.header.stamp
-        header = scan.header
-        points = self.point_cloud_from_scan()
-        self.pub_landmarks(points, header)
-        beacons, color = self.beacons_detection(points)
-        # print(beacons.shape[0])
-        self.publish_beacons(beacons, header, color)
+
 
     def point_cloud_from_scan(self):
         angles, ranges = self.pf.get_landmarks(self.scan)
@@ -104,10 +125,15 @@ class PFNode(object):
     def filter_by_min_range(points, min_range):
         return points[np.linalg.norm(points, axis=1) >= min_range]
 
+    def covariance(self, beacon, points):
+        self.cost_function.append(((-2) * (np.linalg.norm(points - beacon) - BEAC_R) * (points - beacon)) \
+                                  / np.linalg.norm(points - beacon))
+
     def beacons_detection(self, points):
         points_number = points.shape[0]
         marked_points = [False] * points_number
         beacons = []
+        self.cost_function = []
         for i in range(points_number):
             if not marked_points[i]:
                 nearest_points = np.linalg.norm(points - points[i], axis=1) < self.beacon_range
@@ -115,8 +141,11 @@ class PFNode(object):
                 rospy.logdebug("num beacons points %d" % int(np.count_nonzero(nearest_points)))
                 if np.count_nonzero(nearest_points) >= self.min_points_per_beacon:
                     beacons.append(self.find_beacon(points[nearest_points], self.beacon_radius))
+                    # self.cost_function.append(((-2)*(np.linalg.norm(points - beacons[-1]) - BEAC_R)*(points - beacons[-1])) \
+                    #                  / np.linalg.norm(points - beacons[-1]))
                     rospy.logdebug("find beacon at point (%.3f, %.3f)" % (beacons[-1][0], beacons[-1][1]))
         beacons = np.array(beacons)
+        # self.cost_function = np.sum(self.cost_function, axis=0)
         # color = np.array([1, 0, 0])
         if (beacons.shape[0] == 2):
             dist_beacon = np.sqrt((beacons[0][0] - beacons[1][0])**2 + (beacons[0][1] - beacons[1][1])**2)
@@ -130,6 +159,7 @@ class PFNode(object):
 
     def pub_landmarks(self, beacons, header):
         markers = []
+        self.beacons = beacons
         for i, beacon in enumerate(beacons):
             marker = Marker()
             marker.header = header
@@ -180,6 +210,7 @@ class PFNode(object):
             return np.abs(np.linalg.norm(points - x, axis=1) - beacon_radius) - np.where(scs < 0, scs, 0)
 
         res = scipy.optimize.least_squares(fun, points[0])
+        # print (res.x)
         return np.array(res.x)
 
 
@@ -227,6 +258,12 @@ class PFNode(object):
 
     # noinspection PyUnusedLocal
     def localisation(self, event):
+        header = self.scan.header
+        points = self.point_cloud_from_scan()
+        self.pub_landmarks(points, header)
+        beacons, color = self.beacons_detection(points)
+        # print(beacons.shape[0])
+        self.publish_beacons(beacons, header, color)
         f, robot_odom_point = self.get_odom()
         robot_odom_point = self.point_extrapolation(self.prev_lidar_odom_point_odom, self.lidar_odom_point_odom,
                                                     self.prev_lidar_odom_time, self.lidar_odom_time, self.laser_time)
@@ -241,7 +278,7 @@ class PFNode(object):
 
             # rospy.loginfo("odom_point %.4f %.4f %.4f" % tuple(lidar_odom_point))
 
-            lidar_pf_point = self.pf.localisation(delta, self.scan)
+            lidar_pf_point = self.pf.localisation(delta, self.scan, self.beacons)
             # rospy.loginfo("pf_point   %.4f %.4f %.4f" % tuple(lidar_pf_point))
             # rospy.loginfo("cost_function " + str(self.pf.min_cost_function))
 
