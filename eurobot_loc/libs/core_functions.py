@@ -47,3 +47,10 @@ def find_src(global_point, local_point):
     X = x1 - x * np.cos(A) + y * np.sin(A)
     Y = y1 - x * np.sin(A) - y * np.cos(A)
     return np.array([X, Y, A]).T
+
+def cvt_ros_scan2points(scan):
+    angles = np.arange(scan.angle_min, scan.angle_max, scan.angle_increment)
+    ranges = np.array(scan.ranges)
+    x = ranges * np.cos(angles)
+    y = ranges * np.sin(angles)
+    return np.array([x, y]).T
