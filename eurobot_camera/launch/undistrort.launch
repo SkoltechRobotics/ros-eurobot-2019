@@ -10,7 +10,5 @@
 </node>
 <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" >
 </node>
-<node name="eurobot_undistort" pkg="eurobot_camera" type="undistort.py" output="screen" >
-</node>
 </launch>
    

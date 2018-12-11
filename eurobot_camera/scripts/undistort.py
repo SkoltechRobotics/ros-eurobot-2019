@@ -8,6 +8,7 @@ import sensor_msgs
 from sensor_msgs.msg import Image
 import sys, re
 import yaml
+import matplotlib.pyplot as plt
 
 import time
 import homogeneous
@@ -18,17 +19,21 @@ import homogeneous
 
 # FIXME::add camera_info
 
-ly=2.0
-lx=3.0
-lz=1.0
-hx=2448.
-hy=2048.
-rx=400.
-ry=300.
-scale_x = hx/rx
-scale_y = hy/ry
+TABLE_LENGTH_Y=2.0
+TABLE_LENGTH_X=3.0
+TABLE_LENGTH_Z=1.0
 
+CAMERA_WIDTH=2448.
+CAMERA_HEIGHT=2048.
+HOMO_IMAGE_WIDTH=400.
+HOMO_IMAGE_HEIGHT=300.
+SCALE_X = CAMERA_WIDTH/HOMO_IMAGE_WIDTH
+SCALE_Y = CAMERA_HEIGHT/HOMO_IMAGE_HEIGHT
 
+CAMERA_X = 1.5
+CAMERA_Y = 0.0
+CAMERA_Z = 1.0
+CAMERA_ANGLE = (3 * np.pi / 4 - 0.1, 0, 0)
 
 def read_config(conf_file):
     data_loaded = yaml.load(conf_file)
@@ -61,75 +66,95 @@ def read_config(conf_file):
 
     return DIM, K, D
 
-class undistortion():
-    def __init__(self, DIM, K, D, balance=1.0):
-        self.node = rospy.init_node('undistort_node', anonymous=True)
-        self.publisher = rospy.Publisher("/undistort_image", Image, queue_size=10)
-        self.subscriber = rospy.Subscriber("/usb_cam/image_raw", sensor_msgs.msg.Image, self.__callback)
-        self.bridge = CvBridge()
+def find_rotation_matrix(theta):
+    R_x = np.array([[1, 0, 0],
+                    [0, np.cos(theta[0]),-np.sin(theta[0]) ],
+                    [0, np.sin(theta[0]), np.cos(theta[0])]])
+    R_y = np.array([[np.cos(theta[1]), 0, np.sin(theta[1])], 
+                    [0, 1, 0],
+                    [-np.sin(theta[1]), 0, np.cos(theta[1])]])
+    R_z = np.array([[np.cos(theta[2]), -np.sin(theta[2]), 0],
+                    [np.sin(theta[2]), np.cos(theta[2]), 0],
+                    [0, 0, 1]])
+    R = np.linalg.multi_dot([R_x, R_y, R_z])
+    return R
+
+class Camera():
+    def __init__(self, DIM, K, D):
         self.DIM = DIM
-        self.K = K
+        self.K_camera = K
+        self.K_projection = K
         self.D = D
-        self.balance = balance
         self.warp_matrix = np.eye(3, 3, dtype=np.float32)
-        self.it = 0
+        
+    def find_vertical_projection(self):
+        rotation_matrix = find_rotation_matrix(CAMERA_ANGLE)
+        camera_position = np.array([ [CAMERA_X],
+                                     [CAMERA_Y],
+                                     [CAMERA_Z] ])
+        t = -np.dot(rotation_matrix, camera_position)
+        # t = -rotation_matrix.dot(camera_position)
+        M = np.concatenate((rotation_matrix, t), axis=1)
+        L = np.array([ [TABLE_LENGTH_X/CAMERA_WIDTH, 0, 0],
+                       [0, -TABLE_LENGTH_Y/CAMERA_HEIGHT, TABLE_LENGTH_Y],
+                       [0, 0, 0],
+                       [0, 0, 1] ])
+        H = np.dot(M, L)
+        
+        K_new = np.linalg.inv(H)
+        
+        self.K_projection = K_new
+        
+        return K_new        
         
     def undistort(self, img):
-        Knew = self.K.copy()
-        Knew[(0, 1), (0, 1)] = self.balance * Knew[(0, 1), (0, 1)]  # coeff to change dimension
-        Knew = self.vertical_proj()
-        undistorted_img = cv2.fisheye.undistortImage(img, K=self.K, D=self.D, Knew=Knew)
-        # If first time find homogeneous matrix
-        if np.array_equal(self.warp_matrix,np.eye(3, 3, dtype=np.float32)):
-            self.warp_matrix = homogeneous.homogeneous(img=undistorted_img, rx=int(rx), ry=int(ry))
+        undistorted_img = cv2.fisheye.undistortImage(distorted=img,
+                                                     K=self.K_camera,
+                                                     D=self.D,
+                                                     Knew=self.K_projection)
         return undistorted_img
-
-    def vertical_proj(self):
-        rotation_matrix = self.__eulerAnglesToRotationMatrix((3 * np.pi / 4 - 0.1, 0, 0))
-        camera_position = np.array([[1.5, 0.0, 1.0]]).T
-        t = -rotation_matrix.dot(camera_position)
-        M = np.concatenate((rotation_matrix, t), axis=1)
-        L = np.array([[lx/hx, 0, 0], [0, -ly/hy, ly], [0, 0, 0], [0, 0, 1]])
-        K_new = np.linalg.inv(M.dot(L)) 
-        
-        if not (np.array_equal(self.warp_matrix,np.eye(3, 3, dtype=np.float32))):
-            C = np.zeros((3,3))
-            C[(0,1,2),(0,1,2)] =scale_x,scale_y,1
-            W = self.warp_matrix
-            C_inv = np.linalg.inv(C)
-            W_inv = np.linalg.inv(W)
-            K1 = C_inv.dot(K_new)
-            K2 = W_inv.dot(K1)
-            K3 = C.dot(K2)
-            K_new = K3
-            
+    
+    def find_warp_matrix(self, undistorted_img):
+        warp_matrix = homogeneous.homogeneous(undistorted_img, 
+                                              HOMO_IMAGE_WIDTH,
+                                              HOMO_IMAGE_HEIGHT)
+        self.warp_matrix = warp_matrix
+        return warp_matrix
+    
+    def find_vertical_warp_projection(self, warp_matrix):
+        C = np.zeros((3,3))
+        C[(0,1,2),(0,1,2)] = SCALE_X, SCALE_Y, 1
+        W = warp_matrix
+        C_inv = np.linalg.inv(C)
+        W_inv = np.linalg.inv(W)
+        K1 = C_inv.dot(self.K_projection)
+        K2 = W_inv.dot(K1)
+        K3 = C.dot(K2)
+        K_new = K3
         return K_new
+    
+class CameraUndistortNode():
+    def __init__(self, DIM, K, D):
+        self.node = rospy.init_node('camera_undistort_node', anonymous=True)
+        self.publisher = rospy.Publisher("/undistorted_image", Image)
+        self.subscriber = rospy.Subscriber("/usb_cam/image_raw", sensor_msgs.msg.Image, self.__callback)
+        self.bridge = CvBridge()
+        self.camera = Camera(DIM, K, D)
+        self.it = 0
         
     
-    def horizontal_proj(self):
-        rotation_matrix = self.__eulerAnglesToRotationMatrix((3 * np.pi / 4 - 0.1, 0, 0))
-        camera_position = np.array([[1.5, 0.0, 1.0]]).T
-        t = -rotation_matrix.dot(camera_position)
-        print t
-        M = np.concatenate((rotation_matrix, t), axis=1)
-        L = np.array([[lx/hx, 0, 0], [0, 0, ly], [0, -lz/hy, lz], [0, 0, 1.0]])	
-        K_new = np.linalg.inv(M.dot(L))
+    
+#     def horizontal_proj(self):
+#         rotation_matrix = self.__eulerAnglesToRotationMatrix((3 * np.pi / 4 - 0.1, 0, 0))
+#         camera_position = np.array([[1.5, 0.0, 1.0]]).T
+#         t = -rotation_matrix.dot(camera_position)
+#         print t
+#         M = np.concatenate((rotation_matrix, t), axis=1)
+#         L = np.array([[lx/hx, 0, 0], [0, 0, ly], [0, -lz/hy, lz], [0, 0, 1.0]])	
+#         K_new = np.linalg.inv(M.dot(L))
         
-        return K_new
+#         return K_new
 
-    def __eulerAnglesToRotationMatrix(self,theta):
-        R_x = np.array([[1, 0, 0], [0, np.cos(theta[0]), -np.sin(theta[0])],
-                        [0, np.sin(theta[0]),
-                         np.cos(theta[0])]])
-        R_y = np.array([[np.cos(theta[1]), 0,
-                         np.sin(theta[1])], [0, 1, 0],
-                        [-np.sin(theta[1]), 0,
-                         np.cos(theta[1])]])
-        R_z = np.array([[np.cos(theta[2]), -np.sin(theta[2]), 0],
-                        [np.sin(theta[2]), np.cos(theta[2]), 0], [0, 0, 1]])
-        R = np.dot(R_x, np.dot(R_y, R_z))
-        # R = np.dot(R_z, np.dot(R_y, R_x))
-        return R
 
     def __callback(self, data):
         try:
@@ -137,7 +162,11 @@ class undistortion():
             rospy.loginfo(rospy.get_caller_id())
         except CvBridgeError as e:
             print(e)
-        image = self.undistort(cv_image)
+            
+        undistorted_image = self.camera.undistort(cv_image)
+        image = undistorted_image
+        #self.camera.find_warp_matrix(undistorted_image)
+        #self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
         try:
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
         except CvBridgeError as e:
@@ -146,19 +175,12 @@ class undistortion():
 
 if __name__ == '__main__':
     conf_path_reg = re.compile(r'config_path=*')
-    balance_reg = re.compile(r'balance=*')
-    balance = None
     conf_file = None
     for arg in sys.argv[1:]:
         if conf_path_reg.match(arg):
             try:
                 conf_file = open(arg[12:], 'r')
             except IOError as err:
-                sys.exit('Incorrect argument balance=')
-        if balance_reg.match(arg):
-            try:
-                balance = float(arg[8:])
-            except ValueError as err:
                 sys.exit('Incorrect argument balance=')
 
     if not conf_file:
@@ -168,15 +190,13 @@ if __name__ == '__main__':
                 '/home/alexey/CatkinWorkspace/src/ros-eurobot-2019/eurobot_camera/configs/calibration.yaml', 'r')
         except IOError as err:
             sys.exit("Couldn't find config file")
-    if not balance:
-        print('Using default balance value, balance=1.0')
-        balance = 1.0
 
+            
     DIM, K, D = read_config(conf_file)
 
     try:
-        time.sleep(1)
-        undistortion = undistortion(DIM, K, D, balance)
+        undistort_node = CameraUndistortNode(DIM, K, D)
+        undistort_node.camera.find_vertical_projection()
         rospy.spin()
     except KeyboardInterrupt:
         print("Shutting down")
