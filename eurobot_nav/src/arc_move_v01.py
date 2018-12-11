@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[2]:
 
 
 # simple go to goal in different methods: odom movement
@@ -210,6 +210,8 @@ class MotionPlanner:
             rospy.loginfo("MotionPlanner failed to lookup tf2.")
             return False
 
-        
-planner = MotionPlanner()
+
+if __name__ == "__main__":
+    planner = MotionPlanner()
+    rospy.spin()
 
