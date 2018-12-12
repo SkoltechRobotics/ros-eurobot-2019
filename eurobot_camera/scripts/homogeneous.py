@@ -70,12 +70,13 @@ def alignImages(im1,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
 
     # Detect ORB features and compute descriptors.
     orb = cv2.ORB_create(MAX_FEATURES)
-    keypoints1, descriptors1 = orb.detectAndCompute(im1Gray, None)
-    keypoints2, descriptors2 = orb.detectAndCompute(im2Gray, None)
+    
+    (keypoints1, descriptors1) = orb.detectAndCompute(im1Gray, None)
+    (keypoints2, descriptors2) = orb.detectAndCompute(im2Gray, None)
 
     # Match features.
-    matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
-    matches = matcher.match(descriptors1, descriptors2, None)
+    matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = matcher.match(descriptors1, descriptors2)
 
     # Sort matches by score
     matches.sort(key=lambda x: x.distance, reverse=False)

@@ -17,18 +17,15 @@ import homogeneous
 # K=np.array([[677.6729654637016, 0.0, 1235.371481335309], [0.0, 679.4736576804626, 1043.9887347932538], [0.0, 0.0, 1.0]])
 # D=np.array([[0.026055346132657364], [0.006035766757842894], [0.005666324884814231], [-0.0015661403498746557]])
 
-# FIXME::add camera_info
-
 TABLE_LENGTH_Y=2.0
 TABLE_LENGTH_X=3.0
 TABLE_LENGTH_Z=1.0
 
 CAMERA_WIDTH=2448.
 CAMERA_HEIGHT=2048.
-HOMO_IMAGE_WIDTH=400.
-HOMO_IMAGE_HEIGHT=300.
-SCALE_X = CAMERA_WIDTH/HOMO_IMAGE_WIDTH
-SCALE_Y = CAMERA_HEIGHT/HOMO_IMAGE_HEIGHT
+HOMO_IMAGE_SCALE=5.
+HOMO_IMAGE_WIDTH=CAMERA_WIDTH/HOMO_IMAGE_SCALE
+HOMO_IMAGE_HEIGHT=CAMERA_HEIGHT/HOMO_IMAGE_SCALE
 
 CAMERA_X = 1.5
 CAMERA_Y = 0.0
@@ -134,7 +131,7 @@ class Camera():
     def find_vertical_warp_projection(self, warp_matrix):
         print warp_matrix
         C = np.zeros((3,3))
-        C[(0,1,2),(0,1,2)] = SCALE_X, SCALE_Y, 1
+        C[(0,1,2),(0,1,2)] = HOMO_IMAGE_SCALE, HOMO_IMAGE_SCALE, 1
         W = warp_matrix
         C_inv = np.linalg.inv(C)
         W_inv = np.linalg.inv(W)
@@ -175,17 +172,18 @@ class CameraUndistortNode():
         except CvBridgeError as e:
             print(e)
         
-        cv_image = cv2.medianBlur(cv_image,5)
-        #cv_image = cv2.GaussianBlur(cv_image,(5,5),0)
+        #cv_image = cv2.medianBlur(cv_image,5)
+        cv_image = cv2.GaussianBlur(cv_image,(5,5),0)
         undistorted_image = self.camera.undistort(cv_image)
         image = undistorted_image
-#         warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
-#         self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
-        if self.it == 0:
-            warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
-            self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
-            self.it += 1
-            return
+        
+        warp_matrix = self.camera.find_warp_matrix_not_feature(undistorted_image)
+        self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+#         if self.it == 0:
+#             warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
+#             self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+#             self.it += 1
+#             return
 
 #         if self.it == 1:
 #             field = cv2.imread("/home/alexey/Desktop/field.png")
