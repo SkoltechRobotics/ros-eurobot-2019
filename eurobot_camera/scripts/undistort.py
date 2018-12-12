@@ -114,14 +114,25 @@ class Camera():
                                                      Knew=self.K_projection)
         return undistorted_img
     
-    def find_warp_matrix(self, undistorted_img):
-        warp_matrix = homogeneous.homogeneous(undistorted_img, 
+    def find_warp_matrix_not_feature(self, undistorted_img):
+        warp_matrix = homogeneous.homogeneous(undistorted_img,
                                               HOMO_IMAGE_WIDTH,
                                               HOMO_IMAGE_HEIGHT)
         self.warp_matrix = warp_matrix
+        print warp_matrix
         return warp_matrix
     
+    def find_warp_matrix_feature(self, undistorted_img):
+        warp_matrix = homogeneous.alignImages(undistorted_img,
+                                              HOMO_IMAGE_WIDTH,
+                                              HOMO_IMAGE_HEIGHT)
+        self.warp_matrix = warp_matrix
+        print warp_matrix
+        return warp_matrix
+    
+    
     def find_vertical_warp_projection(self, warp_matrix):
+        print warp_matrix
         C = np.zeros((3,3))
         C[(0,1,2),(0,1,2)] = SCALE_X, SCALE_Y, 1
         W = warp_matrix
@@ -131,6 +142,7 @@ class Camera():
         K2 = W_inv.dot(K1)
         K3 = C.dot(K2)
         K_new = K3
+        self.K_projection = K_new
         return K_new
     
 class CameraUndistortNode():
@@ -162,13 +174,30 @@ class CameraUndistortNode():
             rospy.loginfo(rospy.get_caller_id())
         except CvBridgeError as e:
             print(e)
-            
+        
+        cv_image = cv2.medianBlur(cv_image,5)
+        #cv_image = cv2.GaussianBlur(cv_image,(5,5),0)
         undistorted_image = self.camera.undistort(cv_image)
         image = undistorted_image
-        #self.camera.find_warp_matrix(undistorted_image)
-        #self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+#         warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
+#         self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+        if self.it == 0:
+            warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
+            self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+            self.it += 1
+            return
+
+#         if self.it == 1:
+#             field = cv2.imread("/home/alexey/Desktop/field.png")
+#             field = cv2.resize(field, (2448,2048))
+#             image1 = undistorted_image*0.5+field*0.5
+#             cv2.imwrite("field_img_feature.jpg", image1)
+#             self.it += 1
         try:
-            self.publisher.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
+            field = cv2.imread("/home/alexey/Desktop/field.png")
+            field = cv2.resize(field, (2448,2048))
+            image1 = undistorted_image // 2 + field // 2
+            self.publisher.publish(self.bridge.cv2_to_imgmsg(image1, "bgr8"))
         except CvBridgeError as e:
             print(e)
 

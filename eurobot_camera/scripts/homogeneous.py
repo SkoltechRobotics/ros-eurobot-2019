@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image
 
 import time
 
-def homogeneous(img,rx,ry,templ_path='/home/alexey/CatkinWorkspace/src/ros-eurobot-2019/eurobot_camera/Field.png'):
+def homogeneous(img,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
     start_time = time.time()
     print ('Start homogeneous')
     
@@ -20,6 +20,11 @@ def homogeneous(img,rx,ry,templ_path='/home/alexey/CatkinWorkspace/src/ros-eurob
     # Convert images to grayscale
     tmp_gray = cv2.cvtColor(tmp,cv2.COLOR_BGR2GRAY)
     img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+
+    # create a CLAHE object (Arguments are optional).
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    img_gray = clahe.apply(img_gray)
+
     # Define the motion model
     warp_mode = cv2.MOTION_HOMOGRAPHY
 
@@ -44,4 +49,62 @@ def homogeneous(img,rx,ry,templ_path='/home/alexey/CatkinWorkspace/src/ros-eurob
     return warp_matrix
     
 
+MAX_FEATURES = 10000
+GOOD_MATCH_PERCENT = 0.1
+
+def alignImages(im1,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
+    start_time = time.time()
+    print ('Start homogeneous by features')
+
+    im2 = cv2.imread(templ_path);
+    im1 = cv2.resize(im1, (int(rx),int(ry)))
+    im2 = cv2.resize(im2, (int(rx),int(ry)))
+
+    # Convert images to grayscale
+    im1Gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+    im2Gray = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
+
+    # create a CLAHE object (Arguments are optional).
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    im1Gray = clahe.apply(im1Gray)
+
+    # Detect ORB features and compute descriptors.
+    orb = cv2.ORB_create(MAX_FEATURES)
+    keypoints1, descriptors1 = orb.detectAndCompute(im1Gray, None)
+    keypoints2, descriptors2 = orb.detectAndCompute(im2Gray, None)
+
+    # Match features.
+    matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+    matches = matcher.match(descriptors1, descriptors2, None)
+
+    # Sort matches by score
+    matches.sort(key=lambda x: x.distance, reverse=False)
+
+    # Remove not so good matches
+    numGoodMatches = int(len(matches) * GOOD_MATCH_PERCENT)
+    matches = matches[:numGoodMatches]
+
+    # Draw top matches
+    imMatches = cv2.drawMatches(im1, keypoints1, im2, keypoints2, matches, None)
+    cv2.imwrite("matches.jpg", imMatches)
+
+    # Extract location of good matches
+    points1 = np.zeros((len(matches), 2), dtype=np.float32)
+    points2 = np.zeros((len(matches), 2), dtype=np.float32)
+
+    for i, match in enumerate(matches):
+        points1[i, :] = keypoints1[match.queryIdx].pt
+        points2[i, :] = keypoints2[match.trainIdx].pt
+
+    # Find homography
+    h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+    h = np.linalg.inv(h)
     
+    # Use homography
+    height, width, channels = im2.shape
+    #im1Reg = cv2.warpPerspective(im1, h, (width, height))
+
+    result_time = time.time() - start_time
+    print ('Homogeneous result time= ', result_time)
+
+    return h
