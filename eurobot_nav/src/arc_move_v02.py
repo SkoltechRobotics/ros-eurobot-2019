@@ -23,7 +23,10 @@ class MotionPlanner:
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
+        #FIXME
         self.robot_name="secondary_robot"
+        
+        #self.coords[:2] /= 1000.0
         
         self.vel = np.zeros(3)
 
@@ -236,28 +239,28 @@ class MotionPlanner:
         """
         alpha = self.wrap_angle(theta_goal - theta) # theta_diff
         
-        if d < 0.05:
-            self.stop_robot()
+#         if d < 0.05:
+#             self.stop_robot()
+#         else:
+
+        v = self.Kp_rho * d
+
+        if alpha == 0:
+            w = 0
         else:
+            R = 0.5 * d / np.sin(alpha/2)
+            w = v / R  # must be depended on v such way so path becomes an arc
 
-            v = self.Kp_rho * d
+        beta = self.wrap_angle(gamma - alpha/2)
 
-            if alpha == 0:
-                w = 0
-            else:
-                R = 0.5 * d / np.sin(alpha/2)
-                w = v / R  # must be depended on v such way so path becomes an arc
+        vx = v * np.cos(beta)
+        vy = v * np.sin(beta)
 
-            beta = self.wrap_angle(gamma - alpha/2)
-
-            vx = v * np.cos(beta)
-            vy = v * np.sin(beta)
-
-            v_cmd = np.array([vx, vy, w])        
-            rospy.loginfo("v_cmd:\t" + str(v_cmd))
-            cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
-            rospy.loginfo("Sending cmd: " + cmd)
-            self.pub_cmd.publish(cmd)
+        v_cmd = np.array([vx, vy, w])        
+        rospy.loginfo("v_cmd:\t" + str(v_cmd))
+        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+        rospy.loginfo("Sending cmd: " + cmd)
+        self.pub_cmd.publish(cmd)
 
         
 
