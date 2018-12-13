@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[2]:
+# In[4]:
 
 
 # simple go to goal in different methods: odom movement
@@ -26,31 +26,34 @@ class MotionPlanner:
         #FIXME
         self.robot_name="secondary_robot"
         
-        # self.coords[:2] /= 1000.0
-        self.coords = np.array((0,0,0))
+        #self.coords[:2] /= 1000.0
         
         self.vel = np.zeros(3)
 
         self.mutex = Lock()
 
         self.cmd_id = None
+        self.cmd_type = None
+        self.cmd_args = None
         self.t_prev = None
         self.goal = None
         self.mode = None
+        self.RATE = 10
+        self.Kp_rho = 0.5
 
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
 #         self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_response = rospy.Publisher("response", String, queue_size=10)
-        self.pub_cmd = rospy.Publisher("stm_command", String, queue_size=1)
+        self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
         #rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
 #         rospy.Subscriber("response", String, self.response_callback, queue_size=1)
         # rospy.Subscriber("barrier_rangefinders_data", Int32MultiArray, self.rangefinder_data_callback, queue_size=1)
 
         # start the main timer that will follow given goal points
-        # rospy.Timer(rospy.Duration(1.0 / self.RATE), self.plan)
+        rospy.Timer(rospy.Duration(1.0 / self.RATE), self.arc_move)
 
 
     def cmd_callback(self, data):
@@ -60,11 +63,11 @@ class MotionPlanner:
 
         # parse name, type
         data_splitted = data.data.split()
-        cmd_id = data_splitted[0] # unique identificator, string type, for ex. abc
-        cmd_type = data_splitted[1]
-        cmd_args = data_splitted[2:]
-
-        
+        self.cmd_id = data_splitted[0] # unique identificator, string type, for ex. abc
+        self.cmd_type = data_splitted[1]
+        self.cmd_args = data_splitted[2:]
+        rospy.loginfo(self.cmd_args)
+        """
         if cmd_type == "arc_move":  # arc-movement by odometry
             inp = np.array(cmd_args).astype('float')
             inp[2] %= 2 * np.pi
@@ -80,7 +83,7 @@ class MotionPlanner:
             rospy.loginfo("Robot has stopped.")
 
         self.mutex.release()        
-
+        """
         
     
     @staticmethod
@@ -101,8 +104,8 @@ class MotionPlanner:
         return ans
     
     
-    @staticmethod
-    def wrap_angle(angle):
+    
+    def wrap_angle(self,angle):
         """
         Wraps the given angle to the range [-pi, +pi].
 
@@ -125,7 +128,7 @@ class MotionPlanner:
         self.cmd_stop_robot_id = "stop_" + self.robot_name + str(self.stop_id)
         self.stop_id += 1
         self.robot_stopped = False
-        cmd = self.cmd_stop_robot_id + " 8 0 0 0"
+        cmd = "8 0 0 0"
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
         for i in range(20):
@@ -148,53 +151,63 @@ class MotionPlanner:
         self.vel = vel
         
         
-    def arc_move(self, cmd_id, x_goal, y_goal, theta_goal, vel=0.3, wmax=1.5, t = 0.1):
+    def arc_move(self, vel=0.3, wmax=1.5, t = 0.1):
         "go to goal in one movement by arc path"
         "t chosen to be 0.1 for testing, meaning 10 Hz"
         "positioning args vel and wmax are not used"
         
-        goal = np.array([x_goal, y_goal, theta_goal])
-        rospy.loginfo("-------NEW ARC MOVEMENT-------")
-        rospy.loginfo("Goal:\t" + str(goal))
-        
-        while not self.update_coords():
-            rospy.sleep(0.05)
-        
-        x = self.coords[0]
-        y = self.coords[1]
-        theta = self.coords[2]
-        
-        x_diff = x_goal - x
-        y_diff = y_goal - y
+        #goal = np.array([x_goal, y_goal, theta_goal])
+        try:
+            x_goal = float(self.cmd_args[0])
+            y_goal = float(self.cmd_args[1])
+            theta_goal = float(self.cmd_args[2])
+            goal = np.array([x_goal, y_goal, theta_goal])
+            rospy.loginfo("-------NEW ARC MOVEMENT-------")
+            rospy.loginfo("Goal:\t" + str(goal))
+            
+            while not self.update_coords():
+                rospy.sleep(0.05)
+            
+            x = self.coords[0]
+            y = self.coords[1]
+            theta = self.coords[2]
+            
+            x_diff = x_goal- x
+            y_diff = y_goal - y
 
-        gamma = np.arctan2(y_diff, x_diff)
-        d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
+            gamma = np.arctan2(y_diff, x_diff)
+            d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
 
-        """
-        Restrict alpha and beta (angle differences) to the range
-        [-pi, pi] to prevent unstable behavior e.g. difference going
-        from 0 rad to 2*pi rad with slight turn
-        """
-        alpha = wrap_angle(theta_goal - theta) # theta_diff
+            """
+            Restrict alpha and beta (angle differences) to the range
+            [-pi, pi] to prevent unstable behavior e.g. difference going
+            from 0 rad to 2*pi rad with slight turn
+            """
+            alpha = self.wrap_angle(theta_goal - theta) # theta_diff
+            if d < 0.05:
+                self.stop_robot()
+            else:
 
-        v = Kp_rho * d
+                v = self.Kp_rho * d
 
-        if alpha == 0:
-            w = 0
-        else:
-            R = 0.5 * d / np.sin(alpha/2)
-            w = v / R  # must be depended on v such way so path becomes an arc
+                if alpha == 0:
+                    w = 0
+                else:
+                    R = 0.5 * d / np.sin(alpha/2)
+                    w = v / R  # must be depended on v such way so path becomes an arc
 
-        beta = wrap_angle(gamma - alpha/2)
+                beta = self.wrap_angle(gamma - alpha/2)
 
-        vx = v * np.cos(beta)
-        vy = v * np.sin(beta)
-    
-        v_cmd = np.array([vx, vy, w])        
-        rospy.loginfo("v_cmd:\t" + str(v_cmd))
-        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
-        rospy.loginfo("Sending cmd: " + cmd)
-        self.pub_cmd.publish(cmd)
+                vx = v * np.cos(beta)
+                vy = v * np.sin(beta)
+            
+                v_cmd = np.array([vx, vy, w])        
+                rospy.loginfo("v_cmd:\t" + str(v_cmd))
+                cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+                rospy.loginfo("Sending cmd: " + cmd)
+                self.pub_cmd.publish(cmd)
+        except:
+            pass
         
 
     def update_coords(self):
@@ -202,7 +215,7 @@ class MotionPlanner:
             trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
-            self.coords = np.array( (0,0,0) )
+            #self.coords = np.array( (0,0,0) )
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
             rospy.loginfo("Robot coords:\t" + str(self.coords))
             return True
