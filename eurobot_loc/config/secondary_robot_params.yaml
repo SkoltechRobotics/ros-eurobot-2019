@@ -1,7 +1,6 @@
-robot_name: "secondary_robot"
-
 # initial coordinates (robot's, not LIDAR's coords!)
-start_orange: [0.120, 0.525, 4.71]
+robot_name: "secondary_robot"
+start_orange: [0.120, 0.525, 0]
 start_green: [2.880, 0.525, 1.57]
 
 # robot size
@@ -11,9 +10,9 @@ dim_z: 0.350
 dim_r: 0.141
 
 # LIDAR scanner coordinates in robot frame
-lidar_x: -0.025
-lidar_y: 0.036
-lidar_a: 1.63
+lidar_x: 0
+lidar_y: 0
+lidar_a: 0
 
 # Manipulators
 bee_manipulator_x: -113.0
