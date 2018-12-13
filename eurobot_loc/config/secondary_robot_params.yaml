@@ -1,0 +1,22 @@
+# initial coordinates (robot's, not LIDAR's coords!)
+robot_name: "secondary_robot"
+start_orange: [0.120, 0.525, 0]
+start_green: [2.880, 0.525, 1.57]
+
+# robot size
+dim_x: 0.240
+dim_y: 0.240
+dim_z: 0.350
+dim_r: 0.141
+
+# LIDAR scanner coordinates in robot frame
+lidar_x: 0
+lidar_y: 0
+lidar_a: 0
+
+# Manipulators
+bee_manipulator_x: -113.0
+switch_manipulator_y: 77.0
+
+# Vortex for balls
+vortex: [-17.0, -81.0]
