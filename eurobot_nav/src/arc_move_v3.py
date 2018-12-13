@@ -17,7 +17,7 @@ XY_GOAL_TOLERANCE=0.02
 YAW_GOAL_TOLERANCE=0.1
 
 def parse_args(data):
-    data_splitted = data.data.split()
+    data_splitted = data.split()
     cmd_id = data_splitted[0] # unique identificator, string type, for ex. abc
     cmd_type = data_splitted[1]
     cmd_args = data_splitted[2:]
@@ -53,14 +53,18 @@ class NavigationNode():
         rospy.loginfo("================================================")
         rospy.loginfo("NEW CMD:\t" + str(data.data))
         
-        self.cmd_id, self.cmd_type, self.cmd_args = parse_args(data.data)
-        
-        if self.cmd_type == "arc_move":  # arc-movement by odometry
-            self.arc_move()
-        elif cmd_type == "stop":
-            self.stop_robot()
-        elif cmd_type == "line_move":
-            self.line_move()
+        self.motion_planner.cmd_id, self.motion_planner.cmd_type, self.motion_planner.cmd_args = parse_args(data.data)
+        #print (self.cmd_id)
+	#print (self.cmd_type)
+	print ('!-----------JOPA----------------------------!')
+	print (self.motion_planner.cmd_args)
+	self.motion_planner.goal=self.motion_planner.cmd_args
+        if self.motion_planner.cmd_type == "arc_move":  # arc-movement by odometry
+            self.motion_planner.arc_move()
+        elif self.motion_planner.cmd_type == "stop":
+            self.motion_planner.stop_robot()
+        elif self.motion_planner.cmd_type == "line_move":
+            self.motion_planner.line_move(self.motion_planner.cmd_args)
 
         self.mutex.release()        
         
@@ -84,7 +88,7 @@ class Calculator():
     
     
     @staticmethod
-    def wrap_angle(self, angle):
+    def wrap_angle(angle):
         return (angle + np.pi) % (2 * np.pi) - np.pi
     
 
@@ -102,6 +106,11 @@ class MotionPlanner:
     def __init__(self):
         self.speeds = np.zeros(3) 
         
+        self.coords=np.array([0,0,0])
+        
+        self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
+
+
         self.cmd_id = None
         self.cmd_type = None
         self.cmd_args = None
@@ -113,13 +122,20 @@ class MotionPlanner:
         self.YAW_GOAL_TOLERANCE = YAW_GOAL_TOLERANCE
         self.cmd_stop_robot_id = None
         self.stop_id = 0
-        
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+ 
+	
+ 
         self.mutex = Lock()
 
 
     def plan(self, event):
         self.mutex.acquire()
-    
+    	print self.coords
+	print('!----------------------------------!')
+	print self.goal
+	print('!-----------GOAL-------------------!')
         if self.cmd_id is None:
             self.mutex.release()
             return
@@ -136,12 +152,12 @@ class MotionPlanner:
         goal_distance = np.zeros(3)
         goal_distance = Calculator.distance(self.coords, self.goal)
         rospy.loginfo('Goal distance:\t' + str(goal_distance))
-        #FIXME:: ЧЕ ТУТ за нормировка?
+        #FIXME
         goal_d = np.linalg.norm(goal_distance[:2])
         rospy.loginfo('Goal d:\t' + str(goal_d))
 
         # stop and publish response if we have reached the goal with the given tolerance
-        if ((self.mode == 'arc_move') and
+        if ((self.mode == 'line_move') and
             goal_d <= self.XY_GOAL_TOLERANCE and
             goal_distance[2] <= self.YAW_GOAL_TOLERANCE):
             rospy.loginfo(self.cmd_id + " finished, reached the goal")
@@ -149,9 +165,10 @@ class MotionPlanner:
             self.mutex.release()
             return
         
-        elif self.mode == 'arc_move':
-              self.arc_move()
+        elif self.mode == 'line_move':
+              self.line_move()
         
+	
         self.mutex.release()
     
     #?!?!?!?!
@@ -163,7 +180,6 @@ class MotionPlanner:
         self.goal = None
         self.mode = None
 
-    # НЕ должна правильно работать. self.robot_stopped никогда не будет true
     def stop_robot(self):
         rospy.loginfo("Setting robot speed to zero.")
         self.robot_stopped = False
@@ -232,12 +248,13 @@ class MotionPlanner:
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
 
-    def line_move(self):
-        x_goal = float(self.cmd_args[0])
-        y_goal = float(self.cmd_args[1])
-        theta_goal = float(self.cmd_args[2])
+    def line_move(self, cmd_args):
+        x_goal = float(cmd_args[0])
+        y_goal = float(cmd_args[1])
+        theta_goal = float(cmd_args[2])
         
-        goal = np.array([x_goal, y_goal, theta_goal])
+	goal = np.array([x_goal, y_goal, theta_goal])
+	self.goal = goal
         rospy.loginfo("-------NEW LINE MOVEMENT-------")
         rospy.loginfo("Goal:\t" + str(goal))
         
@@ -260,12 +277,14 @@ class MotionPlanner:
         cmd = " 8 " + str(vx) + " " + str(vy) + "  0"
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
-        
+	rospy.sleep(2)
+        self.terminate_following()
         
 
     def update_coords(self):
         try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
+	    print self.coords
+            trans = self.tfBuffer.lookup_transform('map', 'secondary_robot_odom', rospy.Time())
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
             #self.coords = np.array( (0,0,0) )
