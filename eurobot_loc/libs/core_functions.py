@@ -40,6 +40,15 @@ def cvt_global2local(global_point, src_point):
         return
 
 
+def cvt_ros_scan2points(scan):
+    ranges = np.array(scan.ranges)
+    n = ranges.shape[0]
+    angles = np.arange(scan.angle_min, scan.angle_min + n * scan.angle_increment, scan.angle_increment)
+    x = ranges * np.cos(angles)
+    y = ranges * np.sin(angles)
+    return np.array([x, y]).T
+
+
 def find_src(global_point, local_point):
     x, y, a = local_point.T
     x1, y1, a1 = global_point.T
