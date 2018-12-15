@@ -61,7 +61,7 @@ class PFNode(object):
         self.beacon_radius = 0.096 / 2
         self.beacon_range = 0.2
         self.min_range = 0.1
-        self.min_points_per_beacon = 8
+        self.min_points_per_beacon = 4
         self.listener_tf = tf2_ros.TransformListener(self.tf_buffer)
         self.color = rospy.get_param("/field/color")
         self.robot_name = rospy.get_param("robot_name")
@@ -88,14 +88,14 @@ class PFNode(object):
         self.laser_time = rospy.Time.now()
         self.cost_function = []
         # x, y, a = lidar_odom_point
-        init_start = lidar_odom_point
+        # init_start = lidar_odom_point
+        init_start = np.array([1, 1, 0])
         buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2], **PF_PARAMS)
         angles, distances = buf_pf.get_landmarks(self.scan)
         x = distances * np.cos(angles)
         y = distances * np.sin(angles)
         landmarks = (np.array([x, y])).T
-        print(landmarks)
-        start_coords = find_position_triangulation(beacons, landmarks, init_start)
+        start_coords = find_position_triangulation(beacons, landmarks, np.array([1.5, 1, 0]))
         # if self.robot_name == "secondary_robot":
         #     k_bad = 0
         # else:
@@ -155,6 +155,9 @@ class PFNode(object):
                 color = np.array([0, 0, 1])
         else:
             color = np.array([1, 1, 0])
+        if len(beacons) == 0:
+            print np.zeros((0, 2))
+            return np.zeros((0, 2)),  color
         return np.array(beacons), color
 
     def pub_landmarks(self, beacons, header):
@@ -278,7 +281,7 @@ class PFNode(object):
 
             # rospy.loginfo("odom_point %.4f %.4f %.4f" % tuple(lidar_odom_point))
 
-            lidar_pf_point = self.pf.localisation(delta, self.scan, self.beacons)
+            lidar_pf_point = self.pf.localisation(delta, self.scan, beacons)
             # rospy.loginfo("pf_point   %.4f %.4f %.4f" % tuple(lidar_pf_point))
             # rospy.loginfo("cost_function " + str(self.pf.min_cost_function))
 
@@ -286,6 +289,7 @@ class PFNode(object):
             # self.vis_particles(robot_odom_point)
             self.pub_pf(self.get_odom_frame(robot_pf_point, robot_odom_point))
             self.pub_particles()
+
 
     def get_odom(self):
         try:
