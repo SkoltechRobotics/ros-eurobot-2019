@@ -31,7 +31,7 @@ class MotionPlanner:
         self.vel = np.zeros(3)
 
         self.mutex = Lock()
-
+	self.d_init = 0
         self.cmd_id = None
         self.cmd_type = None
         self.cmd_args = None
@@ -39,8 +39,9 @@ class MotionPlanner:
         self.goal = None
         self.mode = None
         self.RATE = 10
-        self.Kp_rho = 0.5
-
+        self.Kp = 10 
+	self.V_MAX = 0.7
+	self.V_MIN = 0.2
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
@@ -67,6 +68,19 @@ class MotionPlanner:
         self.cmd_type = data_splitted[1]
         self.cmd_args = data_splitted[2:]
         rospy.loginfo(self.cmd_args)
+
+	while not self.update_coords():
+		rospy.sleep(0.05)	
+	
+	x_start = self.coords[0]
+        y_start = self.coords[1]
+        theta_start = self.coords[2]
+
+	x_goal = float(self.cmd_args[0])
+        y_goal = float(self.cmd_args[1])
+
+	self.d_init = (x_goal - x_start)**2 + (y_goal - y_start)**2
+
         """
         if cmd_type == "arc_move":  # arc-movement by odometry
             inp = np.array(cmd_args).astype('float')
@@ -188,8 +202,10 @@ class MotionPlanner:
                 self.stop_robot()
             else:
 
-                v = self.Kp_rho * d
-
+               # v = self.Kp_rho * d
+		v = min(self.V_MAX, self.Kp * np.sin((self.d_init - d) * np.pi / self.d_init) + self.V_MIN)
+		print ("v is", v)
+		print("----------------")
                 if alpha == 0:
                     w = 0
                 else:
