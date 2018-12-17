@@ -73,12 +73,13 @@ class PFNode(object):
         self.listener = tf2_ros.TransformListener(self.buffer)
         self.br = tf2_ros.TransformBroadcaster()
         self.lidar_pf_coord = self.lidar_point
-        rospy.sleep(1)
         f, robot_odom_point = self.get_odom()
         while not f and not rospy.is_shutdown():
             f, robot_odom_point = self.get_odom()
-            rospy.sleep(0.2)
+            # rospy.sleep(0.2)
         lidar_odom_point = cvt_local2global(self.lidar_point, robot_odom_point)
+        rospy.loginfo("START!!!")
+
         self.prev_lidar_odom_point = lidar_odom_point.copy()
         self.lidar_odom_point_odom = robot_odom_point.copy()
         self.prev_lidar_odom_point_odom = robot_odom_point.copy()
@@ -89,6 +90,7 @@ class PFNode(object):
         self.cost_function = []
         # x, y, a = lidar_odom_point
         # init_start = lidar_odom_point
+
         init_start = np.array([1, 1, 0])
         buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2], **PF_PARAMS)
         angles, distances = buf_pf.get_landmarks(self.scan)
@@ -96,11 +98,13 @@ class PFNode(object):
         y = distances * np.sin(angles)
         landmarks = (np.array([x, y])).T
         start_coords = find_position_triangulation(beacons, landmarks, np.array([1.5, 1, 0]))
+        rospy.loginfo(start_coords)
         # if self.robot_name == "secondary_robot":
         #     k_bad = 0
         # else:
         #     k_bad = 2
         self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2], **PF_PARAMS)
+        rospy.loginfo("START!!!")
 
         self.last_odom = np.zeros(3)
         self.alpha = 1

@@ -60,9 +60,12 @@ class ParticleFilter:
         self.landmarks = [[], []]
         self.cost_function = []
         self.best_particles = {}
-        self.sigma_phi = 0.05
+        self.sigma_phi = 0.06
         self.min_sin = 0.4
         self.min_cost_function = 0
+        self.r_lid = np.array([])
+        self.phi_lid = np.array([])
+        self.beacon_ind = np.array([])
 
     @staticmethod
     def gaus(x, mu=0, sigma=1.):
@@ -76,44 +79,73 @@ class ParticleFilter:
         return x_beac, y_beac
 
     def localisation(self, delta_coords, lidar_data, beacons):
-        self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]], beacons)
+        print "HERE@!@"
+        self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]])
         self.particles = self.particle_sense(self.particles, beacons)
         main_robot = self.calculate_main()
-
         return main_robot
 
     def particle_sense(self, particles, beacons):
         self.landmarks = beacons
+
+        particles_measurement_model = self.get_particle_measurement_model(beacons)
+        particles = np.concatenate((particles[:990], particles_measurement_model), axis=0)
+        print particles
         weights = self.weights(beacons, particles)
         inds = self.resample(weights)
-        self.min_cost_function = np.mean(self.cost_function)
+        # self.min_cost_function = np.mean(self.cost_function)
         particles = particles[inds, :]
         return particles
 
-    def move_particles(self, delta, beacons):  # delta = [dx,dy,d_rot]
-        if self.num_seeing_beacons > 1:
-            d_n = self.distance_noise
-            a_n = self.angle_noise
-        else:
-            d_n = self.distance_noise_1_beacon
-            a_n = self.angle_noise_1_beacon
-        x_noise = np.random.normal(0, d_n, self.particles_num)
-        y_noise = np.random.normal(0, d_n, self.particles_num)
-        angle_noise = np.random.normal(0, a_n, self.particles_num)
-        noise = np.array([x_noise, y_noise, angle_noise]).T
-        move_point = delta + noise
-        self.particles = cvt_local2global(move_point, self.particles)
-        self.particles[self.particles[:, 1] > 2 - 0.120, 1] = 2 - 0.120
-        self.particles[self.particles[:, 1] < 0, 1] = 0
-        self.particles[self.particles[:, 0] > 3 - 0.120, 0] = 3 - 0.120
-        self.particles[self.particles[:, 0] < 0.120, 0] = 0.120
+    def get_particle_measurement_model(self, landmarks):
+            beacons = cvt_global2local(self.beacons[np.newaxis, :], self.particles[:, np.newaxis])
+            buf_beacons = beacons[0, :]
+            distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0]) ** 2 +
+                                                (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1]) ** 2)
+            self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
+            r = (np.sqrt((landmarks[np.newaxis, :, 1]) ** 2 + (landmarks[np.newaxis, :, 0]) ** 2)).T
+            phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0])
+            phi = wrap_angle(phi).T
+            r_lid = r + np.random.normal(0, self.sigma_r, 10)
+            phi_lid = phi + np.random.normal(0, self.sigma_phi, 10)
+            phi_lid = wrap_angle(phi_lid)
+            if (len(self.beacon_ind) > 0 ):
+                y_lid = np.random.uniform(0, 2 * np.pi, 10)
+                x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :10] * np.cos(y_lid)
+                y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :10] * np.sin(y_lid)
+                theta = wrap_angle(y_lid - np.pi - phi_lid[0, :10])
+                index = (x < 3) & (x > 0) & ( y < 2) & ( y >  0)
+                return np.array([x, y, theta]).T[index]
+            else:
+                x = np.zeros(10)
+                y = np.zeros(10)
+                theta = np.zeros(10)
+                return np.array([x, y, theta]).T
 
-    def resample(self, weights):
+    def move_particles(self, delta):  # delta = [dx,dy,d_rot]
+            if self.num_seeing_beacons > 1:
+                d_n = self.distance_noise
+                a_n = self.angle_noise
+            else:
+                d_n = self.distance_noise_1_beacon
+                a_n = self.angle_noise_1_beacon
+            x_noise = np.random.normal(0, d_n, self.particles_num)
+            y_noise = np.random.normal(0, d_n, self.particles_num)
+            angle_noise = np.random.normal(0, a_n, self.particles_num)
+            noise = np.array([x_noise, y_noise, angle_noise]).T
+            move_point = delta + noise
+            self.particles = cvt_local2global(move_point, self.particles)
+            self.particles[self.particles[:, 1] > 2 - 0.120, 1] = 2 - 0.120
+            self.particles[self.particles[:, 1] < 0, 1] = 0
+            self.particles[self.particles[:, 0] > 3 - 0.120, 0] = 3 - 0.120
+            self.particles[self.particles[:, 0] < 0.120, 0] = 0.120
+
+    def resample(self, weights, n=1000):
         indices_buf = []
         weights = np.array(weights)
         c = weights[0]
         j = 0
-        m = self.particles_num
+        m = n
         M = 1. / m
         r = np.random.uniform(0, M)
         for i in range(m):
@@ -139,19 +171,18 @@ class ParticleFilter:
         buf_beacons = beacons[0, :]
         distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
                                             (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
-
-        ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
+        self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
         r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
         phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
         phi = wrap_angle(phi).T
-        r_lid = (np.sqrt(((beacons[:, ind, 1])**2 + (beacons[:, ind, 0])**2))).T
-        r_lid = wrap_angle(r_lid)
-        phi_lid = (np.arctan2(beacons[:, ind, 1], beacons[:, ind, 0])).T
-        phi_lid = wrap_angle(phi_lid)
-        weights = self.gaus(r - r_lid, mu=0, sigma=self.sigma_r) * self.gaus(wrap_angle(phi - phi_lid), mu=0, sigma=self.sigma_phi)
-        weights = np.product(weights, axis=0)
-        weights = np.sqrt(weights)
+        self.r_lid = (np.sqrt(((beacons[:, self.beacon_ind, 1])**2 + (beacons[:, self.beacon_ind, 0])**2))).T
+        self.phi_lid = (np.arctan2(beacons[:, self.beacon_ind, 1], beacons[:, self.beacon_ind, 0])).T
+        self.phi_lid = wrap_angle(self.phi_lid)
+        weights = self.gaus(r - self.r_lid, mu=0, sigma=self.sigma_r) * self.gaus(wrap_angle(phi - self.phi_lid), mu=0, sigma=self.sigma_phi)
+        weights = (np.product(weights, axis=0))
         if np.sum(weights) > 0:
+            if landmarks.shape[0] != 0:
+                weights = weights**(1./landmarks.shape[0])
             weights /= np.sum(weights)
         else:
             weights = np.ones(particles.shape[0], dtype=np.float) / particles.shape[0]

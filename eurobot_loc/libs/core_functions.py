@@ -56,3 +56,7 @@ def find_src(global_point, local_point):
     X = x1 - x * np.cos(A) + y * np.sin(A)
     Y = y1 - x * np.sin(A) - y * np.cos(A)
     return np.array([X, Y, A]).T
+
+
+def wrap_angle(angle):
+    return (angle + np.pi) % (2 * np.pi) - np.pi
