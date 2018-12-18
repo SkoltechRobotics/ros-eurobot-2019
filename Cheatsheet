@@ -1,34 +1,59 @@
-git push --set-upstream upstream test_nav_loc
-cd catkin_ws/src/ros-eurobot-2018/
+CODE GUIDELINES
+---------------------
+1) Code should look like a poem and be self-explanatory
+2) Use functions
+3) First list yaml-params, than publishers, and in the end - Subcribers
+4) Timer in the end, it should call function motion_timer_callback, drom which desiable methods are chosen
+5) No magic constants in code
+6) 
 
 
-ssh odroid@192.168.88.242
+
+
+
+ROBOT COMMUNICATION
+------------------
+rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_move 1 1 3.14'"
+
+
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
+
+на роботе
+ssh odroid@192.168.88.239
+
 /home/odroid/eurobot2019_ws/src/ros-eurobot-2019
 
+roslaunch my_pkg stm_node.launch
+roslaunch my_pkg lidar.launch
 
-# roslaunch eurobot secondary_robot.launch
+
+на компе
+roslaunch eurobot_loc remote.launch
+roslaunch eurobot_loc visualisation.launch
+
+python arc_move_v01.py 
+
+rostopic echo /secondary_robot/stm_command 
+rostopic list 
+rosnode list
+
 # roslaunch eurobot multimaster.launch 
 # autostart
 
 # autostart ??? command
 # crontab -e
 
-rostopic list
-rosnode list
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'zxc move 0.5 0.5 1.57'" 
 
 
-vim /etc/hosts 
 
 
-# Create new workspace
-http://wiki.ros.org/catkin/Tutorials/create_a_workspace
+GIT
+---------------
+http://rogerdudler.github.io/git-guide/
 
-mkdir -p ~/eurobot2019_ws/src
-cd eurobot2019_ws/
-catkin_make
-source devel/setup.bash
-vim ~/.bashrc
+git push --set-upstream upstream test_nav_loc
 
 git config --global user.email nikolay.zherdev@gmail.com
 git config --global user.name "nickzherdev"
@@ -55,38 +80,47 @@ git push upstream navnew
 
 git merge branchname (ex: loc)
 
-# navigate to workspace/src to create a new package eurobot_core and eurobot_nav
-cd ~/catkin_ws/src
-mkdir ros-eurobot-2019
-cd ros-eurobot-2019
-catkin_create_pkg eurobot_core std_msgs rospy roscpp
-catkin_create_pkg eurobot_nav std_msgs rospy roscpp
-cd eurobot_nav/
-mkdir scripts
-
 git push upstream navnew --force
 git push --set-upstream upstream test_nav_loc 
 
-http://wiki.ros.org/ROS/Tutorials/CreatingPackage
-catkin_create_pkg eurobot_core std_msgs rospy roscpp
+В том случае, если ветка master (или branch_name) не является отслеживаемой веткой origin/master (или origin/branch_name), а вы хотите сделать её таковой.
 
-~/eurobot2019_ws/src
-
-/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/eurobot_nav
-
+Выполнив команду git push -u origin master вы устанавливаете связь между той веткой, в которой вы находитесь и веткой master на удалённом сервере. Команду требуется выполнить единожды, чтобы потом можно было отправлять/принимать изменения лишь выполняя git push из ветки без указания всяких алиасов для сервера и удалённых веток. Это сделано для удобства.
 
 на роботе
 git clone https://github.com/SkoltechRobotics/ros-eurobot-2019.git
 
 git config --global http.sslverify false
 
-rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and files
-
 in case of problems with sertificates use this command
 git config --global http.sslverify false
 
+
+
+
+
+
+
+
+FILESYSTEM
+--------------
 transfer a file using sftp in UNIX
 
+cd catkin_ws/src/ros-eurobot-2018/
+
+/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/eurobot_nav
+
+~/eurobot2019_ws/src
+
+rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and files
+
+
+
+
+
+
+ROS WORKSPACE:
+--------------
 
 catkin workspace
 http://wiki.ros.org/catkin/workspaces
@@ -96,22 +130,35 @@ http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
 
 
+catkin_create_pkg eurobot_core std_msgs rospy roscpp
+
+# navigate to workspace/src to create a new package eurobot_core and eurobot_nav
+cd ~/catkin_ws/src
+mkdir ros-eurobot-2019
+cd ros-eurobot-2019
+catkin_create_pkg eurobot_core std_msgs rospy roscpp
+catkin_create_pkg eurobot_nav std_msgs rospy roscpp
+cd eurobot_nav/
+mkdir scripts
+
+vim /etc/hosts 
+
+# Create new workspace
+http://wiki.ros.org/catkin/Tutorials/create_a_workspace
+
+mkdir -p ~/eurobot2019_ws/src
+cd eurobot2019_ws/
+catkin_make
+source devel/setup.bash
+vim ~/.bashrc
 
 
 
 
-В том случае, если ветка master (или branch_name) не является отслеживаемой веткой origin/master (или origin/branch_name), а вы хотите сделать её таковой.
-
-Выполнив команду git push -u origin master вы устанавливаете связь между той веткой, в которой вы находитесь и веткой master на удалённом сервере. Команду требуется выполнить единожды, чтобы потом можно было отправлять/принимать изменения лишь выполняя git push из ветки без указания всяких алиасов для сервера и удалённых веток. Это сделано для удобства.
 
 
-
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_move 1 1 3.14'"
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
-
-roslaunch eurobot_loc remote.launch
-
+GOALS
+------------------
 Цель - подобрать роботом шайбу и овтезти её на акселлератор
 
 Задачи
@@ -122,23 +169,3 @@ roslaunch eurobot_loc remote.launch
 Отвезти в акселлератор
 Сбросить
 Вернуться на место
-
-на роботе
-ssh odroid@192.168.88.239
-roslaunch my_pkg stm_node.launch
-roslaunch my_pkg lidar.launch
-
-на компе
-roslaunch eurobot_loc remote.launch
-roslaunch eurobot_loc pf_launch.launch
-python arc_move_v01.py 
-
-rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
-
-
-rostopic echo /secondary_robot/stm_command 
- rostopic list 
-
-http://rogerdudler.github.io/git-guide/
