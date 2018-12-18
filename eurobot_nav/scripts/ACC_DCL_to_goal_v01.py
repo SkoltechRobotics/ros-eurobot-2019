@@ -47,15 +47,15 @@ class MotionPlanner:
         self.RATE = 10
         self.dt = 0.01
         
-        self.V_MAX = 0.7 # m/s
-        self.V_MIN = 0.15
-        self.W_MAX = 3.14
+        self.V_MAX = 0.15 # m/s
+        self.V_MIN = 0.05
+        self.W_MAX =0.3
         
         self.Kp_rho = 0.5
         self.Kp = 30
         
         #w = 1.5
-        self.k = 0.2
+        self.k = 0.8
         self.Kv = 1
         self.THRESHOLD_XY = 0.05
         self.THRESHOLD_YAW = 0.02
@@ -77,7 +77,7 @@ class MotionPlanner:
 
         # start the main timer that will follow given goal points
         rospy.Timer(rospy.Duration(1.0 / self.RATE), self.arc_move)
-
+# self.timer.shutdown()
 
     def cmd_callback(self, data):
         self.mutex.acquire()
@@ -99,13 +99,21 @@ class MotionPlanner:
         x = self.coords[0]
         y = self.coords[1]
         theta = self.coords[2]
+	#print ("cmd_callback got coords", x, y, theta)
         
         x_goal = float(self.cmd_args[0])
         y_goal = float(self.cmd_args[1])
         theta_goal = float(self.cmd_args[2])
+	#rospy.loginfo('callback goal (%.4f %.4f %.4f)', x_goal, y_goal, theta_goal)
         
-        self.d_init = np.sqrt((x_goal - x_start)**2 + (y_goal - y_start)**2)
-        self.alpha_init = wrap_angle(theta_goal - theta_start) # theta_diff
+        self.d_init = np.sqrt((x_goal - x)**2 + (y_goal - y)**2)
+        self.alpha_init = self.wrap_angle(theta_goal - theta) # theta_diff
+	#rospy.loginfo('callback d_init %.4f', self.d_init)	
+	#print ("calculated init dist", self.d_init, self.alpha_init)
+    
+	# kill timer
+	# send responce
+        # ---------------------------
         # ---------------------------
         
         """
@@ -125,16 +133,21 @@ class MotionPlanner:
 
         self.mutex.release()        
         """
-        
+    @staticmethod    
     def vel(path_done, path_left, V_MIN, V_MAX, k, Kp):
+	rospy.loginfo('VEL FUNC')
         if path_done < path_left:
-            #v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX) 
+	    #rospy.loginfo('path done', path_done)
+            v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX) 
             
+	    
             # use linear ACC
-            v = min(V_MAX, Kp*path_done + V_MIN)
+            #v = min(V_MAX, Kp*path_done + V_MIN)
+	    rospy.loginfo('acc vel %.4f', v)
         else:
             # expo DCL
             v = min(V_MAX * np.e**(-1 / (path_left / k + 0.1)) + V_MIN, V_MAX)
+	    rospy.loginfo('dcl vel %.4f', v)
         return v
     
     
@@ -164,16 +177,7 @@ class MotionPlanner:
         :param angle: The angle (in rad) to wrap (can be unbounded).
         :return: The wrapped angle (guaranteed to in [-pi, +pi]).
         """
-
-        pi2 = 2 * np.pi
-
-        while angle < -np.pi:
-            angle += pi2
-
-        while angle >= np.pi:
-            angle -= pi2
-
-        return angle
+	return (angle + np.pi) % (np.pi * 2) - np.pi
     
 
     def stop_robot(self):
@@ -203,11 +207,14 @@ class MotionPlanner:
         self.vel = vel
         
         
-    def arc_move(self, vel=0.3, wmax=1.5, t = 0.1):
+    def arc_move(self, vel=0.3):
         "go to goal in one movement by arc path"
         "t chosen to be 0.1 for testing, meaning 10 Hz"
         "positioning args vel and wmax are not used"
         
+        # one array is better than 3 float
+        # self.goal initilize in cmd_callback
+
         try:
             x_goal = float(self.cmd_args[0])
             y_goal = float(self.cmd_args[1])
@@ -219,7 +226,7 @@ class MotionPlanner:
             
             while not self.update_coords():
                 rospy.sleep(0.05)
-            
+            #rospy.loginfo('!-----------NEXT STEp--------------!') 
             x = self.coords[0]
             y = self.coords[1]
             theta = self.coords[2]
@@ -231,34 +238,49 @@ class MotionPlanner:
             
             # vector norm, simply saying: an amplitude of a vector
             d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
-            alpha = wrap_angle(theta_goal - theta) # theta_diff
+            alpha = self.wrap_angle(theta_goal - theta) # theta_diff
+            
+# create func for this 
 
-            # global ***************
             path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
             path_left = np.sqrt(d**2 + alpha**2)
 
-            beta = self.wrap_angle(gamma - alpha/2)
-            
-            v = self.Kv * self.vel(path_done, path_left, self.V_MIN, self.V_MAX, self.k, self.Kp)
+	    rospy.loginfo('d_init is %.4f', self.d_init)
+	    rospy.loginfo('alpha_init is %.4f', self.alpha_init)
+	    rospy.loginfo("d_norm left is %.4f", d)
+	    rospy.loginfo('alpha left is %.4f', alpha)
+	    rospy.loginfo('path_done %.4f', path_done)
+	    rospy.loginfo('path_left %.4f', path_left)
 
+            beta = self.wrap_angle(gamma - alpha/2)
+            #rospy.loginfo('NEXT FUNC?') 
+            v = self.Kv * MotionPlanner.vel(path_done, path_left, self.V_MIN, self.V_MAX, self.k, self.Kp)
+	    #print ("calculated velocity is", v)
+            rospy.loginfo('SPEED %.4f', v)
             if d < self.THRESHOLD_XY and alpha < self.THRESHOLD_YAW:
                 v = 0
                 w = 0
                 self.stop_robot()
-            elif d == 0:
+		rospy.loginfo('THRESHHOLDS REACHED')
+            elif abs(d) < 1e-4:
                 v = 0
                 w = self.W_MAX # change ******************
-            elif alpha == 0:
+		rospy.loginfo('trans = 0, w = W_MAX')
+            elif abs(alpha) < 1e-4:
                 w = 0
+		rospy.loginfo('alpha close to zero, w = 0 and v is %.4f', v)
             else:
                 R = 0.5 * d / np.sin(alpha/2)
                 w = v / R  # must be depended on v such way so path becomes an arc
-
+	        rospy.loginfo('regular speed calc v/R')
+	    
             vx = v * np.cos(beta)
             vy = v * np.sin(beta)
 
-            v_cmd = np.array([vx, vy, w])        
-            rospy.loginfo("v_cmd:\t" + str(v_cmd))
+	    #print("result velocity is", vx, vy, w)
+            rospy.loginfo('!--------------------SEND SPEED---------')
+            v_cmd = np.array([vx, vy, w])
+	    rospy.loginfo("v_cmd:\t" + str(v_cmd))
             cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
             rospy.loginfo("Sending cmd: " + cmd)
             self.pub_cmd.publish(cmd)
