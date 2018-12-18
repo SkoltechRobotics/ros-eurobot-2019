@@ -1,4 +1,4 @@
-
+git push --set-upstream upstream test_nav_loc
 cd catkin_ws/src/ros-eurobot-2018/
 
 
@@ -65,7 +65,7 @@ cd eurobot_nav/
 mkdir scripts
 
 git push upstream navnew --force
-
+git push --set-upstream upstream test_nav_loc 
 
 http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 catkin_create_pkg eurobot_core std_msgs rospy roscpp
