@@ -39,11 +39,13 @@ class MotionPlanner:
         self.goal = None
         self.mode = None
         self.RATE = 10
-        self.Kp = 10 
-	self.V_MAX = 0.7
-	self.V_MIN = 0.2
+        self.Kp = 1 
+	self.V_MAX = 0.1
+	self.V_MIN = 0.05
+	self.W_MAX = 0.2
         self.cmd_stop_robot_id = None
         self.stop_id = 0
+	self.robot_stopped = False
 
 #         self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_response = rospy.Publisher("response", String, queue_size=10)
@@ -145,6 +147,7 @@ class MotionPlanner:
         cmd = "8 0 0 0"
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
+	self.robot_stopped = True
         for i in range(20):
             if self.robot_stopped:
                 self.cmd_stop_robot_id = None
@@ -198,15 +201,14 @@ class MotionPlanner:
             from 0 rad to 2*pi rad with slight turn
             """
             alpha = self.wrap_angle(theta_goal - theta) # theta_diff
-            if d < 0.05:
+            if d < 0.05 and alpha < 0.05:
                 self.stop_robot()
             else:
-
-               # v = self.Kp_rho * d
-		v = min(self.V_MAX, self.Kp * np.sin((self.d_init - d) * np.pi / self.d_init) + self.V_MIN)
+		v = max(self.Kp * d, self.V_MAX)
+		#v = min(self.V_MAX, self.Kp * np.sin((self.d_init - d) * np.pi / self.d_init) + self.V_MIN)
 		print ("v is", v)
 		print("----------------")
-                if alpha == 0:
+                if alpha < 1e-4:
                     w = 0
                 else:
                     R = 0.5 * d / np.sin(alpha/2)

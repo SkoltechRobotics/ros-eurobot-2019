@@ -23,8 +23,6 @@ class MotionPlanner:
         #FIXME
         self.robot_name="secondary_robot"
         
-        #self.coords[:2] /= 1000.0
-        
         self.vel = np.zeros(3)
 
         self.mutex = Lock()
@@ -196,44 +194,52 @@ class MotionPlanner:
         self.vel = vel
         
 
-    def line_move(self):
-        
-        x_goal = float(self.cmd_args[0])
-        y_goal = float(self.cmd_args[1])
-        theta_goal = float(self.cmd_args[2])
-        
-        while not self.update_coords():
-            rospy.sleep(0.05)
+    def line_move(self, vel = 0.3):
+        #print ("START LINE MOVE")
+	try:
+		x_goal = float(self.cmd_args[0])
+        	y_goal = float(self.cmd_args[1])
+        	theta_goal = float(self.cmd_args[2])
+        	#print("000")
+        	while not self.update_coords():
+        		rospy.sleep(0.05)
 
-        x = self.coords[0]
-        y = self.coords[1]
-        theta = self.coords[2]
+	        x = self.coords[0]
+		y = self.coords[1]
+		theta = self.coords[2]
 
-        x_diff = x_goal- x
-        y_diff = y_goal - y
+		x_diff = x_goal- x
+		y_diff = y_goal - y
         
-        gamma = np.arctan2(y_diff, x_diff)
+		gamma = np.arctan2(y_diff, x_diff)
+		print("gamma=", gamma)             
+            # vector norm, simply saying: an amplitude of a vector
+ 		d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
+ 		alpha = self.wrap_angle(theta_goal - theta) # theta_di
+		w = 0
+		v = 0
+		print("alpha=", alpha)     
+		if alpha > self.THRESHOLD_YAW:
+			w = alpha/5 + 0.02
+		else:
+			if d > self.THRESHOLD_XY:
+				w = 0
+				v = d/5 + 0.02
+			else:
+				w = 0
+				v = 0
+          			self.stop_robot() 
+		vx = v * np.cos(gamma)
+		vy = v * np.sin(gamma)
+		print("vx, vy", vx, vy)
+		v_cmd = np.array([vx, vy, w])
+		rospy.loginfo("v_cmd:\t" + str(v_cmd))
+		cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+		rospy.loginfo("Sending cmd: " + cmd)
+		self.pub_cmd.publish(cmd)
+    	except:
+	    pass
 
-        # vector norm, simply saying: an amplitude of a vector
-        d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
-        alpha = self.wrap_angle(theta_goal - theta) # theta_diff
-
-        v = 0
-        
-        if alpha > THRESHOLD_YAW:
-            w = 0.2
-        elif d > THRESHOLD_XY:
-            v = 0.2
-            
-        vx = v * np.cos(gamma)
-        vy = v * np.sin(gamma)
-        
-        v_cmd = np.array([vx, vy, w])
-        rospy.loginfo("v_cmd:\t" + str(v_cmd))
-        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
-        rospy.loginfo("Sending cmd: " + cmd)
-        self.pub_cmd.publish(cmd)
-    
 #     def arc_move(self, vel=0.3):
 #         "go to goal in one movement by arc path"
 #         "t chosen to be 0.1 for testing, meaning 10 Hz"
