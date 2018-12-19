@@ -23,8 +23,6 @@ class MotionPlanner:
         #FIXME
         self.robot_name="secondary_robot"
         
-        #self.coords[:2] /= 1000.0
-        
         self.vel = np.zeros(3)
 
         self.mutex = Lock()
@@ -48,8 +46,8 @@ class MotionPlanner:
         #w = 1.5
         self.k = 0.8
         self.Kv = 1
-        self.THRESHOLD_XY = 0.05
-        self.THRESHOLD_YAW = 0.02
+        self.THRESHOLD_XY = 0.1
+        self.THRESHOLD_YAW = 0.1
         
         # calculated distance and rot to goal from initial point, stays unchanged
         self.d_init = 0
@@ -195,45 +193,130 @@ class MotionPlanner:
         self.pub_twist.publish(tw)
         self.vel = vel
         
-
-    def line_move(self):
         
-        x_goal = float(self.cmd_args[0])
-        y_goal = float(self.cmd_args[1])
-        theta_goal = float(self.cmd_args[2])
+    def line_move(self, vel = 0.3):
+        rospy.loginfo(' ------- START LINE MOVE ------- ')
+        
+        try:
+            x_goal = float(self.cmd_args[0])
+            y_goal = float(self.cmd_args[1])
+            theta_goal = float(self.cmd_args[2])
+            while not self.update_coords():
+                rospy.sleep(0.05)
+
+            x = self.coords[0]
+            y = self.coords[1]
+            theta = self.coords[2]
+
+            x_diff = x_goal- x
+            y_diff = y_goal - y
+
+            gamma = np.arctan2(y_diff, x_diff)
+            print("gamma=", gamma)             
+                # vector norm, simply saying: an amplitude of a vector
+            d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
+            alpha = self.wrap_angle(theta_goal - theta) # theta_di
+            w = 0
+            v = 0
+            rospy.loginfo('alpha wrapped %.4f', alpha)
+            #rospy.loginfo(' %.4f', )
+            while alpha > self.THRESHOLD_YAW:
+                w = rotate_odom(alpha)
+                v = 0
+            rospy.loginfo('------------ ROTATING FINISHED -------------  %.4f', alpha)
+            self.stop_robot() 
+
+            while d > self.THRESHOLD_XY:
+                v = traslate_odom(d):
+                w = 0
+            rospy.loginfo('------------ TRANSLATION FINISHED -------------  %.4f', d)
+            self.stop_robot() 
+
+            if d < self.THRESHOLD_XY and alpha < self.THRESHOLD_YAW:
+                rospy.loginfo(' ------- THRESHOLD REACHED -------- ')
+                self.stop_robot() 
+
+        except:
+            pass
+        
+        
+    def rotate_odom(alpha):
+        rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
         
         while not self.update_coords():
             rospy.sleep(0.05)
-
-        x = self.coords[0]
-        y = self.coords[1]
-        theta = self.coords[2]
-
-        x_diff = x_goal- x
-        y_diff = y_goal - y
         
-        gamma = np.arctan2(y_diff, x_diff)
-
-        # vector norm, simply saying: an amplitude of a vector
-        d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
-        alpha = self.wrap_angle(theta_goal - theta) # theta_diff
-
-        v = 0
-        
-        if alpha > THRESHOLD_YAW:
-            w = 0.2
-        elif d > THRESHOLD_XY:
-            v = 0.2
-            
         vx = v * np.cos(gamma)
         vy = v * np.sin(gamma)
+        w = 0
         
         v_cmd = np.array([vx, vy, w])
         rospy.loginfo("v_cmd:\t" + str(v_cmd))
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
-    
+
+        
+    def traslate_odom(d):
+        
+        rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
+        
+        while not self.update_coords():
+            rospy.sleep(0.05)
+        
+        rospy.loginfo("v_cmd:\t" + str(v_cmd))
+        cmd = " 8 " + 0 + " " + 0 + " " + str(alpha)
+        rospy.loginfo("Sending cmd: " + cmd)
+        self.pub_cmd.publish(cmd)
+        
+        
+        
+#     def line_move(self, vel = 0.3):
+#         #print ("START LINE MOVE")
+# 	try:
+# 		x_goal = float(self.cmd_args[0])
+#         	y_goal = float(self.cmd_args[1])
+#         	theta_goal = float(self.cmd_args[2])
+#         	#print("000")
+#         	while not self.update_coords():
+#         		rospy.sleep(0.05)
+
+# 	        x = self.coords[0]
+# 		y = self.coords[1]
+# 		theta = self.coords[2]
+
+# 		x_diff = x_goal- x
+# 		y_diff = y_goal - y
+        
+# 		gamma = np.arctan2(y_diff, x_diff)
+# 		print("gamma=", gamma)             
+#             # vector norm, simply saying: an amplitude of a vector
+#  		d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
+#  		alpha = self.wrap_angle(theta_goal - theta) # theta_di
+# 		w = 0
+# 		v = 0
+# 		print("alpha=", alpha)     
+# 		if alpha > self.THRESHOLD_YAW:
+# 			w = alpha/5 + 0.02
+# 		else:
+# 			if d > self.THRESHOLD_XY:
+# 				w = 0
+# 				v = d/5 + 0.02
+# 			else:
+# 				w = 0
+# 				v = 0
+#           			self.stop_robot() 
+# 		vx = v * np.cos(gamma)
+# 		vy = v * np.sin(gamma)
+# 		print("vx, vy", vx, vy)
+# 		v_cmd = np.array([vx, vy, w])
+# 		rospy.loginfo("v_cmd:\t" + str(v_cmd))
+# 		cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+# 		rospy.loginfo("Sending cmd: " + cmd)
+# 		self.pub_cmd.publish(cmd)
+#     	except:
+# 	    pass
+
 #     def arc_move(self, vel=0.3):
 #         "go to goal in one movement by arc path"
 #         "t chosen to be 0.1 for testing, meaning 10 Hz"
