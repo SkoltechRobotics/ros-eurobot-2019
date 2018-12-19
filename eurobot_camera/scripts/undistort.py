@@ -10,6 +10,8 @@ import sys, re
 import yaml
 import matplotlib.pyplot as plt
 
+import copy
+
 import time
 import homogeneous
 
@@ -23,7 +25,7 @@ TABLE_LENGTH_Z=1.0
 
 CAMERA_WIDTH=2448.
 CAMERA_HEIGHT=2048.
-HOMO_IMAGE_SCALE=5.
+HOMO_IMAGE_SCALE=2.
 HOMO_IMAGE_WIDTH=CAMERA_WIDTH/HOMO_IMAGE_SCALE
 HOMO_IMAGE_HEIGHT=CAMERA_HEIGHT/HOMO_IMAGE_SCALE
 
@@ -31,6 +33,12 @@ CAMERA_X = 1.5
 CAMERA_Y = 0.0
 CAMERA_Z = 1.0
 CAMERA_ANGLE = (3 * np.pi / 4 - 0.1, 0, 0)
+
+PUCK_RADIUS=0.038
+pixel_scale_x=2448.0/3.0
+pixel_scale_y=2048.0/2.0
+PUCK_RADIUS_pixel_x=pixel_scale_x*PUCK_RADIUS
+PUCK_RADIUS_pixel_y=pixel_scale_y*PUCK_RADIUS
 
 def read_config(conf_file):
     data_loaded = yaml.load(conf_file)
@@ -102,7 +110,63 @@ class Camera():
         
         self.K_projection = K_new
         
-        return K_new        
+        return K_new
+        
+    def filter_image(self, img):
+        return cv2.bilateralFilter(img,9,75,75)
+        
+    def find_thresholds(self, image_gray):
+        image = cv2.adaptiveThreshold(image_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+        return image
+        
+    def find_contours(self, image_gray):
+        ret, thresh = cv2.threshold(image_gray, 127, 255, 0)
+        image, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return image, contours
+        
+    def filter_contours(self, contours):
+        for cnt in contours:
+            #epsilon = 0.1*cv2.arcLength(cnt,True)
+            #approx = cv2.approxPolyDP(cnt,epsilon,True)
+            cnt = cv2.convexHull(cnt)
+        cnts = []
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            perimeter = cv2.arcLength(cnt,True)
+            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+500 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-500 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+100 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-100 and len(cnt)>=5:
+                cnts.append(cnt)
+        return cnts
+        
+    def draw_contours(self, image, contours):
+        img = cv2.drawContours(image, contours, -1, (255,0,0), 3)
+        return img
+        
+    def watersherd(self, image):
+        gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        # noise removal
+        kernel = np.ones((3,3),np.uint8)
+        opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
+        # sure background area
+        sure_bg = cv2.dilate(opening,kernel,iterations=3)
+        # Finding sure foreground area
+        dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,5)
+        ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
+        # Finding unknown region
+        sure_fg = np.uint8(sure_fg)
+        unknown = cv2.subtract(sure_bg,sure_fg)
+        
+        # Marker labelling
+        ret, markers = cv2.connectedComponents(sure_fg)
+        # Add one to all labels so that sure background is not 0, but 1
+        markers = markers+1
+        # Now, mark the region of unknown with zero
+        markers[unknown==255] = 0
+        
+        markers = cv2.watershed(image,markers)
+        image[markers == -1] = [255,0,0]
+        cv2.imwrite("markers.jpg",markers)
+        return image
         
     def undistort(self, img):
         undistorted_img = cv2.fisheye.undistortImage(distorted=img,
@@ -141,11 +205,16 @@ class Camera():
         K_new = K3
         self.K_projection = K_new
         return K_new
-    
+
 class CameraUndistortNode():
     def __init__(self, DIM, K, D):
         self.node = rospy.init_node('camera_undistort_node', anonymous=True)
-        self.publisher = rospy.Publisher("/undistorted_image", Image)
+        self.publisher_undistorted = rospy.Publisher("/undistorted_image", Image)
+        self.publisher = rospy.Publisher("/recognition_image", Image)
+        self.publisher_gray = rospy.Publisher("/gray_scale_image", Image)
+        self.publisher_thresh = rospy.Publisher("/threshold_image", Image)
+        self.publisher_contours = rospy.Publisher("/contours_image", Image)
+        self.publisher_filter_contours = rospy.Publisher("/filtered_contours_image", Image)
         self.subscriber = rospy.Subscriber("/usb_cam/image_raw", sensor_msgs.msg.Image, self.__callback)
         self.bridge = CvBridge()
         self.camera = Camera(DIM, K, D)
@@ -167,23 +236,22 @@ class CameraUndistortNode():
 
     def __callback(self, data):
         try:
+            start_time = time.time()
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
             rospy.loginfo(rospy.get_caller_id())
         except CvBridgeError as e:
             print(e)
         
-        #cv_image = cv2.medianBlur(cv_image,5)
-        cv_image = cv2.GaussianBlur(cv_image,(5,5),0)
+        cv_image = self.camera.filter_image(cv_image)
         undistorted_image = self.camera.undistort(cv_image)
         image = undistorted_image
-        
-        warp_matrix = self.camera.find_warp_matrix_not_feature(undistorted_image)
-        self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
-#         if self.it == 0:
-#             warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
-#             self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
-#             self.it += 1
-#             return
+#         warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
+#         self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+        if self.it == 0:
+            warp_matrix = self.camera.find_warp_matrix_feature(undistorted_image)
+            self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
+            self.it += 1
+            return
 
 #         if self.it == 1:
 #             field = cv2.imread("/home/alexey/Desktop/field.png")
@@ -192,10 +260,50 @@ class CameraUndistortNode():
 #             cv2.imwrite("field_img_feature.jpg", image1)
 #             self.it += 1
         try:
+            image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            #image_hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+            #image_gray = image_hsv[:,:,1] // 2 + image_hsv[:, :, 2] // 2
+            image_thresholds = self.camera.find_thresholds(image_gray)
+            image_contours, contours = self.camera.find_contours(image_gray)
+            contours_image = copy.copy(image)
+            contours_image = self.camera.draw_contours(contours_image, contours)
+            cnts = self.camera.filter_contours(contours)
+            filter_contours_image = copy.copy(image)
+            filter_contours_image = self.camera.draw_contours(filter_contours_image, cnts)
+            image_ellipse = copy.copy(image)
+            image_ellipse_text = copy.copy(image)
+            for cnt in cnts:
+                ellipse = cv2.fitEllipse(cnt)
+                image_ellipse = cv2.ellipse(image_ellipse,ellipse,(0,255,0),2)
+                M = cv2.moments(cnt)
+                cx = M['m10']/M['m00']
+                cy = M['m01']/M['m00']
+                Cx = cx/pixel_scale_x
+                Cy = 2-cy/pixel_scale_y
+                
+                image_ellipse_text = cv2.putText(img=image_ellipse,
+                                                text="Cx=%.2f,Cy=%.2f" % (Cx, Cy),
+                                                org=(int(cx),int(cy)),
+                                                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                                fontScale=2,
+                                                color=(255,255,255),
+                                                thickness=5,
+                                                lineType=5)
+                print ("cx=", cx, " cy=", cy)
+
+                print ("Cx=", Cx, " Cy=", Cy)
+            #image = self.camera.draw_contours(image, contours)
             field = cv2.imread("/home/alexey/Desktop/field.png")
             field = cv2.resize(field, (2448,2048))
             image1 = undistorted_image // 2 + field // 2
-            self.publisher.publish(self.bridge.cv2_to_imgmsg(image1, "bgr8"))
+            self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
+            self.publisher.publish(self.bridge.cv2_to_imgmsg(image_ellipse_text, "bgr8"))
+            self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray)),# "bgr8"))
+            self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresholds))
+            self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(contours_image, "bgr8"))
+            self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(filter_contours_image, "bgr8"))
+            res_time = time.time()-start_time
+            print (res_time)
         except CvBridgeError as e:
             print(e)
 
@@ -228,5 +336,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Shutting down")
     cv2.destroyAllWindows()
-
 
