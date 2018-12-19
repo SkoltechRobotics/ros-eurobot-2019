@@ -221,13 +221,13 @@ class MotionPlanner:
             rospy.loginfo('alpha wrapped %.4f', alpha)
             #rospy.loginfo(' %.4f', )
             while alpha > self.THRESHOLD_YAW:
-                w = rotate_odom(alpha)
+                w = self.rotate_odom(alpha)
                 v = 0
             rospy.loginfo('------------ ROTATING FINISHED -------------  %.4f', alpha)
             self.stop_robot() 
 
             while d > self.THRESHOLD_XY:
-                v = traslate_odom(d):
+                v = self.translate_odom(d)
                 w = 0
             rospy.loginfo('------------ TRANSLATION FINISHED -------------  %.4f', d)
             self.stop_robot() 
@@ -240,7 +240,7 @@ class MotionPlanner:
             pass
         
         
-    def rotate_odom(alpha):
+    def rotate_odom(self, alpha):
         rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
         
         while not self.update_coords():
@@ -257,7 +257,7 @@ class MotionPlanner:
         self.pub_cmd.publish(cmd)
 
         
-    def traslate_odom(d):
+    def translate_odom(self, d):
         
         rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
         
@@ -414,6 +414,7 @@ class MotionPlanner:
 
 
 if __name__ == "__main__":
+    
     planner = MotionPlanner()
     rospy.spin()
  
