@@ -14,6 +14,11 @@ class STMprotocol(object):
             0x09: "=",
             0x0e: "=fff",
             0x0f: "=",
+            0x10: "=",
+            0x11: "=",
+            0x12: "=",
+            0x13: "=",
+            0x14: "="
         }
 
         self.unpack_format = {
@@ -23,30 +28,40 @@ class STMprotocol(object):
             0x09: "=fff",
             0x0e: "=cc",
             0x0f: "=fff",
+            0x10: "=cc",
+            0x11: "=cc",
+            0x12: "=cc",
+            0x13: "=cc",
+            0x14: "=cc"
         }
-	
-	self.response_bytes = {
-	    0x01: 4,
+        
+        self.response_bytes = {
+            0x01: 4,
             0x07: 12,
-	    0x08: 2,
+            0x08: 2,
             0x09: 12,
             0x0e: 2,
             0x0f: 12,
-	}
+            0x10: 2,
+            0x11: 2,
+            0x12: 2,
+            0x13: 2,
+            0x14: 2
+        }
         
     def pure_send_command(self, cmd, args):
         # Clear buffer
         self.ser.reset_output_buffer()
         self.ser.reset_input_buffer()
         # Sending command
-	print ('msg=', cmd , args)
+        print ('msg=', cmd , args)
         msg = bytearray([cmd])
         if args :
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
             msg += parameters
         self.ser.write(msg)
         response = self.ser.read(self.response_bytes[cmd]+1)
-	print response
+        print response
         if len(response) == 0:
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
