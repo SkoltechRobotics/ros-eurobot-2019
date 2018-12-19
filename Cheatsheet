@@ -5,7 +5,8 @@ CODE GUIDELINES
 3) First list yaml-params, than publishers, and in the end - Subcribers
 4) Timer in the end, it should call function motion_timer_callback, drom which desiable methods are chosen
 5) No magic constants in code
-6) 
+6) No pre-optimization, and more post-opt
+7) 
 
 
 
@@ -16,22 +17,21 @@ ROBOT COMMUNICATION
 rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_move 1 1 3.14'"
 
-
+# 8 - vels
+# 14 - pos
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
 
-на роботе
 ssh odroid@192.168.88.239
 
-/home/odroid/eurobot2019_ws/src/ros-eurobot-2019
+roscd eurobot_nav
 
-roslaunch my_pkg stm_node.launch
-roslaunch my_pkg lidar.launch
-
+на роботе
+roslaunch eurobot_loc pf_launch.launch
 
 на компе
 roslaunch eurobot_loc remote.launch
-roslaunch eurobot_loc visualisation.launch
+roslaunch eurobot_loc visualization.launch
 
 python arc_move_v01.py 
 
@@ -51,6 +51,8 @@ rosnode list
 
 GIT
 ---------------
+http://rogerdudler.github.io/git-guide/
+http://365git.tumblr.com/post/504140728/fast-forward-merge
 http://rogerdudler.github.io/git-guide/
 
 git push --set-upstream upstream test_nav_loc
@@ -113,6 +115,8 @@ cd catkin_ws/src/ros-eurobot-2018/
 ~/eurobot2019_ws/src
 
 rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and files
+
+chmod +x "filename"
 
 
 
