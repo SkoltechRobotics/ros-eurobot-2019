@@ -35,9 +35,10 @@ class MotionPlanner:
         self.mode = None
         self.RATE = 10
         self.dt = 0.01
-        
+        self.alpha = 100
+	self.d = 100
         self.V_MAX = 0.15 # m/s
-        self.V_MIN = 0.05
+        self.V_MIN = 0.15
         self.W_MAX = 0.3
         
         self.Kp_rho = 0.5
@@ -87,12 +88,14 @@ class MotionPlanner:
         y = self.coords[1]
         theta = self.coords[2]
 	#print ("cmd_callback got coords", x, y, theta)
-        
+	rospy.loginfo('********** wrong here *********')        
         x_goal = float(self.cmd_args[0])
         y_goal = float(self.cmd_args[1])
         theta_goal = float(self.cmd_args[2])
 	#rospy.loginfo('callback goal (%.4f %.4f %.4f)', x_goal, y_goal, theta_goal)
-        
+	self.goal = np.array([x_goal, y_goal, theta_goal])
+        rospy.loginfo('goal cmd is' + str(self.goal))
+
         self.d_init = np.sqrt((x_goal - x)**2 + (y_goal - y)**2)
         self.alpha_init = self.wrap_angle(theta_goal - theta) # theta_diff
 	#rospy.loginfo('callback d_init %.4f', self.d_init)	
@@ -168,20 +171,20 @@ class MotionPlanner:
     
 
     def stop_robot(self):
-        self.cmd_stop_robot_id = "stop_" + self.robot_name + str(self.stop_id)
-        self.stop_id += 1
-        self.robot_stopped = False
+        #self.cmd_stop_robot_id = "stop_" + self.robot_name + str(self.stop_id)
+        #self.stop_id += 1
+        #self.robot_stopped = False
         cmd = "8 0 0 0"
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
-        for i in range(20):
-            if self.robot_stopped:
-                self.cmd_stop_robot_id = None
-                rospy.loginfo("Robot stopped.")
-                return
-            rospy.sleep(1.0 / 40)
+        #for i in range(20):
+        #    if self.robot_stopped:
+        #        self.cmd_stop_robot_id = None
+        #        rospy.loginfo("Robot stopped.")
+        #        return
+        #    rospy.sleep(1.0 / 40)
         rospy.loginfo("Have been waiting for response for .5 sec. Stopped waiting.")
-        self.cmd_stop_robot_id = None
+        #self.cmd_stop_robot_id = None
         
 
     def set_speed(self, vel):
@@ -195,61 +198,91 @@ class MotionPlanner:
         
         
     def line_move(self, vel = 0.3):
+	rospy.loginfo('---------------------------------------')
         rospy.loginfo(' ------- START LINE MOVE ------- ')
-        
+	rospy.loginfo('goal is' + str(self.goal))        
         try:
-            x_goal = float(self.cmd_args[0])
-            y_goal = float(self.cmd_args[1])
-            theta_goal = float(self.cmd_args[2])
-            while not self.update_coords():
+           # x_goal = float(self.cmd_args[0])
+           # y_goal = float(self.cmd_args[1])
+           # theta_goal = float(self.cmd_args[2])
+	   # goal_cmd = np.array([x_goal, y_goal, theta_goal])
+           # rospy.loginfo('goal cmd is %.4f', goal_cmd)
+
+	    while not self.update_coords():
                 rospy.sleep(0.05)
+	    rospy.loginfo('this line visible?')
+            #x = self.coords[0]
+            #y = self.coords[1]
+            #theta = self.coords[2]
+	    #rospy.loginfo('in line move: x coord is %.4f', x)
+            #x_diff = self.goal[0] - x
+            #y_diff = self.goal[1] - y
 
-            x = self.coords[0]
-            y = self.coords[1]
-            theta = self.coords[2]
-
-            x_diff = x_goal- x
-            y_diff = y_goal - y
-
-            gamma = np.arctan2(y_diff, x_diff)
-            print("gamma=", gamma)             
+            #gamma = np.arctan2(y_diff, x_diff)
+            #print("gamma=", gamma)             
                 # vector norm, simply saying: an amplitude of a vector
-            d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
-            alpha = self.wrap_angle(theta_goal - theta) # theta_di
-            w = 0
-            v = 0
-            rospy.loginfo('alpha wrapped %.4f', alpha)
-            #rospy.loginfo(' %.4f', )
-            while alpha > self.THRESHOLD_YAW:
-                w = self.rotate_odom(alpha)
-                v = 0
-            rospy.loginfo('------------ ROTATING FINISHED -------------  %.4f', alpha)
+            #d = np.sqrt(x_diff**2 + y_diff**2) # rho, np.linalg.norm(d_map_frame[:2])
+            #alpha = self.wrap_angle(self.goal[2] - theta) # theta_di
+            #w = 0
+            #v = 0
+            rospy.loginfo('alpha wrapped %.4f', self.alpha)
+            rospy.loginfo('D to go is %.4f', self.d)
+            while abs(self.alpha) > self.THRESHOLD_YAW:
+                self.rotate_odom()
+                #v = 0
+            rospy.loginfo(' ROTATING FINISHED %.4f', self.alpha)
             self.stop_robot() 
 
-            while d > self.THRESHOLD_XY:
-                v = self.translate_odom(d)
-                w = 0
-            rospy.loginfo('------------ TRANSLATION FINISHED -------------  %.4f', d)
+            while self.d > self.THRESHOLD_XY:
+                self.translate_odom()
+                #w = 0
+            rospy.loginfo(' TRANSLATION FINISHED %.4f', self.d)
             self.stop_robot() 
 
-            if d < self.THRESHOLD_XY and alpha < self.THRESHOLD_YAW:
-                rospy.loginfo(' ------- THRESHOLD REACHED -------- ')
-                self.stop_robot() 
+            #if self.d < self.THRESHOLD_XY and self.alpha < self.THRESHOLD_YAW:
+            #    rospy.loginfo(' ------- THRESHOLD REACHED -------- ')
+            #    self.stop_robot() 
 
-        except:
-            pass
+        except Exception as msg:
+            rospy.logwarn(str(msg))
         
         
-    def rotate_odom(self, alpha):
-        rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
-        
+    def translate_odom(self):
+        rospy.loginfo("-2- step - NEW TRANSLATE MOVE")
         while not self.update_coords():
             rospy.sleep(0.05)
-        
-        vx = v * np.cos(gamma)
-        vy = v * np.sin(gamma)
+
+        x_diff = self.goal[0] - self.coords[0]
+        y_diff = self.goal[1] - self.coords[1]
+	theta_diff = self.wrap_angle(self.goal[2] - self.coords[2])
+
+        d_map_frame = np.array([x_diff, y_diff, theta_diff])
+        rospy.loginfo("Distance in map frame:\t" + str(d_map_frame))
+
+        #d_robot_frame = MotionPlanner.rotation_transform(d_map_frame, -self.coords[2])
+	#rospy.loginfo("Distance in robot frame:\t" + str(d_robot_frame))
+
+	self.d = np.linalg.norm(d_map_frame[:2])
+	#self.d = np.sqrt(x_diff**2 + y_diff**2)
+        gamma = np.arctan2(y_diff, x_diff)
+	rospy.loginfo("Distance d :\t" + str(self.d))
+
+        vx = self.d * np.cos(gamma)
+        vy = self.d * np.sin(gamma)
         w = 0
         
+	if abs(vx) > self.V_MAX:
+		k = abs(vx) / self.V_MAX
+		vx /= k
+		vy /= k
+	
+	if abs(vy) > self.V_MAX:
+		k = abs(vy) / self.V_MAX
+		vx /= k
+		vy /= k
+
+	vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
+
         v_cmd = np.array([vx, vy, w])
         rospy.loginfo("v_cmd:\t" + str(v_cmd))
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
@@ -257,15 +290,31 @@ class MotionPlanner:
         self.pub_cmd.publish(cmd)
 
         
-    def translate_odom(self, d):
-        
-        rospy.loginfo("-------NEW ROTATIONAL MOVEMENT-------")
-        
-        while not self.update_coords():
+    def rotate_odom(self):
+
+        rospy.loginfo("-1- step - NEW ROTATIONAL MOVEMENT")
+	#rospy.loginfo('')
+
+	while not self.update_coords():
             rospy.sleep(0.05)
+	rospy.loginfo('self.coords[2]' + str(self.coords[2]))
+
+	self.alpha = self.wrap_angle(self.goal[2] - self.coords[2]) 
+        rospy.loginfo('in rot odom: abs alpha wrapped %.4f', abs(self.alpha))
+	sign_w = self.alpha / abs(self.alpha)
+	rospy.loginfo('sign w is %.4f', sign_w)
+	w = sign_w * self.W_MAX
+	rospy.loginfo('alpha %.4f', self.alpha)
+       # while not self.update_coords():
+       #     rospy.sleep(0.05)
         
-        rospy.loginfo("v_cmd:\t" + str(v_cmd))
-        cmd = " 8 " + 0 + " " + 0 + " " + str(alpha)
+	v_cmd = np.array([0, 0, w])
+	rospy.loginfo("v_cmd:\t" + str(v_cmd))
+        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+
+
+        #rospy.loginfo("v_cmd:\t" + str(v_cmd))
+        #cmd = " 8 " + 0 + " " + 0 + " " + 0.05 #str(alpha)
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
         

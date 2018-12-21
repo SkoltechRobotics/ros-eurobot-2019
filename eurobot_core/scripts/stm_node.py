@@ -27,8 +27,8 @@ UNLOAD_TOWER = 0xb1
 CMD_VEL = 0x08
 REQUEST_RF_DATA = 0xd0
 REQUEST_RF_DATA_SECONDARY = 0xd1
-BAUD_RATE = {"main_robot": 250000,
-             "secondary_robot": 250000}
+BAUD_RATE = {"main_robot": 115200,
+             "secondary_robot": 115200}
 
 
 # noinspection PyTypeChecker,PyUnusedLocal
@@ -101,6 +101,7 @@ class StmNode(STMprotocol):
         self.pub_response.publish(action_name + " " + action_status)
 
     def stm_command_callback(self, data):
+        rospy.loginfo("Get cmd: " + data.data)
         action_name, action_type, args = self.parse_data(data)
         successfully, responses = self.send(action_name, action_type, args)
         if action_type in IMMEDIATE_FINISHED:
@@ -126,9 +127,13 @@ class StmNode(STMprotocol):
                                           in range(0xc1, 0xc4) else GET_MANIPULATOR_STATUS))
 
     def send(self, action_name, action_type, args):
+        time_start = time.time()
         self.mutex.acquire()
         successfully, args_response = self.send_command(action_type, args)
         self.mutex.release()
+        time_end = time.time()
+        if time_end - time_start > 0.04:
+            rospy.logwarn("comunication is more than %.3f", (time_end - time_start) * 1000)
         return successfully, args_response
 
     def publish_odom(self, coords):
