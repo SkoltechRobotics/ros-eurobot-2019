@@ -38,6 +38,7 @@ class MotionPlannerNode:
         self.vel = np.zeros(3)
 
         self.path_left = 9999 # big initial value
+        self.distance_map_frame = None
 
         self.cmd_stop_robot_id = None
         self.stop_id = 0
@@ -85,22 +86,20 @@ class MotionPlannerNode:
         cmd_type = data_splitted[1]
         cmd_args = data_splitted[2:]
 
+
         if cmd_type == "move_arc" or cmd_type == "move_line":
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
             self.set_goal(goal, cmd_id, cmd_type)
-            self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.mode)
+            self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
-
-        elif cmd_type == "stop" or self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
+        elif cmd_type == "stop":
             self.cmd_id = cmd_id
             self.mode = cmd_type
             self.terminate_following()
 
         self.mutex.release()
-
-
 
     def set_goal(self, goal, cmd_id, cmd_type):
         rospy.loginfo("Setting a new goal:\t" + str(goal))
@@ -110,8 +109,43 @@ class MotionPlannerNode:
         self.goal = goal
 
 
+    def timer_callback(self):
+
+        self.calculate_current_status()
+
+        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
+            self.terminate_following()
+
+        elif self.mode == "move_arc":
+            self.move_arc()
+        elif self.mode == "move_line":
+            self.move_line()
+
+
+    def calculate_current_status(self):
+        rospy.loginfo('---------------------------------------')
+        rospy.loginfo('CALCULATING CURRENT STATUS')
+
+        while not self.update_coords():
+            rospy.sleep(0.05)
+
+        self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
+        self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
+        self.d_norm = np.linalg.norm(self.distance_map_frame)
+        rospy.loginfo("euclidian distance left %.3f", self.d_norm)
+
+        #path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
+        self.path_left = np.sqrt(self.d_norm**2 + self.theta_diff**2) # in units of angle and distance
+
+
     def terminate_following(self):
         self.set_speed(np.zeros(3))
+
+
+    def calculate_distance(self, coords1, coords2):
+        distance_map_frame = coords2[:2] - coords1[:2]
+        theta_diff = self.wrap_angle(coords2[2] - coords1[2])
+        return distance_map_frame, theta_diff
 
 
     @staticmethod
@@ -126,16 +160,14 @@ class MotionPlannerNode:
 
     def set_speed(self, v_cmd):
         vx, vy, w = v_cmd
+
+        #TODO
+        #vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
+
         rospy.loginfo("v_cmd:\t" + str(v_cmd))
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
-
-
-    def distance(self, coords1, coords2):
-        ans = coords2 - coords1
-        ans[2] = self.wrap_angle(ans[2])
-        return ans
 
 
     def wrap_angle(self,angle):
@@ -147,8 +179,12 @@ class MotionPlannerNode:
         return (angle + np.pi) % (np.pi * 2) - np.pi
 
 
+    def get_optimal_velocity(self):
+        v = max(self.V_MIN, min(self.Kp * self.d_norm, self.V_MAX))
+        return v
 
-    def arc_move(self):
+
+    def move_arc(self):
         """
         go to goal in one movement by arc path
 
@@ -158,44 +194,77 @@ class MotionPlannerNode:
         rospy.loginfo("-------NEW ARC MOVEMENT-------")
         rospy.loginfo("Goal:\t" + str(self.goal))
 
-        while not self.update_coords():
-            rospy.sleep(0.05)
+        v = self.get_optimal_velocity()
 
-        distance_map_frame = self.distance(self.coords, self.goal)
-
-        x_diff = distance_map_frame[0]
-        y_diff = distance_map_frame[1]
-        alpha = distance_map_frame[2] # theta_diff
-
-        gamma = np.arctan2(y_diff, x_diff)
-
-        d_norm = np.linalg.norm(distance_map_frame[:2])
-        #sqrtD = np.sqrt(x_diff**2 + y_diff**2) # rho,
-        rospy.loginfo("euclidian distance left %.3f", d_norm)
-
-        #path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
-        self.path_left = np.sqrt(d_norm**2 + alpha**2) # in units of angle and distance
-
-        v = max(self.V_MIN, min(self.Kp * d_norm, self.V_MAX))
-
-        if alpha < 1e-4:
+        if self.theta_diff < 1e-4:
             w = 0
         else:
-            R = 0.5 * d_norm / np.sin(alpha/2)
+            R = 0.5 * self.d_norm / np.sin(self.theta_diff/2)
             w = v / R  # must be depended on v such way so path becomes an arc
 
-        beta = self.wrap_angle(gamma - alpha/2)
-
+        beta = self.wrap_angle(self.gamma - self.theta_diff/2)
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
-
         v_cmd = np.array([vx, vy, w])
         self.set_speed(v_cmd)
 
 
-    def line_move(self):
-        pass
+    def move_line(self):
+
+        rospy.loginfo(' ------- NEW LINE MOVEMENT ------- ')
+        rospy.loginfo('goal is' + str(self.goal))
+
+        while abs(self.theta_diff) > self.YAW_GOAL_TOLERANCE:
+            self.rotate_odom()
+
+        rospy.loginfo(' ROTATING FINISHED %.4f', self.theta_diff)
+        self.terminate_following()
+
+        while self.d_norm > self.XY_GOAL_TOLERANCE:
+            self.translate_odom()
+
+        rospy.loginfo('TRANSLATION FINISHED WITH TOLERANCE %.4f', self.d_norm)
+        self.terminate_following()
+
+
+    def rotate_odom(self):
+
+        rospy.loginfo("-1- step - NEW ROTATIONAL MOVEMENT")
+        rospy.loginfo('current orientation' + str(self.coords[2]))
+        rospy.loginfo('ROT_ODOM: abs theta_diff wrapped %.4f', abs(self.theta_diff))
+        sign_w = self.theta_diff / abs(self.theta_diff)
+
+        # TODO
+        #w = self.get_optimal_velocity()
+
+        w = sign_w * self.W_MAX
+        v_cmd = np.array([0, 0, w])
+        self.set_speed(v_cmd)
+
+
+    def translate_odom(self):
+
+        rospy.loginfo("-2- step - NEW TRANSLATE MOVE")
+
+        vx = self.d_norm * np.cos(self.gamma)
+        vy = self.d_norm * np.sin(self.gamma)
+        w = 0
+
+        if abs(vx) > self.V_MAX:
+            k = abs(vx) / self.V_MAX
+            vx /= k
+            vy /= k
+
+        if abs(vy) > self.V_MAX:
+            k = abs(vy) / self.V_MAX
+            vx /= k
+            vy /= k
+
+        vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
+        v_cmd = np.array([vx, vy, w])
+        self.set_speed(v_cmd)
+
 
     def update_coords(self):
         try:
