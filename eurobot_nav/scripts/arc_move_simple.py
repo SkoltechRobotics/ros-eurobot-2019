@@ -49,14 +49,10 @@ class MotionPlannerNode:
 
         self.Kp = 5
 
-
         #self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
 
         rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
-
-        # start the main timer that will follow given goal points
-
 
 
     def cmd_callback(self, data):
@@ -161,8 +157,8 @@ class MotionPlannerNode:
     def set_speed(self, v_cmd):
         vx, vy, w = v_cmd
 
-        #TODO
-        #vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
+        # TODO
+        # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
 
         rospy.loginfo("v_cmd:\t" + str(v_cmd))
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
@@ -282,3 +278,22 @@ class MotionPlannerNode:
 if __name__ == "__main__":
     planner = MotionPlannerNode()
     rospy.spin()
+
+
+    # TODO
+    # @staticmethod
+    # def vel(path_done, path_left, V_MIN, V_MAX, k, Kp):
+	# rospy.loginfo('VEL FUNC')
+    #     if path_done < path_left:
+	#     #rospy.loginfo('path done', path_done)
+    #         v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX)
+    #
+	#
+    #         # use linear ACC
+    #         #v = min(V_MAX, Kp*path_done + V_MIN)
+	#     rospy.loginfo('acc vel %.4f', v)
+    #     else:
+    #         # expo DCL
+    #         v = min(V_MAX * np.e**(-1 / (path_left / k + 0.1)) + V_MIN, V_MAX)
+	#     rospy.loginfo('dcl vel %.4f', v)
+    #     return v
