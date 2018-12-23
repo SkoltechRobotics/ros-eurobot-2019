@@ -90,12 +90,45 @@ class MotionPlannerNode:
             self.set_goal(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
+        elif cmd_type == "grab_atom" or cmd_type == "release atom":
+
+
+
         elif cmd_type == "stop":
             self.cmd_id = cmd_id
             self.mode = cmd_type
             self.terminate_following()
 
         self.mutex.release()
+
+
+
+    def operate_manipulator(self):
+
+        """
+        Проверить, что робот остановился.
+        Проверить, что цель достигнута.
+        Подписаться на топик, в который будут публиковаться координаты атомов с камеры
+
+        Проверить, что манипулятор в исходной позиции
+        Опустить манипулятор
+        Проверить, что манипулятор опустился
+        Включить насос (на сколько?)
+        Поднять манипулятор до конца
+        Подпереть атом граблей
+        Выключить насос
+
+
+        :return:
+        """
+        m_cmd = " 10 "
+        rospy.loginfo("m_cmd:\t" + str(m_cmd))
+        rospy.loginfo("Sending cmd: " + m_cmd)
+        self.pub_cmd.publish(m_cmd)
+
+        pass
+
+
 
     def set_goal(self, goal, cmd_id, cmd_type):
         rospy.loginfo("Setting a new goal:\t" + str(goal))
@@ -119,6 +152,14 @@ class MotionPlannerNode:
 
 
     def calculate_current_status(self):
+        """
+        Calculates X and Y distance from current location to goal
+        Calculates difference in rotation between robot's and goal's orientations
+        Calculates length of vector to follow and it's orientation
+        Calculates remained path to go in units of angle and distance
+        :return:
+        """
+
         rospy.loginfo('---------------------------------------')
         rospy.loginfo('CALCULATING CURRENT STATUS')
 
@@ -131,7 +172,7 @@ class MotionPlannerNode:
         rospy.loginfo("euclidian distance left %.3f", self.d_norm)
 
         #path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
-        self.path_left = np.sqrt(self.d_norm**2 + self.theta_diff**2) # in units of angle and distance
+        self.path_left = np.sqrt(self.d_norm**2 + self.theta_diff**2)
 
 
     def terminate_following(self):
