@@ -11,6 +11,8 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
 from std_msgs.msg import Int32MultiArray
+from core_functions import cvt_local2global
+from core_functions import wrap_angle
 
 
 def wrap_angle(angle):
@@ -74,7 +76,7 @@ class MotionPlannerNode:
         parse new command and write to self parsed args
         stop publishing in stm_command
 
-        :param data: type of action and args. For move_arc args are goal's X, Y, THETA orienation
+        :param data: type of action and args. For move_arc args are goal's X, Y, THETA orientation
         :return:
         """
 
@@ -88,10 +90,10 @@ class MotionPlannerNode:
             self.timer.shutdown()
 
         # parse name,type
-        data_splitted = data.data.split()
-        cmd_id = data_splitted[0]
-        cmd_type = data_splitted[1]
-        cmd_args = data_splitted[2:]
+        data_split = data.data.split()
+        cmd_id = data_split[0]
+        cmd_type = data_split[1]
+        cmd_args = data_split[2:]
 
         if cmd_type == "move_arc" or cmd_type == "move_line":
             args = np.array(cmd_args).astype('float')
@@ -146,7 +148,7 @@ class MotionPlannerNode:
         self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
-        rospy.loginfo("euclidian distance left %.3f", self.d_norm)
+        rospy.loginfo("euclidean distance left %.3f", self.d_norm)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
