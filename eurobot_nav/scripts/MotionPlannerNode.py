@@ -12,6 +12,16 @@ from std_msgs.msg import String
 from threading import Lock
 from std_msgs.msg import Int32MultiArray
 
+
+def wrap_angle(angle):
+    """
+    Wraps the given angle to the range [-pi, +pi].
+    :param angle: The angle (in rad) to wrap (can be unbounded).
+    :return: The wrapped angle (guaranteed to in [-pi, +pi]).
+    """
+    return (angle + np.pi) % (np.pi * 2) - np.pi
+
+
 class MotionPlannerNode:
     def __init__(self):
         rospy.init_node("motion_planner", anonymous=True)
@@ -19,7 +29,7 @@ class MotionPlannerNode:
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
-        self.robot_name="secondary_robot"
+        self.robot_name = "secondary_robot"
 
         self.mutex = Lock()
 
@@ -28,7 +38,9 @@ class MotionPlannerNode:
         self.cmd_args = None
         self.t_prev = None
         self.goal = None
-        self.mode = None
+        self.current_cmd = None
+        self.current_state = None
+        # in future current state is for example, follow path and stopping by rangefinders, stopping by localization
 
         self.RATE = 10
 
@@ -37,23 +49,22 @@ class MotionPlannerNode:
 
         self.vel = np.zeros(3)
 
-        self.path_left = 9999 # big initial value
+        self.path_left = 9999  # big initial value
         self.distance_map_frame = None
 
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
-        self.V_MAX = 0.2 # m/s
+        self.V_MAX = 0.2  # m/s
         self.V_MIN = 0.15
         self.W_MAX = 0.3
 
         self.Kp = 5
 
-        #self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+        # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
 
         rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
-
 
     def cmd_callback(self, data):
 
@@ -82,74 +93,40 @@ class MotionPlannerNode:
         cmd_type = data_splitted[1]
         cmd_args = data_splitted[2:]
 
-
         if cmd_type == "move_arc" or cmd_type == "move_line":
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
-            self.set_goal(goal, cmd_id, cmd_type)
+            self.start_moving(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
-        elif cmd_type == "grab_atom" or cmd_type == "release atom":
-
-
-
         elif cmd_type == "stop":
-            self.cmd_id = cmd_id
-            self.mode = cmd_type
-            self.terminate_following()
+            self.terminate_moving()
 
         self.mutex.release()
 
-
-
-    def operate_manipulator(self):
-
-        """
-        Проверить, что робот остановился.
-        Проверить, что цель достигнута.
-        Подписаться на топик, в который будут публиковаться координаты атомов с камеры
-
-        Проверить, что манипулятор в исходной позиции
-        Опустить манипулятор
-        Проверить, что манипулятор опустился
-        Включить насос (на сколько?)
-        Поднять манипулятор до конца
-        Подпереть атом граблей
-        Выключить насос
-
-
-        :return:
-        """
-        m_cmd = " 10 "
-        rospy.loginfo("m_cmd:\t" + str(m_cmd))
-        rospy.loginfo("Sending cmd: " + m_cmd)
-        self.pub_cmd.publish(m_cmd)
-
-        pass
-
-
-
-    def set_goal(self, goal, cmd_id, cmd_type):
+    def start_moving(self, goal, cmd_id, cmd_type):
         rospy.loginfo("Setting a new goal:\t" + str(goal))
-        rospy.loginfo("Mode:\t" + str(cmd_type))
+        rospy.loginfo("Current cmd:\t" + str(cmd_type))
         self.cmd_id = cmd_id
-        self.mode = cmd_type
+        self.current_cmd = cmd_type
         self.goal = goal
-
+        if self.current_cmd == "move_line":
+            self.current_state = "move_rotate"
 
     def timer_callback(self):
 
         self.calculate_current_status()
 
-        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
-            self.terminate_following()
 
-        elif self.mode == "move_arc":
+
+        # if self.current_cmd == "move_line" and self.current_state == "stop":
+        #     self.terminate_following()
+
+        if self.current_cmd == "move_arc":
             self.move_arc()
-        elif self.mode == "move_line":
+        elif self.current_cmd == "move_line":
             self.move_line()
-
 
     def calculate_current_status(self):
         """
@@ -171,20 +148,19 @@ class MotionPlannerNode:
         self.d_norm = np.linalg.norm(self.distance_map_frame)
         rospy.loginfo("euclidian distance left %.3f", self.d_norm)
 
-        #path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
-        self.path_left = np.sqrt(self.d_norm**2 + self.theta_diff**2)
+        # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
+        self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
 
-
-    def terminate_following(self):
+    def terminate_moving(self):
+        self.timer.shutdown()
         self.set_speed(np.zeros(3))
-
 
     def calculate_distance(self, coords1, coords2):
         distance_map_frame = coords2[:2] - coords1[:2]
-        theta_diff = self.wrap_angle(coords2[2] - coords1[2])
+        theta_diff = wrap_angle(coords2[2] - coords1[2])
         return distance_map_frame, theta_diff
 
-
+    # TODO local to global
     @staticmethod
     def rotation_transform(vec, angle):
         # counterclockwise rotation
@@ -193,7 +169,6 @@ class MotionPlannerNode:
         ans = vec.copy()
         ans[:2] = np.matmul(M, ans[:2].reshape((2, 1))).reshape(2)
         return ans
-
 
     def set_speed(self, v_cmd):
         vx, vy, w = v_cmd
@@ -206,20 +181,9 @@ class MotionPlannerNode:
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
 
-
-    def wrap_angle(self,angle):
-        """
-        Wraps the given angle to the range [-pi, +pi].
-        :param angle: The angle (in rad) to wrap (can be unbounded).
-        :return: The wrapped angle (guaranteed to in [-pi, +pi]).
-        """
-        return (angle + np.pi) % (np.pi * 2) - np.pi
-
-
     def get_optimal_velocity(self):
         v = max(self.V_MIN, min(self.Kp * self.d_norm, self.V_MAX))
         return v
-
 
     def move_arc(self):
         """
@@ -231,57 +195,76 @@ class MotionPlannerNode:
         rospy.loginfo("-------NEW ARC MOVEMENT-------")
         rospy.loginfo("Goal:\t" + str(self.goal))
 
+
+
         v = self.get_optimal_velocity()
 
         if self.theta_diff < 1e-4:
             w = 0
         else:
-            R = 0.5 * self.d_norm / np.sin(self.theta_diff/2)
+            R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
             w = v / R  # must be depended on v such way so path becomes an arc
 
-        beta = self.wrap_angle(self.gamma - self.theta_diff/2)
+        if abs(w) > self.W_MAX:
+            k = abs(w) / self.W_MAX
+            v /= k
+            w /= k
+
+        beta = wrap_angle(self.gamma - self.theta_diff / 2)
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
         self.set_speed(v_cmd)
 
+        if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
+            self.terminate_moving()
 
     def move_line(self):
-
         rospy.loginfo(' ------- NEW LINE MOVEMENT ------- ')
         rospy.loginfo('goal is' + str(self.goal))
 
-        while abs(self.theta_diff) > self.YAW_GOAL_TOLERANCE:
+        if self.current_state == "move_rotate" and abs(self.theta_diff) < self.YAW_GOAL_TOLERANCE:
+            self.current_state = "move_translate"
+
+        if self.current_state == "move_translate" and self.d_norm < self.XY_GOAL_TOLERANCE:
+            self.current_state = "stop"
+
+        if self.current_state == "move_rotate":
             self.rotate_odom()
-
-        rospy.loginfo(' ROTATING FINISHED %.4f', self.theta_diff)
-        self.terminate_following()
-
-        while self.d_norm > self.XY_GOAL_TOLERANCE:
+        elif self.current_state == "move_translate":
             self.translate_odom()
+        elif self.current_state == "stop":
+            self.terminate_moving()
 
-        rospy.loginfo('TRANSLATION FINISHED WITH TOLERANCE %.4f', self.d_norm)
-        self.terminate_following()
 
+        # while abs(self.theta_diff) > self.YAW_GOAL_TOLERANCE:
+        #     self.rotate_odom()
+        #
+        # rospy.loginfo(' ROTATING FINISHED %.4f', self.theta_diff)
+        # self.terminate_following()
+        #
+        # while self.d_norm > self.XY_GOAL_TOLERANCE:
+        #     self.translate_odom()
+        #
+        # rospy.loginfo('TRANSLATION FINISHED WITH TOLERANCE %.4f', self.d_norm)
+        # self.terminate_following()
 
     def rotate_odom(self):
-
         rospy.loginfo("-1- step - NEW ROTATIONAL MOVEMENT")
         rospy.loginfo('current orientation' + str(self.coords[2]))
         rospy.loginfo('ROT_ODOM: abs theta_diff wrapped %.4f', abs(self.theta_diff))
+
         sign_w = self.theta_diff / abs(self.theta_diff)
 
         # TODO
-        #w = self.get_optimal_velocity()
+        # w = self.get_optimal_velocity()
 
         w = sign_w * self.W_MAX
         v_cmd = np.array([0, 0, w])
         self.set_speed(v_cmd)
 
-
     def translate_odom(self):
-
         rospy.loginfo("-2- step - NEW TRANSLATE MOVE")
 
         vx = self.d_norm * np.cos(self.gamma)
@@ -302,11 +285,11 @@ class MotionPlannerNode:
         v_cmd = np.array([vx, vy, w])
         self.set_speed(v_cmd)
 
-
     def update_coords(self):
         try:
             trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
-            q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w]
+            q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
+                 trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
             rospy.loginfo("Robot coords:\t" + str(self.coords))
@@ -320,21 +303,20 @@ if __name__ == "__main__":
     planner = MotionPlannerNode()
     rospy.spin()
 
-
     # TODO
     # @staticmethod
     # def vel(path_done, path_left, V_MIN, V_MAX, k, Kp):
-	# rospy.loginfo('VEL FUNC')
-    #     if path_done < path_left:
-	#     #rospy.loginfo('path done', path_done)
-    #         v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX)
-    #
-	#
-    #         # use linear ACC
-    #         #v = min(V_MAX, Kp*path_done + V_MIN)
-	#     rospy.loginfo('acc vel %.4f', v)
-    #     else:
-    #         # expo DCL
-    #         v = min(V_MAX * np.e**(-1 / (path_left / k + 0.1)) + V_MIN, V_MAX)
-	#     rospy.loginfo('dcl vel %.4f', v)
-    #     return v
+# rospy.loginfo('VEL FUNC')
+#     if path_done < path_left:
+#     #rospy.loginfo('path done', path_done)
+#         v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX)
+#
+#
+#         # use linear ACC
+#         #v = min(V_MAX, Kp*path_done + V_MIN)
+#     rospy.loginfo('acc vel %.4f', v)
+#     else:
+#         # expo DCL
+#         v = min(V_MAX * np.e**(-1 / (path_left / k + 0.1)) + V_MIN, V_MAX)
+#     rospy.loginfo('dcl vel %.4f', v)
+#     return v
