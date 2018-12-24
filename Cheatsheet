@@ -11,7 +11,6 @@ CODE GUIDELINES
 
 
 
-
 ROBOT COMMUNICATION
 ------------------
 rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
@@ -48,6 +47,12 @@ rosnode list
 
 
 
+WIRELESS PART SETUP
+---------------
+ifconfig
+
+
+
 
 GIT
 ---------------
@@ -78,7 +83,9 @@ git commit
 
 git remote -v
 git push origin [name_of_your_new_branch] 
+
 git push upstream navnew
+git push upstream grab_atoms 
 
 git merge branchname (ex: loc)
 
@@ -134,15 +141,14 @@ http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
 
 
+# create new node
 catkin_create_pkg eurobot_core std_msgs rospy roscpp
 
 # navigate to workspace/src to create a new package eurobot_core and eurobot_nav
 cd ~/catkin_ws/src
 mkdir ros-eurobot-2019
 cd ros-eurobot-2019
-catkin_create_pkg eurobot_core std_msgs rospy roscpp
-catkin_create_pkg eurobot_nav std_msgs rospy roscpp
-cd eurobot_nav/
+
 mkdir scripts
 
 vim /etc/hosts 
