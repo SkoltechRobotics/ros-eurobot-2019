@@ -68,10 +68,12 @@ class MotionPlannerNode:
 
         self.R_DEC = 1
         self.k = 4
-        self.e_const = 0.2
+        self.e_const = 0.3
 
         # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
+        self.pub_response = rospy.Publisher("response", String, queue_size=10)
+
         self.timer = None
         rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
 
@@ -90,6 +92,7 @@ class MotionPlannerNode:
 
         self.mutex.acquire()
 
+        rospy.loginfo("")
         rospy.loginfo("=====================================")
         rospy.loginfo("NEW CMD:\t" + str(data.data))
 
@@ -118,6 +121,8 @@ class MotionPlannerNode:
     def start_moving(self, goal, cmd_id, cmd_type):
         rospy.loginfo("Setting a new goal:\t" + str(goal))
         rospy.loginfo("Current cmd:\t" + str(cmd_type))
+        rospy.loginfo("=====================================")
+        rospy.loginfo("")
         self.cmd_id = cmd_id
         self.current_cmd = cmd_type
         self.goal = goal
@@ -143,8 +148,8 @@ class MotionPlannerNode:
         :return:
         """
 
-        rospy.loginfo('---------------------------------------')
-        rospy.loginfo('CALCULATING CURRENT STATUS')
+        #rospy.loginfo('---------------------------------------')
+        rospy.loginfo('CURRENT STATUS')
 
         while not self.update_coords():
             rospy.sleep(0.05)
@@ -152,8 +157,8 @@ class MotionPlannerNode:
         self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
-        rospy.loginfo("euclidean distance left %.3f", self.d_norm)
-        rospy.loginfo("theta diff %.3f" % self.theta_diff)
+        rospy.loginfo("d_norm %.3f", self.d_norm)
+        rospy.loginfo("theta_diff %.3f" % self.theta_diff)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
@@ -162,6 +167,8 @@ class MotionPlannerNode:
         self.timer.shutdown()
         self.set_speed(np.zeros(3))
         rospy.loginfo("Robot has stopped.")
+        rospy.sleep(1.0 / 40)
+        self.pub_response.publish("finished")
 
     @staticmethod
     def calculate_distance(coords1, coords2):
@@ -186,7 +193,6 @@ class MotionPlannerNode:
         # TODO
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
 
-        rospy.loginfo("v_cmd:\t" + str(v_cmd))
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
@@ -212,12 +218,13 @@ class MotionPlannerNode:
         :return:
         """
 
-        rospy.loginfo("-------NEW ARC MOVEMENT-------")
+        rospy.loginfo("NEW ARC MOVEMENT")
         rospy.loginfo("Goal:\t" + str(self.goal))
 
         v = self.V_MAX
         if abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
+            rospy.loginfo("orientation is the same, start arcline move")
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
             w = v / R  # must be depended on v such way so path becomes an arc
@@ -245,7 +252,7 @@ class MotionPlannerNode:
             self.terminate_moving()
 
     def move_line(self):
-        rospy.loginfo(' ------- NEW LINE MOVEMENT ------- ')
+        rospy.loginfo('NEW LINE MOVEMENT')
         rospy.loginfo('goal is' + str(self.goal))
 
         if self.current_state == "move_rotate" and abs(self.theta_diff) < self.YAW_GOAL_TOLERANCE:
