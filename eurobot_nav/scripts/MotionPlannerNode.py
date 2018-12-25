@@ -6,6 +6,7 @@
 import rospy
 import numpy as np
 import tf2_ros
+import time
 from tf.transformations import euler_from_quaternion
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
@@ -63,8 +64,16 @@ class MotionPlannerNode:
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
-        self.V_MAX = 0.4  # m/s
+        self.V_MAX = 0.5  # m/s
         self.W_MAX = 1
+
+        self.AV_MAX = 0.5 # m / s / s
+        self.AW_MAX = 1 # 1 / s / s
+
+        self.vx_prev = 0
+        self.vy_prev = 0
+        self.w_prev = 0
+        self.t_prev = time.time()
 
         self.R_DEC = 1
         self.k = 4
@@ -246,6 +255,7 @@ class MotionPlannerNode:
         vy = v * np.sin(beta)
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
+        v_cmd = self.acceleration_constraint(v_cmd)
         self.set_speed(v_cmd)
 
         if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
@@ -310,10 +320,54 @@ class MotionPlannerNode:
             k = abs(vy) / self.V_MAX
             vx /= k
             vy /= k
+            
 
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
         self.set_speed(v_cmd)
+
+    def acceleration_constraint(self, vel_cmd):
+        vx, vy, w = vel_cmd
+        t = time.time()
+        if np.abs(w - self.w_prev) > self.AW_MAX * (t - self.t_prev):
+            w_new = self.w_prev + self.AW_MAX * (t - self.t_prev) * np.sign(w - self.w_prev)
+            if abs(w) > 5 * self.AW_MAX * (t - self.t_prev):
+                vx *= w_new / w
+                vy *= w_new / w
+            w = w_new
+
+        if np.abs(vx - self.vx_prev) > self.AV_MAX * (t - self.t_prev):
+            vx = self.vx_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vx - self.vx_prev)
+
+        if np.abs(vy - self.vy_prev) > self.AV_MAX * (t - self.t_prev):
+            vy = self.vy_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vy - self.vy_prev)
+
+        
+        if abs(vx) > self.V_MAX:
+            k = abs(vx) / self.V_MAX
+            w /= k
+            vx /= k
+            vy /= k
+
+        if abs(vy) > self.V_MAX:
+            k = abs(vy) / self.V_MAX
+            w /= k
+            vx /= k
+            vy /= k
+        
+        if abs(w) > self.W_MAX:
+            k = abs(w) / self.W_MAX
+            vx /= k
+            vy /= k
+            w /= k
+
+        self.vy_prev = vy
+        self.vx_prev = vx
+        self.w_prev = w
+        self.t_prev = t
+        return np.array([vx, vy, w])
+
+        
 
     def update_coords(self):
         try:
