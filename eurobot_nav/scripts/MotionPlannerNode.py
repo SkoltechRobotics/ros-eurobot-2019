@@ -7,12 +7,14 @@ import rospy
 import numpy as np
 import tf2_ros
 from tf.transformations import euler_from_quaternion
-from geometry_msgs.msg import Twist
+# from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
-from std_msgs.msg import Int32MultiArray
-from core_functions import cvt_local2global
-from core_functions import wrap_angle
+# from std_msgs.msg import Int32MultiArray
+
+
+# from core_functions import cvt_local2global
+# from core_functions import wrap_angle
 
 
 def wrap_angle(angle):
@@ -46,10 +48,14 @@ class MotionPlannerNode:
 
         self.RATE = 10
 
-        self.XY_GOAL_TOLERANCE = 0.1
-        self.YAW_GOAL_TOLERANCE = 0.1
+        self.XY_GOAL_TOLERANCE = 0.01
+        self.YAW_GOAL_TOLERANCE = 0.003
 
         self.vel = np.zeros(3)
+        self.theta_diff = None
+        self.d_norm = None
+        self.gamma = None
+        self.coords = None
 
         self.path_left = 9999  # big initial value
         self.distance_map_frame = None
@@ -57,17 +63,19 @@ class MotionPlannerNode:
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
-        self.V_MAX = 0.2  # m/s
-        self.V_MIN = 0.15
-        self.W_MAX = 0.3
+        self.V_MAX = 0.4  # m/s
+        self.W_MAX = 1
 
-        self.Kp = 5
+        self.R_DEC = 1
+        self.k = 4
+        self.e_const = 0.2
 
         # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
-
+        self.timer = None
         rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
 
+    # noinspection PyTypeChecker
     def cmd_callback(self, data):
 
         """
@@ -116,14 +124,10 @@ class MotionPlannerNode:
         if self.current_cmd == "move_line":
             self.current_state = "move_rotate"
 
-    def timer_callback(self):
+    # noinspection PyUnusedLocal
+    def timer_callback(self, event):
 
         self.calculate_current_status()
-
-
-
-        # if self.current_cmd == "move_line" and self.current_state == "stop":
-        #     self.terminate_following()
 
         if self.current_cmd == "move_arc":
             self.move_arc()
@@ -149,6 +153,7 @@ class MotionPlannerNode:
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
         rospy.loginfo("euclidean distance left %.3f", self.d_norm)
+        rospy.loginfo("theta diff %.3f" % self.theta_diff)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
@@ -156,13 +161,16 @@ class MotionPlannerNode:
     def terminate_moving(self):
         self.timer.shutdown()
         self.set_speed(np.zeros(3))
+        rospy.loginfo("Robot has stopped.")
 
-    def calculate_distance(self, coords1, coords2):
+    @staticmethod
+    def calculate_distance(coords1, coords2):
         distance_map_frame = coords2[:2] - coords1[:2]
         theta_diff = wrap_angle(coords2[2] - coords1[2])
         return distance_map_frame, theta_diff
 
     # TODO local to global
+    # noinspection PyPep8Naming
     @staticmethod
     def rotation_transform(vec, angle):
         # counterclockwise rotation
@@ -173,7 +181,7 @@ class MotionPlannerNode:
         return ans
 
     def set_speed(self, v_cmd):
-        vx, vy, w = v_cmd
+        # vx, vy, w = v_cmd
 
         # TODO
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
@@ -183,10 +191,20 @@ class MotionPlannerNode:
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
 
-    def get_optimal_velocity(self):
-        v = max(self.V_MIN, min(self.Kp * self.d_norm, self.V_MAX))
-        return v
+    # def get_optimal_velocity(self):
+    #     v = max(self.V_MIN, min(self.Kp * self.d_norm, self.V_MAX))
+    #
+    #     return v
 
+    def get_deceleration_coefficient(self, distance):
+        """
+        Exponential function that is used to perform accurate approach to goal position
+        :param distance: Euclidean distance from robot's location to goal location
+        :return:
+        """
+        return np.e ** (-1 / (self.k * distance + self.e_const))
+
+    # noinspection PyPep8Naming
     def move_arc(self):
         """
         go to goal in one movement by arc path
@@ -197,11 +215,8 @@ class MotionPlannerNode:
         rospy.loginfo("-------NEW ARC MOVEMENT-------")
         rospy.loginfo("Goal:\t" + str(self.goal))
 
-
-
-        v = self.get_optimal_velocity()
-
-        if self.theta_diff < 1e-4:
+        v = self.V_MAX
+        if abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
@@ -213,6 +228,13 @@ class MotionPlannerNode:
             w /= k
 
         beta = wrap_angle(self.gamma - self.theta_diff / 2)
+
+        # Deceleration when we are near the goal point
+        distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
+        deceleration_coefficient = self.get_deceleration_coefficient(distance)
+        v *= deceleration_coefficient
+        w *= deceleration_coefficient
+
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
@@ -238,7 +260,6 @@ class MotionPlannerNode:
             self.translate_odom()
         elif self.current_state == "stop":
             self.terminate_moving()
-
 
         # while abs(self.theta_diff) > self.YAW_GOAL_TOLERANCE:
         #     self.rotate_odom()
@@ -296,29 +317,11 @@ class MotionPlannerNode:
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
             rospy.loginfo("Robot coords:\t" + str(self.coords))
             return True
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.loginfo("MotionPlanner failed to lookup tf2.")
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
             return False
 
 
 if __name__ == "__main__":
     planner = MotionPlannerNode()
     rospy.spin()
-
-    # TODO
-    # @staticmethod
-    # def vel(path_done, path_left, V_MIN, V_MAX, k, Kp):
-# rospy.loginfo('VEL FUNC')
-#     if path_done < path_left:
-#     #rospy.loginfo('path done', path_done)
-#         v = min(V_MAX * np.e**(-1 / (path_done / k + 0.1)) + V_MIN, V_MAX)
-#
-#
-#         # use linear ACC
-#         #v = min(V_MAX, Kp*path_done + V_MIN)
-#     rospy.loginfo('acc vel %.4f', v)
-#     else:
-#         # expo DCL
-#         v = min(V_MAX * np.e**(-1 / (path_left / k + 0.1)) + V_MIN, V_MAX)
-#     rospy.loginfo('dcl vel %.4f', v)
-#     return v
