@@ -1,4 +1,4 @@
-CODE GUIDELINES
+# CODE GUIDELINES
 ---------------------
 1) Code should look like a poem and be self-explanatory
 2) Use functions
@@ -11,13 +11,13 @@ CODE GUIDELINES
 
 
 
-ROBOT COMMUNICATION
+# ROBOT COMMUNICATION
 ------------------
 rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_move 1 1 3.14'"
 
-# 8 - vels
-# 14 - pos
+8 - vels
+14 - pos
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
 
@@ -38,11 +38,29 @@ rostopic echo /secondary_robot/stm_command
 rostopic list 
 rosnode list
 
-# roslaunch eurobot multimaster.launch 
-# autostart
+"""
+roslaunch eurobot multimaster.launch 
+autostart
 
-# autostart ??? command
-# crontab -e
+autostart ??? command
+crontab -e
+"""
+
+- To turn off odroid from ssh:
+sudo shutdown -h now
+
+rosed 
+
+- To check coords and delay
+rosrun tf tf_echo map secondary_robot
+
+
+
+rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 1.5 0.45 3.14'"
+rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 0.45 3.14'"
+rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57'"
+rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
+
 
 
 
@@ -106,7 +124,7 @@ git config --global http.sslverify false
 
 
 
-
+## Team
 
 
 
@@ -167,6 +185,18 @@ vim ~/.bashrc
 
 
 
+TROOBLESHOOTING
+------------------
+
+Localization not working
+- check if LIDAR is turned on (starts making noise) and connected to Ethernet port in Odroid
+- check in RViz if robot is coreectly localized 
+
+
+
+
+
+
 GOALS
 ------------------
 Цель - подобрать роботом шайбу и овтезти её на акселлератор
@@ -179,3 +209,10 @@ GOALS
 Отвезти в акселлератор
 Сбросить
 Вернуться на место
+Вынести все параметры в yaml файл
+
+
+
+
+
+
