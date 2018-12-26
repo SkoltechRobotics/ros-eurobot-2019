@@ -63,7 +63,7 @@ class MotionPlannerNode:
         self.cmd_stop_robot_id = None
         self.stop_id = 0
 
-        self.V_MAX = 0.4  # m/s
+        self.V_MAX = 0.2  # m/s
         self.W_MAX = 1
 
         self.R_DEC = 1
@@ -148,7 +148,7 @@ class MotionPlannerNode:
         :return:
         """
 
-        #rospy.loginfo('---------------------------------------')
+        # rospy.loginfo('---------------------------------------')
         rospy.loginfo('CURRENT STATUS')
 
         while not self.update_coords():
