@@ -69,7 +69,6 @@ class MotionPlannerNode:
 
         self.AV_MAX = 0.4 # m / s / s
         self.AW_MAX = 0.8 # 1 / s / s
-
         self.vx_prev = 0
         self.vy_prev = 0
         self.w_prev = 0
@@ -157,7 +156,7 @@ class MotionPlannerNode:
         :return:
         """
 
-        #rospy.loginfo('---------------------------------------')
+        # rospy.loginfo('---------------------------------------')
         rospy.loginfo('CURRENT STATUS')
 
         while not self.update_coords():
@@ -261,6 +260,7 @@ class MotionPlannerNode:
         if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
             self.terminate_moving()
 
+    # not tested
     def move_line(self):
         rospy.loginfo('NEW LINE MOVEMENT')
         rospy.loginfo('goal is' + str(self.goal))
@@ -290,6 +290,7 @@ class MotionPlannerNode:
         # rospy.loginfo('TRANSLATION FINISHED WITH TOLERANCE %.4f', self.d_norm)
         # self.terminate_following()
 
+    # not tested
     def rotate_odom(self):
         rospy.loginfo("-1- step - NEW ROTATIONAL MOVEMENT")
         rospy.loginfo('current orientation' + str(self.coords[2]))
@@ -304,6 +305,7 @@ class MotionPlannerNode:
         v_cmd = np.array([0, 0, w])
         self.set_speed(v_cmd)
 
+    # not tested
     def translate_odom(self):
         rospy.loginfo("-2- step - NEW TRANSLATE MOVE")
 
@@ -320,7 +322,6 @@ class MotionPlannerNode:
             k = abs(vy) / self.V_MAX
             vx /= k
             vy /= k
-            
 
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
@@ -341,7 +342,6 @@ class MotionPlannerNode:
 
         if np.abs(vy - self.vy_prev) > self.AV_MAX * (t - self.t_prev):
             vy = self.vy_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vy - self.vy_prev)
-
         
         if abs(vx) > self.V_MAX:
             k = abs(vx) / self.V_MAX
@@ -366,8 +366,6 @@ class MotionPlannerNode:
         self.w_prev = w
         self.t_prev = t
         return np.array([vx, vy, w])
-
-        
 
     def update_coords(self):
         try:
