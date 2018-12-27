@@ -67,9 +67,8 @@ class MotionPlannerNode:
         self.V_MAX = 0.5  # m/s
         self.W_MAX = 1
 
-        self.AV_MAX = 0.5  # m / s / s
-        self.AW_MAX = 1  # 1 / s / s
-
+        self.AV_MAX = 0.4 # m / s / s
+        self.AW_MAX = 0.8 # 1 / s / s
         self.vx_prev = 0
         self.vy_prev = 0
         self.w_prev = 0
