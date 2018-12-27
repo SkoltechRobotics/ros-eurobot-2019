@@ -31,6 +31,7 @@ def perform_command(command):
         rate.sleep()
         print flag
 
+
 if __name__ == '__main__':
     rospy.init_node('Demonstration', anonymous=True)
     move_command = rospy.Publisher('move_command', String, queue_size=10)
