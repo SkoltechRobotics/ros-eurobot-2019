@@ -29,7 +29,7 @@ class STMnode(STMprotocol):
         super(STMnode, self).__init__(serial_port, baudrate)
         self.mutex = Lock()
 	
-	self.laser_coords = (rospy.get_param('lidar_x') / 1000.0, rospy.get_param('lidar_y') / 1000.0, 0.41)
+	    self.laser_coords = (rospy.get_param('lidar_x') / 1000.0, rospy.get_param('lidar_y') / 1000.0, 0.41)
         self.laser_angle = rospy.get_param('lidar_a')
     
         rospy.Timer(rospy.Duration(1. / ODOM_RATE), self.odom_callback)
