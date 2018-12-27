@@ -86,10 +86,10 @@ class STMprotocol(object):
         }
 
     def pure_send_command(self, cmd, args):
-        if cmd not in NOT_LOG_CMD:
-            print "-------------------------"
-            print "New response " + str(time.time())
-            print "cmd: " + str(cmd) + " " + str(args)
+        # if cmd not in NOT_LOG_CMD:
+        #     print "-------------------------"
+        #     print "New response " + str(time.time())
+        #     print "cmd: " + str(cmd) + " " + str(args)
         # Clear buffer
         self.ser.reset_output_buffer()
         self.ser.reset_input_buffer()
@@ -100,8 +100,8 @@ class STMprotocol(object):
         crc = sum(msg) % 256
         msg += bytearray([crc])
         self.ser.write(msg)
-        if cmd == 176 or cmd == 162:
-            print cmd, args
+        # if cmd == 176 or cmd == 162:
+        #     print cmd, args
         # Receiving data
         data = self.ser.read()
         if len(data) == 0:
@@ -125,8 +125,8 @@ class STMprotocol(object):
             raise Exception("Error with check sum", sync, adr, answer_len, answer)
         args = struct.unpack(self.unpack_format[cmd], answer[1:-1])
 
-        if cmd not in NOT_LOG_CMD:
-            print "return " + str(args)
+        # if cmd not in NOT_LOG_CMD:
+        #     print "return " + str(args)
         return True, args
 
     def send_command(self, cmd, args, n_repeats=5):

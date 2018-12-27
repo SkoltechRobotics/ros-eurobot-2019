@@ -4,7 +4,7 @@
   <param name = "field/color" value = "orange"/>
   <include file="$(find my_pkg)/launch/stm_node.launch" />
   <group ns = "secondary_robot">
-    <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="screen"/>
+    <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
   </group>
 </launch>
 
