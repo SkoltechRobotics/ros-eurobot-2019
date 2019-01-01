@@ -10,5 +10,7 @@
 </node>
 <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" >
 </node>
+<node name="camera_node" pkg="eurobot_camera" type="undistort.py" args="--config /home/alexey/CatkinWorkspace/src/ros-eurobot-2019/eurobot_camera/configs/calibration.yaml --template /home/alexey/CatkinWorkspace/src/ros-eurobot-2019/eurobot_camera/resources/field.png" >
+</node>
 </launch>
    
