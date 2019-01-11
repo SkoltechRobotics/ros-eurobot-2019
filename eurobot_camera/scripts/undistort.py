@@ -7,6 +7,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from visualization_msgs.msg import MarkerArray, Marker
 
 import yaml
 import copy
@@ -14,6 +15,8 @@ import argparse
 import time
 
 from camera import Camera
+
+import sys
 
 def read_config(conf_file):
     data_loaded = yaml.load(conf_file)
@@ -46,6 +49,7 @@ def read_config(conf_file):
 
     return DIM, K, D
 
+
 class CameraUndistortNode():
     def __init__(self, DIM, K, D):
         self.node = rospy.init_node('camera_undistort_node', anonymous=True)
@@ -55,7 +59,7 @@ class CameraUndistortNode():
         self.publisher_thresh = rospy.Publisher("/threshold_image", Image, queue_size = 1)
         self.publisher_contours = rospy.Publisher("/contours_image", Image, queue_size = 1)
         self.publisher_filter_contours = rospy.Publisher("/filtered_contours_image", Image, queue_size = 1)
-        self.publisher_coordinates = rospy.Publisher("/pucks_coordinates", String, queue_size = 1)
+        self.publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size = 1)
         
         self.bridge = CvBridge()
         self.camera = Camera(DIM, K, D)
@@ -63,6 +67,28 @@ class CameraUndistortNode():
         self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                            self.__callback, queue_size = 1)
         
+    def publish_pucks(self, coordinates):
+        markers = []
+        marker = Marker()
+        for i  in range(len(coordinates)):
+            marker.header.frame_id = 'map'
+            marker.header.stamp = rospy.Time.now()
+            marker.ns = "pucks"
+            marker.id = i
+            marker.type = 3
+            marker.pose.position.x = coordinates[0]
+            marker.pose.position.y = coordinates[1]
+            marker.pose.position.z = 0.0125
+            marker.pose.orientation.w = 1
+            marker.scale.x = 0.075
+            marker.scale.y = 0.075
+            marker.scale.z = 0.0125
+            marker.color.a = 1
+            marker.color.r = 1
+            marker.lifetime = rospy.Duration(3)
+            markers.append(marker)
+        self.publisher_pucks.publish(markers)
+
     def __callback(self, data):
         start_time = time.time()
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -91,23 +117,24 @@ class CameraUndistortNode():
             # Create ellipse contours around pucks 
             image_pucks = copy.copy(image)
             coordinates = self.camera.find_pucks_coordinates(contours_filtered)
-            image_pucks = self.camera.draw_contours(contours_filtered, coordinates, image_pucks)
+            image_pucks = self.camera.draw_ellipse(image_pucks, contours_filtered, coordinates)
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
             self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresholds))
-            self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(contours_image, "bgr8"))
+            self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
             self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
             
             # Publish pucks coordinates
-            self.publisher_coordinates.publish(coordinates)
+            self.publish_pucks(coordinates)
 
             res_time = time.time()-start_time
-            rospy.loginfo("RESULT TIME = ", res_time)
+            rospy.loginfo("RESULT TIME = " + str(res_time))
 
 if __name__ == '__main__':
+    sys.argv = rospy.myargv()
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config",
                         help="path to camera config yaml file",

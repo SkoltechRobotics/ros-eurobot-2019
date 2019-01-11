@@ -1,5 +1,7 @@
+import cv2
 import numpy as np
 import transform
+
 
 # DIM=(2448, 2048)
 # K=np.array([[677.6729654637016, 0.0, 1235.371481335309], [0.0, 679.4736576804626, 1043.9887347932538], [0.0, 0.0, 1.0]])
@@ -25,6 +27,9 @@ pixel_scale_x=2448.0/3.0
 pixel_scale_y=2048.0/2.0
 PUCK_RADIUS_pixel_x=pixel_scale_x*PUCK_RADIUS
 PUCK_RADIUS_pixel_y=pixel_scale_y*PUCK_RADIUS
+
+MAX_FEATURES=10000
+GOOD_MATCH_PERCENT=0.1
 
 
 def find_rotation_matrix(theta):
@@ -80,10 +85,10 @@ class Camera():
 #         return K_new
 
     def align_image(self, undistorted_image):
-        if not self.camera.is_aligned:
-            self.camera.find_warp_matrix_feature(undistorted_image)
-            self.camera.find_vertical_warp_projection(self.camera.warp_matrix)
-            self.camera.is_aligned = True
+        if not self.is_aligned:
+            self.find_warp_matrix_feature(undistorted_image)
+            self.find_vertical_warp_projection(self.warp_matrix)
+            self.is_aligned = True
         return self.is_aligned
     
     def filter_image(self, img):
@@ -150,7 +155,7 @@ class Camera():
         return undistorted_img
     
     def find_warp_matrix_not_feature(self, undistorted_img):
-        warp_matrix = homogeneous_transform.find_transform_ecc(undistorted_img,
+        warp_matrix = transform.find_transform_ecc(undistorted_img,
                                                                HOMO_IMAGE_WIDTH,
                                                                HOMO_IMAGE_HEIGHT)
         self.warp_matrix = warp_matrix
@@ -158,9 +163,7 @@ class Camera():
         return warp_matrix
     
     def find_warp_matrix_feature(self, undistorted_img):
-        warp_matrix = homogeneous_transform.find_transform_features(undistorted_img,
-                                                                    HOMO_IMAGE_WIDTH,
-                                                                    HOMO_IMAGE_HEIGHT)
+        warp_matrix = transform.find_transform_features(undistorted_img,HOMO_IMAGE_WIDTH,HOMO_IMAGE_HEIGHT,MAX_FEATURES,GOOD_MATCH_PERCENT)
         self.warp_matrix = warp_matrix
         print ("WARP MATRIX=", warp_matrix)
         return warp_matrix
@@ -187,19 +190,20 @@ class Camera():
             M = cv2.moments(cnt)
             cx = M['m10']/M['m00']
             cy = M['m01']/M['m00']
-            Cx = cx/pixel_scale_x
-            Cy = 2-cy/pixel_scale_y
-            coordinates.append((Cx,Cy))
+#            Cx = cx/pixel_scale_x
+#            Cy = 2-cy/pixel_scale_y
+            coordinates.append((cx,cy))
             
         return coordinates
-        
-    
-    def draw_contours(self, contours, coordinates, image):
-        for cnt, coord in contours, coordinates:
+   
+    def draw_ellipse(self, image, contours, coordinates):
+        for cnt, coord in zip(contours, coordinates):
             ellipse = cv2.fitEllipse(cnt)
             image = cv2.ellipse(image,ellipse,(0,255,0),2)
-            Cx = coord[0]
-            Cy = coord[1]
+            cx = coord[0]
+            cy = coord[1]
+            Cx = cx/pixel_scale_x
+            Cy = 2-cy/pixel_scale_y
             image = cv2.putText(img=image,
                                 text="Cx=%.2f,Cy=%.2f" % (Cx, Cy),
                                 org=(int(cx),int(cy)),
