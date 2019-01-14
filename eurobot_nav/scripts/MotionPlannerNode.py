@@ -11,6 +11,7 @@ from tf.transformations import euler_from_quaternion
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
+from core_functions import *
 # from std_msgs.msg import Int32MultiArray
 
 
@@ -30,14 +31,16 @@ def wrap_angle(angle):
 class MotionPlannerNode:
     def __init__(self):
         rospy.init_node("motion_planner", anonymous=True)
-
+        self.path = np.array([])
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-
+        self.num_points_in_path = 1000
         self.robot_name = "secondary_robot"
-
+        self.max_diff_w = 0.7
+        self.max_diff_v = 0.5
         self.mutex = Lock()
-
+        self.prev_vel = np.array([0., 0., 0.])
+        self.result_vel = np.array([0., 0., 0.])
         self.cmd_id = None
         self.cmd_type = None
         self.cmd_args = None
@@ -46,9 +49,9 @@ class MotionPlannerNode:
         self.current_cmd = None
         self.current_state = None
         # in future current state is for example, follow path and stopping by rangefinders, stopping by localization
-
+        self.K_linear_p = 0.4
         self.RATE = 10
-
+        self.prev_time = rospy.Time.now().to_sec()
         self.XY_GOAL_TOLERANCE = 0.01
         self.YAW_GOAL_TOLERANCE = 0.003
 
@@ -118,6 +121,7 @@ class MotionPlannerNode:
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
+            self.goal = goal
             self.start_moving(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
@@ -143,7 +147,8 @@ class MotionPlannerNode:
         self.calculate_current_status()
 
         if self.current_cmd == "move_arc":
-            self.move_arc()
+            self.create_linear_path()
+            self.follow_path()
         elif self.current_cmd == "move_line":
             self.move_line()
 
@@ -177,6 +182,118 @@ class MotionPlannerNode:
         rospy.loginfo("Robot has stopped.")
         rospy.sleep(1.0 / 40)
         self.pub_response.publish("finished")
+
+    def create_linear_path(self):
+        x = np.linspace(self.coords[0], self.goal[0], self.num_points_in_path)
+        y = np.linspace(self.coords[1], self.goal[1], self.num_points_in_path)
+        theta = np.linspace(0, wrap_angle(self.goal[2] - self.coords[2]), self.num_points_in_path)
+        theta += self.coords[2]
+        self.path = np.array([x, y, theta])
+
+    def constraint_v(self, velocity):
+        k = max(np.abs(velocity[0] / self.V_MAX), np.abs(velocity[1] / self.V_MAX), np.abs(velocity[2] / self.W_MAX))
+        if k > 1:
+            velocity /= k
+        return velocity
+
+    def constraint_a(self, vel_cur, prev_vel, dt=0.08):
+        vx, vy, w = vel_cur
+        if np.abs(vel_cur[2] - prev_vel[2]) > self.max_diff_w * dt:
+            w_new = prev_vel[2] + self.max_diff_v * dt * np.sign(w - prev_vel[2])
+            #         if abs(w) > 5 * max_diff_w * dt:
+            vx *= w_new / w
+            vy *= w_new / w
+            w = w_new
+
+        if np.abs(vx - prev_vel[0]) > self.max_diff_v * dt:
+            vx_new = prev_vel[0] + self.max_diff_v * dt * np.sign(vx - prev_vel[0])
+            k = vx_new / vx
+            vy /= k
+            w /= k
+            vx = vx_new
+
+        if np.abs(vy - prev_vel[1]) > self.max_diff_v * dt:
+            vy_new = prev_vel[1] + self.max_diff_v * dt * np.sign(vy - prev_vel[1])
+            k = vy_new / vy
+            vx /= k
+            w /= k
+            vy = vy_new
+
+        if abs(vx) > self.V_MAX:
+            k = abs(vx) / self.V_MAX
+            w /= k
+            vx /= k
+            vy /= k
+
+        if abs(vy) > self.V_MAX:
+            k = abs(vy) / self.V_MAX
+            w /= k
+            vx /= k
+            vy /= k
+
+        if abs(w) > self.W_MAX:
+            k = abs(w) / self.W_MAX
+            vx /= k
+            vy /= k
+            w /= k
+        return np.array([vx, vy, w])
+
+    def path_position_arg(self, path, point, r=0.1):
+        path = path.copy()
+        path[:, 2] = r * (path[:, 2] ** 2)
+        return np.argmin(np.linalg.norm((path - point), axis=1))
+
+    def path_follower_regulator(self, point, r=0.1):
+        # nearest path point to robot pose
+        p = self.path.copy()
+        path_point = self.path_position_arg(p, point, r)
+        # delta coords to next path point
+        if (path_point == p.shape[0] - 1):
+            delta_next_point = np.array([0., 0., 0.])
+            t = 1
+        else:
+            delta_next_point = p[path_point + 1] - p[path_point]
+            delta_next_point[2] = wrap_angle(delta_next_point[2])
+            t = max(np.abs(delta_next_point[0] / self.V_MAX), np.abs(delta_next_point[1] / self.V_MAX),
+                    np.abs(delta_next_point[2] / self.W_MAX))
+
+        delta_path_point = p[path_point] - point
+        delta_path_point[2] = wrap_angle(delta_path_point[2])
+        ref_vel = delta_next_point / t
+        omega_vel = self.K_linear_p * delta_path_point[2]
+        # delta_dist = np.sqrt(delta_path_point[0] ** 2 + delta_path_point[1] ** 2)
+        delta_path_point_dist = r * delta_path_point ** 2
+        delta_dist = np.linalg.norm(delta_path_point_dist, axis=0)
+        vel = self.K_linear_p * delta_dist
+        theta = np.arctan2(delta_path_point[1], delta_path_point[0])
+        self.result_vel[0] = vel * np.cos(theta)
+        self.result_vel[1] = vel * np.sin(theta)
+        self.result_vel[2] = omega_vel
+
+        #     vel = construct_v(vel)
+        #     print vel
+        self.result_vel += ref_vel
+        self.result_vel = cvt_global2local(np.array([self.result_vel[0], self.result_vel[1], 0]), np.array([0., 0., point[2]]))
+        self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
+        self.result_vel = self.constraint_v(self.result_vel)
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        self.result_vel = self.constraint_a(self.result_vel, self.prev_vel, dt)
+        self.prev_vel = self.result_vel
+        return self.result_vel
+
+    def follow_path(self, r=0.1):
+        delta_coords = self.coords - self.path[-1, :]
+        delta_coords = r * delta_coords ** 2
+        delta_dist = np.linalg.norm(delta_coords, axis=0)
+        while delta_dist > 0.1:
+            self.coords = self.update_coords()
+            velocity = self.path_follower_regulator(self.coords)
+            self.set_speed(velocity)
+            delta_coords = self.coords - self.path[-1, :]
+            delta_coords = r * delta_coords ** 2
+            delta_dist = np.linalg.norm(delta_coords, axis=0)
+        self.move_arc()
 
     @staticmethod
     def calculate_distance(coords1, coords2):
