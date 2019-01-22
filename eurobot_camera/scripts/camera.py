@@ -84,9 +84,9 @@ class Camera():
         
 #         return K_new
 
-    def align_image(self, undistorted_image):
+    def align_image(self, undistorted_image, templ_path):
         if not self.is_aligned:
-            self.find_warp_matrix_feature(undistorted_image)
+            self.find_warp_matrix_feature(undistorted_image, templ_path)
             self.find_vertical_warp_projection(self.warp_matrix)
             self.is_aligned = True
         return self.is_aligned
@@ -162,8 +162,8 @@ class Camera():
         print ("WARP MATRIX=", warp_matrix)
         return warp_matrix
     
-    def find_warp_matrix_feature(self, undistorted_img):
-        warp_matrix = transform.find_transform_features(undistorted_img,HOMO_IMAGE_WIDTH,HOMO_IMAGE_HEIGHT,MAX_FEATURES,GOOD_MATCH_PERCENT)
+    def find_warp_matrix_feature(self, undistorted_img, templ_path):
+        warp_matrix = transform.find_transform_features(undistorted_img,HOMO_IMAGE_WIDTH,HOMO_IMAGE_HEIGHT,MAX_FEATURES,GOOD_MATCH_PERCENT, templ_path)
         self.warp_matrix = warp_matrix
         print ("WARP MATRIX=", warp_matrix)
         return warp_matrix

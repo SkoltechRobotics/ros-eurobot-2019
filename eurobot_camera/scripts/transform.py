@@ -49,7 +49,7 @@ def find_transform_ecc(img,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
     return warp_matrix
     
 
-def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path='/home/alexey/Desktop/field.png'):
+def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path):
     start_time = time.time()
     print ('Start homogeneous by features')
 

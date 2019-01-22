@@ -51,7 +51,9 @@ def read_config(conf_file):
 
 
 class CameraUndistortNode():
-    def __init__(self, DIM, K, D):
+    def __init__(self, DIM, K, D, template):
+	self.templ_path = template
+
         self.node = rospy.init_node('camera_undistort_node', anonymous=True)
         self.publisher_undistorted = rospy.Publisher("/undistorted_image", Image, queue_size = 1)
         self.publisher = rospy.Publisher("/recognition_image", Image, queue_size = 1)
@@ -100,7 +102,7 @@ class CameraUndistortNode():
         image = undistorted_image
 
         # Align image using field template
-        if self.camera.align_image(image):
+        if self.camera.align_image(image, self.templ_path):
         
             # Find thresholds and contours
             image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -143,15 +145,17 @@ if __name__ == '__main__':
                         help="path to field's template file",
                         default="../configs/field.png")
     args = parser.parse_args()
-
+	
+    print ("ARGS.config",args.config)
     try:
         conf_file = open(args.config, 'r')
     except IOError as err:
         sys.exit("Couldn't find config file")
+
         
     DIM, K, D = read_config(conf_file)
 
-    undistort_node = CameraUndistortNode(DIM, K, D)
+    undistort_node = CameraUndistortNode(DIM, K, D, args.template)
     undistort_node.camera.find_vertical_projection()
     
     rospy.spin()
