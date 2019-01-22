@@ -88,6 +88,8 @@ class MotionPlannerNode:
         self.e_const = 0.3
 
         # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+
+        # FIXME remove absolute path and implement remapping in launch-file
         self.pub_cmd = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
         self.pub_response = rospy.Publisher("response", String, queue_size=10)
 

@@ -17,9 +17,9 @@ And path-planner will choose from these options according to obstacles around
 TODO:
     - add module to get self-coords
     - publish in response that current puck was collected and robot is ready for next one
-    - subscribe to camera_pucks topic to get coords of pucks
     - when atom is grabbed and collected, publish DONE in response
     - when we receive DONE, re-calculate convex hull and generate new sorted list of closest pucks wrt current pose
+    - when we get a response that puck is collected, we remove it's coord from list of known coords
 
 Input: list of n coordinates of pucks, that belong to one local group
 
@@ -53,11 +53,15 @@ class Tactics:
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.06  # meters, distance from robot to puck where robot will try to grab it
         self.coords = None
-        self.unsorted_list_of_pucks_coords = {} # dictionary
+        self.unsorted_list_of_pucks_coords = []
         # self.local_group_of_pucks_to_collect = []
         self.mutex = Lock()
         self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera
-        self.known_coords_of_pucks = {} # dictionary
+        self.sorted_landing_coordinates = None
+
+        self.known_coords_of_pucks = []
+        # TODO
+        # dictionary?
 
         # FIXME
         self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
@@ -98,7 +102,9 @@ class Tactics:
 
         # pucks = [(x_.pose.position.x, x_.pose.position.y) for x_ in data] # Egorka
 
-        
+        # FIXME
+        # is it even legal?
+        pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data]
 
         self.unsorted_list_of_pucks_coords = np.array(pucks)
 
@@ -107,6 +113,7 @@ class Tactics:
         if len(self.known_coords_of_pucks) == 0:
             self.known_coords_of_pucks = self.unsorted_list_of_pucks_coords
         else:
+            self.compare_to_update_or_ignore()
 
 
         # self.local_group_of_pucks_to_collect = self.divide_in_local_groups(self.unsorted_list_of_pucks_coords)
@@ -117,12 +124,18 @@ class Tactics:
     def timer_callback(self, event):
         self.calculate_environment()
 
+        # TODO
+        # add some action
+
     def calculate_environment(self):
         hull = self.calculate_convex_hull(self.unsorted_list_of_pucks_coords)
         inner_angles = self.calculate_inner_angles(hull)
         landing_coordinates = self.calculate_possible_landing_coords(inner_angles, self.approach_dist)
-        sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
-        return sorted_landing_coordinates
+        self.sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
+
+
+    def compare_to_update_or_ignore(self):
+        
 
     # def divide_in_local_groups(self):
     #     local_group_of_pucks_to_collect = []
