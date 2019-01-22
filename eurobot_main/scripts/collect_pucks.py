@@ -135,7 +135,41 @@ class Tactics:
 
 
     def compare_to_update_or_ignore(self):
+        """
+        format: (id, x, y)
         
+        Old
+        [(1, x1, y1), 
+         (2, x2, y2)
+         (3, x3, y3)]
+         
+         New
+         [(2, x2', y2'),
+          (3, x3', y3')]
+          
+        In a new list first puck may be absent for at least three reasons:
+        - it was collected by our robot
+        - it is not visible (but it's still there)
+        - it was collected by enemy robot (and it's not there anymore)
+        
+        In first case we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
+        
+          
+        """
+        for puck in new:
+            puck_id = puck[0]
+            known_ids = known[:, 0]
+            if puck_id in known_ids:
+                # ind = index
+                # x_new, y_new
+                # x_old, y_old
+                if np.sqrt((x_new - x_old)**2 + (y_new - y_old)**2) > self.threshold:
+                    known[ind][1:] = puck[1:]
+            else:
+                # wtf happened? blik from sun? wasn't recognised at first time?
+                known.append(puck)
+                
+                
 
     # def divide_in_local_groups(self):
     #     local_group_of_pucks_to_collect = []
