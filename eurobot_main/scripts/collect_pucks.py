@@ -1,8 +1,14 @@
+import rospy
 import numpy as np
+import tf2_ros
+import time
+from threading import Lock
+
+from std_msgs.msg import String
+from visualization_msgs.msg import MarkerArray
 
 # TODO
 from core_functions import calculate_distance
-
 
 """
 This algorithm knows nothing about obstacles and etc, it just generates sorted list of options.
@@ -17,7 +23,20 @@ TODO:
 
 Input: list of n coordinates of pucks, that belong to one local group
 
+
+Receiving coords from camera each 2-3 seconds
+Each time coords are received we call function callback which compares currently known coords and newly received ones
+If difference between newly received and known are within accuracy level (threshold), do nothing, else update known coords
+
+How to do this without timer?
+
+With timer we can call 10 times per sec and recalc environment
+and call function move_arc / move line or whatever Egorka implemented
+
+When robot reaches landing position it publishes in response that tusk is ready and than it's time to call Alexey's code to take pucks 
+
 Inside:
+    - 
     - calculates the convex hull of these points
     - calculates inner angles and sorts them
     - calculates bissectrisa of the angle and adds offset
@@ -31,16 +50,30 @@ class Tactics:
 
     def __init__(self):
 
-        critical_angle = np.pi * 2/3
-        approach_dist = 0.06  # meters, distance from robot to puck where robot will try to grab it
+        self.critical_angle = np.pi * 2/3
+        self.approach_dist = 0.06  # meters, distance from robot to puck where robot will try to grab it
         self.coords = None
-        self.unsorted_list_of_pucks_coords = []
-        self.local_group_of_pucks_to_collect = []
+        self.unsorted_list_of_pucks_coords = {} # dictionary
+        # self.local_group_of_pucks_to_collect = []
+        self.mutex = Lock()
+        self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera
+        self.known_coords_of_pucks = {} # dictionary
 
-        rospy.Subscriber("pucks_coords", String, self.pucks_coords_callback, queue_size=1)
+        # FIXME
+        self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
+
+        self.timer = None
+
+        # coords are published as markers in one list according to 91-92 undistort.py
+        rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
 
     def pucks_coords_callback(self, data):
         """
+        # TODO
+        # implement comparing with threshold,
+        # if newly received coord differs from old known one less than threshold level,
+        # than ignore it and continue collecting pucks.
+        # Else change coord of that puck and recalculate
 
         :param self:
         :param data:
@@ -48,18 +81,62 @@ class Tactics:
         """
         self.mutex.acquire()
 
-        self.unsorted_list_of_pucks_coords = []
-        self.local_group_of_pucks_to_collect = []
+        rospy.loginfo("")
+        rospy.loginfo("=====================================")
+        rospy.loginfo("NEW CMD:\t" + str(data.data))
+
+        if self.timer is not None:
+            self.timer.shutdown()
+
+        print("data")
+        print(data)
+
+
+        # TODO
+        # all pucks must have unique id so we can compare their previously known coords and newly received
+        # let's assume we have that
+
+        # pucks = [(x_.pose.position.x, x_.pose.position.y) for x_ in data] # Egorka
+
+        
+
+        self.unsorted_list_of_pucks_coords = np.array(pucks)
+
+        # in first step we just write received coords to list of known pucks
+        # in further steps we compare two lists and decide whether to update it or ignore
+        if len(self.known_coords_of_pucks) == 0:
+            self.known_coords_of_pucks = self.unsorted_list_of_pucks_coords
+        else:
+
+
+        # self.local_group_of_pucks_to_collect = self.divide_in_local_groups(self.unsorted_list_of_pucks_coords)
+        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
         self.mutex.release()
+
+    def timer_callback(self, event):
+        self.calculate_environment()
+
+    def calculate_environment(self):
+        hull = self.calculate_convex_hull(self.unsorted_list_of_pucks_coords)
+        inner_angles = self.calculate_inner_angles(hull)
+        landing_coordinates = self.calculate_possible_landing_coords(inner_angles, self.approach_dist)
+        sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
+        return sorted_landing_coordinates
+
+    # def divide_in_local_groups(self):
+    #     local_group_of_pucks_to_collect = []
+    #     return local_group_of_pucks_to_collect
 
     @staticmethod
     def rotate(A, B, C):
         return (B[0]-A[0])*(C[1]-B[1])-(B[1]-A[1])*(C[0]-B[0])
 
-    def calculate_convex_hull(self):
+    def calculate_convex_hull(self, unsorted_list_of_pucks_coords):
         # jarvis march
-        A = self.local_group_of_pucks_to_collect
+
+        # A = self.local_group_of_pucks_to_collect
+        A = unsorted_list_of_pucks_coords
         n = len(A)
         P = range(n)
         # start point
@@ -120,9 +197,5 @@ class Tactics:
 
 
 if __name__ == "__main__":
-
-    while len(self.local_group_of_pucks_to_collect) > 0:
-        hull = calculate_convex_hull(local_group_of_pucks_to_collect)
-        inner_angles = calculate_inner_angles(hull)
-        landing_coordinates = calculate_possible_landing_coords(inner_angles, approach_dist)
-        sorted_landing_coordinates = sort_landing_coords_wrt_current_pose(landing_coordinates)
+    tactics = Tactics()
+    rospy.spin()

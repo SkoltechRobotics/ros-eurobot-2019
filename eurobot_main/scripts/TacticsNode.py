@@ -33,11 +33,13 @@ class TacticsNode:
         # FIXME
         # queue_size=1 ???????
         self.move_command = rospy.Publisher('move_command', String, queue_size=10)
-        self.pub_cmd = rospy.Publisher('/secondary_robot/stm_command', String)
+        self.pub_cmd = rospy.Publisher('/secondary_robot/stm_command', String, queue_size=1)
 
         rospy.Subscriber("pucks_position", MarkerArray, self.pucks_marker_callback)
         rospy.sleep(2)
-        self.response = rospy.Subscriber('response', String, self.callback_response, queue_size=10)
+
+        # FIXME do we need #self.response ?
+        # self.response = rospy.Subscriber('response', String, self.callback_response, queue_size=10)
         self.rate = rospy.Rate(20)
 
         self.timer = None
@@ -50,8 +52,7 @@ class TacticsNode:
 
     def callback_response(data):
         if data.data == 'finished':
-            global flag
-            flag = True
+            self.flag = True
             #print flag
 
     def pucks_marker_callback(self, data):  # event?
