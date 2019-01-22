@@ -3,12 +3,13 @@
 1) Code should look like a poem and be self-explanatory
 2) Use functions
 3) First list yaml-params, than publishers, and in the end - Subcribers
-4) Timer in the end, it should call function motion_timer_callback, drom which desiable methods are chosen
+4) Timer in the end, it should call function motion_timer_callback, from which desiable methods are chosen
 5) No magic constants in code
 6) No pre-optimization, and more post-opt
-7) 
-
-
+7) Write specs --> write tests --> write code --> release
+8) For subscriber callback the last parameter is data from topic, for timer callback - event
+9) не надо делать абсолютные пути '/secondary_robot/stm_command', лучше в launch файле сделать remap
+10) 
 
 
 # ROBOT COMMUNICATION
@@ -144,6 +145,29 @@ rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and file
 chmod +x "filename"
 
 
+# make backup
+- to show all connected devices use lsblk in terminal
+
+- completely empty writable emmc through disk util
+- to create IMAGE of all partitions
+apt-get install pv
+sudo dd if=/dev/sdf bs=1M | pv | dd of=/media/safoex/01D251799AF7F600/backup_eurobot_2101/backup.img
+https://forum.odroid.com/viewtopic.php?f=52&t=22930
+
+- to restore IMAGE on new emmc / sd_card
+sudo dd if=/media/safoex/01D251799AF7F600/backup_eurobot_2101/backup.img of=/dev/sdf bs=1M
+
+
+Error mounting /dev/sdf1 at /media/safoex/EurobotMain: Command-line `mount -t "ext4" -o "uhelper=udisks2,nodev,nosuid" "/dev/sdf1" "/media/safoex/EurobotMain"' exited with non-zero exit status 32: mount: wrong fs type, bad option, bad superblock on /dev/sdf1,
+       missing codepage or helper program, or other error
+
+       In some cases useful info is found in syslog - try
+       dmesg | tail or so.alsfasfafkasfsafmsdklgnsdklmsdklmsklvmsdklvmklsa
+
+
+
+
+
 
 
 
@@ -210,7 +234,6 @@ GOALS
 Сбросить
 Вернуться на место
 Вынести все параметры в yaml файл
-
 
 
 
