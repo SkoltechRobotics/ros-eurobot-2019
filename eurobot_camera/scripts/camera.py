@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import skimage
+
 import transform
 
 
@@ -31,6 +33,13 @@ PUCK_RADIUS_pixel_y=pixel_scale_y*PUCK_RADIUS
 MAX_FEATURES=10000
 GOOD_MATCH_PERCENT=0.1
 
+REDIUM_COLOR = [230, 0, 0]
+GREENIUM_COLOR = [77, 255, 25]
+BLUEIUM_COLOR = [25, 153, 255]
+
+LAB_REDIUM = 0
+LAB_GREENIUM = 0
+LAB_BLUEIUM = 0
 
 def find_rotation_matrix(theta):
     R_x = np.array([[1, 0, 0],
@@ -44,6 +53,14 @@ def find_rotation_matrix(theta):
                     [0, 0, 1]])
     R = np.linalg.multi_dot([R_x, R_y, R_z])
     return R
+
+def find_color_difference(color):
+    print color.shape
+    distances = []
+    distances.append(skimage.color.deltaE_cmc(color, LAB_REDIUM,2,1))
+    distances.append(skimage.color.deltaE_cmc(color, LAB_GREENIUM,2,1))
+    distances.append(skimage.color.deltaE_cmc(color, LAB_BLUEIUM,2,1))
+    return distances
 
 class Camera():
     def __init__(self, DIM, K, D):
@@ -112,7 +129,7 @@ class Camera():
         for cnt in contours:
             area = cv2.contourArea(cnt)
             perimeter = cv2.arcLength(cnt,True)
-            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+500 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-500 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+100 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-100 and len(cnt)>=5:
+            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+300 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-300 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+50 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-50 and len(cnt)>=5:
                 cnts.append(cnt)
         return cnts
         
@@ -154,10 +171,10 @@ class Camera():
                                                      Knew=self.K_projection)
         return undistorted_img
     
-    def find_warp_matrix_not_feature(self, undistorted_img):
+    def find_warp_matrix_not_feature(self, undistorted_img, templ_path):
         warp_matrix = transform.find_transform_ecc(undistorted_img,
                                                                HOMO_IMAGE_WIDTH,
-                                                               HOMO_IMAGE_HEIGHT)
+                                                               HOMO_IMAGE_HEIGHT, templ_path)
         self.warp_matrix = warp_matrix
         print ("WARP MATRIX=", warp_matrix)
         return warp_matrix
@@ -196,8 +213,8 @@ class Camera():
             
         return coordinates
    
-    def draw_ellipse(self, image, contours, coordinates):
-        for cnt, coord in zip(contours, coordinates):
+    def draw_ellipse(self, image, contours, coordinates, colors):
+        for cnt, coord, color in zip(contours, coordinates, colors):
             ellipse = cv2.fitEllipse(cnt)
             image = cv2.ellipse(image,ellipse,(0,255,0),2)
             cx = coord[0]
@@ -205,7 +222,7 @@ class Camera():
             Cx = cx/pixel_scale_x
             Cy = 2-cy/pixel_scale_y
             image = cv2.putText(img=image,
-                                text="Cx=%.2f,Cy=%.2f" % (Cx, Cy),
+                                text="Cx=%.2f,Cy=%.2f,%s" % (Cx, Cy, color),
                                 org=(int(cx),int(cy)),
                                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                 fontScale=2,
@@ -213,4 +230,61 @@ class Camera():
                                 thickness=5,
                                 lineType=5)
         
-        return image
+	return image
+
+    def detect_contours_color(self, contours, img):
+        COLORS = np.array((REDIUM_COLOR,GREENIUM_COLOR,BLUEIUM_COLOR), dtype=np.uint8)
+	print ("COLORS", COLORS)
+        LAB_COLORS = skimage.color.rgb2lab(COLORS[np.newaxis,:,:])
+        print (LAB_COLORS)
+        LAB_REDIUM = LAB_COLORS[0,0]
+        LAB_GREENIUM = LAB_COLORS[0,1]
+        LAB_BLUEIUM = LAB_COLORS[0,2]
+        
+        result = []
+        
+	avg = np.zeros(3,dtype=np.float32)
+	i = 0
+	img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+        for cnt in contours:
+	    print ("CONTOURS NUM", len(contours))
+		
+            mask = np.zeros(img_gray.shape, np.uint8)
+	    print ("MASK SHAPE=", mask.shape)
+            cv2.drawContours(mask,[cnt],0,255,-1)
+	    pixelpoints = cv2.findNonZero(mask)
+	    
+	    mean_val = cv2.mean(img,mask = mask)
+	    print ("MEAN_VAL_______", mean_val)
+            for pixel in pixelpoints:
+                avg += img[pixel[0,0],pixel[0,1]]
+
+	    avg = np.divide(avg,len(pixelpoints))
+	    print ("avg=", avg)
+
+	    MEAN_COLORS = np.array((mean_val[2],mean_val[1],mean_val[0]), dtype=np.uint8)
+       	    AVG_COLORS = np.array((avg[2],avg[1],avg[0]), dtype=np.uint8)
+	    print("AVG_COLORS", AVG_COLORS)
+	    print("MEAN_COLORS", MEAN_COLORS)
+
+            LAB_MEAN_COLORS = skimage.color.rgb2lab(MEAN_COLORS[np.newaxis,np.newaxis,:])
+            print ("LAB_MEAN_COLORS",LAB_MEAN_COLORS)
+            LAB_AVG_COLORS = skimage.color.rgb2lab(AVG_COLORS[np.newaxis,np.newaxis,:])
+            print ("LAB_AVG_COLORS",LAB_AVG_COLORS)
+	    
+	    deltaE = skimage.color.deltaE_cie76(LAB_MEAN_COLORS, LAB_COLORS)
+            print ("(LAB_AVG_COLORS)RESULT=",skimage.color.deltaE_cie76(LAB_AVG_COLORS, LAB_COLORS))
+            print ("(LAB_MEAN_COLORS)RESULT=",deltaE)
+	    
+	    color = np.argmin(deltaE)
+	    if color == 0:
+		result.append("red")
+	    if color == 1:
+		result.append("green")
+	    if color == 2:
+		result.append("blue")
+
+
+        return result
+            
+

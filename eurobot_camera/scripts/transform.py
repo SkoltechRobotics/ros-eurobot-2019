@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image
 
 import time
 
-def find_transform_ecc(img,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
+def find_transform_ecc(img,rx,ry,templ_path):
     start_time = time.time()
     print ('Start homogeneous')
     

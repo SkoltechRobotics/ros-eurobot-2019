@@ -116,10 +116,15 @@ class CameraUndistortNode():
             image_filter_contours = copy.copy(image)
             image_filter_contours = self.camera.draw_contours(image_filter_contours, contours_filtered)
 
-            # Create ellipse contours around pucks 
+            # Find pucks coordinates
             image_pucks = copy.copy(image)
             coordinates = self.camera.find_pucks_coordinates(contours_filtered)
-            image_pucks = self.camera.draw_ellipse(image_pucks, contours_filtered, coordinates)
+            # Detect contours colors
+            colors = self.camera.detect_contours_color(contours_filtered, image)
+	    print ("COLORS IN UNDISTORT.py", colors)
+	    # Draw ellipse contours around pucks
+            image_pucks = self.camera.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
+
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
@@ -158,4 +163,4 @@ if __name__ == '__main__':
     undistort_node = CameraUndistortNode(DIM, K, D, args.template)
     undistort_node.camera.find_vertical_projection()
     
-    rospy.spin()
+rospy.spin()
