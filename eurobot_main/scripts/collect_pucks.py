@@ -20,9 +20,8 @@ This algorithm knows nothing about obstacles and etc, it just generates sorted l
 And path-planner will choose from these options according to obstacles around
 
 TODO:
-    - add module to get self-coords
     - publish in response that current puck was collected and robot is ready for next one
-    - when atom is grabbed and collected, publish DONE in response
+    - when atom is grabbed and collected, publish DONE in response -- YIELD ?
     - when we receive DONE, re-calculate convex hull and generate new sorted list of closest pucks wrt current pose
     - when we get a response that puck is collected, we remove it's coord from list of known coords
     - clockwise approaching in order to keep camera view open
@@ -30,6 +29,9 @@ TODO:
     - need to maintain unique id or order of pucks when deleting 
     - critical angle is not the only condition two decide. If pucks far away from each other, just make sure that robot doesn't touch others while 
     approaching the closest puck
+    - change self.coords to self.robot_coords
+    - how to call update_coords from MotionPlannerNode ?  I need robot_coords
+    
 
 
 Input: list of n coordinates of pucks, that belong to one local group
@@ -66,6 +68,7 @@ def wrap_angle(angle):
     """
     return (angle + np.pi) % (np.pi * 2) - np.pi
 
+
 def calculate_distance(coords1, coords2):
 
     # assert
@@ -74,6 +77,7 @@ def calculate_distance(coords1, coords2):
     distance_map_frame = coords2[:2] - coords1[:2]
     theta_diff = wrap_angle(coords2[2] - coords1[2])
     return distance_map_frame, theta_diff
+
 
 class Tactics:
 
@@ -146,17 +150,22 @@ class Tactics:
         # self.local_group_of_pucks_to_collect = self.divide_in_local_groups(self.unsorted_list_of_pucks_coords)
         self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
+        # rostopic pub TODO
+
         self.mutex.release()
 
     def timer_callback(self, event):
 
         hull = self.calculate_convex_hull(self.known_coords_of_pucks)
-        #inner_angles = self.calculate_inner_angles(hull)
-        landing_coordinates = self.calculate_possible_landing_coords(hull)
-        self.sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
+        # inner_angles = self.calculate_inner_angles(hull)
+        landings_coordinates = self.calculate_possible_landing_coords(hull)
+        self.sort_landing_coords_wrt_current_pose(landings_coordinates)
 
     def collect_closest_safe_puck(self):
-
+        """
+        we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
+        :return:
+        """
         # TODO
         if self.puck_status == "collected":
             np.delete(self.known_coords_of_pucks, 1, 0)
@@ -164,19 +173,15 @@ class Tactics:
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
 
         """
-
         Input: [(id, x, y), ...]
-
-        Output:
-
-        format: (id, x, y)
+        Output: format: [(id, x, y), ...]
 
         Old
         [(1, x1, y1),
          (2, x2, y2)
          (3, x3, y3)]
 
-         New
+         New obs
          [(2, x2', y2'),
           (3, x3', y3')]
 
@@ -184,9 +189,6 @@ class Tactics:
         - it was collected by our robot
         - it is not visible (but it's still there) either because of robot in the line of view or light conditions
         - it was collected by enemy robot (and it's not there anymore)
-
-        In first case we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
-
 
         """
 
@@ -207,14 +209,12 @@ class Tactics:
                 self.known_coords_of_pucks = np.stack((self.known_coords_of_pucks, puck), axis=0)
                 # self.known_coords_of_pucks.append(puck)
 
-
     @staticmethod
     def rotate(A, B, C):
         return (B[0]-A[0])*(C[1]-B[1])-(B[1]-A[1])*(C[0]-B[0])
 
     def calculate_convex_hull(self, list_of_pucks_coords):
         """
-
         :param list_of_pucks_coords: [(id, x, y), ...]
         :return: convex hull, list of coordinates, TODO counter or clockwise, need to figure out
         """
@@ -284,7 +284,7 @@ class Tactics:
         TODO
         we can start by calculating area of a hull
 
-        :return: sorted list of landing coordinates for all angles
+        :return: list of landing coordinates for all angles [[x_l, y_l], ...]
         """
 
         # assert np.all(inner_safe_angles[:, 2]) > 0
@@ -294,7 +294,7 @@ class Tactics:
         # calc angle of bissectrisa wich it outer wrt original hull
         # calc point that is const vector away from centre of puck
 
-        landing_coordinates = []
+        landings_coordinates = []
         mc = np.mean(hull)
         offset = hull.copy()
         offset -= mc  # Normalize the polygon by subtracting the center values from every point.
@@ -320,7 +320,7 @@ class Tactics:
                 const = np.sqrt(self.approach_dist**2 / (gamma + 1))
                 x_landing = const + orig[0]
                 y_landing = gamma * const + orig[1]
-                landing_coordinates.append([x_landing, y_landing])
+                landings_coordinates.append([x_landing, y_landing])
             except ZeroDivisionError:
                 print("gamma = -1 which is UNACCEPTABLE !!!1")
 
@@ -328,26 +328,25 @@ class Tactics:
         # and we can approach them from any angle (should choose closest one)
         # safe_orbit =
 
-        return landing_coordinates
+        return landings_coordinates
 
-    def sort_landing_coords_wrt_current_pose(self, landing_coordinates):
+    def sort_landing_coords_wrt_current_pose(self, landings_coordinates):
         """
         To make operation more quick there is no need to choose the sharpest angle,
         instead better choose the closest one from angles that are marked as safe.
-        :param landing_coordinates: # TODO: format
-        :return:
+        TODO add id to every landing so it corresponds to color of puck
+        :param landings_coordinates: [[x_l, y_l], ...]
+        :return: format: [([x_l, y_l], d), ...]  ex [([3, 3], 1), ([1, 1], 2), ([2, 2], 3), ([0, 0], 4)]
         """
 
         distances_from_robot_to_landings = []
-        for landing in landing_coordinates:
+        for landing in landings_coordinates:
             dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
             dist_norm = np.linalg.norm(dist)
             distances_from_robot_to_landings.append(dist_norm)
-        distances_from_robot_to_landings = np.array(distances_from_robot_to_landings)
-        landings_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_landings)
-        landings_wrt_robot_sorted.sort(key=lambda t: t[1])
-
-        return landings_wrt_robot_sorted
+        a = zip(landings_coordinates, distances_from_robot_to_landings)
+        a.sort(key=lambda t: t[1])
+        self.sorted_landing_coordinates = a[:, :2]
 
     def sort_pucks_coords_wrt_current_pose(self):
         """
@@ -364,21 +363,7 @@ class Tactics:
         distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
         pucks_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_pucks)
         pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
-
         return pucks_wrt_robot_sorted
-
-    def update_coords(self):
-        try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
-            q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
-                 trans.transform.rotation.w]
-            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
-            self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coords))
-            return True
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            return False
 
 
 if __name__ == "__main__":
