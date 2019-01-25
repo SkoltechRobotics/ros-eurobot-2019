@@ -11,7 +11,9 @@ from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray
 
 # TODO
-from core_functions import calculate_distance
+# from core_functions import calculate_distance
+# from core_functions import wrap_angle
+
 
 """
 This algorithm knows nothing about obstacles and etc, it just generates sorted list of options.
@@ -26,6 +28,8 @@ TODO:
     - clockwise approaching in order to keep camera view open
     - if all or most of pucks lie separately and safely, just start with the closest one and move counter / clockwise depending on the side
     - need to maintain unique id or order of pucks when deleting 
+    - critical angle is not the only condition two decide. If pucks far away from each other, just make sure that robot doesn't touch others while 
+    approaching the closest puck
 
 
 Input: list of n coordinates of pucks, that belong to one local group
@@ -62,25 +66,28 @@ def wrap_angle(angle):
     """
     return (angle + np.pi) % (np.pi * 2) - np.pi
 
+def calculate_distance(coords1, coords2):
+
+    # assert
+    # TODO
+
+    distance_map_frame = coords2[:2] - coords1[:2]
+    theta_diff = wrap_angle(coords2[2] - coords1[2])
+    return distance_map_frame, theta_diff
 
 class Tactics:
 
     def __init__(self):
 
         self.critical_angle = np.pi * 2/3
-        self.approach_dist = 0.06  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.coords = None
-        # self.unsorted_list_of_pucks_coords = []
-        # self.local_group_of_pucks_to_collect = []
         self.mutex = Lock()
         self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera
         self.sorted_landing_coordinates = None
-
         self.known_coords_of_pucks = np.array([])  # (id, x, y)
-        # TODO
-        # dictionary?
-
         self.puck_status = None
+        self.ScaleFactor_ = 1.1  #
         # status of a puck we're currently working on, read from response.
         # When status becomes "collected" -- remove from self.known_coords_of_pucks
 
@@ -145,11 +152,12 @@ class Tactics:
 
         hull = self.calculate_convex_hull(self.known_coords_of_pucks)
         inner_angles = self.calculate_inner_angles(hull)
-        landing_coordinates = self.calculate_possible_landing_coords(inner_angles)
+        landing_coordinates = self.calculate_possible_landing_coords(inner_angles, hull)
         self.sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
 
     def collect_closest_safe_puck(self):
 
+        # TODO
         if self.puck_status == "collected":
             np.delete(self.known_coords_of_pucks, 1, 0)
 
@@ -199,9 +207,6 @@ class Tactics:
                 self.known_coords_of_pucks = np.stack((self.known_coords_of_pucks, puck), axis=0)
                 # self.known_coords_of_pucks.append(puck)
 
-    # def divide_in_local_groups(self):
-    #     local_group_of_pucks_to_collect = []
-    #     return local_group_of_pucks_to_collect
 
     @staticmethod
     def rotate(A, B, C):
@@ -263,11 +268,11 @@ class Tactics:
 
         return inner_safe_angles
 
-    def calculate_possible_landing_coords(self, inner_safe_angles):
+    def calculate_possible_landing_coords(self, inner_safe_angles, hull):
         """
-        Calculates basis vector of inner bissectrisa of an angle,
-        adds pi to make it a basis vector of outer bissectrisa
-        and multiplyes by approach_dist to get landing coordinate, where robot should be standing to grab this atom
+        Calculates offset a hull,
+        cacl outer bissectrisa to all angles
+        search intersection point between orbit around centre of puck and this bissectrisa between orig and offset
 
         There are many safe landing coords, not just on outer bissectrissa
 
@@ -279,8 +284,35 @@ class Tactics:
 
         assert np.all(inner_safe_angles[:, 2]) > 0
 
-        inner_safe_angles
+        # this method can be applied when pucks are close to each other
+        # calculate offset
+        # calc angle of bissectrisa wich it outer wrt original hull
+        # calc point that is const vector away from centre of puck
+
         landing_coordinates = []
+        mc = np.mean(hull)
+        offset = hull.copy()
+        offset -= mc  # Normalize the polygon by subtracting the center values from every point.
+        offset *= self.ScaleFactor_
+        offset += mc
+
+        #  need list?
+        for orig, ofs in zip(hull, offset):
+            dist = calculate_distance(orig, ofs)
+            gamma = np.arctan2(dist[1], dist[0])
+            # FIXME dist[0] != 0
+            # need wrap_angle?
+            # intersection point between orbit around centre of puck and this otrezok between orig and offset
+            # x**2 + y**2 = r_orbit**2
+            # FIXME: gamma != -1
+            const = np.sqrt(self.approach_dist**2 / (gamma + 1))
+            x_landing = const + orig[0]
+            y_landing = gamma * const + orig[1]
+            landing_coordinates.append([x_landing, y_landing])
+
+        # this method for situation where pucks are safely away from each other
+        # and we can approach them from any angle (should choose closest one)
+        safe_orbit =
 
         return landing_coordinates
 
@@ -288,13 +320,20 @@ class Tactics:
         """
         To make operation more quick there is no need to choose the sharpest angle,
         instead better choose the closest one from angles that are marked as safe.
-        :param landing_coordinates:
+        :param landing_coordinates: # TODO: format
         :return:
         """
 
-        sorted_landing_coordinates = []
+        distances_from_robot_to_landings = []
+        for landing in landing_coordinates:
+            dist, _ = calculate_distance(self.coords, landing)  # return deltaX and deltaY coords
+            dist_norm = np.linalg.norm(dist)
+            distances_from_robot_to_landings.append(dist_norm)
+        distances_from_robot_to_landings = np.array(distances_from_robot_to_landings)
+        landings_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_landings)
+        landings_wrt_robot_sorted.sort(key=lambda t: t[1])
 
-        return sorted_landing_coordinates
+        return landings_wrt_robot_sorted
 
     def sort_pucks_coords_wrt_current_pose(self):
         """
@@ -305,7 +344,7 @@ class Tactics:
 
         distances_from_robot_to_pucks = []
         for puck in self.known_coords_of_pucks:
-            dist, _ = self.calculate_distance(self.coords, puck)  # return deltaX and deltaY coords
+            dist, _ = calculate_distance(self.coords, puck)  # return deltaX and deltaY coords
             dist_norm = np.linalg.norm(dist)
             distances_from_robot_to_pucks.append(dist_norm)
         distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
@@ -314,38 +353,6 @@ class Tactics:
 
         return pucks_wrt_robot_sorted
 
-    @staticmethod
-    def calculate_distance(coords1, coords2):
-        distance_map_frame = coords2[:2] - coords1[:2]
-        theta_diff = wrap_angle(coords2[2] - coords1[2])
-        return distance_map_frame, theta_diff
-
-
-
-    # this method can be applied when pucks are close to each other
-    # calculate offset
-    # calc angle of bissectrisa wich it outer wrt original hull
-    # calc point that is const vector away from centre of puck
-
-    ScaleFactor = 1.1
-    mc = np.mean(hull)
-    offset = hull.copy()
-    offset -= mc  # Normalize the polygon by subtracting the center values from every point.
-    offset *= ScaleFactor
-    offset += mc
-
-    #  need list?
-    for orig, ofs in zip(hull, offset):
-        dist = calculate_distance(orig, ofs)
-        gamma = np.arctan2(dist[1], dist[0])
-
-
-
-
-
-    # this method for situation where pucks are safely away from each other
-    # and we can approach them from any angle (should choose closest one)
-    safe_orbit =
 
 if __name__ == "__main__":
     tactics = Tactics()
