@@ -81,13 +81,13 @@ class Tactics:
 
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
-        self.coords = None
+        self.robot_coords = None
         self.mutex = Lock()
-        self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera
-        self.sorted_landing_coordinates = None
+        self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera, used in update
+        self.sorted_landing_coordinates = None  # FIXME
         self.known_coords_of_pucks = np.array([])  # (id, x, y)
         self.puck_status = None
-        self.ScaleFactor_ = 1.1  #
+        self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
         # status of a puck we're currently working on, read from response.
         # When status becomes "collected" -- remove from self.known_coords_of_pucks
 
@@ -141,7 +141,7 @@ class Tactics:
         if len(self.known_coords_of_pucks) == 0:
             self.known_coords_of_pucks = new_obs_of_pucks
         else:
-            self.compare_to_update_or_ignore(new_obs_of_pucks)
+            self.compare_to_update_or_ignore(new_obs_of_pucks) # in case robot accidentally moved some of pucks
 
         # self.local_group_of_pucks_to_collect = self.divide_in_local_groups(self.unsorted_list_of_pucks_coords)
         self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
@@ -151,8 +151,8 @@ class Tactics:
     def timer_callback(self, event):
 
         hull = self.calculate_convex_hull(self.known_coords_of_pucks)
-        inner_angles = self.calculate_inner_angles(hull)
-        landing_coordinates = self.calculate_possible_landing_coords(inner_angles, hull)
+        #inner_angles = self.calculate_inner_angles(hull)
+        landing_coordinates = self.calculate_possible_landing_coords(hull)
         self.sorted_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landing_coordinates)
 
     def collect_closest_safe_puck(self):
@@ -165,7 +165,7 @@ class Tactics:
 
         """
 
-        Input:
+        Input: [(id, x, y), ...]
 
         Output:
 
@@ -212,11 +212,16 @@ class Tactics:
     def rotate(A, B, C):
         return (B[0]-A[0])*(C[1]-B[1])-(B[1]-A[1])*(C[0]-B[0])
 
-    def calculate_convex_hull(self, unsorted_list_of_pucks_coords):
+    def calculate_convex_hull(self, list_of_pucks_coords):
+        """
+
+        :param list_of_pucks_coords: [(id, x, y), ...]
+        :return: convex hull, list of coordinates, TODO counter or clockwise, need to figure out
+        """
         # jarvis march
 
         # A = self.local_group_of_pucks_to_collect
-        A = unsorted_list_of_pucks_coords
+        A = list_of_pucks_coords[:, 1:]  # [(x0, y0), (x1, y1), ...]
         n = len(A)
         P = range(n)
         # start point
@@ -240,35 +245,35 @@ class Tactics:
         print(H)
         return H
 
-    def calculate_inner_angles(self, hull):
-        """
+    # def calculate_inner_angles(self, hull):
+    #     """
+    #
+    #     Input:
+    #     hull
+    #
+    #     Calculates inner angles of a convex hull
+    #     Sorts them
+    #     optional (Removes angles that are below threshold safe level)
+    #
+    #     :return: sorted list of angles starting with sharpest one
+    #     """
+    #     # p1, p2, p3, p4 = map(Point, [(0, 0), (1, 0), (5, 1), (0, 1)])
+    #     # p1, p2, p3, p4 = map(Point, hull)  # need to unpack hull?
+    #     poly = Polygon(hull)
+    #     inner_angles = np.array(poly.angles)
+    #
+    #     # angles bigger that critical value are marked with big value and are not considered
+    #     # inner_safe_angles = np.putmask(inner_angles, (inner_angles > self.critical_angle), 1000)
+    #     inner_safe_angles = np.where(inner_angles > self.critical_angle, None, inner_angles)
+    #     inner_safe_angles = zip(hull, inner_safe_angles)  # returns for ex [((x0, y0), pi/3), ((x1, y1), pi/2), ((x2, y2), pi/6), ((x3, y3), None)]
+    #     inner_safe_angles.sort(key=lambda t: t[1])  # sorts by calculated angle. But how will 'None' perform? TODO reverse?
+    #
+    #     # TODO
+    #     # need to maintain unique id or order of pucks when deleting
+    #
+    #     return inner_safe_angles
 
-        Input:
-        hull
-
-        Calculates inner angles of a convex hull
-        Sorts them
-        Removes angles that are below threshold safe level
-
-        :return: sorted list of angles starting with sharpest one
-        """
-        # p1, p2, p3, p4 = map(Point, [(0, 0), (1, 0), (5, 1), (0, 1)])
-        # p1, p2, p3, p4 = map(Point, hull)  # need to unpack hull?
-        poly = Polygon(hull)
-        inner_angles = np.array(poly.angles)
-
-        # angles bigger that critical value are marked with big value and are not considered
-        # inner_safe_angles = np.putmask(inner_angles, (inner_angles > self.critical_angle), 1000)
-        inner_safe_angles = np.where(inner_angles > self.critical_angle, None, inner_angles)
-        inner_safe_angles = zip(hull, inner_safe_angles)  # returns for ex [((x0, y0), pi/3), ((x1, y1), pi/2), ((x2, y2), pi/6), ((x3, y3), None)]
-        inner_safe_angles.sort(key=lambda t: t[1])  # sorts by calculated angle. But how will 'None' perform? TODO
-
-        # TODO
-        # need to maintain unique id or order of pucks when deleting
-
-        return inner_safe_angles
-
-    def calculate_possible_landing_coords(self, inner_safe_angles, hull):
+    def calculate_possible_landing_coords(self, hull):
         """
         Calculates offset a hull,
         cacl outer bissectrisa to all angles
@@ -282,7 +287,7 @@ class Tactics:
         :return: sorted list of landing coordinates for all angles
         """
 
-        assert np.all(inner_safe_angles[:, 2]) > 0
+        # assert np.all(inner_safe_angles[:, 2]) > 0
 
         # this method can be applied when pucks are close to each other
         # calculate offset
@@ -298,21 +303,30 @@ class Tactics:
 
         #  need list?
         for orig, ofs in zip(hull, offset):
+            gamma = None
             dist = calculate_distance(orig, ofs)
-            gamma = np.arctan2(dist[1], dist[0])
-            # FIXME dist[0] != 0
+            if abs(dist[0]) < 1e-4:
+                if ofs[1] < orig[1]:
+                    gamma = np.pi * 1/2
+                elif ofs[1] > orig[1]:
+                    gamma = np.pi * 3/2
+            else:
+                gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
             # need wrap_angle?
             # intersection point between orbit around centre of puck and this otrezok between orig and offset
             # x**2 + y**2 = r_orbit**2
             # FIXME: gamma != -1
-            const = np.sqrt(self.approach_dist**2 / (gamma + 1))
-            x_landing = const + orig[0]
-            y_landing = gamma * const + orig[1]
-            landing_coordinates.append([x_landing, y_landing])
+            try:
+                const = np.sqrt(self.approach_dist**2 / (gamma + 1))
+                x_landing = const + orig[0]
+                y_landing = gamma * const + orig[1]
+                landing_coordinates.append([x_landing, y_landing])
+            except ZeroDivisionError:
+                print("gamma = -1 which is UNACCEPTABLE !!!1")
 
-        # this method for situation where pucks are safely away from each other
+        # another method is for situation where pucks are safely away from each other
         # and we can approach them from any angle (should choose closest one)
-        safe_orbit =
+        # safe_orbit =
 
         return landing_coordinates
 
@@ -326,7 +340,7 @@ class Tactics:
 
         distances_from_robot_to_landings = []
         for landing in landing_coordinates:
-            dist, _ = calculate_distance(self.coords, landing)  # return deltaX and deltaY coords
+            dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
             dist_norm = np.linalg.norm(dist)
             distances_from_robot_to_landings.append(dist_norm)
         distances_from_robot_to_landings = np.array(distances_from_robot_to_landings)
@@ -344,7 +358,7 @@ class Tactics:
 
         distances_from_robot_to_pucks = []
         for puck in self.known_coords_of_pucks:
-            dist, _ = calculate_distance(self.coords, puck)  # return deltaX and deltaY coords
+            dist, _ = calculate_distance(self.robot_coords, puck)  # return deltaX and deltaY coords
             dist_norm = np.linalg.norm(dist)
             distances_from_robot_to_pucks.append(dist_norm)
         distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
@@ -352,6 +366,19 @@ class Tactics:
         pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
 
         return pucks_wrt_robot_sorted
+
+    def update_coords(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
+            q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+            self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
+            rospy.loginfo("Robot coords:\t" + str(self.robot_coords))
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            return False
 
 
 if __name__ == "__main__":
