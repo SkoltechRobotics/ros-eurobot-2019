@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <group ns = "secondary_robot">
+	<node name="stm_node" pkg="eurobot_stm" type="STM.py" output="screen">
+	</node>
+  </group>
+</launch>
+

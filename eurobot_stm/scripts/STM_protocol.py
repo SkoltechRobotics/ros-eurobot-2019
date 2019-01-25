@@ -5,7 +5,10 @@ import datetime
 import rospy
 
 class STMprotocol(object):
-    def __init__(self,serial_port, baudrate=115200):
+    def __init__(self, serial_port, baudrate=115200):
+
+        self.mutex = Lock()
+
         self.ser = serial.Serial(serial_port,baudrate=baudrate, timeout = 0.01)
         self.pack_format = {
             0x01: "=cccc",
@@ -48,7 +51,14 @@ class STMprotocol(object):
             0x13: 2,
             0x14: 2
         }
-        
+            
+    def send(self, cmd, args):
+        self.mutex.acquire()
+        successfully, values = self.send_command(cmd, args)
+        self.mutex.release()
+        rospy.loginfo('Got response args: '+ str(values))
+        return successfully, values
+
     def pure_send_command(self, cmd, args):
         # Clear buffer
         self.ser.reset_output_buffer()
