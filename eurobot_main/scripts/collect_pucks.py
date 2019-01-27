@@ -31,8 +31,13 @@ TODO:
     approaching the closest puck
     - change self.coords to self.robot_coords
     - how to call update_coords from MotionPlannerNode ?  I need robot_coords
+    - flag --> arm_ready_flag 
     
-
+4 in chaos zone
+3 periodic table
+6 wall
+3 wall
+1 ramp
 
 Input: list of n coordinates of pucks, that belong to one local group
 
@@ -40,8 +45,6 @@ Input: list of n coordinates of pucks, that belong to one local group
 Receiving coords from camera each 2-3 seconds
 Each time coords are received we call function callback which compares currently known coords and newly received ones
 If difference between newly received and known are within accuracy level (threshold), do nothing, else update known coords
-
-How to do this without timer?
 
 With timer we can call 10 times per sec and recalc environment
 and call function move_arc / move line or whatever Egorka implemented
@@ -79,10 +82,10 @@ def calculate_distance(coords1, coords2):
     return distance_map_frame, theta_diff
 
 
-class Tactics:
+class TacticsNode:
 
     def __init__(self):
-
+        rospy.init_node('TacticsNode')
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.robot_coords = None
@@ -94,14 +97,22 @@ class Tactics:
         self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
         # status of a puck we're currently working on, read from response.
         # When status becomes "collected" -- remove from self.known_coords_of_pucks
+        self.atoms_placed = 0  # to preliminary calculate our score
+        self.arm_ready_flag = False
+        self.RATE = rospy.Rate(20)
 
         # FIXME
         self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
+        self.pub_cmd = rospy.Publisher('/secondary_robot/stm_command', String, queue_size=1)
+        self.pub_response = rospy.Publisher("response", String, queue_size=10)
+
+        rospy.sleep(2)
 
         self.timer = None
 
         # coords are published as markers in one list according to 91-92 undistort.py
         rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
 
     def pucks_coords_callback(self, data):
         """
@@ -111,7 +122,41 @@ class Tactics:
         # than ignore it and continue collecting pucks.
         # Else change coord of that puck and recalculate
 
+        In first step we just write received coords to list of known pucks,
+        in further steps we compare two lists and decide whether to update it or ignore
+
         :param self:
+        :param data:
+        :return:
+        """
+        self.mutex.acquire()
+
+        rospy.loginfo("")
+        rospy.loginfo("=====================================")
+        rospy.loginfo("NEW CMD:\t" + str(data.data))
+
+        print("data")
+        print(data)
+
+        # TODO all pucks must have unique id so we can compare their previously known coords and newly received
+
+        # FIXME from observation to observation ID are not guaranteed to be the same
+
+        new_obs_of_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data]
+        new_obs_of_pucks = np.array(new_obs_of_pucks)
+
+        if len(self.known_coords_of_pucks) == 0:
+            self.known_coords_of_pucks = new_obs_of_pucks
+
+        # TODO try this in further tests
+        # else:
+        #     self.compare_to_update_or_ignore(new_obs_of_pucks)  # in case robot accidentally moved some of pucks
+
+        self.mutex.release()
+
+    def tactics_callback(self, data):
+        """
+        When BT publishes command something like "collect atoms in Chaos Zone", we start calculating and updating configuration of pucks
         :param data:
         :return:
         """
@@ -124,51 +169,75 @@ class Tactics:
         if self.timer is not None:
             self.timer.shutdown()
 
-        print("data")
-        print(data)
+        data_split = data.data.split()
+        cmd_id = data_split[0]
+        cmd_type = data_split[1]
+        # TODO cmd_args = data_split[2:]
+        rospy.loginfo(cmd_type)
+        if cmd_type == "collect_chaos":
 
-        # TODO
-        # all pucks must have unique id so we can compare their previously known coords and newly received
-        # let's assume we have that
+            # TODO
+            self.update_task_status(cmd_id, cmd_type)
 
-        # pucks = [(x_.pose.position.x, x_.pose.position.y) for x_ in data] # Egorka
-
-        # FIXME
-        # is it even legal?
-        # from observation to observation ID are not guaranteed to be the same!!!!!!
-
-        new_obs_of_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data]
-        new_obs_of_pucks = np.array(new_obs_of_pucks)
-
-        # in first step we just write received coords to list of known pucks
-        # in further steps we compare two lists and decide whether to update it or ignore
-        if len(self.known_coords_of_pucks) == 0:
-            self.known_coords_of_pucks = new_obs_of_pucks
-        else:
-            self.compare_to_update_or_ignore(new_obs_of_pucks) # in case robot accidentally moved some of pucks
-
-        # self.local_group_of_pucks_to_collect = self.divide_in_local_groups(self.unsorted_list_of_pucks_coords)
-        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
-
-        # rostopic pub TODO
+            self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback, oneshot=False)  # FIXME ask Misha
 
         self.mutex.release()
 
     def timer_callback(self, event):
 
-        hull = self.calculate_convex_hull(self.known_coords_of_pucks)
+        # TODO add Try-Except in case coords are not yet received
+
+        hull = self.calculate_convex_hull()
         # inner_angles = self.calculate_inner_angles(hull)
         landings_coordinates = self.calculate_possible_landing_coords(hull)
         self.sort_landing_coords_wrt_current_pose(landings_coordinates)
+
+        # TODO
+        if self.cmd_type =
+
+        if len(self.known_coords_of_pucks) > 0:
+            self.collect_closest_safe_puck()
+        else:
+            self.stop_collecting()
+
+    def callback_response(self, data):
+        if data.data == 'finished':
+            self.arm_ready_flag = True
+            print self.arm_ready_flag
+
+    # def update_task_status(self, goal, cmd_id, cmd_type):
+    #     rospy.loginfo("Setting a new goal:\t" + str(goal))
+    #     rospy.loginfo("Current cmd:\t" + str(cmd_type))
+    #     rospy.loginfo("=====================================")
+    #     rospy.loginfo("")
+    #     self.cmd_id = cmd_id
+    #     self.current_cmd = cmd_type
+    #     self.goal = goal
+    #     self.current_state = "start"
+    #     # if self.current_cmd == "move_line":
+    #     #     self.move_line()
 
     def collect_closest_safe_puck(self):
         """
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-        # TODO
+
+        # call Alexey's function
+
+        # TODO self.arm_ready_flag
+
         if self.puck_status == "collected":
             np.delete(self.known_coords_of_pucks, 1, 0)
+            np.delete(self.sorted_landing_coordinates, 1, 0)
+            print("pucks left: ", len(self.known_coords_of_pucks))
+
+    def stop_collecting(self):
+        self.timer.shutdown()
+        rospy.loginfo("Robot has stopped collecting pucks.")
+        rospy.sleep(1.0 / 40)
+        self.pub_response.publish("finished")
+        pass
 
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
 
@@ -213,15 +282,12 @@ class Tactics:
     def rotate(A, B, C):
         return (B[0]-A[0])*(C[1]-B[1])-(B[1]-A[1])*(C[0]-B[0])
 
-    def calculate_convex_hull(self, list_of_pucks_coords):
+    def calculate_convex_hull(self):
         """
-        :param list_of_pucks_coords: [(id, x, y), ...]
+        jarvis march
         :return: convex hull, list of coordinates, TODO counter or clockwise, need to figure out
         """
-        # jarvis march
-
-        # A = self.local_group_of_pucks_to_collect
-        A = list_of_pucks_coords[:, 1:]  # [(x0, y0), (x1, y1), ...]
+        A = self.known_coords_of_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
         n = len(A)
         P = range(n)
         # start point
@@ -247,7 +313,6 @@ class Tactics:
 
     # def calculate_inner_angles(self, hull):
     #     """
-    #
     #     Input:
     #     hull
     #
@@ -268,8 +333,7 @@ class Tactics:
     #     inner_safe_angles = zip(hull, inner_safe_angles)  # returns for ex [((x0, y0), pi/3), ((x1, y1), pi/2), ((x2, y2), pi/6), ((x3, y3), None)]
     #     inner_safe_angles.sort(key=lambda t: t[1])  # sorts by calculated angle. But how will 'None' perform? TODO reverse?
     #
-    #     # TODO
-    #     # need to maintain unique id or order of pucks when deleting
+    #     # TODO need to maintain unique id or order of pucks when deleting
     #
     #     return inner_safe_angles
 
@@ -279,7 +343,7 @@ class Tactics:
         cacl outer bissectrisa to all angles
         search intersection point between orbit around centre of puck and this bissectrisa between orig and offset
 
-        There are many safe landing coords, not just on outer bissectrissa
+        There are many safe landing coords, not just on outer bissectrisa
 
         TODO
         we can start by calculating area of a hull
@@ -291,12 +355,12 @@ class Tactics:
 
         # this method can be applied when pucks are close to each other
         # calculate offset
-        # calc angle of bissectrisa wich it outer wrt original hull
+        # calc angle of bissectrisa which it outer wrt original hull
         # calc point that is const vector away from centre of puck
 
         landings_coordinates = []
         mc = np.mean(hull)
-        offset = hull.copy()
+        offset = list(hull)  # a miserable attempt to copy a list
         offset -= mc  # Normalize the polygon by subtracting the center values from every point.
         offset *= self.ScaleFactor_
         offset += mc
@@ -348,24 +412,24 @@ class Tactics:
         a.sort(key=lambda t: t[1])
         self.sorted_landing_coordinates = a[:, :2]
 
-    def sort_pucks_coords_wrt_current_pose(self):
-        """
-        To make operation more quick there is no need to choose the sharpest angle,
-        instead better choose the closest one from angles that are marked as safe.
-        :return: format [[(id0, x0, y0), d0], ...]
-        """
-
-        distances_from_robot_to_pucks = []
-        for puck in self.known_coords_of_pucks:
-            dist, _ = calculate_distance(self.robot_coords, puck)  # return deltaX and deltaY coords
-            dist_norm = np.linalg.norm(dist)
-            distances_from_robot_to_pucks.append(dist_norm)
-        distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
-        pucks_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_pucks)
-        pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
-        return pucks_wrt_robot_sorted
+    # def sort_pucks_coords_wrt_current_pose(self):
+    #     """
+    #     To make operation more quick there is no need to choose the sharpest angle,
+    #     instead better choose the closest one from angles that are marked as safe.
+    #     :return: format [[(id0, x0, y0), d0], ...]
+    #     """
+    #
+    #     distances_from_robot_to_pucks = []
+    #     for puck in self.known_coords_of_pucks:
+    #         dist, _ = calculate_distance(self.robot_coords, puck)  # return deltaX and deltaY coords
+    #         dist_norm = np.linalg.norm(dist)
+    #         distances_from_robot_to_pucks.append(dist_norm)
+    #     distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
+    #     pucks_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_pucks)
+    #     pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
+    #     return pucks_wrt_robot_sorted
 
 
 if __name__ == "__main__":
-    tactics = Tactics()
+    tactics = TacticsNode()
     rospy.spin()
