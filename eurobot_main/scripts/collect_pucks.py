@@ -9,6 +9,11 @@ from sympy.geometry import Triangle, Point
 
 from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray
+from geometry_msgs.msg import Twist
+from std_msgs.msg import String
+from threading import Lock
+from std_msgs.msg import Int32MultiArray
+
 
 # TODO
 # from core_functions import calculate_distance
@@ -62,6 +67,23 @@ Output: ready-steady coordinate and go coordinate
 
 Publishes
 """
+
+# Проверить, что робот остановился.
+# Информация о том, что робот отсановился, публикуется в топик response
+
+# Проверить, что цель достигнута.
+# Подписаться на топик, в который будут публиковаться координаты атомов с камеры
+#
+# Проверить, что манипулятор в исходной позиции
+#
+# Проверить, отпустить, проверить - это одна команда
+#
+# Опустить манипулятор
+# Проверить, что манипулятор опустился
+# Включить насос (на сколько?)
+# Поднять манипулятор до конца
+# Подпереть атом граблей
+# Выключить насос
 
 
 def wrap_angle(angle):
@@ -210,13 +232,15 @@ class TacticsNode:
             self.collect_closest_safe_puck()
 
         # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
-        #     func()
+        #     grab_from_wall
         # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_pucks) > 0:
-        #     func()
+        #     grab_from_wall
         # elif self.cmd_type == "collect_accel_blue_and_hold_up" and len(self.known_coords_of_pucks) > 0:
         #     func()
         # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
         #     func()
+        # place_atom_on_weights
+        #
 
         else:
             self.stop_collecting()
@@ -244,6 +268,12 @@ class TacticsNode:
         """
         # MotionPlannerNode.move_arc()
         # call Alexey's function
+
+        # m_cmd = str(cmd)
+        #
+        # rospy.loginfo("m_cmd:\t" + str(m_cmd))
+        # rospy.loginfo("Sending cmd: " + m_cmd)
+        # self.pub_cmd.publish(m_cmd)
 
         # TODO self.arm_ready_flag
         # TODO this part with deleting probably should be a separate function
