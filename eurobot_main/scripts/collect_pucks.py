@@ -32,6 +32,7 @@ TODO:
     - change self.coords to self.robot_coords
     - how to call update_coords from MotionPlannerNode ?  I need robot_coords
     - flag --> arm_ready_flag 
+    - we should have more vars like known_coords_of_pucks (like _chaos_pucks). It's ok leave by now as is, because we test only separate local zones
     
 4 in chaos zone
 3 periodic table
@@ -100,6 +101,8 @@ class TacticsNode:
         self.atoms_placed = 0  # to preliminary calculate our score
         self.arm_ready_flag = False
         self.RATE = rospy.Rate(20)
+        self.cmd_id = None
+        self.cmd_type = None
 
         # FIXME
         self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
@@ -157,7 +160,12 @@ class TacticsNode:
     def tactics_callback(self, data):
         """
         When BT publishes command something like "collect atoms in Chaos Zone", we start calculating and updating configuration of pucks
-        :param data:
+        :param data: cmd_type can be one of these:
+        - collect_chaos
+        - if in chaos taken blue - put it separately
+        - take_from_wall_and_hold_above (
+        - take_goldenium_and_hold_middle
+        - collect_accel_blue (diff height, maybe we need to hold it up for a while)
         :return:
         """
         self.mutex.acquire()
@@ -174,59 +182,71 @@ class TacticsNode:
         cmd_type = data_split[1]
         # TODO cmd_args = data_split[2:]
         rospy.loginfo(cmd_type)
-        if cmd_type == "collect_chaos":
 
-            # TODO
-            self.update_task_status(cmd_id, cmd_type)
-
-            self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback, oneshot=False)  # FIXME ask Misha
+        self.update_task_status(cmd_id, cmd_type)
+        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback, oneshot=False)  # FIXME ask Misha
 
         self.mutex.release()
+
+    def update_task_status(self, cmd_id, cmd_type):
+        rospy.loginfo("Current cmd:\t" + str(cmd_type))
+        rospy.loginfo("=====================================")
+        rospy.loginfo("")
+
+        self.cmd_id = cmd_id
+        self.cmd_type = cmd_type
 
     def timer_callback(self, event):
 
         # TODO add Try-Except in case coords are not yet received
 
-        hull = self.calculate_convex_hull()
-        # inner_angles = self.calculate_inner_angles(hull)
-        landings_coordinates = self.calculate_possible_landing_coords(hull)
-        self.sort_landing_coords_wrt_current_pose(landings_coordinates)
-
         # TODO
-        if self.cmd_type =
+        if self.cmd_type == "collect_chaos" and len(self.known_coords_of_pucks) > 0:
 
-        if len(self.known_coords_of_pucks) > 0:
+            hull = self.calculate_convex_hull()
+            # inner_angles = self.calculate_inner_angles(hull)
+            landings_coordinates = self.calculate_possible_landing_coords(hull)
+            self.sort_landing_coords_wrt_current_pose(landings_coordinates)
             self.collect_closest_safe_puck()
+
+        # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
+        #     func()
+        # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_pucks) > 0:
+        #     func()
+        # elif self.cmd_type == "collect_accel_blue_and_hold_up" and len(self.known_coords_of_pucks) > 0:
+        #     func()
+        # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
+        #     func()
+
         else:
             self.stop_collecting()
 
-    def callback_response(self, data):
-        if data.data == 'finished':
-            self.arm_ready_flag = True
-            print self.arm_ready_flag
-
-    # def update_task_status(self, goal, cmd_id, cmd_type):
-    #     rospy.loginfo("Setting a new goal:\t" + str(goal))
-    #     rospy.loginfo("Current cmd:\t" + str(cmd_type))
-    #     rospy.loginfo("=====================================")
-    #     rospy.loginfo("")
-    #     self.cmd_id = cmd_id
-    #     self.current_cmd = cmd_type
-    #     self.goal = goal
-    #     self.current_state = "start"
+    # def callback_response(self, data):
+    #
+    #     # TODO
+    #
+    #     if data.data == 'finished':
+    #         self.arm_ready_flag = True
+    #         print self.arm_ready_flag
+    #
     #     # if self.current_cmd == "move_line":
     #     #     self.move_line()
 
     def collect_closest_safe_puck(self):
         """
+        1. Approach it
+        2. Grab and load it
+        3. Remove from list of known
+        4. Add to list of collected and count points TODO
+
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-
+        # MotionPlannerNode.move_arc()
         # call Alexey's function
 
         # TODO self.arm_ready_flag
-
+        # TODO this part with deleting probably should be a separate function
         if self.puck_status == "collected":
             np.delete(self.known_coords_of_pucks, 1, 0)
             np.delete(self.sorted_landing_coordinates, 1, 0)
@@ -237,7 +257,6 @@ class TacticsNode:
         rospy.loginfo("Robot has stopped collecting pucks.")
         rospy.sleep(1.0 / 40)
         self.pub_response.publish("finished")
-        pass
 
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
 
