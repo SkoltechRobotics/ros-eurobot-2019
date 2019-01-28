@@ -68,23 +68,6 @@ Output: ready-steady coordinate and go coordinate
 Publishes
 """
 
-# Проверить, что робот остановился.
-# Информация о том, что робот отсановился, публикуется в топик response
-
-# Проверить, что цель достигнута.
-# Подписаться на топик, в который будут публиковаться координаты атомов с камеры
-#
-# Проверить, что манипулятор в исходной позиции
-#
-# Проверить, отпустить, проверить - это одна команда
-#
-# Опустить манипулятор
-# Проверить, что манипулятор опустился
-# Включить насос (на сколько?)
-# Поднять манипулятор до конца
-# Подпереть атом граблей
-# Выключить насос
-
 
 def wrap_angle(angle):
     """
@@ -206,6 +189,13 @@ class TacticsNode:
         rospy.loginfo(cmd_type)
 
         self.update_task_status(cmd_id, cmd_type)
+
+        # Calculate pucks configuration once
+        hull = self.calculate_convex_hull()
+        # inner_angles = self.calculate_inner_angles(hull)
+        landings_coordinates = self.calculate_possible_landing_coords(hull)
+        self.sort_landing_coords_wrt_current_pose(landings_coordinates)
+
         self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback, oneshot=False)  # FIXME ask Misha
 
         self.mutex.release()
@@ -222,14 +212,8 @@ class TacticsNode:
 
         # TODO add Try-Except in case coords are not yet received
 
-        # TODO
         if self.cmd_type == "collect_chaos" and len(self.known_coords_of_pucks) > 0:
-
-            hull = self.calculate_convex_hull()
-            # inner_angles = self.calculate_inner_angles(hull)
-            landings_coordinates = self.calculate_possible_landing_coords(hull)
-            self.sort_landing_coords_wrt_current_pose(landings_coordinates)
-            self.collect_closest_safe_puck()
+            self.approach_and_collect_closest_safe_puck()
 
         # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
         #     grab_from_wall
@@ -240,7 +224,6 @@ class TacticsNode:
         # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
         #     func()
         # place_atom_on_weights
-        #
 
         else:
             self.stop_collecting()
@@ -256,7 +239,7 @@ class TacticsNode:
     #     # if self.current_cmd == "move_line":
     #     #     self.move_line()
 
-    def collect_closest_safe_puck(self):
+    def approach_and_collect_closest_safe_puck(self):
         """
         1. Approach it
         2. Grab and load it
@@ -266,16 +249,16 @@ class TacticsNode:
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-        # MotionPlannerNode.move_arc()
-        # call Alexey's function
+        for landing in self.sorted_landing_coordinates:
+            x, y, theta = landing[0], landing[1], landing[2]
+            if self.robot_reached_goal_flag is False:
+                self.move_command_publisher.publish(x, y, theta)  # TODO add command id
+                # TODO acquire robot_reached_goal_flag from MPNode
+            else:
+                result = Manipulator.collect(load_inside=False)
+                # TODO
+                # if result == True than proceed to next puck and remove puck coord from known
 
-        # m_cmd = str(cmd)
-        #
-        # rospy.loginfo("m_cmd:\t" + str(m_cmd))
-        # rospy.loginfo("Sending cmd: " + m_cmd)
-        # self.pub_cmd.publish(m_cmd)
-
-        # TODO self.arm_ready_flag
         # TODO this part with deleting probably should be a separate function
         if self.puck_status == "collected":
             np.delete(self.known_coords_of_pucks, 1, 0)
@@ -388,16 +371,11 @@ class TacticsNode:
 
     def calculate_possible_landing_coords(self, hull):
         """
-        Calculates offset a hull,
-        cacl outer bissectrisa to all angles
+        Calculates offset a hull, cacl outer bissectrisa to all angles,
         search intersection point between orbit around centre of puck and this bissectrisa between orig and offset
+        There are many safe landing coords, not just on outer bissectrisa, but for now only the intersection
 
-        There are many safe landing coords, not just on outer bissectrisa
-
-        TODO
-        we can start by calculating area of a hull
-
-        :return: list of landing coordinates for all angles [[x_l, y_l], ...]
+        :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
         """
 
         # assert np.all(inner_safe_angles[:, 2]) > 0
@@ -414,7 +392,6 @@ class TacticsNode:
         offset *= self.ScaleFactor_
         offset += mc
 
-        #  need list?
         for orig, ofs in zip(hull, offset):
             gamma = None
             dist = calculate_distance(orig, ofs)
@@ -425,20 +402,19 @@ class TacticsNode:
                     gamma = np.pi * 3/2
             else:
                 gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
-            # need wrap_angle?
-            # intersection point between orbit around centre of puck and this otrezok between orig and offset
-            # x**2 + y**2 = r_orbit**2
+            # need wrap_angle? FIXME
             # FIXME: gamma != -1
             try:
                 const = np.sqrt(self.approach_dist**2 / (gamma + 1))
                 x_landing = const + orig[0]
                 y_landing = gamma * const + orig[1]
-                landings_coordinates.append([x_landing, y_landing])
+                landings_coordinates.append([x_landing, y_landing, gamma])
             except ZeroDivisionError:
                 print("gamma = -1 which is UNACCEPTABLE !!!1")
 
         # another method is for situation where pucks are safely away from each other
         # and we can approach them from any angle (should choose closest one)
+        # we can start by calculating area of a hull
         # safe_orbit =
 
         return landings_coordinates
@@ -448,8 +424,8 @@ class TacticsNode:
         To make operation more quick there is no need to choose the sharpest angle,
         instead better choose the closest one from angles that are marked as safe.
         TODO add id to every landing so it corresponds to color of puck
-        :param landings_coordinates: [[x_l, y_l], ...]
-        :return: format: [([x_l, y_l], d), ...]  ex [([3, 3], 1), ([1, 1], 2), ([2, 2], 3), ([0, 0], 4)]
+        :param landings_coordinates: [[x_l, y_l, gamma], ...]
+        :return: format: [[3, 3, 1.57], [1, 1, 3.14], [2, 2, 4, 71], [0, 0, 6.28]]
         """
 
         distances_from_robot_to_landings = []
@@ -459,7 +435,7 @@ class TacticsNode:
             distances_from_robot_to_landings.append(dist_norm)
         a = zip(landings_coordinates, distances_from_robot_to_landings)
         a.sort(key=lambda t: t[1])
-        self.sorted_landing_coordinates = a[:, :2]
+        self.sorted_landing_coordinates = [v[0] for v in a]
 
     # def sort_pucks_coords_wrt_current_pose(self):
     #     """
@@ -476,6 +452,7 @@ class TacticsNode:
     #     distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
     #     pucks_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_pucks)
     #     pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
+    #     [v[0] for v in a]
     #     return pucks_wrt_robot_sorted
 
 
