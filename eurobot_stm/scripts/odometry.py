@@ -15,7 +15,7 @@ class Odometry():
         
     
     def odom_callback(self, event):
-        self.stm_protocol.send(0x0F, args=None)
+        successfully, values = self.stm_protocol.send(0x0F, args=None)
         if successfully:
             self.send_odometry(values)
 

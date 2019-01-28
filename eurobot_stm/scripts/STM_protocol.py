@@ -23,7 +23,11 @@ class STMprotocol(object):
             0x11: "=",
             0x12: "=",
             0x13: "=",
-            0x14: "="
+            0x14: "=",
+	    0x15: "=",
+	    0x16: "=",
+	    0x17: "=",
+	    0x18: "="
         }
 
         self.unpack_format = {
@@ -37,7 +41,11 @@ class STMprotocol(object):
             0x11: "=cc",
             0x12: "=cc",
             0x13: "=cc",
-            0x14: "=cc"
+            0x14: "=cc",
+	    0x15: "=cc",
+	    0x16: "=cc",
+	    0x17: "=cc",
+	    0x18: "=cc"
         }
         
         self.response_bytes = {
@@ -51,7 +59,11 @@ class STMprotocol(object):
             0x11: 2,
             0x12: 2,
             0x13: 2,
-            0x14: 2
+            0x14: 2,
+	    0x15: 2,
+	    0x16: 2,
+	    0x17: 2,
+	    0x18: 2
         }
             
     def send(self, cmd, args):
