@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String
+from threading import Lock
 
 import serial
 import itertools
@@ -16,8 +17,11 @@ class STM():
         # ROS subscribers
         rospy.Subscriber("stm_command", String, self.stm_command_callback)  
 
-        self.stm_protocol = STMprotocol(serial_port, baudrate)
-        self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
+	self.stm_protocol = STMprotocol(serial_port, baudrate)
+	self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
+
+	self.laser_coords = (rospy.get_param('lidar_x') / 1000.0, rospy.get_param('lidar_y') / 1000.0, 0.41)
+        self.laser_angle = rospy.get_param('lidar_a')
     
     def stm_command_callback(self, data):
         cmd, args = self.parse_data(data)
@@ -34,4 +38,3 @@ if __name__ == '__main__':
     serial_port = "/dev/ttyUSB0"
     stm = STM(serial_port)
     rospy.spin()
-

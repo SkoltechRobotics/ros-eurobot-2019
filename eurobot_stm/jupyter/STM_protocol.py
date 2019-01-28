@@ -3,8 +3,8 @@ import struct
 import time
 import datetime
 import rospy
-
 from threading import Lock
+
 
 class STMprotocol(object):
     def __init__(self, serial_port, baudrate=115200):
