@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+import time
 import rospy
 from std_msgs.msg import String
 
 class Manipulator():
 	def __init__(self):
 		self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
+		time.sleep(2)
 		self.collect_puck()
 	def collect_puck(self):
 		# Release grabber
