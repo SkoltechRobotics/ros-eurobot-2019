@@ -2,18 +2,17 @@ import rospy
 import numpy as np
 import tf2_ros
 import time
-from threading import Lock
-
-from sympy import Point, Polygon
-from sympy.geometry import Triangle, Point
-
+from tf.transformations import euler_from_quaternion
 from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray
-from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
-from std_msgs.msg import Int32MultiArray
+from stm.Manipulator import collect_puck
 
+# from geometry_msgs.msg import Twist
+# from std_msgs.msg import Int32MultiArray
+# from sympy import Point, Polygon
+# from sympy.geometry import Triangle, Point
 
 # TODO
 # from core_functions import calculate_distance
@@ -25,18 +24,11 @@ This algorithm knows nothing about obstacles and etc, it just generates sorted l
 And path-planner will choose from these options according to obstacles around
 
 TODO:
-    - publish in response that current puck was collected and robot is ready for next one
-    - when atom is grabbed and collected, publish DONE in response -- YIELD ?
     - when we receive DONE, re-calculate convex hull and generate new sorted list of closest pucks wrt current pose
-    - when we get a response that puck is collected, we remove it's coord from list of known coords
     - clockwise approaching in order to keep camera view open
     - if all or most of pucks lie separately and safely, just start with the closest one and move counter / clockwise depending on the side
     - need to maintain unique id or order of pucks when deleting 
-    - critical angle is not the only condition two decide. If pucks far away from each other, just make sure that robot doesn't touch others while 
-    approaching the closest puck
     - change self.coords to self.robot_coords
-    - how to call update_coords from MotionPlannerNode ?  I need robot_coords
-    - flag --> arm_ready_flag 
     - we should have more vars like known_coords_of_pucks (like _chaos_pucks). It's ok leave by now as is, because we test only separate local zones
     
 4 in chaos zone
@@ -52,7 +44,7 @@ Receiving coords from camera each 2-3 seconds
 Each time coords are received we call function callback which compares currently known coords and newly received ones
 If difference between newly received and known are within accuracy level (threshold), do nothing, else update known coords
 
-With timer we can call 10 times per sec and recalc environment
+With timer we can call 10 times per sec and recalculate environment
 and call function move_arc / move line or whatever Egorka implemented
 
 When robot reaches landing position it publishes in response that tusk is ready and than it's time to call Alexey's code to take pucks 
@@ -88,23 +80,32 @@ def calculate_distance(coords1, coords2):
     return distance_map_frame, theta_diff
 
 
+# noinspection SpellCheckingInspection,SpellCheckingInspection
 class TacticsNode:
-
     def __init__(self):
         rospy.init_node('TacticsNode')
+
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        self.robot_name = "secondary_robot"
+
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.robot_coords = None
         self.mutex = Lock()
-        self.coords_threshold = 0.01 # meters, this is variance of detecting pucks coords using camera, used in update
+        self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.sorted_landing_coordinates = None  # FIXME
-        self.known_coords_of_pucks = np.array([])  # (id, x, y)
+        self.known_coords_of_chaos_pucks = np.array([])  # (id, x, y)
         self.puck_status = None
         self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
         # status of a puck we're currently working on, read from response.
         # When status becomes "collected" -- remove from self.known_coords_of_pucks
         self.atoms_placed = 0  # to preliminary calculate our score
-        self.arm_ready_flag = False
+
+        # self.arm_ready_flag = False
+        self.robot_reached_goal_flag = False
+        self.puck_collected_and_arm_ready_flag = False
+
         self.RATE = rospy.Rate(20)
         self.cmd_id = None
         self.cmd_type = None
@@ -121,6 +122,7 @@ class TacticsNode:
         # coords are published as markers in one list according to 91-92 undistort.py
         rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
+        rospy.Subscriber('response', String, self.callback_response, queue_size=10)
 
     def pucks_coords_callback(self, data):
         """
@@ -153,8 +155,8 @@ class TacticsNode:
         new_obs_of_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data]
         new_obs_of_pucks = np.array(new_obs_of_pucks)
 
-        if len(self.known_coords_of_pucks) == 0:
-            self.known_coords_of_pucks = new_obs_of_pucks
+        if len(self.known_coords_of_chaos_pucks) == 0:
+            self.known_coords_of_chaos_pucks = new_obs_of_pucks
 
         # TODO try this in further tests
         # else:
@@ -208,12 +210,14 @@ class TacticsNode:
         self.cmd_id = cmd_id
         self.cmd_type = cmd_type
 
+    # noinspection PyUnusedLocal
     def timer_callback(self, event):
 
         # TODO add Try-Except in case coords are not yet received
 
-        if self.cmd_type == "collect_chaos" and len(self.known_coords_of_pucks) > 0:
+        if self.cmd_type == "collect_chaos" and len(self.known_coords_of_chaos_pucks) > 0:
             self.approach_and_collect_closest_safe_puck()
+            self.robot_reached_goal_flag = False
 
         # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
         #     grab_from_wall
@@ -228,16 +232,12 @@ class TacticsNode:
         else:
             self.stop_collecting()
 
-    # def callback_response(self, data):
-    #
-    #     # TODO
-    #
-    #     if data.data == 'finished':
-    #         self.arm_ready_flag = True
-    #         print self.arm_ready_flag
-    #
-    #     # if self.current_cmd == "move_line":
-    #     #     self.move_line()
+    def callback_response(self, data):
+        if data.data == 'finished':
+            self.robot_reached_goal_flag = True
+        if data.data == 'puck_collected':  # TODO Alexey to publish in response
+            self.puck_collected_and_arm_ready_flag = True
+            # self.arm_ready_flag = True
 
     def approach_and_collect_closest_safe_puck(self):
         """
@@ -249,21 +249,25 @@ class TacticsNode:
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-        for landing in self.sorted_landing_coordinates:
-            x, y, theta = landing[0], landing[1], landing[2]
-            if self.robot_reached_goal_flag is False:
-                self.move_command_publisher.publish(x, y, theta)  # TODO add command id
-                # TODO acquire robot_reached_goal_flag from MPNode
-            else:
-                result = Manipulator.collect(load_inside=False)
-                # TODO
-                # if result == True than proceed to next puck and remove puck coord from known
+        landing = self.sorted_landing_coordinates[0]
+        x, y, theta = landing[0], landing[1], landing[2]
+        if self.robot_reached_goal_flag is False:
+            self.move_command_publisher.publish(x, y, theta)  # TODO add command id
+            # here when robot reaches the goal  it'll publish in response topic "finished" and in this code
+            # function callback_response will fire and change self.robot_reached_goal_flag to True
+        else:
+            collect_puck()  # TODO load_inside=False
+            # TODO Alexey to publish in response
+            # if result == True than proceed to next puck and remove puck coord from known
+            # returns False when busy or what? TODO
 
         # TODO this part with deleting probably should be a separate function
-        if self.puck_status == "collected":
-            np.delete(self.known_coords_of_pucks, 1, 0)
-            np.delete(self.sorted_landing_coordinates, 1, 0)
-            print("pucks left: ", len(self.known_coords_of_pucks))
+            if self.puck_collected_and_arm_ready_flag is True:
+                np.delete(self.known_coords_of_chaos_pucks, 1, 0)
+                np.delete(self.sorted_landing_coordinates, 1, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+                print("result is True and puck collected!")
+                print("pucks left: ", len(self.known_coords_of_chaos_pucks))
+            self.puck_collected_and_arm_ready_flag = False
 
     def stop_collecting(self):
         self.timer.shutdown()
@@ -295,8 +299,8 @@ class TacticsNode:
 
         assert new_obs_of_pucks.shape[1] == 3
 
-        known_ids = self.known_coords_of_pucks[:, 0]
-        known_pucks = self.known_coords_of_pucks
+        known_ids = self.known_coords_of_chaos_pucks[:, 0]
+        known_pucks = self.known_coords_of_chaos_pucks
         for puck in new_obs_of_pucks:
             puck_id = puck[0]
             if puck_id in known_ids:
@@ -304,44 +308,44 @@ class TacticsNode:
                 x_new, y_new = puck[1], puck[2]
                 x_old, y_old = known_pucks[1], known_pucks[2]
                 if np.sqrt((x_new - x_old)**2 + (y_new - y_old)**2) > self.coords_threshold:
-                    self.known_coords_of_pucks[ind][1:] = puck[1:]
+                    self.known_coords_of_chaos_pucks[ind][1:] = puck[1:]
             else:
-                # wtf happened? blik from sun? wasn't recognised at first time?
-                self.known_coords_of_pucks = np.stack((self.known_coords_of_pucks, puck), axis=0)
+                # wtf happened? blink from sun? wasn't recognised at first time?
+                self.known_coords_of_chaos_pucks = np.stack((self.known_coords_of_chaos_pucks, puck), axis=0)
                 # self.known_coords_of_pucks.append(puck)
 
     @staticmethod
-    def rotate(A, B, C):
-        return (B[0]-A[0])*(C[1]-B[1])-(B[1]-A[1])*(C[0]-B[0])
+    def rotate(a, b, c):
+        return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
 
     def calculate_convex_hull(self):
         """
         jarvis march
         :return: convex hull, list of coordinates, TODO counter or clockwise, need to figure out
         """
-        A = self.known_coords_of_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
-        n = len(A)
-        P = range(n)
+        a = self.known_coords_of_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+        n = len(a)
+        p = range(n)
         # start point
         for i in range(1, n):
-            if A[P[i]][0] < A[P[0]][0]:
-                P[i], P[0] = P[0], P[i]
-        H = [P[0]]
-        del P[0]
-        P.append(H[0])
+            if a[p[i]][0] < a[p[0]][0]:
+                p[i], p[0] = p[0], p[i]
+        h = [p[0]]
+        del p[0]
+        p.append(h[0])
         while True:
             right = 0
-            for i in range(1, len(P)):
-                if self.rotate(A[H[-1]], A[P[right]], A[P[i]]) < 0:
+            for i in range(1, len(p)):
+                if self.rotate(a[h[-1]], a[p[right]], a[p[i]]) < 0:
                     right = i
-            if P[right] == H[0]:
+            if p[right] == h[0]:
                 break
             else:
-                H.append(P[right])
-                del P[right]
-        print("H is")
-        print(H)
-        return H
+                h.append(p[right])
+                del p[right]
+        print("h is")
+        print(h)
+        return h
 
     # def calculate_inner_angles(self, hull):
     #     """
@@ -371,7 +375,7 @@ class TacticsNode:
 
     def calculate_possible_landing_coords(self, hull):
         """
-        Calculates offset a hull, cacl outer bissectrisa to all angles,
+        Calculates offset a hull, calculates outer bissectrisa to all angles,
         search intersection point between orbit around centre of puck and this bissectrisa between orig and offset
         There are many safe landing coords, not just on outer bissectrisa, but for now only the intersection
 
@@ -454,6 +458,19 @@ class TacticsNode:
     #     pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
     #     [v[0] for v in a]
     #     return pucks_wrt_robot_sorted
+
+    def update_coords(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
+            q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+            self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
+            rospy.loginfo("Robot coords:\t" + str(self.robot_coords))
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            return False
 
 
 if __name__ == "__main__":

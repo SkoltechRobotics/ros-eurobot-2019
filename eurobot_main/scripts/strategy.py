@@ -11,7 +11,7 @@ def callback_response(data):
     if data.data == 'finished':
         global flag
         flag = True
-        #print flag
+        # print flag
 
 
 def generate_command(x, y, theta):
