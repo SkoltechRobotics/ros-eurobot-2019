@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-import skimage
+import skimage.filters
+import skimage 
 
 import transform
 
@@ -55,7 +56,7 @@ def find_rotation_matrix(theta):
     return R
 
 def find_color_difference(color):
-    print color.shape
+    print (color.shape)
     distances = []
     distances.append(skimage.color.deltaE_cmc(color, LAB_REDIUM,2,1))
     distances.append(skimage.color.deltaE_cmc(color, LAB_GREENIUM,2,1))
@@ -108,30 +109,78 @@ class Camera():
             self.is_aligned = True
         return self.is_aligned
     
+    def rgb_equalized(self, img):
+        # create a CLAHE object (Arguments are optional).
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        channels = cv2.split(img)
+    
+        eq_channels = []
+        for ch, color in zip(channels, ['B', 'G', 'R']):
+            eq_channels.append(clahe.apply(ch))
+
+        eq_image = cv2.merge(eq_channels)
+#        eq_image = cv2.cvtColor(eq_image, cv2.COLOR_BGR2RGB)
+    
+        return eq_image	
+
+    def rgb_unsharp(self, img):
+        img_adapteq_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+        ddepth = cv2.CV_16S
+        kernel_size = 3
+        # [convert_to_gray]
+
+        # [laplacian]
+        # Apply Laplace function
+        gaussian_3 = cv2.GaussianBlur(img,(3,3), 100.0)
+        dst = cv2.Laplacian(img_adapteq_gray, ddepth, kernel_size)
+
+        unsharp_image = cv2.addWeighted(img, 1.5, gaussian_3, -0.5, 0, img)
+
+        abs_dst = cv2.convertScaleAbs(dst)
+        return unsharp_image
+
     def filter_image(self, img):
-        return cv2.bilateralFilter(img,9,75,75)
+        filtered_img = cv2.bilateralFilter(img,9,100,100)
+        #filtered_img = cv2.medianBlur(img,15)
+        #filtered_img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
+        #contrast_image = skimage.exposure.adjust_sigmoid(img)
+        #img = (skimage.filters.gaussian(img.astype(np.uint8), 10) * 255).astype(np.uint8)
+        #equalized_img = self.rgb_equalized(filtered_img)
+        #rgb_unsharp = self.rgb_unsharp(filtered_img)
+        return filtered_img
+        #return equalized_img
         
     def find_thresholds(self, image_gray):
-        image = cv2.adaptiveThreshold(image_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-        return image
+        #ret3, th = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        #th = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+        blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
+        ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        ret2,th = cv2.threshold(image_gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        return th3
         
-    def find_contours(self, image_gray):
-        ret, thresh = cv2.threshold(image_gray, 127, 255, 0)
+    def find_contours(self, image_gray, thresh):
+        # blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
+        # ret, thresh = cv2.threshold(blur, 127, 255, 0)
+
+        # ret, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         image, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            # epsilon = 0.1 * cv2.arcLength(cnt, True)
+            # cnt = cv2.approxPolyDP(cnt, epsilon, True)
+
+            cnt = cv2.convexHull(cnt)
         return contours
         
     def filter_contours(self, contours):
+        filtered_contours = []
+
         for cnt in contours:
-            #epsilon = 0.1*cv2.arcLength(cnt,True)
-            #approx = cv2.approxPolyDP(cnt,epsilon,True)
-            cnt = cv2.convexHull(cnt)
-        cnts = []
-        for cnt in contours:
+            perimeter = cv2.arcLength(cnt, True)
             area = cv2.contourArea(cnt)
-            perimeter = cv2.arcLength(cnt,True)
-            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+300 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-300 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+50 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-50 and len(cnt)>=5:
-                cnts.append(cnt)
-        return cnts
+            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+1000 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-1000 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+100 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-100:
+                filtered_contours.append(cnt)
+        return filtered_contours
         
     def draw_contours(self, image, contours):
         img = cv2.drawContours(image, contours, -1, (255,0,0), 3)
@@ -187,7 +236,7 @@ class Camera():
     
     
     def find_vertical_warp_projection(self, warp_matrix):
-        print warp_matrix
+        print (warp_matrix)
         C = np.zeros((3,3))
         C[(0,1,2),(0,1,2)] = HOMO_IMAGE_SCALE, HOMO_IMAGE_SCALE, 1
         W = warp_matrix
@@ -229,60 +278,51 @@ class Camera():
                                 color=(255,255,255),
                                 thickness=5,
                                 lineType=5)
-        
-	return image
+        return image
 
     def detect_contours_color(self, contours, img):
         COLORS = np.array((REDIUM_COLOR,GREENIUM_COLOR,BLUEIUM_COLOR), dtype=np.uint8)
-	print ("COLORS", COLORS)
+        print ("COLORS", COLORS)
         LAB_COLORS = skimage.color.rgb2lab(COLORS[np.newaxis,:,:])
         print (LAB_COLORS)
         LAB_REDIUM = LAB_COLORS[0,0]
         LAB_GREENIUM = LAB_COLORS[0,1]
         LAB_BLUEIUM = LAB_COLORS[0,2]
-        
+
         result = []
-        
-	avg = np.zeros(3,dtype=np.float32)
-	i = 0
-	img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+
+        avg = np.zeros(3,dtype=np.float32)
+        i = 0
+        img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         for cnt in contours:
-	    print ("CONTOURS NUM", len(contours))
-		
+            print ("CONTOURS NUM", len(contours))
+
             mask = np.zeros(img_gray.shape, np.uint8)
-	    print ("MASK SHAPE=", mask.shape)
+            print ("MASK SHAPE=", mask.shape)
             cv2.drawContours(mask,[cnt],0,255,-1)
-	    pixelpoints = cv2.findNonZero(mask)
-	    
-	    mean_val = cv2.mean(img,mask = mask)
-	    print ("MEAN_VAL_______", mean_val)
-            for pixel in pixelpoints:
-                avg += img[pixel[0,0],pixel[0,1]]
+            pixelpoints = cv2.findNonZero(mask)
 
-	    avg = np.divide(avg,len(pixelpoints))
-	    print ("avg=", avg)
+            mean_val = cv2.mean(img,mask = mask)
+            print ("MEAN_VAL_______", mean_val)
 
-	    MEAN_COLORS = np.array((mean_val[2],mean_val[1],mean_val[0]), dtype=np.uint8)
-       	    AVG_COLORS = np.array((avg[2],avg[1],avg[0]), dtype=np.uint8)
-	    print("AVG_COLORS", AVG_COLORS)
-	    print("MEAN_COLORS", MEAN_COLORS)
+
+            MEAN_COLORS = np.array((mean_val[2],mean_val[1],mean_val[0]), dtype=np.uint8)
+
+            print("MEAN_COLORS", MEAN_COLORS)
 
             LAB_MEAN_COLORS = skimage.color.rgb2lab(MEAN_COLORS[np.newaxis,np.newaxis,:])
             print ("LAB_MEAN_COLORS",LAB_MEAN_COLORS)
-            LAB_AVG_COLORS = skimage.color.rgb2lab(AVG_COLORS[np.newaxis,np.newaxis,:])
-            print ("LAB_AVG_COLORS",LAB_AVG_COLORS)
-	    
-	    deltaE = skimage.color.deltaE_cie76(LAB_MEAN_COLORS, LAB_COLORS)
-            print ("(LAB_AVG_COLORS)RESULT=",skimage.color.deltaE_cie76(LAB_AVG_COLORS, LAB_COLORS))
+
+            deltaE = skimage.color.deltaE_cmc(LAB_MEAN_COLORS, LAB_COLORS)
             print ("(LAB_MEAN_COLORS)RESULT=",deltaE)
-	    
-	    color = np.argmin(deltaE)
-	    if color == 0:
-		result.append("red")
-	    if color == 1:
-		result.append("green")
-	    if color == 2:
-		result.append("blue")
+
+            color = np.argmin(deltaE)
+            if color == 0:
+                result.append("red")
+            if color == 1:
+                result.append("green")
+            if color == 2:
+                result.append("blue")
 
 
         return result

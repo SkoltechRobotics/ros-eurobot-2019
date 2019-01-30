@@ -97,17 +97,22 @@ class CameraUndistortNode():
         rospy.loginfo(rospy.get_caller_id())
         
         # Process image
-        cv_image = self.camera.filter_image(cv_image)
+        cv_image = self.camera.rgb_equalized(cv_image)
         undistorted_image = self.camera.undistort(cv_image)
+
         image = undistorted_image
 
         # Align image using field template
         if self.camera.align_image(image, self.templ_path):
-        
+            #image = self.camera.rgb_equalized(image)
+
+            image = self.camera.filter_image(image)
+
+
             # Find thresholds and contours
             image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
             image_thresholds = self.camera.find_thresholds(image_gray)
-            contours = self.camera.find_contours(image_gray)
+            contours = self.camera.find_contours(image_gray, image_thresholds)
             image_contours = copy.copy(image)
             image_contours = self.camera.draw_contours(image_contours, contours)
 
@@ -121,9 +126,10 @@ class CameraUndistortNode():
             coordinates = self.camera.find_pucks_coordinates(contours_filtered)
             # Detect contours colors
             colors = self.camera.detect_contours_color(contours_filtered, image)
-	    print ("COLORS IN UNDISTORT.py", colors)
-	    # Draw ellipse contours around pucks
+            print ("COLORS IN UNDISTORT.py", colors)
+            # Draw ellipse contours around pucks
             image_pucks = self.camera.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
+            #image_pucks = cv2.drawContours(image_pucks, contours_filtered, -1, (255, 0, 0), 3)
 
 
             # Publish all images to topics
@@ -159,7 +165,8 @@ if __name__ == '__main__':
 
         
     DIM, K, D = read_config(conf_file)
-
+    
+    time.sleep(1)
     undistort_node = CameraUndistortNode(DIM, K, D, args.template)
     undistort_node.camera.find_vertical_projection()
     
