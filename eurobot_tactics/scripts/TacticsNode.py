@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 import rospy
 import numpy as np
 import tf2_ros
@@ -74,10 +77,9 @@ def calculate_distance(coords1, coords2):
     return distance_map_frame, theta_diff
 
 
-
 class TacticsNode:
     def __init__(self):
-        rospy.init_node('TacticsNode')
+        rospy.init_node('TacticsNode', anonymous=True)
 
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
