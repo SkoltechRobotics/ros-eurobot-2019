@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 
 import rospy
@@ -7,7 +9,7 @@ from visualization_msgs.msg import MarkerArray, Marker
 def publish_pucks(publisher_pucks, coordinates):
     markers = []
     for num, coord in enumerate(coordinates):
-        print (num,"    coord", coord)
+        # print (num,"    coord", coord)
         marker = Marker()
         marker.header.frame_id = 'map'
         marker.header.stamp = rospy.Time.now()

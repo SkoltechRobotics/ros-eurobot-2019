@@ -165,7 +165,7 @@ Error mounting /dev/sdf1 at /media/safoex/EurobotMain: Command-line `mount -t "e
        dmesg | tail or so.alsfasfafkasfsafmsdklgnsdklmsdklmsklvmsdklvmklsa
 
 
-
+gedit ~/.bashrc 
 
 
 
@@ -184,7 +184,7 @@ http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
 
 
 # create new node
-catkin_create_pkg eurobot_core std_msgs rospy roscpp
+catkin_create_pkg eurobot_tactics std_msgs rospy roscpp
 
 # navigate to workspace/src to create a new package eurobot_core and eurobot_nav
 cd ~/catkin_ws/src
@@ -204,6 +204,12 @@ catkin_make
 source devel/setup.bash
 vim ~/.bashrc
 
+source ~/.bashrc 
+rosrun eurobot_tactics TacticsNode.py
+gedit ~/.bashrc 
+
+In the header of each file we need to state which env to use:
+#!/usr/bin/env python
 
 
 

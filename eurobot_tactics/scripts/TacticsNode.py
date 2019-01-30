@@ -72,8 +72,15 @@ def wrap_angle(angle):
 
 
 def calculate_distance(coords1, coords2):
+    print("print coords 1 and 2")
+    print(coords1)
+    print(coords2)
+
     distance_map_frame = coords2[:2] - coords1[:2]
-    theta_diff = wrap_angle(coords2[2] - coords1[2])
+    if len(coords1) == 2 and len(coords2) == 2:
+        theta_diff = None
+    elif len(coords1) == 3 and len(coords2) == 3:
+        theta_diff = wrap_angle(coords2[2] - coords1[2])
     return distance_map_frame, theta_diff
 
 
@@ -87,7 +94,9 @@ class TacticsNode:
 
         # self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
-        self.robot_coords = None
+
+        self.robot_coords = np.array([0.6, 0.6, 1.57])  # FIXME !!!!!!!!!!!!
+
         self.mutex = Lock()
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.sorted_landing_coordinates = np.array([])
@@ -98,7 +107,9 @@ class TacticsNode:
         self.robot_reached_goal_flag = False
         self.puck_collected_and_arm_ready_flag = False
 
-        self.RATE = rospy.Rate(20)
+        # self.RATE = rospy.Rate(20)  # FIXME !!!!!
+        self.RATE = 10  # FIXME !!!!!
+
         self.cmd_id = None
         self.cmd_type = None
 
@@ -111,7 +122,6 @@ class TacticsNode:
         self.timer = None
 
         self.manipulator = Manipulator()
-
 
         # coords are published as markers in one list according to 91-92 undistort.py
         rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
@@ -132,18 +142,19 @@ class TacticsNode:
         :param data:
         :return:
         """
-        self.mutex.acquire() #FIXME::???
+        self.mutex.acquire()  # FIXME::???
 
-        rospy.loginfo("")
-        rospy.loginfo("=====================================")
-        rospy.loginfo("NEW CMD:\t" + str(data.data))
+        # rospy.loginfo("")
+        # rospy.loginfo("=====================================")
+        # rospy.loginfo("NEW CMD:\t" + str(data.data))
 
         print("data")
-        print(data)
+        # print(data.markers[0])
+        print("----")
 
         # FIXME IDs are not guaranteed to be the same from frame to frame
         # FIXME::AL: is_new_pucks()
-        pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data]
+        pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         pucks_new_observation = np.array(pucks_new_observation)
 
         if len(self.known_coords_of_chaos_pucks) == 0:
@@ -175,19 +186,18 @@ class TacticsNode:
         if self.timer is not None:
             self.timer.shutdown()
 
-        #FIXME:: add parse_function
-        #parse()
+        # FIXME:: add parse_function
+        # parse()
         data_split = data.data.split()
         cmd_id = data_split[0]  # FIXME WHAT TO DO WITH CMD_ID
         cmd_type = data_split[1]
 
         # success = cmd_execute(cmd_type)
         # if success == True:
-            #self.mutex.release()
+        # self.mutex.release()
         # else:
-            #publish("error_topic", "Error in tactics_callback")
-            #return
-
+        # publish("error_topic", "Error in tactics_callback")
+        # return
 
         # if self.cmd_type == "collect_chaos":
         #     while(True):
@@ -210,7 +220,6 @@ class TacticsNode:
         # # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
         # #     func()
         # # place_atom_on_weights
-
 
         self.update_task_status(cmd_id, cmd_type)
 
@@ -255,6 +264,7 @@ class TacticsNode:
     def callback_response(self, data):
         if data.data == 'finished':
             self.robot_reached_goal_flag = True
+
     #     if data.data == 'puck_collected':  # TODO Alexey to publish in response
     #         self.puck_collected_and_arm_ready_flag = True
     #         # self.arm_ready_flag = True
@@ -273,7 +283,8 @@ class TacticsNode:
         landing = self.sorted_landing_coordinates[0]
         x, y, theta = landing[0], landing[1], landing[2]
         if self.robot_reached_goal_flag is False:
-            self.move_command_publisher.publish(x, y, theta)  # TODO add command id
+
+            self.move_command_publisher.publish(landing)  # TODO add command id
             # here when robot reaches the goal  it'll publish in response topic "finished" and in this code
             # function callback_response will fire and change self.robot_reached_goal_flag to True
         else:
@@ -281,14 +292,14 @@ class TacticsNode:
             if result:
                 self.atoms_placed += 1
                 np.delete(self.known_coords_of_chaos_pucks, 0, 0)  # FIXME not tested
-                np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+                np.delete(self.sorted_landing_coordinates, 0,
+                          0)  # FIXME path_planner should decide which puck to collect and to remove from known
                 print("result is True and puck collected!")
                 print("pucks left: ", len(self.known_coords_of_chaos_pucks))
                 self.robot_reached_goal_flag = False
             # else:
-                #publish("error_topic", "Error in tactics_callback")
-                #return
-
+            # publish("error_topic", "Error in tactics_callback")
+            # return
 
             # TODO Alexey to publish in response
             # if result == True than proceed to next puck and remove puck coord from known
@@ -342,7 +353,7 @@ class TacticsNode:
                 ind = known_ids.index(puck_id)  # correct? FIXME
                 x_new, y_new = puck[1], puck[2]
                 x_old, y_old = known_pucks[1], known_pucks[2]
-                if np.sqrt((x_new - x_old)**2 + (y_new - y_old)**2) > self.coords_threshold:
+                if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
                     self.known_coords_of_chaos_pucks[ind][1:] = puck[1:]
             else:
                 # wtf happened? blink from sun? wasn't recognised at first time?
@@ -358,6 +369,8 @@ class TacticsNode:
         jarvis march
         :return: convex hull, list of coordinates, TODO counter or clockwise, need to figure out
         """
+        print("self.known_coords_of_chaos_pucks")
+        print(self.known_coords_of_chaos_pucks)
         a = self.known_coords_of_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
         n = len(a)
         p = range(n)
@@ -378,9 +391,8 @@ class TacticsNode:
             else:
                 h.append(p[right])
                 del p[right]
-        print("h is")
-        print(h)
-        return h
+        hull = [a[i] for i in h]
+        return hull
 
     # def calculate_inner_angles(self, hull):
     #     """
@@ -431,24 +443,36 @@ class TacticsNode:
         offset *= self.ScaleFactor_
         offset += mc
 
+        print("hull is")
+        print(hull)
+
         for orig, ofs in zip(hull, offset):
+            print("orig is ", orig)
+            print("ofs is", ofs)
             gamma = None
-            dist = calculate_distance(orig, ofs)
+            dist, _ = calculate_distance(orig, ofs)
+            print("dist is")
+            print(dist)
+
             if abs(dist[0]) < 1e-4:
                 if ofs[1] < orig[1]:
-                    gamma = np.pi * 1/2
+                    gamma = np.pi * 1 / 2
                 elif ofs[1] > orig[1]:
-                    gamma = np.pi * 3/2
+                    gamma = np.pi * 3 / 2
             else:
-                gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
-            # need wrap_angle? FIXME
+                gamma = wrap_angle(np.arctan2(dist[1], dist[0]))  # and here we calculate slope of outer bis
+-------------------------------
+                # need wrap_angle? FIXME !!!!!!!!!!!!!!!!!
+
+                print("gamma is", gamma)
             # FIXME: gamma != -1
             try:
                 # approach_dist = read_yaml
-                const = np.sqrt(self.approach_dist**2 / (gamma + 1))
+                const = np.sqrt(self.approach_dist ** 2 / (gamma + 1))
                 x_landing = const + orig[0]
                 y_landing = gamma * const + orig[1]
-                landings_coordinates.append([x_landing, y_landing, gamma])
+                landing = np.array([x_landing, y_landing, gamma])
+                landings_coordinates.append(landing)
             except ZeroDivisionError:
                 print("gamma = -1 which is UNACCEPTABLE !!!1")
 
@@ -470,6 +494,7 @@ class TacticsNode:
 
         distances_from_robot_to_landings = []
         for landing in landings_coordinates:
+            print("landing is", landing)
             dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
             dist_norm = np.linalg.norm(dist)
             distances_from_robot_to_landings.append(dist_norm)
@@ -515,4 +540,3 @@ class TacticsNode:
 if __name__ == "__main__":
     tactics = TacticsNode()
     rospy.spin()
-
