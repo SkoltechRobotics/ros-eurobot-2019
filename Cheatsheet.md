@@ -63,7 +63,7 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
 
-
+rostopic pub -1 /cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 
 
 WIRELESS PART SETUP

@@ -285,9 +285,10 @@ class TacticsNode:
             result = self.manipulator.collect_puck()  # TODO load_inside=False
             if result:
                 self.atoms_placed += 1
+                print("atoms placed, count: ")
+                print(self.atoms_placed)
                 np.delete(self.known_coords_of_chaos_pucks, 0, 0)  # FIXME not tested
-                np.delete(self.sorted_landing_coordinates, 0,
-                          0)  # FIXME path_planner should decide which puck to collect and to remove from known
+                np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
                 print("result is True and puck collected!")
                 print("pucks left: ", len(self.known_coords_of_chaos_pucks))
                 self.robot_reached_goal_flag = False
@@ -416,9 +417,15 @@ class TacticsNode:
 
     def calculate_possible_landing_coords(self, hull):
         """
-        Calculates offset a hull, calculates outer bissectrisa to all angles,
-        search intersection point between orbit around centre of puck and this bissectrisa between orig and offset
+        Calculates offset a hull,
+        get line between orig hull and offset
+        search intersection point between orbit around centre of each puck and line
         There are many safe landing coords, not just on outer bissectrisa, but for now only the intersection
+
+        Solve system of two equations:
+        x**2 + y**2 = r**2, where r is an approch distance to puck for robot
+        y = tg(gamma) * x, using calculated slope to get equation of the line
+        Orbit inersects line in two points, so we get two landings
 
         :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
         """
@@ -455,7 +462,7 @@ class TacticsNode:
             landings_coordinates.append(landing2)
 
         landings = np.array(landings_coordinates)
-        landing_indexes = TacticsNode.calculate_convex_hull(landings[:, :2])
+        landing_indexes = TacticsNode.calculate_convex_hull(landings[:, :2])  # to get rid off
         landings_coordinates = [landings[i] for i in landing_indexes]
 
         # another method is for situation where pucks are safely away from each other
