@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find eurobot_sim)/launch/visualization.launch"/>
+
+  <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+  <param name = "field/color" value = "orange"/>
+  <group ns = "secondary_robot">
+    <node pkg="eurobot_nav" name="MotionPlannerNode" type="MotionPlannerNode.py" respawn="true" output="log"/>
+    <node pkg="eurobot_tactics" name="TacticsNode" type="TacticsNode.py" respawn="true" output="log"/>
+    <node pkg="eurobot_tactics" name="CameraNode" type="imitate_cam.py" respawn="true" output="log"/>
+    <node pkg="eurobot_sim" name="simulation" type="stm_node.py" respawn="true" output="log"/>
+
+ # vis.launch
+    <node pkg="eurobot_sim" name="PucksCreator" type="PucksCreator.py"  output="screen"/>
+
+  </group>
+</launch>
+

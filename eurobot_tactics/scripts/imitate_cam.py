@@ -4,6 +4,7 @@ import numpy as np
 
 import rospy
 from visualization_msgs.msg import MarkerArray, Marker
+from std_msgs.msg import String
 
 
 def publish_pucks(publisher_pucks, coordinates):
@@ -35,9 +36,13 @@ def publish_pucks(publisher_pucks, coordinates):
 if __name__ == '__main__':
     rospy.init_node('imitate_cam_node', anonymous=True)
     publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)
+    tactics_publisher = rospy.Publisher('cmd_tactics', String, queue_size=1)
+
     rospy.sleep(2)
     coordinates_list = [[0.9, 0.9],
                         [0.8, 1],
                         [0.9, 1.1],
                         [1, 1]]
     publish_pucks(publisher_pucks, coordinates_list)
+    rospy.sleep(2)
+    tactics_publisher.publish('abc collect_chaos')
