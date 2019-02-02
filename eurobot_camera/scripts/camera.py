@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 import skimage.filters
-import skimage 
+import skimage
+import skimage.exposure
 
 import transform
 
@@ -111,7 +112,7 @@ class Camera():
     
     def rgb_equalized(self, img):
         # create a CLAHE object (Arguments are optional).
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(5,5))
         channels = cv2.split(img)
     
         eq_channels = []
@@ -121,27 +122,21 @@ class Camera():
         eq_image = cv2.merge(eq_channels)
 #        eq_image = cv2.cvtColor(eq_image, cv2.COLOR_BGR2RGB)
     
-        return eq_image	
+        return img
 
-    def rgb_unsharp(self, img):
-        img_adapteq_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-
-        ddepth = cv2.CV_16S
-        kernel_size = 3
-        # [convert_to_gray]
-
-        # [laplacian]
-        # Apply Laplace function
-        gaussian_3 = cv2.GaussianBlur(img,(3,3), 100.0)
-        dst = cv2.Laplacian(img_adapteq_gray, ddepth, kernel_size)
-
-        unsharp_image = cv2.addWeighted(img, 1.5, gaussian_3, -0.5, 0, img)
-
-        abs_dst = cv2.convertScaleAbs(dst)
-        return unsharp_image
+    def rgb_sharp(self, img):
+        blur = cv2.GaussianBlur(img, (15, 15), 3)
+        sharp = cv2.addWeighted(img, 2, blur, -1, 0, )
+        return sharp
 
     def filter_image(self, img):
+
+
+
+        #filtered_img = cv2.blur(bgr_image, (3,3) )
         filtered_img = cv2.bilateralFilter(img,9,100,100)
+        # filtered_img = self.rgb_sharp(filtered_img)
+        # filtered_img = cv2.bilateralFilter(filtered_img, 9, 100, 100)
         #filtered_img = cv2.medianBlur(img,15)
         #filtered_img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
         #contrast_image = skimage.exposure.adjust_sigmoid(img)
@@ -152,33 +147,49 @@ class Camera():
         #return equalized_img
         
     def find_thresholds(self, image_gray):
+        #blur = cv2.GaussianBlur(image_gray, (, 21), 0)
         #ret3, th = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        #th = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-        blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
-        ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        th = cv2.adaptiveThreshold(image_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,13,2)
+
+
+
+        # ret3, th3 = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY)
         ret2,th = cv2.threshold(image_gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        return th3
+        return th
         
     def find_contours(self, image_gray, thresh):
         # blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
         # ret, thresh = cv2.threshold(blur, 127, 255, 0)
 
         # ret, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        image, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in contours:
+        image, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        kernel = np.ones((3, 3), np.uint8)
+
+        # for cnt in contours:
             # epsilon = 0.1 * cv2.arcLength(cnt, True)
             # cnt = cv2.approxPolyDP(cnt, epsilon, True)
+            # #cnt = cv2.convexHull(cnt)
+            # cnt = cv2.erode(cnt, kernel, iterations=5)
+            # cnt = cv2.dilate(cnt, kernel, iterations=9)
 
-            cnt = cv2.convexHull(cnt)
+
+
         return contours
         
     def filter_contours(self, contours):
         filtered_contours = []
 
         for cnt in contours:
+
             perimeter = cv2.arcLength(cnt, True)
-            area = cv2.contourArea(cnt)
-            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+1000 and area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-1000 and perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+100 and perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-100:
+            area = np.fabs(cv2.contourArea(cnt))
+            if area <= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y+1000 and\
+                    area >= np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y-1000 and \
+                    perimeter <= 2*np.pi*PUCK_RADIUS_pixel_x+100 and \
+                    perimeter >= 2*np.pi*PUCK_RADIUS_pixel_x-100 and \
+                    len(cnt) > 4:
                 filtered_contours.append(cnt)
         return filtered_contours
         
@@ -281,6 +292,27 @@ class Camera():
         return image
 
     def detect_contours_color(self, contours, img):
+
+        hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        h, s, v = cv2.split(hsv_image)
+
+        print("After:", s)
+        s_cutoff, v_cutoff = 0.1, 0.1
+        s_gain = 20
+        v_gain = 20
+        hsv_image[:, :, 1] = skimage.exposure.adjust_sigmoid(hsv_image[:, :, 1], s_cutoff, s_gain)
+        hsv_image[:, :, 2] = skimage.exposure.adjust_sigmoid(hsv_image[:, :, 2], v_cutoff, v_gain)
+        print("Before:", s)
+
+        # hsv_image[:, :, 1] = s
+
+        bgr_image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+
+        pyr = cv2.pyrDown(bgr_image, None)
+        timg = cv2.pyrUp(pyr, None)
+
+        img = timg
+
         COLORS = np.array((REDIUM_COLOR,GREENIUM_COLOR,BLUEIUM_COLOR), dtype=np.uint8)
         print ("COLORS", COLORS)
         LAB_COLORS = skimage.color.rgb2lab(COLORS[np.newaxis,:,:])
