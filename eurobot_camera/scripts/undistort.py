@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-
 import numpy as np
 import cv2
 
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from sensor_msgs.msg import Image
-from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray, Marker
 
 import yaml
@@ -15,6 +13,8 @@ import argparse
 import time
 
 from camera import Camera
+import image_processing
+from contours import Contour
 
 import sys
 
@@ -55,17 +55,17 @@ class CameraUndistortNode():
     def __init__(self, DIM, K, D, template):
         self.templ_path = template
 
-        self.node = rospy.init_node('camera_undistort_node', anonymous=True)
+        self.node = rospy.init_node('camera_node', anonymous=True)
         self.publisher_undistorted = rospy.Publisher("/undistorted_image", Image, queue_size=1)
         self.publisher = rospy.Publisher("/recognition_image", Image, queue_size=1)
         self.publisher_gray = rospy.Publisher("/gray_scale_image", Image, queue_size=1)
-        self.publisher_thresh = rospy.Publisher("/threshold_image", Image, queue_size=1)
         self.publisher_contours = rospy.Publisher("/contours_image", Image, queue_size=1)
         self.publisher_filter_contours = rospy.Publisher("/filtered_contours_image", Image, queue_size=1)
         self.publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)
 
         self.bridge = CvBridge()
         self.camera = Camera(DIM, K, D)
+        self.contour = Contour()
 
         self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                            self.__callback, queue_size=1)
@@ -94,49 +94,42 @@ class CameraUndistortNode():
 
     def __callback(self, data):
         start_time = time.time()
-        cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         rospy.loginfo(rospy.get_caller_id())
 
         # Process image
-        cv_image = self.camera.rgb_equalized(cv_image)
-        undistorted_image = self.camera.undistort(cv_image)
-
+        image = image_processing.equalize_histogram(image, 1.0, (21,21))
+        undistorted_image = self.camera.undistort(image)
         image = undistorted_image
 
         # Align image using field template
         if self.camera.align_image(image, self.templ_path):
-            # image = self.camera.rgb_equalized(image)
-            image = self.camera.filter_image(image)
+            image = image_processing.decrease_noise(image, 15, 100, 100)
+            # image = image_processing.equalize_histogram(image)
 
-            # Find thresholds and contours
-            # hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-            # image_gray = hsv_image[:, :, 1] // 4 + 3 * (hsv_image[:, :, 2] // 4)
-            # image_gray = hsv_image[:, :, 2] // 2 + hsv_image[:, :, 1]
+
+            # Find all contours on the image
             image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            image_thresholds = self.camera.find_thresholds(image_gray)
-            contours = self.camera.find_contours(image, image_thresholds)
+            self.contour.find(image_gray)
             image_contours = copy.copy(image)
-            image_contours = self.camera.draw_contours(image_contours, contours)
+            image_contours = self.contour.draw(image_contours, self.contour.all_contours)
 
             # Filter contours
-            contours_filtered = self.camera.filter_contours(contours)
+            contours_filtered = self.contour.filter(1000, 100, 200)
             image_filter_contours = copy.copy(image)
-            image_filter_contours = self.camera.draw_contours(image_filter_contours, contours_filtered)
+            image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
             # Find pucks coordinates
             image_pucks = copy.copy(image)
-            coordinates = self.camera.find_pucks_coordinates(contours_filtered)
+            coordinates = self.contour.find_pucks_coordinates()
             # Detect contours colors
-            colors = self.camera.detect_contours_color(contours_filtered, image)
-            print ("COLORS IN UNDISTORT.py", colors)
+            colors = self.contour.detect_color(contours_filtered, image)
             # Draw ellipse contours around pucks
-            image_pucks = self.camera.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
-            # image_pucks = cv2.drawContours(image_pucks, contours_filtered, -1, (255, 0, 0), 3)
+            image_pucks = self.contour.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
-            self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresholds))
             self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
             self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
