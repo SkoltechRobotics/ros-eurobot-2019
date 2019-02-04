@@ -8,6 +8,7 @@ Panels:
         - /TF1/Tree1
         - /SecondaryLaserScan1
         - /PoseArray1
+        - /MarkerArray3
       Splitter Ratio: 0.592190862
     Tree Height: 1800
   - Class: rviz/Selection
@@ -28,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: SecondaryLaserScan
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -89,10 +90,6 @@ Visualization Manager:
           Value: true
         secondary_robot:
           Value: true
-        secondary_robot_laser:
-          Value: true
-        secondary_robot_odom:
-          Value: true
       Marker Scale: 0.400000006
       Name: TF
       Show Arrows: true
@@ -100,10 +97,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          secondary_robot_odom:
-            secondary_robot:
-              secondary_robot_laser:
-                {}
+          secondary_robot:
+            {}
       Update Interval: 0
       Value: true
     - Attached Body Color: 150; 50; 150
@@ -125,6 +120,7 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
       Name: Field
       Robot Alpha: 0.5
       Robot Description: field_description
@@ -513,7 +509,7 @@ Visualization Manager:
       Marker Topic: /secondary_robot/landmarks
       Name: MarkerArray
       Namespaces:
-        beacons: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -521,7 +517,15 @@ Visualization Manager:
       Marker Topic: /secondary_robot/beacons
       Name: MarkerArray
       Namespaces:
-        beacons: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /secondary_robot/pucks
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true

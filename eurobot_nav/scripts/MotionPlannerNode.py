@@ -94,7 +94,7 @@ class MotionPlannerNode:
         self.pub_response = rospy.Publisher("response", String, queue_size=10)
 
         self.timer = None
-        rospy.Subscriber("move_command", String, self.cmd_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/move_command", String, self.cmd_callback, queue_size=1)
 
     # noinspection PyTypeChecker
     def pub_path(self):
@@ -125,8 +125,7 @@ class MotionPlannerNode:
         self.mutex.acquire()
 
         rospy.loginfo("")
-        rospy.loginfo("=====================================")
-        rospy.loginfo("NEW CMD:\t" + str(data.data))
+        rospy.loginfo("MotionPlannerNode - NEW CMD:\t" + str(data.data))
 
         # when new cmd arrives shutdown running timer
         if self.timer is not None:
@@ -137,9 +136,8 @@ class MotionPlannerNode:
         cmd_id = data_split[0]
         cmd_type = data_split[1]
         cmd_args = data_split[2:]
-        rospy.loginfo(cmd_type)
         if cmd_type == "move_arc" or cmd_type == "move_line":
-            rospy.loginfo('START')
+            # rospy.loginfo('START')
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
@@ -153,9 +151,10 @@ class MotionPlannerNode:
         self.mutex.release()
 
     def start_moving(self, goal, cmd_id, cmd_type):
+        rospy.loginfo(" ")
+        rospy.loginfo("=====================================")
         rospy.loginfo("Setting a new goal:\t" + str(goal))
         rospy.loginfo("Current cmd:\t" + str(cmd_type))
-        rospy.loginfo("=====================================")
         rospy.loginfo("")
         self.cmd_id = cmd_id
         self.current_cmd = cmd_type
@@ -183,9 +182,8 @@ class MotionPlannerNode:
         :return:
         """
 
-        # rospy.loginfo('---------------------------------------')
         rospy.loginfo('CURRENT STATUS')
-        rospy.loginfo(self.current_state)
+        # rospy.loginfo(self.current_state)
         while not self.update_coords():
             rospy.sleep(0.05)
 
@@ -284,14 +282,14 @@ class MotionPlannerNode:
                     np.abs(delta_next_point[2] / self.W_MAX))
 
         delta_path_point = p[path_point] - point
-        rospy.loginfo("NEAREST POINT")
-        rospy.loginfo(str(path_point))
+        # rospy.loginfo("NEAREST POINT")
+        # rospy.loginfo(str(path_point))
         delta_path_point[2] = wrap_angle(delta_path_point[2])
         ref_vel = delta_next_point / t
-        rospy.loginfo("ref_vel")
-        rospy.loginfo(str(np.round(ref_vel, 3)))
-        rospy.loginfo("delta_path_point")
-        rospy.loginfo(str(delta_path_point))
+        # rospy.loginfo("ref_vel")
+        # rospy.loginfo(str(np.round(ref_vel, 3)))
+        # rospy.loginfo("delta_path_point")
+        # rospy.loginfo(str(delta_path_point))
         omega_vel = 5*self.K_linear_p * delta_path_point[2]
         # delta_dist = np.sqrt(delta_path_point[0] ** 2 + delta_path_point[1] ** 2)
         delta_path_point_dist = delta_path_point
@@ -302,28 +300,28 @@ class MotionPlannerNode:
         self.result_vel[0] = vel * np.cos(theta)
         self.result_vel[1] = vel * np.sin(theta)
         self.result_vel[2] = omega_vel
-        rospy.loginfo('DELTA VEL')
-        rospy.loginfo(str(self.result_vel))
+        # rospy.loginfo('DELTA VEL')
+        # rospy.loginfo(str(self.result_vel))
         #     vel = construct_v(vel)
         #     print vel
         self.result_vel += ref_vel
         self.result_vel = cvt_global2local(np.array([self.result_vel[0], self.result_vel[1], 0]),
                                            np.array([0., 0., point[2]]))
         self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
-        rospy.loginfo("BEFORE CONSTRAINT")
-        rospy.loginfo(str(self.result_vel))
+        # rospy.loginfo("BEFORE CONSTRAINT")
+        # rospy.loginfo(str(self.result_vel))
         self.result_vel = self.constraint_v(self.result_vel)
         curr_time = rospy.Time.now().to_sec()
         dt = curr_time - self.prev_time
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         #self.result_vel = self.constraint_a(self.result_vel, self.prev_vel, dt) * deceleration_coefficient
-        rospy.loginfo("COEFF")
-        rospy.loginfo(str(deceleration_coefficient))
+        # rospy.loginfo("COEFF")
+        # rospy.loginfo(str(deceleration_coefficient))
         self.result_vel *= deceleration_coefficient
         self.prev_vel = self.result_vel
-        rospy.loginfo("AFTER CONSTRAINT")
-        rospy.loginfo(str(self.result_vel))
+        # rospy.loginfo("AFTER CONSTRAINT")
+        # rospy.loginfo(str(self.result_vel))
         return self.result_vel
 
     def follow_path(self):
@@ -356,7 +354,7 @@ class MotionPlannerNode:
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
 
         cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
-        rospy.loginfo("Sending cmd: " + cmd)
+        rospy.loginfo("MPN set_speed - Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
 
     # def get_optimal_velocity(self):
@@ -380,13 +378,13 @@ class MotionPlannerNode:
         :return:
         """
 
-        rospy.loginfo("NEW ARC MOVEMENT")
-        rospy.loginfo("Goal:\t" + str(self.goal))
+        rospy.loginfo("performing arc movement")
+        # rospy.loginfo("Goal:\t" + str(self.goal))
 
         v = self.V_MAX
         if abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
-            rospy.loginfo("orientation is the same, start arcline move")
+            # rospy.loginfo("orientation is the same, start arcline move")
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
             w = v / R  # must be depended on v such way so path becomes an arc
@@ -415,7 +413,7 @@ class MotionPlannerNode:
             self.terminate_moving()
 
     def move_line(self):
-        rospy.loginfo('==================NEW LINE MOVEMENT=====================')
+        rospy.loginfo('performing line movement')
         rospy.loginfo('goal is' + str(self.goal))
 
         if self.current_state == "stop":
@@ -431,7 +429,7 @@ class MotionPlannerNode:
             delta_coords[2] *= self.r
 
             self.delta_dist = np.linalg.norm(delta_coords, axis=0)
-            rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
+            # rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
 
             self.current_state = 'following'
         elif self.current_state == 'following' and self.delta_dist > 0.2:

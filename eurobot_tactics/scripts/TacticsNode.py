@@ -90,17 +90,21 @@ class TacticsNode:
         # self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.1  # meters, distance from robot to puck where robot will try to grab it # FIXME
 
-        self.robot_coords = np.array([1.2, 1.2, 0])  # FIXME !!!!!!!!!!!!
+        # self.robot_coords = np.array([1.2, 1.2, 0])  # FIXME !!!!!!!!!!!!
+        self.robot_coords = np.zeros(3)
 
         self.mutex = Lock()
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.sorted_landing_coordinates = np.array([])
         self.known_coords_of_chaos_pucks = np.array([])  # (id, x, y)
         self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
-        self.atoms_placed = 0  # to preliminary calculate our score
+        self.atoms_collected = 0  # to preliminary calculate our score
 
         self.robot_reached_goal_flag = False
         self.puck_collected_and_arm_ready_flag = False
+        self.robot_performs_moving = False
+        self.robot_is_collecting_puck = False
+        self.puck_collected = False
 
         # self.RATE = rospy.Rate(20)  # FIXME !!!!!
         self.RATE = 10  # FIXME !!!!!
@@ -119,9 +123,9 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
-        rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
-        rospy.Subscriber('response', String, self.callback_response, queue_size=10)
+        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/cmd_tactics", String, self.tactics_callback, queue_size=1)
+        rospy.Subscriber('/secondary_robot/response', String, self.callback_response, queue_size=10)
 
     def pucks_coords_callback(self, data):
         """
@@ -151,7 +155,7 @@ class TacticsNode:
         # FIXME::AL: is_new_pucks()
         pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         pucks_new_observation = np.array(pucks_new_observation)
-        print(pucks_new_observation)
+        print('pucks_new_observation - should be ONE TIME only')
         if len(self.known_coords_of_chaos_pucks) == 0:
             self.known_coords_of_chaos_pucks = pucks_new_observation
             coords = self.known_coords_of_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
@@ -240,8 +244,42 @@ class TacticsNode:
 
         # TODO add Try-Except in case coords are not yet received
         # TODO add obvious state cases like IF STATE ==
+        rospy.loginfo('----------- Tactics TIMER_CALLBACK ------------------')
+
         if self.cmd_type == "collect_chaos" and len(self.known_coords_of_chaos_pucks) > 0:
-            self.approach_and_collect_closest_safe_puck()
+            # self.approach_and_collect_closest_safe_puck()
+            if self.robot_performs_moving is False:
+                landing = self.sorted_landing_coordinates[0]
+                landing = TacticsNode.compose_command(landing)
+                self.move_command_publisher.publish(landing)  # TODO add command id
+                self.robot_performs_moving = True  # TODO add checking responce from robot that it endeed started moving
+
+            # here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
+            # callback_response will fire and change self.robot_reached_goal_flag to True
+            if self.robot_reached_goal_flag is True and self.robot_is_collecting_puck is False:
+                self.robot_is_collecting_puck = True
+                self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
+
+            if self.puck_collected is True:
+                self.atoms_collected += 1
+                print("puck collected!")
+
+                print("atoms collected, count: ", self.atoms_collected)
+                print(" ")
+                print("-----known coords before deleting ----")
+                print(self.known_coords_of_chaos_pucks)
+                print(" ")
+                self.known_coords_of_chaos_pucks = np.delete(self.known_coords_of_chaos_pucks, 0, 0)
+                self.sorted_landing_coordinates = np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+                print("-----known coords AFTER deleting ----")
+                print(self.known_coords_of_chaos_pucks)
+                print(" ")
+                print("pucks left: ", len(self.known_coords_of_chaos_pucks))
+
+                self.robot_performs_moving = False
+                self.robot_reached_goal_flag = False
+                self.robot_is_collecting_puck = False
+                self.puck_collected = False
 
         # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
         #     grab_from_wall
@@ -264,51 +302,80 @@ class TacticsNode:
     #         self.puck_collected_and_arm_ready_flag = True
     #         # self.arm_ready_flag = True
 
-    def approach_and_collect_closest_safe_puck(self):
-        """
-        0. Get the closest to robot landing from the list
-        1. Approach it
-        2. Grab and load it
-        3. Remove from list of known
-        4. Add to list of collected and count points TODO
+    @staticmethod
+    def compose_command(landing):
+        x, y, theta = landing[0], landing[1], landing[2]
+        command = 'abc move_line '
+        command += str(x)
+        command += ' '
+        command += str(y)
+        command += ' '
+        command += str(theta)
+        rospy.loginfo('--------NEW COMMAND COMPOSED --------')
+        rospy.loginfo(command)
+        return command
 
-        we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
-        :return:
-        """
-        landing = self.sorted_landing_coordinates[0]
-        # x, y, theta = landing[0], landing[1], landing[2]
-        if self.robot_reached_goal_flag is False:
-            self.move_command_publisher.publish(landing)  # TODO add command id
-            # here when robot reaches the goal  it'll publish in response topic "finished" and in this code
-            # function callback_response will fire and change self.robot_reached_goal_flag to True
-        else:
-            result = self.manipulator.collect_puck()  # TODO load_inside=False
-            if result:
-                self.atoms_placed += 1
-                print("atoms placed, count: ")
-                print(self.atoms_placed)
-                np.delete(self.known_coords_of_chaos_pucks, 0, 0)  # FIXME not tested
-                np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
-                print("result is True and puck collected!")
-                print("pucks left: ", len(self.known_coords_of_chaos_pucks))
-                self.robot_reached_goal_flag = False
-            # else:
-            # publish("error_topic", "Error in tactics_callback")
-            # return
-
-            # TODO Alexey to publish in response
-            # if result == True than proceed to next puck and remove puck coord from known
-            # returns False when busy or what? TODO
-
-        # # TODO this part with deleting probably should be a separate function
-        #     if self.puck_collected_and_arm_ready_flag is True:
-        #         self.atoms_placed += 1
-        #         np.delete(self.known_coords_of_chaos_pucks, 0, 0)
-        #         np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
-        #         print("result is True and puck collected!")
-        #         print("pucks left: ", len(self.known_coords_of_chaos_pucks))
-        #     self.puck_collected_and_arm_ready_flag = False
-        #     self.robot_reached_goal_flag = False
+    # def approach_and_collect_closest_safe_puck(self):
+    #     """
+    #     0. Get the closest to robot landing from the list
+    #     1. Approach it
+    #     2. Grab and load it
+    #     3. Remove from list of known
+    #     4. Add to list of collected and count points TODO
+    #
+    #     we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
+    #     :return:
+    #     """
+    #     if self.robot_performs_moving is False:
+    #         landing = self.sorted_landing_coordinates[0]
+    #         landing = TacticsNode.compose_command(landing)
+    #         self.move_command_publisher.publish(landing)  # TODO add command id
+    #         self.robot_performs_moving = True  # TODO add checking responce from robot that it endeed started moving
+    #
+    #     # here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
+    #     # callback_response will fire and change self.robot_reached_goal_flag to True
+    #     if self.robot_reached_goal_flag is True and self.robot_is_collecting_puck is False:
+    #         self.robot_is_collecting_puck = True
+    #         self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
+    #
+    #     if self.puck_collected is True:
+    #         self.atoms_collected += 1
+    #         print("puck collected!")
+    #
+    #         print("atoms collected, count: ", self.atoms_collected)
+    #         print(" ")
+    #         print("-----known coords before deleting ----")
+    #         print(self.known_coords_of_chaos_pucks)
+    #         print(" ")
+    #         np.delete(self.known_coords_of_chaos_pucks, 0, 0)
+    #         np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+    #         print("-----known coords AFTER deleting ----")
+    #         print(self.known_coords_of_chaos_pucks)
+    #         print(" ")
+    #         print("pucks left: ", len(self.known_coords_of_chaos_pucks))
+    #
+    #         self.robot_performs_moving = False
+    #         self.robot_reached_goal_flag = False
+    #         self.robot_is_collecting_puck = False
+    #         self.puck_collected = False
+    #
+    #         # else:
+    #         # publish("error_topic", "Error in tactics_callback")
+    #         # return
+    #
+    #         # TODO Alexey to publish in response
+    #         # if result == True than proceed to next puck and remove puck coord from known
+    #         # returns False when busy or what? TODO
+    #
+    #     # # TODO this part with deleting probably should be a separate function
+    #     #     if self.puck_collected_and_arm_ready_flag is True:
+    #     #         self.atoms_placed += 1
+    #     #         np.delete(self.known_coords_of_chaos_pucks, 0, 0)
+    #     #         np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+    #     #         print("result is True and puck collected!")
+    #     #         print("pucks left: ", len(self.known_coords_of_chaos_pucks))
+    #     #     self.puck_collected_and_arm_ready_flag = False
+    #     #     self.robot_reached_goal_flag = False
 
     def stop_collecting(self):
         self.timer.shutdown()

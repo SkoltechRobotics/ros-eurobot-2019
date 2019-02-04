@@ -29,20 +29,25 @@ def publish_pucks(publisher_pucks, coordinates):
         marker.lifetime = rospy.Duration(3)
         markers.append(marker)
 
-    print (markers)
+    #print (markers)
     publisher_pucks.publish(markers)
 
 
 if __name__ == '__main__':
     rospy.init_node('imitate_cam_node', anonymous=True)
-    publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)
-    tactics_publisher = rospy.Publisher('cmd_tactics', String, queue_size=1)
+    publisher_pucks = rospy.Publisher("/secondary_robot/pucks", MarkerArray, queue_size=1)
+    # tactics_publisher = rospy.Publisher('cmd_tactics', String, queue_size=1)
 
     rospy.sleep(2)
-    coordinates_list = [[0.9, 0.9],
-                        [0.8, 1],
-                        [0.9, 1.1],
-                        [1, 1]]
+    coordinates_list = np.array([[0.9, 0.6],
+                                [0.5, 1],
+                                [0.9, 1.1],
+                                [1.2, 1]])
+
+    # coordinates_list = np.array([[0.5, 0.5],
+    #                              [0.9, 1.1]])
+
     publish_pucks(publisher_pucks, coordinates_list)
-    rospy.sleep(2)
-    tactics_publisher.publish('abc collect_chaos')
+    # rospy.sleep(2)
+    # tactics_publisher.publish('abc collect_chaos')
+    # rospy.spin()  # FIXME

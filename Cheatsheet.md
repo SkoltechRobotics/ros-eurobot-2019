@@ -65,6 +65,8 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.1
 
 rostopic pub -1 /cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 
+rosrun rqt_graph rqt_graph
+
 
 WIRELESS PART SETUP
 ---------------
