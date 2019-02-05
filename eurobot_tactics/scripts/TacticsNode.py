@@ -217,7 +217,11 @@ class TacticsNode:
         rospy.loginfo('----------- Tactics TIMER_CALLBACK ------------------')
 
         if self.cmd_type == "collect_chaos" and len(self.known_coords_of_chaos_pucks) > 0:
-            self.execute_current_puck_cmd(self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates)
+            # a = self.known_coords_of_chaos_pucks
+            # b = self.sorted_chaos_landing_coordinates
+            # a, b = self.execute_current_puck_cmd(a, b)
+
+            self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates = self.execute_current_puck_cmd(self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates)
 
         elif self.cmd_type == "collect_wall_six" and len(self.known_coords_of_wall_six_pucks) > 0:
             self.execute_current_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
@@ -255,7 +259,7 @@ class TacticsNode:
             # FIXME path_planner should decide which puck to collect and to remove from known
 
             print("-----known coords AFTER deleting ----")
-            print(coords)
+            print(self.known_coords_of_chaos_pucks)
             print(" ")
             print("pucks left: ", len(coords))
 
@@ -263,6 +267,8 @@ class TacticsNode:
             self.robot_reached_goal_flag = False
             self.robot_is_collecting_puck = False
             self.puck_collected = False
+
+        return coords, landings
 
     def callback_response(self, data):
         if data.data == 'finished':
@@ -273,9 +279,9 @@ class TacticsNode:
     #         # self.arm_ready_flag = True
 
     @staticmethod
-    def compose_command(landing):
+    def compose_command(landing):  # TODO here input cmd_type move_arc or move_line
         x, y, theta = landing[0], landing[1], landing[2]
-        command = 'abc move_line '
+        command = 'abc move_arc '
         command += str(x)
         command += ' '
         command += str(y)
@@ -517,6 +523,8 @@ class TacticsNode:
         :param landings_coordinates: [[x_l, y_l, gamma], ...]
         :return: format: [[3, 3, 1.57], [1, 1, 3.14], [2, 2, 4, 71], [0, 0, 6.28]]
         """
+        while not self.update_coords():
+            rospy.sleep(0.05)
 
         distances_from_robot_to_landings = []
         for landing in landings_coordinates:
