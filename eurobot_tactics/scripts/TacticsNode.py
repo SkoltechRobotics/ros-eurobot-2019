@@ -201,36 +201,6 @@ class TacticsNode:
         # FIXME There is a time delay for coords from camera to come
         self.mutex.release()
 
-        # this is Alexey's proposition
-        # success = cmd_execute(cmd_type)
-        # if success == True:
-        # self.mutex.release()
-        # else:
-        # publish("error_topic", "Error in tactics_callback")
-        # return
-
-        # if self.cmd_type == "collect_chaos":
-        #     while(True):
-        #         if len(self.known_coords_of_chaos_pucks) > 0:
-        #             result = self.approach_and_collect_closest_safe_puck()
-        #
-        #         if result == "End":
-        #             break
-        #
-        # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
-        #      grab_from_wall
-        #
-        #
-        # # elif self.cmd_type == "collect_wall_6" and len(self.known_coords_of_pucks) > 0:
-        # #     grab_from_wall
-        # # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_pucks) > 0:
-        # #     grab_from_wall
-        # # elif self.cmd_type == "collect_accel_blue_and_hold_up" and len(self.known_coords_of_pucks) > 0:
-        # #     func()
-        # # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
-        # #     func()
-        # # place_atom_on_weights
-
     def update_task_status(self, cmd_id, cmd_type):
         rospy.loginfo("Current cmd:\t" + str(cmd_type))
         rospy.loginfo("=====================================")
@@ -262,15 +232,11 @@ class TacticsNode:
 
             if self.puck_collected is True:
                 self.atoms_collected += 1
-                print("puck collected!")
-
                 print("atoms collected, count: ", self.atoms_collected)
-                print(" ")
-                print("-----known coords before deleting ----")
-                print(self.known_coords_of_chaos_pucks)
-                print(" ")
                 self.known_coords_of_chaos_pucks = np.delete(self.known_coords_of_chaos_pucks, 0, 0)
-                self.sorted_landing_coordinates = np.delete(self.sorted_landing_coordinates, 0, 0)  # FIXME path_planner should decide which puck to collect and to remove from known
+                self.sorted_landing_coordinates = np.delete(self.sorted_landing_coordinates, 0, 0)
+                # FIXME path_planner should decide which puck to collect and to remove from known
+
                 print("-----known coords AFTER deleting ----")
                 print(self.known_coords_of_chaos_pucks)
                 print(" ")
@@ -381,7 +347,7 @@ class TacticsNode:
         self.timer.shutdown()
         rospy.loginfo("Robot has stopped collecting pucks.")
         rospy.sleep(1.0 / 40)
-        self.pub_response.publish("pucks_collected")
+        self.pub_response.publish("stoped_collecting")
 
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
 
