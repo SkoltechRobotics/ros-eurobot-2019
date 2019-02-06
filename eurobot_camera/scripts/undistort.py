@@ -70,7 +70,7 @@ class CameraUndistortNode():
         self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                            self.__callback, queue_size=1)
 
-    def publish_pucks(self, coordinates):
+    def publish_pucks(self, coordinates, colors):
         markers = []
         marker = Marker()
         for i in range(len(coordinates)):
@@ -86,8 +86,20 @@ class CameraUndistortNode():
             marker.scale.x = 0.075
             marker.scale.y = 0.075
             marker.scale.z = 0.0125
+            # redium = [r=1,g=0,b=0], grenium = [r=0,g=1,b=0], blueimium = [r=0,g=0,b=1]
             marker.color.a = 1
-            marker.color.r = 1
+            if colors[i] == "red":
+                marker.color.r = 1
+                marker.color.g = 0
+                marker.color.b = 0
+            elif colors[i] == "green":
+                marker.color.r = 0
+                marker.color.g = 1
+                marker.color.b = 0
+            elif colors[i] == "blue":
+                marker.color.r = 0
+                marker.color.g = 0
+                marker.color.b = 1
             marker.lifetime = rospy.Duration(3)
             markers.append(marker)
         self.publisher_pucks.publish(markers)
@@ -135,7 +147,7 @@ class CameraUndistortNode():
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
 
             # Publish pucks coordinates
-            self.publish_pucks(coordinates)
+            self.publish_pucks(coordinates, colors)
 
             res_time = time.time() - start_time
             rospy.loginfo("RESULT TIME = " + str(res_time))
