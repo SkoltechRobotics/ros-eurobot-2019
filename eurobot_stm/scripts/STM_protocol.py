@@ -23,10 +23,10 @@ class STMprotocol(object):
             0x12: "=",
             0x13: "=",
             0x14: "=",
-	        0x15: "=",
-	        0x16: "=",
-	        0x17: "=",
-	        0x18: "=",
+	    0x15: "=",
+	    0x16: "=",
+	    0x17: "=",
+	    0x18: "=",
             0x20: "=",
             0x21: "=I",
             0x22: "=",
@@ -45,10 +45,10 @@ class STMprotocol(object):
             0x12: "=cc",
             0x13: "=cc",
             0x14: "=cc",
-	        0x15: "=cc",
-	        0x16: "=cc",
-	        0x17: "=cc",
-	        0x18: "=cc",
+	    0x15: "=cc",
+	    0x16: "=cc",
+	    0x17: "=cc",
+	    0x18: "=cc",
             0x20: "=cc",
             0x21: "=cc",
             0x22: "=cc",
@@ -67,10 +67,10 @@ class STMprotocol(object):
             0x12: 2,
             0x13: 2,
             0x14: 2,
-	        0x15: 2,
-	        0x16: 2,
-	        0x17: 2,
-	        0x18: 2,
+	    0x15: 2,
+	    0x16: 2,
+	    0x17: 2,
+	    0x18: 2,
             0x20: 2,
             0x21: 2,
             0x22: 2,
@@ -95,7 +95,7 @@ class STMprotocol(object):
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
             msg += parameters
         self.ser.write(msg)
-        response = self.ser.read(self.response_bytes[cmd]+1)
+        response = self.ser.read(self.response_bytes[cmd])
         print (response)
         if len(response) == 0:
             raise Exception("No data received")
