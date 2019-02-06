@@ -156,7 +156,7 @@ class TacticsNode:
         # TODO add id of zone!!!!!!!!!!!!
         pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         pucks_new_observation = np.array(pucks_new_observation)
-        print('pucks_new_observation - should be ONE TIME only')
+        print('TN -- pucks_new_observation - should be printed ONE TIME only')
         if len(self.known_coords_of_chaos_pucks) == 0:
             self.known_coords_of_chaos_pucks = pucks_new_observation
             coords = self.known_coords_of_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
@@ -220,11 +220,10 @@ class TacticsNode:
             # a = self.known_coords_of_chaos_pucks
             # b = self.sorted_chaos_landing_coordinates
             # a, b = self.execute_current_puck_cmd(a, b)
-
             self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates = self.execute_current_puck_cmd(self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates)
 
         elif self.cmd_type == "collect_wall_six" and len(self.known_coords_of_wall_six_pucks) > 0:
-            self.execute_current_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
+            self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates = self.execute_current_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
 
         # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_wall_three_pucks) > 0:
         #     grab_from_wall
@@ -248,20 +247,21 @@ class TacticsNode:
         # callback_response will fire and change self.robot_reached_goal_flag to True
         if self.robot_reached_goal_flag is True and self.robot_is_collecting_puck is False:
             self.robot_is_collecting_puck = True
-            self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
+            # self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
+            self.puck_collected = TacticsNode.imitate_manipulator()
             # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
 
         if self.puck_collected is True:
             self.atoms_collected += 1
-            print("atoms collected, count: ", self.atoms_collected)
+            print("TN -- atoms collected, count: ", self.atoms_collected)
             coords = np.delete(coords, 0, axis=0)
             landings = np.delete(landings, 0, axis=0)
             # FIXME path_planner should decide which puck to collect and to remove from known
 
-            print("-----known coords AFTER deleting ----")
+            print("TN -- ---known coords AFTER deleting ----")
             print(self.known_coords_of_chaos_pucks)
             print(" ")
-            print("pucks left: ", len(coords))
+            print("TN -- pucks left: ", len(coords))
 
             self.robot_performs_moving = False
             self.robot_reached_goal_flag = False
@@ -271,12 +271,10 @@ class TacticsNode:
         return coords, landings
 
     def callback_response(self, data):
+        # here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
+        # callback_response will fire and change self.robot_reached_goal_flag to True
         if data.data == 'finished':
             self.robot_reached_goal_flag = True
-
-    #     if data.data == 'puck_collected':  # TODO Alexey to publish in response
-    #         self.puck_collected_and_arm_ready_flag = True
-    #         # self.arm_ready_flag = True
 
     @staticmethod
     def compose_command(landing):  # TODO here input cmd_type move_arc or move_line
@@ -287,9 +285,13 @@ class TacticsNode:
         command += str(y)
         command += ' '
         command += str(theta)
-        rospy.loginfo('--------NEW COMMAND COMPOSED --------')
+        rospy.loginfo('-----TN----NEW COMMAND COMPOSED --------')
         rospy.loginfo(command)
         return command
+
+    @staticmethod
+    def imitate_manipulator():
+        return True
 
     # def approach_and_collect_closest_safe_puck(self):
     #     """
@@ -355,7 +357,7 @@ class TacticsNode:
 
     def stop_collecting(self):
         self.timer.shutdown()
-        rospy.loginfo("Robot has stopped collecting pucks.")
+        rospy.loginfo("TN -- Robot has stopped collecting pucks.")
         rospy.sleep(1.0 / 40)
         self.pub_response.publish("stoped_collecting")
 
@@ -565,7 +567,7 @@ class TacticsNode:
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
 
             self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coords))
+            rospy.loginfo("TN -- Robot coords:\t" + str(self.robot_coords))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))

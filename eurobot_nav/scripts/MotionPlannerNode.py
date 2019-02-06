@@ -182,7 +182,7 @@ class MotionPlannerNode:
         :return:
         """
 
-        rospy.loginfo('CURRENT STATUS')
+        rospy.loginfo('MPN - CURRENT STATUS is:')
         # rospy.loginfo(self.current_state)
         while not self.update_coords():
             rospy.sleep(0.05)
@@ -190,8 +190,8 @@ class MotionPlannerNode:
         self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
-        rospy.loginfo("d_norm %.3f", self.d_norm)
-        rospy.loginfo("theta_diff %.3f" % self.theta_diff)
+        rospy.loginfo("MPN - d_norm %.3f", self.d_norm)
+        rospy.loginfo("MPN - theta_diff %.3f" % self.theta_diff)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
@@ -200,7 +200,7 @@ class MotionPlannerNode:
         self.timer.shutdown()
         self.set_speed(np.zeros(3))
         self.set_speed_simulation(0, 0, 0)
-        rospy.loginfo("Robot has stopped.")
+        rospy.loginfo("MPN - Robot has stopped.")
         rospy.sleep(1.0 / 40)
         self.current_state = 'start'
         self.pub_response.publish("finished")
@@ -378,7 +378,7 @@ class MotionPlannerNode:
         :return:
         """
 
-        rospy.loginfo("performing arc movement")
+        rospy.loginfo("MPN - performing arc movement")
         # rospy.loginfo("Goal:\t" + str(self.goal))
 
         v = self.V_MAX
@@ -413,8 +413,8 @@ class MotionPlannerNode:
             self.terminate_moving()
 
     def move_line(self):
-        rospy.loginfo('performing line movement')
-        rospy.loginfo('goal is' + str(self.goal))
+        rospy.loginfo('MPN - performing line movement')
+        rospy.loginfo('MPN - goal is' + str(self.goal))
 
         if self.current_state == "stop":
             self.terminate_moving()
@@ -536,7 +536,7 @@ class MotionPlannerNode:
                  trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            rospy.loginfo("Robot coords:\t" + str(self.coords))
+            rospy.loginfo("MPN - Robot coords:\t" + str(self.coords))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
