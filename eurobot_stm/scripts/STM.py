@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String
-from threading import Lock
 
-import serial
 import itertools
 
 from STM_protocol import STMprotocol
@@ -14,18 +12,18 @@ ODOM_RATE = rospy.get_param("ODOM_RATE")
 
 class STM():
     def __init__(self, serial_port, baudrate=115200):
-        # Init ROS
         rospy.init_node('stm_node', anonymous=True)
-        # ROS subscribers
-        rospy.Subscriber("stm_command", String, self.stm_command_callback)  
+        rospy.Subscriber("stm_command", String, self.stm_command_callback)
+        self.response = rospy.Publisher("stm_response", String, queue_size=50)
 
         self.stm_protocol = STMprotocol(serial_port, baudrate)
         self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
-        self.manipulator = Manipulator()
     
     def stm_command_callback(self, data):
-        cmd, args = self.parse_data(data)
+        id, cmd, args = self.parse_data(data)
         successfully, values = self.stm_protocol.send(cmd, args)
+        response = str(id) + " " + str(values)
+        self.response.publish(response)
 
     def parse_data(self, data):
         data_splitted = data.data.split()
