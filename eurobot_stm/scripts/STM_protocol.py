@@ -48,7 +48,7 @@ class STMprotocol(object):
 	        0x15: "=cc",
 	        0x16: "=cc",
 	        0x17: "=cc",
-	        0x18: "=cc"
+	        0x18: "=cc",
             0x20: "=cc",
             0x21: "=cc",
             0x22: "=cc",
