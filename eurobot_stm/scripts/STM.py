@@ -18,6 +18,7 @@ class STM():
 
         self.stm_protocol = STMprotocol(serial_port, baudrate)
         self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
+
     
     def stm_command_callback(self, data):
         id, cmd, args = self.parse_data(data)
@@ -29,7 +30,7 @@ class STM():
         data_splitted = data.data.split()
         cmd = int(data_splitted[0])
         args_dict = {'c': str, 'H': int, 'f': float}
-        args = [args_dict[t](s) for t, s in itertools.izip(self.pack_format[cmd][1:], data_splitted[1:])]
+        args = [args_dict[t](s) for t, s in itertools.izip(self.stm_protocol.pack_format[cmd][1:], data_splitted[1:])]
         return cmd, args
 
 if __name__ == '__main__':

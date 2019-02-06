@@ -7,7 +7,7 @@ import STM_protocol
 
 
 class Odometry():
-    def __init__(self, stm_protocol, rate=40):
+    def __init__(self, stm_protocol, rate):
         self.tf2_broad = tf2_ros.TransformBroadcaster()
         self.stm_protocol = stm_protocol
         
@@ -41,10 +41,10 @@ class Odometry():
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = "secondary_robot"
         t.child_frame_id = "secondary_robot_laser"
-        t.transform.translation.x = 0#self.laser_coords[0]
-        t.transform.translation.y = 0#self.laser_coords[1]
+        t.transform.translation.x = 0
+        t.transform.translation.y = 0
         t.transform.translation.z = .4
-        q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)#self.laser_angle)
+        q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]
