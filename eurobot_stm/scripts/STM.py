@@ -28,10 +28,11 @@ class STM():
 
     def parse_data(self, data):
         data_splitted = data.data.split()
-        cmd = int(data_splitted[0])
+        id = data_splitted[0]
+        cmd = int(data_splitted[1])
         args_dict = {'c': str, 'H': int, 'f': float}
         args = [args_dict[t](s) for t, s in itertools.izip(self.stm_protocol.pack_format[cmd][1:], data_splitted[1:])]
-        return cmd, args
+        return id, cmd, args
 
 if __name__ == '__main__':
     serial_port = "/dev/ttyUSB0"

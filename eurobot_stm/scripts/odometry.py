@@ -3,7 +3,6 @@ import rospy
 import geometry_msgs.msg
 import tf_conversions
 import tf2_ros
-import STM_protocol
 
 
 class Odometry():

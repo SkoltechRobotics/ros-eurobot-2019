@@ -12,25 +12,25 @@ class Manipulator():
 	def collect_puck(self):
 		# Release grabber
 		print("__1__")
-		self.publisher.publish(String("22"))
+		self.publisher.publish(String("manipulator-1 22"))
 		# Set pump to the wall
-		self.publisher.publish(String("20"))
+		self.publisher.publish(String("manipulator-2 20"))
 		# Set pump to the ground
-                self.publisher.publish("19")
+                self.publisher.publish("manipulator-3 19")
 		# Start pump
-                self.publisher.publish("17")
+                self.publisher.publish("manipulator-4 17")
 		# Set pump to the platform
-                self.publisher.publish("21")
+                self.publisher.publish("manipulator-5 21")
 		# Prop pack
-                self.publisher.publish("23")
+                self.publisher.publish("manipulator-6 23")
 		# Stop pump
-                self.publisher.publish("18")
+                self.publisher.publish("manipulator-7 18")
 		# Set pump to the wall
-                self.publisher.publish("20")
+                self.publisher.publish("manipulator-8 20")
 		# Grab pack
-		self.publisher.publish("24")
+		self.publisher.publish("manipulator-9 24")
 		# Release grabber
-		self.publisher.publish("22")
+		self.publisher.publish("manipulator-10 22")
 
 if __name__=="__main__":
 	print("1")
