@@ -5,12 +5,10 @@ from threading import Lock
 
 import serial
 import itertools
-
 from STM_protocol import STMprotocol
-from odometry import Odometry
-from manipulator import Manipulator
+import odometry
 
-ODOM_RATE = rospy.get_param("ODOM_RATE")
+ODOM_RATE = 40 # Hz
 
 class STM():
     def __init__(self, serial_port, baudrate=115200):
@@ -19,9 +17,11 @@ class STM():
         # ROS subscribers
         rospy.Subscriber("stm_command", String, self.stm_command_callback)  
 
-        self.stm_protocol = STMprotocol(serial_port, baudrate)
-        self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
-        self.manipulator = Manipulator()
+	self.stm_protocol = STMprotocol(serial_port, baudrate)
+	self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
+
+	self.laser_coords = (rospy.get_param('lidar_x') / 1000.0, rospy.get_param('lidar_y') / 1000.0, 0.41)
+        self.laser_angle = rospy.get_param('lidar_a')
     
     def stm_command_callback(self, data):
         cmd, args = self.parse_data(data)

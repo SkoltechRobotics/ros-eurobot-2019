@@ -7,7 +7,7 @@ import STM_protocol
 
 
 class Odometry():
-    def __init__(self, rate=40, stm_protocol):
+    def __init__(self, stm_protocol, rate=40):
         self.tf2_broad = tf2_ros.TransformBroadcaster()
         self.stm_protocol = stm_protocol
         
@@ -15,7 +15,7 @@ class Odometry():
         
     
     def odom_callback(self, event):
-        self.stm_protocol.send(0x0F, args=None)
+        successfully, values = self.stm_protocol.send(0x0F, args=None)
         if successfully:
             self.send_odometry(values)
 

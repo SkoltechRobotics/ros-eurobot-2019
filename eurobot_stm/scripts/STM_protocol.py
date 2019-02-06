@@ -71,7 +71,7 @@ class STMprotocol(object):
             msg += parameters
         self.ser.write(msg)
         response = self.ser.read(self.response_bytes[cmd]+1)
-        print response
+        print (response)
         if len(response) == 0:
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
