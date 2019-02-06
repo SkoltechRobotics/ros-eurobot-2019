@@ -72,15 +72,15 @@ class CameraUndistortNode():
 
     def publish_pucks(self, coordinates, colors):
         markers = []
-        marker = Marker()
         for i in range(len(coordinates)):
+            marker = Marker()
             marker.header.frame_id = 'map'
             marker.header.stamp = rospy.Time.now()
             marker.ns = "pucks"
             marker.id = i
             marker.type = 3
-            marker.pose.position.x = coordinates[0]
-            marker.pose.position.y = coordinates[1]
+            marker.pose.position.x = coordinates[i][0]
+            marker.pose.position.y = coordinates[i][1]
             marker.pose.position.z = 0.0125
             marker.pose.orientation.w = 1
             marker.scale.x = 0.075
