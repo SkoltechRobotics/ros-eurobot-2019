@@ -355,7 +355,7 @@ class MotionPlannerNode:
         # TODO
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
 
-        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+        cmd = "22 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
         rospy.loginfo("Sending cmd: " + cmd)
         self.pub_cmd.publish(cmd)
 

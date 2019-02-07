@@ -2,9 +2,10 @@
 <launch>
   <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
   <param name = "field/color" value = "orange"/>
-  <include file="$(find my_pkg)/launch/stm_node.launch" />
+  <include file="$(find my_pkg)/launch/lidar.launch" />
+  <include file="$(find eurobot_stm)/launch/STM_node.launch" />
   <group ns = "secondary_robot">
-    <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
+    <node pkg="eurobot_loc" name="particle_f1ilter_node" type="particle_filter_node.py" respawn="true" output="log"/>
   </group>
 </launch>
 
