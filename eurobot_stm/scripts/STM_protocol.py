@@ -1,11 +1,15 @@
 import serial
 import struct
-import time
 import datetime
 import rospy
 
+from threading import Lock
+
 class STMprotocol(object):
-    def __init__(self,serial_port, baudrate=115200):
+    def __init__(self, serial_port, baudrate=115200):
+
+        self.mutex = Lock()
+
         self.ser = serial.Serial(serial_port,baudrate=baudrate, timeout = 0.01)
         self.pack_format = {
             0x01: "=cccc",
@@ -18,7 +22,15 @@ class STMprotocol(object):
             0x11: "=",
             0x12: "=",
             0x13: "=",
-            0x14: "="
+            0x14: "=",
+	    0x15: "=",
+	    0x16: "=",
+	    0x17: "=",
+	    0x18: "=",
+            0x20: "=",
+            0x21: "=I",
+            0x22: "=",
+            0x23: "=",
         }
 
         self.unpack_format = {
@@ -32,7 +44,15 @@ class STMprotocol(object):
             0x11: "=cc",
             0x12: "=cc",
             0x13: "=cc",
-            0x14: "=cc"
+            0x14: "=cc",
+	    0x15: "=cc",
+	    0x16: "=cc",
+	    0x17: "=cc",
+	    0x18: "=cc",
+            0x20: "=cc",
+            0x21: "=cc",
+            0x22: "=cc",
+            0x23: "=cc",
         }
         
         self.response_bytes = {
@@ -46,9 +66,24 @@ class STMprotocol(object):
             0x11: 2,
             0x12: 2,
             0x13: 2,
-            0x14: 2
+            0x14: 2,
+	    0x15: 2,
+	    0x16: 2,
+	    0x17: 2,
+	    0x18: 2,
+            0x20: 2,
+            0x21: 2,
+            0x22: 2,
+            0x23: 2,
         }
-        
+
+    def send(self, cmd, args):
+        self.mutex.acquire()
+        successfully, values = self.send_command(cmd, args)
+        self.mutex.release()
+        rospy.loginfo('Got response args: '+ str(values))
+        return successfully, values
+
     def pure_send_command(self, cmd, args):
         # Clear buffer
         self.ser.reset_output_buffer()
@@ -60,8 +95,8 @@ class STMprotocol(object):
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
             msg += parameters
         self.ser.write(msg)
-        response = self.ser.read(self.response_bytes[cmd]+1)
-        print response
+        response = self.ser.read(self.response_bytes[cmd])
+        print (response)
         if len(response) == 0:
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
