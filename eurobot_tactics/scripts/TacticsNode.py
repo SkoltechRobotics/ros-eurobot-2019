@@ -289,27 +289,31 @@ class TacticsNode:
     #
     #     # TODO somehow to add checking if it is near starting zone and autom change robot status (for testing)
     #     if self.operating_state == 'waiting in the start zone':
-    #         landing = landings[0]
+    #         landing = np.array([0.6, 0.6, 0])
     #         landing = TacticsNode.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
-    #         print(landing)
     #         self.move_command_publisher.publish(landing)  # TODO add command id
     #         self.operating_state = 'robot is moving to the goal zone'
+    #
+    #         print("checking if robot changes flag after moving to the goal zone")
+    #         print(self.robot_reached_goal_and_stays_still_flag)
     #
     #     # here we listen for responce 'finished'
     #     # if self.operating_state == 'robot is moving to the goal zone' and not self.robot_reached_goal_and_stays_still_flag:
     #     #     print("wait")
     #     #     pass
     #
+    #     # TRUE fron response
+    #
     #     if self.operating_state == 'robot is moving to the goal zone' and self.robot_reached_goal_and_stays_still_flag:
     #         self.operating_state = 'robot reached goal zone'
-    #         self.robot_reached_goal_and_stays_still_flag = False
-    #
-    #     if self.operating_state == 'robot reached goal zone':
     #         print("here!")
+    #         self.robot_reached_goal_and_stays_still_flag = False
     #         # self.operating_state = 'robot is collecting chaos zone'
     #         landing = landings[0]
     #         landing = TacticsNode.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
     #         self.move_command_publisher.publish(landing)
+    #         print("checking if robot changes flag when already reached zone")
+    #         print(self.robot_reached_goal_and_stays_still_flag)
     #         # TODO here we already reached first landing coord and are asking robot to reach it one more time.
     #         # will it respone 'finished' this time?
     #
@@ -319,6 +323,10 @@ class TacticsNode:
     #         self.robot_is_collecting_puck = True
     #         # self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
     #         self.puck_collected = TacticsNode.imitate_manipulator()
+    #         print("---------------")
+    #         print("checking if puck is collected by imitating function")
+    #         print(self.puck_collected)
+    #         print("---------------")
     #         # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
     #
     #     if self.puck_collected is True:
@@ -333,7 +341,6 @@ class TacticsNode:
     #         print(" ")
     #         print("TN -- pucks left: ", len(coords))
     #
-    #         self.robot_performs_moving = False
     #         self.robot_reached_goal_and_stays_still_flag = False
     #         self.robot_is_collecting_puck = False
     #         self.puck_collected = False
@@ -378,6 +385,7 @@ class TacticsNode:
 
     @staticmethod
     def imitate_manipulator():
+        print("imitating manipulator-----------------")
         return True
 
     def stop_collecting(self):
