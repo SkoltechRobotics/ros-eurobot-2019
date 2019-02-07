@@ -26,7 +26,7 @@ def publish_pucks(publisher_pucks, coordinates):
         marker.scale.z = 0.0125
         marker.color.a = 1
         marker.color.r = 1
-        marker.lifetime = rospy.Duration(50)
+        marker.lifetime = rospy.Duration(25)
         markers.append(marker)
 
     #print (markers)

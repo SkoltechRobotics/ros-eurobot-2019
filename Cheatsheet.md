@@ -22,6 +22,9 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
 
+roslaunch eurobot_tactics tactics_sim_launch.launch
+
+
 ssh odroid@192.168.88.239
 
 roscd eurobot_nav
@@ -169,8 +172,12 @@ Error mounting /dev/sdf1 at /media/safoex/EurobotMain: Command-line `mount -t "e
 
 gedit ~/.bashrc 
 
+sudo vim /etc/hosts
 
-
+## remove nesessity to enter password 
+sudo update-alternatives --config editor
+sudo visudo
+myuser ALL=(ALL) NOPASSWD:ALL
 
 
 
