@@ -25,12 +25,9 @@ This algorithm knows nothing about obstacles and etc, it just generates sorted l
 And path-planner will choose from these options according to obstacles around
 
 TODO:
-    - when we receive DONE, re-calculate convex hull and generate new sorted list of closest pucks wrt current pose
     - clockwise approaching in order to keep camera view open
     - if all or most of pucks lie separately and safely, just start with the closest one and move counter / clockwise depending on the side
     - need to maintain unique id or order of pucks when deleting 
-    - change self.coords to self.robot_coords
-    - we should have more vars like known_coords_of_pucks (like _chaos_pucks). It's ok leave by now as is, because we test only separate local zones
     
 4 in chaos zone
 3 periodic table
@@ -40,13 +37,11 @@ TODO:
 
 Input: list of n coordinates of pucks, that belong to one local group
 
-
 Receiving coords from camera each 2-3 seconds
 Each time coords are received we call function callback which compares currently known coords and newly received ones
 If difference between newly received and known are within accuracy level (threshold), do nothing, else update known coords
 
 With timer we can call 10 times per sec and recalculate environment
-and call function move_arc / move line or whatever Egorka implemented
 
 When robot reaches landing position it publishes in response that tusk is ready and than it's time to call Alexey's code to take pucks 
 
@@ -57,8 +52,6 @@ Inside:
     - calculates bissectrisa of the angle and adds offset
     -
 Output: ready-steady coordinate and go coordinate
-
-Publishes
 """
 
 
@@ -94,12 +87,11 @@ class TacticsNode:
         self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10  # FIXME !!!!! self.RATE = rospy.Rate(20)
 
-        # self.robot_coords = np.array([1.2, 1.2, 0])  # FIXME !!!!!!!!!!!!
-        self.robot_coords = np.zeros(3)
+        self.robot_coords = np.zeros(3)  # FIXME
         self.atoms_collected = 0  # to preliminary calculate our score
 
-        self.sorted_chaos_landing_coordinates = np.array([])
-        self.known_coords_of_chaos_pucks = np.array([])  # (id, x, y)
+        self.sorted_chaos_landings = np.array([])
+        self.known_chaos = np.array([])  # (id, x, y)
         self.known_coords_of_wall_six_pucks = np.array([])
         self.wall_six_landing_coordinates = np.array([])
 
@@ -144,28 +136,20 @@ class TacticsNode:
         """
         self.mutex.acquire()
 
-        # rospy.loginfo("")
-        # rospy.loginfo("=====================================")
-        # rospy.loginfo("NEW CMD:\t" + str(data.data))
-
-        # print("data")
-        # print(data.markers[0])
-        # print("----")
-
         # FIXME IDs are not guaranteed to be the same from frame to frame
         # FIXME::AL: is_new_pucks()
         # TODO add id of zone!!!!!!!!!!!!
         pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         pucks_new_observation = np.array(pucks_new_observation)
         print('TN -- pucks_new_observation - should be printed ONE TIME only')
-        if len(self.known_coords_of_chaos_pucks) == 0:
-            self.known_coords_of_chaos_pucks = pucks_new_observation
-            coords = self.known_coords_of_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+        if len(self.known_chaos) == 0:
+            self.known_chaos = pucks_new_observation
+            coords = self.known_chaos[:, 1:]  # [(x0, y0), (x1, y1), ...]
             hull_indexes = TacticsNode.calculate_convex_hull(coords)  # Calculate pucks configuration once
             hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
             # inner_angles = self.calculate_inner_angles(hull)
             landings_coordinates = self.calculate_possible_chaos_landing_coords(hull)
-            self.sorted_chaos_landing_coordinates = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
+            self.sorted_chaos_landings = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
 
         # TODO try this in further tests
         # else:
@@ -217,15 +201,15 @@ class TacticsNode:
         # inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
         rospy.loginfo('----------- Tactics TIMER_CALLBACK ------------------')
 
-        if self.cmd_type == "collect_chaos" and len(self.known_coords_of_chaos_pucks) > 0:
+        if self.cmd_type == "collect_chaos" and len(self.known_chaos) > 0:
             # a = self.known_coords_of_chaos_pucks
             # b = self.sorted_chaos_landing_coordinates
             # a, b = self.execute_current_puck_cmd(a, b)
             # this doesn't work
-            self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates = self.execute_current_puck_cmd(self.known_coords_of_chaos_pucks, self.sorted_chaos_landing_coordinates)
+            self.known_chaos, self.sorted_chaos_landings = self.execute_puck_cmd(self.known_chaos, self.sorted_chaos_landings)
 
         elif self.cmd_type == "collect_wall_six" and len(self.known_coords_of_wall_six_pucks) > 0:
-            self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates = self.execute_current_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
+            self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates = self.execute_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
 
         # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_wall_three_pucks) > 0:
         #     grab_from_wall
@@ -238,7 +222,7 @@ class TacticsNode:
         else:
             self.stop_collecting()
 
-    def execute_current_puck_cmd(self, coords, landings):
+    def execute_puck_cmd(self, coords, landings):
         """
         0. Get the closest to robot landing from the list
         1. Approach it
@@ -263,45 +247,27 @@ class TacticsNode:
             print("checking if robot changes flag after moving to the goal zone")
             print(self.response_finished)
 
-        # here we listen for responce 'finished'
-        # if self.operating_state == 'robot is moving to the goal zone' and not self.robot_reached_goal_and_stays_still_flag:
-        #     print("wait")
-        #     pass
-
-        # TRUE fron response
-
         if self.operating_state == 'robot moving to the goal zone' and self.response_finished:
             self.operating_state = 'robot close to goal zone'
-            print("changing state to ---robot close to goal zone---")
-            print("self.response_finished is True ???", self.response_finished)
-            print("self.robot_performs_moving is False ??", self.robot_performs_moving)
-            # self.response_finished = False
 
         if self.operating_state == 'robot close to goal zone' and self.response_finished is True and self.robot_performs_moving is False:
             self.robot_performs_moving = True
             self.response_finished = False
-            # self.operating_state = 'robot is collecting chaos zone'
             landing = landings[0]
             landing = TacticsNode.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
             self.move_command_publisher.publish(landing)
-            print("checking if robot changes flag when already reached zone")
-            print(self.response_finished)
-            # TODO here we already reached first landing coord and are asking robot to reach it one more time.
-            # will it respone 'finished' this time?
 
         if self.operating_state == 'robot close to goal zone' and self.response_finished:
             self.operating_state = 'robot reached goal zone'
 
-        # here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
         # callback_response will fire and change self.robot_reached_goal_flag to True
         if self.operating_state == 'robot reached goal zone' and self.response_finished is True and self.robot_is_collecting_puck is False:
             self.robot_is_collecting_puck = True
             print("----------------------")
             print("robot collecting pucks")
             print('robot reached goal zone')
-            # self.puck_collected = self.manipulator.collect_puck()  # TODO load_inside=False
+            # self.puck_collected = self.manipulator.collect_puck()
             self.puck_collected = TacticsNode.imitate_manipulator()
-
             # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
 
         if self.puck_collected is True:
@@ -322,16 +288,15 @@ class TacticsNode:
             self.robot_is_collecting_puck = False
             self.puck_collected = False
             self.operating_state = 'robot close to goal zone'
-
-        # if len(coords) == 0:
-        #     self.operating_state = 'robot collected all known pucks, finish'
-        #     self.stop_collecting()
-
         return coords, landings
 
     def callback_response(self, data):
-        # here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
-        # callback_response will fire and change self.robot_reached_goal_flag to True
+        """
+        here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
+        callback_response will fire and change self.robot_reached_goal_flag to True
+        :param data:
+        :return:
+        """
         if data.data == 'finished':  # TODO change so that response is marked by cmd_id ''
             self.response_finished = True
 
@@ -387,8 +352,8 @@ class TacticsNode:
 
         assert new_obs_of_pucks.shape[1] == 3
 
-        known_ids = self.known_coords_of_chaos_pucks[:, 0]
-        known_pucks = self.known_coords_of_chaos_pucks
+        known_ids = self.known_chaos[:, 0]
+        known_pucks = self.known_chaos
         for puck in new_obs_of_pucks:
             puck_id = puck[0]
             if puck_id in known_ids:
@@ -396,10 +361,10 @@ class TacticsNode:
                 x_new, y_new = puck[1], puck[2]
                 x_old, y_old = known_pucks[1], known_pucks[2]
                 if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
-                    self.known_coords_of_chaos_pucks[ind][1:] = puck[1:]
+                    self.known_chaos[ind][1:] = puck[1:]
             else:
                 # wtf happened? blink from sun? wasn't recognised at first time?
-                self.known_coords_of_chaos_pucks = np.stack((self.known_coords_of_chaos_pucks, puck), axis=0)
+                self.known_chaos = np.stack((self.known_chaos, puck), axis=0)
                 # self.known_coords_of_pucks.append(puck)
 
     @staticmethod
@@ -477,8 +442,6 @@ class TacticsNode:
         :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
         """
 
-        # assert np.all(inner_safe_angles[:, 2]) > 0
-
         # this method can be applied when pucks are close to each other
         # calculate offset
         # calc angle of bissectrisa which it outer wrt original hull
@@ -540,24 +503,6 @@ class TacticsNode:
         a.sort(key=lambda t: t[1])
         sorted_coords = [v[0] for v in a]
         return sorted_coords
-
-    # def sort_pucks_coords_wrt_current_pose(self):
-    #     """
-    #     To make operation more quick there is no need to choose the sharpest angle,
-    #     instead better choose the closest one from angles that are marked as safe.
-    #     :return: format [[(id0, x0, y0), d0], ...]
-    #     """
-    #
-    #     distances_from_robot_to_pucks = []
-    #     for puck in self.known_coords_of_pucks:
-    #         dist, _ = calculate_distance(self.robot_coords, puck)  # return deltaX and deltaY coords
-    #         dist_norm = np.linalg.norm(dist)
-    #         distances_from_robot_to_pucks.append(dist_norm)
-    #     distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
-    #     pucks_wrt_robot_sorted = zip(self.known_coords_of_pucks, distances_from_robot_to_pucks)
-    #     pucks_wrt_robot_sorted.sort(key=lambda t: t[1])
-    #     [v[0] for v in a]
-    #     return pucks_wrt_robot_sorted
 
     def update_coords(self):
         try:
