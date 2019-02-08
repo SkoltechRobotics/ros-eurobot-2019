@@ -76,38 +76,40 @@ class TacticsNode:
     def __init__(self):
         rospy.init_node('TacticsNode', anonymous=True)
 
+        # TF
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
         self.robot_name = "secondary_robot"
 
         # self.critical_angle = np.pi * 2/3
-        self.approach_dist = 0.12  # meters, distance from robot to puck where robot will try to grab it # FIXME
+        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
-        self.ScaleFactor_ = 2  # used in calculating outer bissectrisa for hull's angles
-        self.RATE = 10  # FIXME !!!!! self.RATE = rospy.Rate(20)
+        self.scale_factor = 2  # used in calculating outer bissectrisa for hull's angles
+        self.RATE = 10
 
-        self.robot_coords = np.zeros(3)  # FIXME
+        self.robot_coords = np.zeros(3)
         self.atoms_collected = 0  # to preliminary calculate our score
 
         self.sorted_chaos_landings = np.array([])
-        self.known_chaos = np.array([])  # (id, x, y)
-        self.known_coords_of_wall_six_pucks = np.array([])
-        self.wall_six_landing_coordinates = np.array([])
+        self.known_chaos_pucks = np.array([])  # (id, x, y)
+        self.known_wall6_pucks = np.array([])
+        self.wall_six_landing = np.array([])
 
         self.operating_state = 'waiting in the start zone'
-        self.response_finished = False
-        self.puck_collected_and_arm_ready_flag = False
-        self.robot_performs_moving = False
-        self.robot_is_collecting_puck = False
-        self.puck_collected = False
+        self.is_finished = False
+        self.is_puck_collected_and_arm_ready = False
+        self.is_robot_moving = False
+        self.is_robot_collecting_puck = False
+        self.is_puck_collected = False
 
         self.cmd_id = None
         self.cmd_type = None
 
-        self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)  # FIXME
-        self.pub_cmd = rospy.Publisher('/secondary_robot/stm_command', String, queue_size=1)
-        self.pub_response = rospy.Publisher("response", String, queue_size=10)
+        # publishers
+        self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
+        self.stm_command_publisher = rospy.Publisher('stm_command', String, queue_size=1)
+        self.response_publisher = rospy.Publisher("response", String, queue_size=10)
 
         rospy.sleep(2)
 
@@ -116,9 +118,9 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
-        rospy.Subscriber("/secondary_robot/cmd_tactics", String, self.tactics_callback, queue_size=1)
-        rospy.Subscriber('/secondary_robot/response', String, self.callback_response, queue_size=10)
+        rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
+        rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
     def pucks_coords_callback(self, data):  # FIXME this is for chaos zone and landings for CHAOS zone are sorted !!!!!
         """
@@ -139,13 +141,13 @@ class TacticsNode:
         # FIXME IDs are not guaranteed to be the same from frame to frame
         # FIXME::AL: is_new_pucks()
         # TODO add id of zone!!!!!!!!!!!!
-        pucks_new_observation = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
-        pucks_new_observation = np.array(pucks_new_observation)
-        print('TN -- pucks_new_observation - should be printed ONE TIME only')
-        if len(self.known_chaos) == 0:
-            self.known_chaos = pucks_new_observation
-            coords = self.known_chaos[:, 1:]  # [(x0, y0), (x1, y1), ...]
-            hull_indexes = TacticsNode.calculate_convex_hull(coords)  # Calculate pucks configuration once
+        new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
+        new_observation_pucks = np.array(new_observation_pucks)
+        print('TN -- new_observation_pucks - should be printed ONE TIME only')
+        if len(self.known_chaos_pucks) == 0:
+            self.known_chaos_pucks = new_observation_pucks
+            coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+            hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
             hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
             # inner_angles = self.calculate_inner_angles(hull)
             landings_coordinates = self.calculate_possible_chaos_landing_coords(hull)
@@ -153,10 +155,11 @@ class TacticsNode:
 
         # TODO try this in further tests
         # else:
-        #     self.compare_to_update_or_ignore(pucks_new_observation)  # in case robot accidentally moved some of pucks
+        #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
 
         self.mutex.release()
 
+    # noinspection PyTypeChecker
     def tactics_callback(self, data):
 
         self.mutex.acquire()
@@ -178,6 +181,7 @@ class TacticsNode:
         rospy.loginfo("")
 
         self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)  # FIXME ask Misha
+
         # FIXME There is a time delay for coords from camera to come
         self.mutex.release()
 
@@ -196,20 +200,19 @@ class TacticsNode:
         :return:
         """
 
-        # TODO add Try-Except in case coords are not yet received
         # TODO add obvious state cases like IF STATE ==
         # inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
         rospy.loginfo('----------- Tactics TIMER_CALLBACK ------------------')
 
-        if self.cmd_type == "collect_chaos" and len(self.known_chaos) > 0:
+        if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
             # a = self.known_coords_of_chaos_pucks
             # b = self.sorted_chaos_landing_coordinates
             # a, b = self.execute_current_puck_cmd(a, b)
             # this doesn't work
-            self.known_chaos, self.sorted_chaos_landings = self.execute_puck_cmd(self.known_chaos, self.sorted_chaos_landings)
+            self.known_chaos_pucks, self.sorted_chaos_landings = self.execute_puck_cmd(self.known_chaos_pucks, self.sorted_chaos_landings)
 
-        elif self.cmd_type == "collect_wall_six" and len(self.known_coords_of_wall_six_pucks) > 0:
-            self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates = self.execute_puck_cmd(self.known_coords_of_wall_six_pucks, self.wall_six_landing_coordinates)
+        elif self.cmd_type == "collect_wall_six" and len(self.known_wall6_pucks) > 0:
+            self.known_wall6_pucks, self.wall_six_landing = self.execute_puck_cmd(self.known_wall6_pucks, self.wall_six_landing)
 
         # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_wall_three_pucks) > 0:
         #     grab_from_wall
@@ -239,38 +242,36 @@ class TacticsNode:
 
         # TODO somehow to add checking if it is near starting zone and autom change robot status (for testing)
         if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
-            landing = np.array([0.6, 0.6, 0])
-            landing = TacticsNode.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
-            self.move_command_publisher.publish(landing)  # TODO add command id
-            self.operating_state = 'robot moving to the goal zone'
+            landing = np.array([0.6, 0.6, 0.6])
+            cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
+            self.is_finished = False
+            self.move_command_publisher.publish(cmd)  # TODO add command id
+            self.operating_state = 'robot moving to goal zone'
 
-            print("checking if robot changes flag after moving to the goal zone")
-            print(self.response_finished)
+        if self.operating_state == 'robot moving to goal zone' and self.is_finished:
+            self.operating_state = 'robot approached zone and ready to collect'
 
-        if self.operating_state == 'robot moving to the goal zone' and self.response_finished:
-            self.operating_state = 'robot close to goal zone'
-
-        if self.operating_state == 'robot close to goal zone' and self.response_finished is True and self.robot_performs_moving is False:
-            self.robot_performs_moving = True
-            self.response_finished = False
+        if self.operating_state == 'robot approached zone and ready to collect' and not self.is_robot_moving:
+            self.is_robot_moving = True
+            self.is_finished = False
             landing = landings[0]
-            landing = TacticsNode.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
-            self.move_command_publisher.publish(landing)
+            cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
+            self.move_command_publisher.publish(cmd)
 
-        if self.operating_state == 'robot close to goal zone' and self.response_finished:
-            self.operating_state = 'robot reached goal zone'
+        if self.operating_state == 'robot approached zone and ready to collect' and self.is_finished:
+            self.operating_state = 'robot approaching nearest landing'
 
         # callback_response will fire and change self.robot_reached_goal_flag to True
-        if self.operating_state == 'robot reached goal zone' and self.response_finished is True and self.robot_is_collecting_puck is False:
-            self.robot_is_collecting_puck = True
+        if self.operating_state == 'robot approaching nearest landing' and not self.is_robot_collecting_puck:
+            self.is_robot_collecting_puck = True
+            self.operating_state = 'robot approached a puck and starting to collect'
             print("----------------------")
             print("robot collecting pucks")
-            print('robot reached goal zone')
             # self.puck_collected = self.manipulator.collect_puck()
-            self.puck_collected = TacticsNode.imitate_manipulator()
+            self.imitate_manipulator()
             # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
 
-        if self.puck_collected is True:
+        if self.operating_state == 'robot approached a puck and starting to collect' and self.is_puck_collected:
             self.atoms_collected += 1
             print("TN -- atoms collected, count: ", self.atoms_collected)
             coords = np.delete(coords, 0, axis=0)
@@ -283,14 +284,14 @@ class TacticsNode:
             print(" ")
             print("TN -- pucks left: ", len(coords))
 
-            self.robot_performs_moving = False
-            self.response_finished = True
-            self.robot_is_collecting_puck = False
-            self.puck_collected = False
-            self.operating_state = 'robot close to goal zone'
+            self.is_robot_moving = False
+            self.is_finished = True
+            self.is_robot_collecting_puck = False
+            self.is_puck_collected = False
+            self.operating_state = 'robot approached zone and ready to collect'
         return coords, landings
 
-    def callback_response(self, data):
+    def response_callback(self, data):
         """
         here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
         callback_response will fire and change self.robot_reached_goal_flag to True
@@ -298,7 +299,7 @@ class TacticsNode:
         :return:
         """
         if data.data == 'finished':  # TODO change so that response is marked by cmd_id ''
-            self.response_finished = True
+            self.is_finished = True
 
     @staticmethod
     def compose_command(landing, cmd_id, move_type):  # TODO here input cmd_type move_arc or move_line
@@ -316,9 +317,8 @@ class TacticsNode:
         rospy.loginfo(command)
         return command
 
-    @staticmethod
-    def imitate_manipulator():
-        return True
+    def imitate_manipulator(self):
+        self.is_puck_collected = True
 
     def stop_collecting(self):
         self.timer.shutdown()
@@ -326,7 +326,7 @@ class TacticsNode:
         rospy.sleep(1.0 / 40)
         self.operating_state = 'robot finished job'
         print(self.operating_state)
-        self.pub_response.publish("stopped_collecting")
+        self.response_publisher.publish(self.cmd_id + " finished")
 
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
 
@@ -352,8 +352,8 @@ class TacticsNode:
 
         assert new_obs_of_pucks.shape[1] == 3
 
-        known_ids = self.known_chaos[:, 0]
-        known_pucks = self.known_chaos
+        known_ids = self.known_chaos_pucks[:, 0]
+        known_pucks = self.known_chaos_pucks
         for puck in new_obs_of_pucks:
             puck_id = puck[0]
             if puck_id in known_ids:
@@ -361,10 +361,10 @@ class TacticsNode:
                 x_new, y_new = puck[1], puck[2]
                 x_old, y_old = known_pucks[1], known_pucks[2]
                 if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
-                    self.known_chaos[ind][1:] = puck[1:]
+                    self.known_chaos_pucks[ind][1:] = puck[1:]
             else:
                 # wtf happened? blink from sun? wasn't recognised at first time?
-                self.known_chaos = np.stack((self.known_chaos, puck), axis=0)
+                self.known_chaos_pucks = np.stack((self.known_chaos_pucks, puck), axis=0)
                 # self.known_coords_of_pucks.append(puck)
 
     @staticmethod
@@ -451,7 +451,7 @@ class TacticsNode:
         mc = np.mean(hull, axis=0)
         offset = list(hull)  # a miserable attempt to copy a list
         offset -= mc  # Normalize the polygon by subtracting the center values from every point.
-        offset *= self.ScaleFactor_
+        offset *= self.scale_factor
         offset += mc
 
         for orig, ofs in zip(hull, offset):
