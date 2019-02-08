@@ -66,7 +66,7 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
 
-rostopic pub -1 /cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
+rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 
 rosrun rqt_graph rqt_graph
 
@@ -95,6 +95,7 @@ git init
 git status
 git checkout branchname  # Change working branch
 git checkout -b your-branch # Create the branch on your local machine and switch in this branch
+git push -u upstream collect_chaos_pucks - in order for branch to watch origin
 
 git add filename
 git commit -m “Add chocolate.jpeg.”

@@ -123,10 +123,7 @@ class MotionPlannerNode:
         """
 
         self.mutex.acquire()
-
-        rospy.loginfo("")
-        rospy.loginfo("MotionPlannerNode - NEW CMD:\t" + str(data.data))
-
+        rospy.loginfo("MPN - NEW CMD: " + str(data.data))
         # when new cmd arrives shutdown running timer
         if self.timer is not None:
             self.timer.shutdown()
@@ -151,11 +148,10 @@ class MotionPlannerNode:
         self.mutex.release()
 
     def start_moving(self, goal, cmd_id, cmd_type):
-        rospy.loginfo(" ")
         rospy.loginfo("=====================================")
         rospy.loginfo("Setting a new goal:\t" + str(goal))
         rospy.loginfo("Current cmd:\t" + str(cmd_type))
-        rospy.loginfo("")
+        rospy.loginfo("=====================================")
         self.cmd_id = cmd_id
         self.current_cmd = cmd_type
         self.goal = goal

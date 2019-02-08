@@ -139,11 +139,12 @@ class TacticsNode:
         self.mutex.acquire()
 
         # FIXME IDs are not guaranteed to be the same from frame to frame
-        # FIXME::AL: is_new_pucks()
         # TODO add id of zone!!!!!!!!!!!!
         new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         new_observation_pucks = np.array(new_observation_pucks)
-        print('TN -- new_observation_pucks - should be printed ONE TIME only')
+        print('TN -- new_observation_pucks')
+        print(new_observation_pucks)
+
         if len(self.known_chaos_pucks) == 0:
             self.known_chaos_pucks = new_observation_pucks
             coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
@@ -202,7 +203,8 @@ class TacticsNode:
 
         # TODO add obvious state cases like IF STATE ==
         # inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
-        rospy.loginfo('----------- Tactics TIMER_CALLBACK ------------------')
+        rospy.loginfo(' ')
+        rospy.loginfo('Tactics TIMER_CALLBACK')
 
         if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
             # a = self.known_coords_of_chaos_pucks
@@ -218,6 +220,7 @@ class TacticsNode:
         #     grab_from_wall
         # elif self.cmd_type == "collect_accel_blue_and_hold_up" and len(self.known_coords_of_pucks) > 0:
         #     func()
+        # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
         # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
         #     func()
         # place_atom_on_weights
@@ -237,15 +240,14 @@ class TacticsNode:
         :return:
         """
         print("-------------------")
-        print(self.operating_state)
+        print("TN: operating status ", self.operating_state)
         print("-------------------")
 
-        # TODO somehow to add checking if it is near starting zone and autom change robot status (for testing)
         if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
             landing = np.array([0.6, 0.6, 0.6])
             cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
             self.is_finished = False
-            self.move_command_publisher.publish(cmd)  # TODO add command id
+            self.move_command_publisher.publish(cmd)
             self.operating_state = 'robot moving to goal zone'
 
         if self.operating_state == 'robot moving to goal zone' and self.is_finished:
@@ -259,30 +261,30 @@ class TacticsNode:
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'robot approached zone and ready to collect' and self.is_finished:
-            self.operating_state = 'robot approaching nearest landing'
+            self.operating_state = 'robot approached nearest landing'
 
         # callback_response will fire and change self.robot_reached_goal_flag to True
-        if self.operating_state == 'robot approaching nearest landing' and not self.is_robot_collecting_puck:
+        if self.operating_state == 'robot approached nearest landing' and not self.is_robot_collecting_puck:
             self.is_robot_collecting_puck = True
-            self.operating_state = 'robot approached a puck and starting to collect'
-            print("----------------------")
-            print("robot collecting pucks")
+            self.operating_state = 'robot started collecting puck'
+            print("-------------------")
+            print("TN: operating status ", self.operating_state)
+            print("-------------------")
             # self.puck_collected = self.manipulator.collect_puck()
             self.imitate_manipulator()
-            # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
 
-        if self.operating_state == 'robot approached a puck and starting to collect' and self.is_puck_collected:
+        if self.operating_state == 'robot started collecting puck' and self.is_puck_collected:
             self.atoms_collected += 1
-            print("TN -- atoms collected, count: ", self.atoms_collected)
             coords = np.delete(coords, 0, axis=0)
             landings = np.delete(landings, 0, axis=0)
             landings = self.sort_landing_coords_wrt_current_pose(landings)
 
             # FIXME path_planner should decide which puck to collect and to remove from known
-            print("TN -- ---known coords AFTER deleting ----")
-            print(landings)
-            print(" ")
-            print("TN -- pucks left: ", len(coords))
+            # print("TN -- ---known coords AFTER deleting ----")
+            # print(landings)
+            # print(" ")
+            # FIXME when we receive new command the number of pucks is still zero?
+            rospy.loginfo('TN: pucks left: ' + str(len(coords)))
 
             self.is_robot_moving = False
             self.is_finished = True
@@ -302,7 +304,7 @@ class TacticsNode:
             self.is_finished = True
 
     @staticmethod
-    def compose_command(landing, cmd_id, move_type):  # TODO here input cmd_type move_arc or move_line
+    def compose_command(landing, cmd_id, move_type):
         x, y, theta = landing[0], landing[1], landing[2]
         command = str(cmd_id)
         command += ' '
@@ -313,19 +315,26 @@ class TacticsNode:
         command += str(y)
         command += ' '
         command += str(theta)
-        rospy.loginfo('-----TN----NEW COMMAND COMPOSED --------')
+        rospy.loginfo("=====================================")
+        rospy.loginfo('TN: NEW COMMAND COMPOSED')
         rospy.loginfo(command)
+        rospy.loginfo("=====================================")
         return command
 
     def imitate_manipulator(self):
+        # TODO read responce from step motor and when puck is inside - only than update number of collected pucks
         self.is_puck_collected = True
 
     def stop_collecting(self):
         self.timer.shutdown()
         rospy.loginfo("TN -- Robot has stopped collecting pucks.")
         rospy.sleep(1.0 / 40)
+        print(" ")
+        print(" ")
         self.operating_state = 'robot finished job'
         print(self.operating_state)
+        print(" ")
+        print(" ")
         self.response_publisher.publish(self.cmd_id + " finished")
 
     def compare_to_update_or_ignore(self, new_obs_of_pucks):
@@ -514,7 +523,7 @@ class TacticsNode:
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
 
             self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            rospy.loginfo("TN -- Robot coords:\t" + str(self.robot_coords))
+            rospy.loginfo("TN: Robot coords:\t" + str(self.robot_coords))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
