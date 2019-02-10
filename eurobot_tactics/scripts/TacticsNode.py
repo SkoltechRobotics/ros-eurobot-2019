@@ -128,7 +128,7 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
