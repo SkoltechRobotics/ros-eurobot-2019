@@ -127,7 +127,7 @@ class CameraUndistortNode():
             image_contours = self.contour.draw(image_contours, self.contour.all_contours)
 
             # Filter contours
-            contours_filtered = self.contour.filter(850, 100, 200)
+            contours_filtered = self.contour.filter(600, 150, 200)
             image_filter_contours = copy.copy(image)
             image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
