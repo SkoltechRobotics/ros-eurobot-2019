@@ -84,7 +84,8 @@ class Manipulator():
 		# Release grabber
 	self.send_command(10, 22)
 		# self.publisher.publish("manipulator-10 22")
-
+	return True
+	
 if __name__=="__main__":
 	print("1")
 	rospy.init_node("manuipulator_node", anonymous=True)	

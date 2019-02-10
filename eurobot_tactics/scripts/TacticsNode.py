@@ -8,7 +8,7 @@ from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-# from manipulator import Manipulator
+from manipulator import Manipulator
 
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
@@ -115,7 +115,8 @@ class TacticsNode:
 
         self.timer = None
 
-        # self.manipulator = Manipulator()
+        self.stm_command_publisher.publish("null 32")
+        self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
         rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
@@ -270,8 +271,9 @@ class TacticsNode:
             print("-------------------")
             print("TN: operating status ", self.operating_state)
             print("-------------------")
-            # self.puck_collected = self.manipulator.collect_puck()
-            self.imitate_manipulator()
+            self.is_puck_collected = self.manipulator.collect_puck()
+            self.stm_command_publisher.publish("null 34")
+            # self.imitate_manipulator()
 
         if self.operating_state == 'robot started collecting puck' and self.is_puck_collected:
             self.atoms_collected += 1
