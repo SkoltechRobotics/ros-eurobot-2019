@@ -63,12 +63,15 @@ class Contour():
         for cnt, coord, color in zip(contours, coordinates, colors):
             ellipse = cv2.fitEllipse(cnt)
             image = cv2.ellipse(image,ellipse,(0,255,0),2)
+
             cx = coord[0]
             cy = coord[1]
-            Cx = cx/pixel_scale_x
-            Cy = 2-cy/pixel_scale_y
+            print ("cx=",cx)
+            print ("cy=", cy)
+            # Cx = cx/pixel_scale_x
+            # Cy = 2-cy/pixel_scale_y
             image = cv2.putText(img=image,
-                                text="Cx=%.2f,Cy=%.2f,%s" % (Cx, Cy, color),
+                                text="Cx=%.2f,Cy=%.2f,%s" % (cx, cy, color),
                                 org=(int(cx),int(cy)),
                                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                 fontScale=2,
@@ -83,7 +86,9 @@ class Contour():
             M = cv2.moments(cnt)
             cx = M['m10']/M['m00']
             cy = M['m01']/M['m00']
-            coordinates.append((cx,cy))
+            Cx = cx/pixel_scale_x
+            Cy = 2-cy/pixel_scale_y
+            coordinates.append((Cx,Cy))
         return coordinates
 
     def is_contour_circle(self, contour, epsilon):
