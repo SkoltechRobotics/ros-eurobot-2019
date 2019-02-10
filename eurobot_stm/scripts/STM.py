@@ -23,7 +23,9 @@ class STM():
     def stm_command_callback(self, data):
         id, cmd, args = self.parse_data(data)
         successfully, values = self.stm_protocol.send(cmd, args)
-        response = str(id) + " " + str(values)
+        st = "".join(values)
+        response = str(id) + " " + st
+        print ("RESPONSE=", values)
         self.response.publish(response)
 
     def parse_data(self, data):

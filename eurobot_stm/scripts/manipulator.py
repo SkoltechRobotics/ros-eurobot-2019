@@ -22,6 +22,7 @@ class Manipulator():
         if re.match(r"manipulator-\d", response[0]):
             print ("response[0]", response[0])
         self.last_response_id = response[0]
+        self.last_response_id = response[0]
             self.last_response_args = response[1]
 
     def send_command(self, id, cmd):
@@ -33,7 +34,6 @@ class Manipulator():
             if self.last_response_id == ("manipulator-"+str(id)):
                 print ("YYYYYEEEESSSS")
                 if self.last_response_args == "OK":
-                    print("AS<AKMSFLAMSFALFM")
                     return self.last_response_args
 
 
@@ -86,3 +86,4 @@ class Manipulator():
         # Release grabber
         self.send_command(10, 22)
         # self.publisher.publish("manipulator-10 22")
+
