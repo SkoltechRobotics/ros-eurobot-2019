@@ -8,7 +8,7 @@ from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-from manipulator import Manipulator
+# from manipulator import Manipulator
 
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
@@ -115,10 +115,10 @@ class TacticsNode:
 
         self.timer = None
 
-        self.manipulator = Manipulator()
+        # self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 

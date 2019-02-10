@@ -6,7 +6,7 @@ import itertools
 
 from STM_protocol import STMprotocol
 from odometry import Odometry
-from manipulator import Manipulator
+# from manipulator import Manipulator
 
 ODOM_RATE = rospy.get_param("ODOM_RATE")
 
@@ -22,11 +22,11 @@ class STM():
     def stm_command_callback(self, data):
         id, cmd, args = self.parse_data(data)
         successfully, values = self.stm_protocol.send(cmd, args)
-    if values != None:
-        st = "".join(values)
-        response = str(id) + " " + st
-        print ("RESPONSE=", values)
-        self.response.publish(response)
+        if values != None:
+            st = "".join(values)	
+            response = str(id) + " " + st
+            print ("RESPONSE=", values)
+            self.response.publish(response)
 
     def parse_data(self, data):
         data_splitted = data.data.split()

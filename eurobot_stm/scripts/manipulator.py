@@ -36,58 +36,59 @@ class Manipulator():
 
 
     def collect_puck(self):
-		# Release grabber
-	print("__1__")
-	self.send_command(1, 22)
-	rospy.sleep(0.5)
-		# self.publisher.publish(String("manipulator-1 22"))
-		# Set pump to the wall
-	self.send_command(2, 20)
-        rospy.sleep(0.5)
+	# 	# Release grabber
+	# print("__1__")
+	# self.send_command(1, 22)
+	# rospy.sleep(0.5)
+	# 	# self.publisher.publish(String("manipulator-1 22"))
+	# 	# Set pump to the wall
+	# self.send_command(2, 20)
+        # rospy.sleep(0.5)
 
-		# self.publisher.publish(String("manipulator-2 20"))
-		# Set pump to the ground
-	self.send_command(3, 19)
-        rospy.sleep(0.5)
+	# 	# self.publisher.publish(String("manipulator-2 20"))
+	# 	# Set pump to the ground
+	# self.send_command(3, 19)
+        # rospy.sleep(0.5)
 
-        #         self.publisher.publish("manipulator-3 19")
-		# Start pump
-	self.send_command(4, 17)
-        rospy.sleep(0.5)
+        # #         self.publisher.publish("manipulator-3 19")
+	# 	# Start pump
+	# self.send_command(4, 17)
+        # rospy.sleep(0.5)
 
-        #         self.publisher.publish("manipulator-4 17")
-		# Set pump to the platform
-	self.send_command(5, 21)
-        rospy.sleep(0.5)
+        # #         self.publisher.publish("manipulator-4 17")
+	# 	# Set pump to the platform
+	# self.send_command(5, 21)
+        # rospy.sleep(0.5)
 
-                # self.publisher.publish("manipulator-5 21")
-		# Prop pack
-	self.send_command(6, 23)
-        rospy.sleep(0.5)
+        #         # self.publisher.publish("manipulator-5 21")
+	# 	# Prop pack
+	# self.send_command(6, 23)
+        # rospy.sleep(0.5)
 
-                # self.publisher.publish("manipulator-6 23")
-		# Stop pump
-	self.send_command(7, 18)
-        rospy.sleep(0.5)
+        #         # self.publisher.publish("manipulator-6 23")
+	# 	# Stop pump
+	# self.send_command(7, 18)
+        # rospy.sleep(0.5)
 
-                # self.publisher.publish("manipulator-7 18")
-		# Set pump to the wall
-	self.send_command(8, 20)
-        rospy.sleep(0.5)
+        #         # self.publisher.publish("manipulator-7 18")
+	# 	# Set pump to the wall
+	# self.send_command(8, 20)
+        # rospy.sleep(0.5)
 
-                # self.publisher.publish("manipulator-8 20")
-		# Grab pack
-	self.send_command(9, 24)
-        rospy.sleep(0.5)
+        #         # self.publisher.publish("manipulator-8 20")
+	# 	# Grab pack
+	# self.send_command(9, 24)
+        # rospy.sleep(0.5)
 
-		# self.publisher.publish("manipulator-9 24")
-		# Release grabber
-	self.send_command(10, 22)
-		# self.publisher.publish("manipulator-10 22")
+	# 	# self.publisher.publish("manipulator-9 24")
+	# 	# Release grabber
+	# self.send_command(10, 22)
+	# 	# self.publisher.publish("manipulator-10 22")
+	pass
 
 if __name__=="__main__":
 	print("1")
 	rospy.init_node("manuipulator_node", anonymous=True)	
 	manipulator = Manipulator()
-        manipulator.collect_puck()
+	manipulator.collect_puck()
 	print("2")
