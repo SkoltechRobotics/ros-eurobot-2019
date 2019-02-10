@@ -138,7 +138,7 @@ class MotionPlannerNode:
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
-            self.goal = goal
+            # self.goal = wrap_angle(goal[2])
             self.start_moving(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 

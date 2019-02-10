@@ -72,6 +72,14 @@ def calculate_distance(coords1, coords2):
     return distance_map_frame, theta_diff
 
 
+def wrap_back(angle):
+    """
+
+    :param angle: (-pi, pi)
+    :return: (0, 2*pi)
+    """
+    return (angle + 2 * np.pi) % (2 * np.pi)
+
 class TacticsNode:
     def __init__(self):
         rospy.init_node('TacticsNode', anonymous=True)
@@ -83,12 +91,13 @@ class TacticsNode:
         self.robot_name = "secondary_robot"
 
         # self.critical_angle = np.pi * 2/3
-        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
+        self.approach_dist = 0.17  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 2  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
 
         self.robot_coords = np.zeros(3)
+        self.active_goal = None
         self.atoms_collected = 0  # to preliminary calculate our score
 
         self.sorted_chaos_landings = np.array([])
@@ -119,7 +128,7 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -206,6 +215,7 @@ class TacticsNode:
         # inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
         rospy.loginfo(' ')
         rospy.loginfo('Tactics TIMER_CALLBACK')
+        rospy.loginfo('There are ' + str(len(self.known_chaos_pucks)) + ' pucks on the field')
 
         if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
             # a = self.known_coords_of_chaos_pucks
@@ -242,6 +252,7 @@ class TacticsNode:
         """
         print("-------------------")
         print("TN: operating status ", self.operating_state)
+        print("TN: active goal ", self.active_goal)
         print("-------------------")
 
         if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
@@ -258,6 +269,7 @@ class TacticsNode:
             self.is_robot_moving = True
             self.is_finished = False
             landing = landings[0]
+            self.active_goal = landing
             cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
 
@@ -271,9 +283,9 @@ class TacticsNode:
             print("-------------------")
             print("TN: operating status ", self.operating_state)
             print("-------------------")
-            self.is_puck_collected = self.manipulator.collect_puck()
+            # self.is_puck_collected = self.manipulator.collect_puck()
             self.stm_command_publisher.publish("null 34")
-            # self.imitate_manipulator()
+            self.imitate_manipulator()
 
         if self.operating_state == 'robot started collecting puck' and self.is_puck_collected:
             self.atoms_collected += 1
@@ -287,7 +299,7 @@ class TacticsNode:
             # print(" ")
             # FIXME when we receive new command the number of pucks is still zero?
             rospy.loginfo('TN: pucks left: ' + str(len(coords)))
-
+            self.active_goal = None
             self.is_robot_moving = False
             self.is_finished = True
             self.is_robot_collecting_puck = False
@@ -317,14 +329,15 @@ class TacticsNode:
         command += str(y)
         command += ' '
         command += str(theta)
-        rospy.loginfo("=====================================")
+        rospy.loginfo("=========================================================================")
         rospy.loginfo('TN: NEW COMMAND COMPOSED')
         rospy.loginfo(command)
-        rospy.loginfo("=====================================")
+        rospy.loginfo("=========================================================================")
         return command
 
     def imitate_manipulator(self):
         # TODO read responce from step motor and when puck is inside - only than update number of collected pucks
+        rospy.loginfo('TN: puck collected by imitator!!')
         self.is_puck_collected = True
 
     def stop_collecting(self):
@@ -466,10 +479,10 @@ class TacticsNode:
         offset += mc
 
         for orig, ofs in zip(hull, offset):
-
             dist, _ = calculate_distance(ofs, orig)
             gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
-
+            gamma = wrap_back(gamma)
+            print("orig coord: ", orig, "And orig-ofs gamma: ", gamma)
             x_landing1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
             x_landing2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
 
@@ -483,7 +496,7 @@ class TacticsNode:
             landings_coordinates.append(landing2)
 
         landings = np.array(landings_coordinates)
-        landing_indexes = TacticsNode.calculate_convex_hull(landings[:, :2])  # to get rid off
+        landing_indexes = self.calculate_convex_hull(landings[:, :2])  # to get rid off
         landings_coordinates = [landings[i] for i in landing_indexes]
 
         # another method is for situation where pucks are safely away from each other

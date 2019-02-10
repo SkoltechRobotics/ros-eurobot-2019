@@ -29,7 +29,7 @@ def publish_pucks(publisher_pucks, coordinates):
         marker.lifetime = rospy.Duration(50)
         markers.append(marker)
 
-    #print (markers)
+    # print (markers)
     publisher_pucks.publish(markers)
 
 
