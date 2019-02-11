@@ -19,8 +19,8 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 
 8 - vels
 14 - pos
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '8 0 0 0'" 
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '14 0 0 0'" 
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 14 0 0 0'" 
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
 
@@ -60,7 +60,7 @@ rosrun tf tf_echo map secondary_robot
 
 
 
-rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 1.5 0.45 3.14'"
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_arc 1.5 0.45 3.14'"
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 0.45 3.14'"
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57'"
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"

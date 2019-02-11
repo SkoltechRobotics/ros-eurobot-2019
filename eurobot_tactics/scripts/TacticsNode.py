@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import sys
 import rospy
 import numpy as np
 import tf2_ros
@@ -9,15 +9,16 @@ from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
 from manipulator import Manipulator
-
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
 # from sympy import Point, Polygon
 # from sympy.geometry import Triangle, Point
+# sys.path.append('/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs')  # FIXME
 
-# TODO
-# from core_functions import calculate_distance
-# from core_functions import wrap_angle
+from core_functions import calculate_distance
+from core_functions import wrap_angle
+from core_functions import wrap_back
+from core_functions import cvt_local2global
 
 
 """
@@ -28,7 +29,8 @@ TODO:
     - clockwise approaching in order to keep camera view open
     - if all or most of pucks lie separately and safely, just start with the closest one and move counter / clockwise depending on the side
     - need to maintain unique id or order of pucks when deleting 
-    
+    - FIXME path_planner should decide which puck to collect and to remove from known
+    - in case we parse only first frame and while collecting pucks robot moves some of them, applying sort func is useless 
 4 in chaos zone
 3 periodic table
 6 wall
@@ -55,30 +57,31 @@ Output: ready-steady coordinate and go coordinate
 """
 
 
-def wrap_angle(angle):
-    """
-    Wraps the given angle to the range [-pi, +pi].
-    :param angle: The angle (in rad) to wrap (can be unbounded).
-    :return: The wrapped angle (guaranteed to in [-pi, +pi]).
-    """
-    return (angle + np.pi) % (np.pi * 2) - np.pi
+# def wrap_angle(angle):
+#     """
+#     Wraps the given angle to the range [-pi, +pi].
+#     :param angle: The angle (in rad) to wrap (can be unbounded).
+#     :return: The wrapped angle (guaranteed to in [-pi, +pi]).
+#     """
+#     return (angle + np.pi) % (np.pi * 2) - np.pi
 
 
-def calculate_distance(coords1, coords2):
-    theta_diff = None
-    distance_map_frame = coords2[:2] - coords1[:2]
-    if len(coords1) == 3 and len(coords2) == 3:
-        theta_diff = wrap_angle(coords2[2] - coords1[2])
-    return distance_map_frame, theta_diff
+# def calculate_distance(coords1, coords2):
+#     theta_diff = None
+#     distance_map_frame = coords2[:2] - coords1[:2]
+#     if len(coords1) == 3 and len(coords2) == 3:
+#         theta_diff = wrap_angle(coords2[2] - coords1[2])
+#     return distance_map_frame, theta_diff
+#
+#
+# def wrap_back(angle):
+#     """
+#
+#     :param angle: (-pi, pi)
+#     :return: (0, 2*pi)
+#     """
+#     return (angle + 2 * np.pi) % (2 * np.pi)
 
-
-def wrap_back(angle):
-    """
-
-    :param angle: (-pi, pi)
-    :return: (0, 2*pi)
-    """
-    return (angle + 2 * np.pi) % (2 * np.pi)
 
 class TacticsNode:
     def __init__(self):
@@ -91,7 +94,8 @@ class TacticsNode:
         self.robot_name = "secondary_robot"
 
         # self.critical_angle = np.pi * 2/3
-        self.approach_dist = 0.17  # meters, distance from robot to puck where robot will try to grab it # FIXME
+        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
+        self.drive_back_dist = np.array([-0.15, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 2  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
@@ -128,7 +132,7 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -260,12 +264,12 @@ class TacticsNode:
             cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
             self.is_finished = False
             self.move_command_publisher.publish(cmd)
-            self.operating_state = 'robot moving to goal zone'
+            self.operating_state = 'moving to goal zone'
 
-        if self.operating_state == 'robot moving to goal zone' and self.is_finished:
-            self.operating_state = 'robot approached zone and ready to collect'
+        if self.operating_state == 'moving to goal zone' and self.is_finished:
+            self.operating_state = 'approached zone and ready to collect'
 
-        if self.operating_state == 'robot approached zone and ready to collect' and not self.is_robot_moving:
+        if self.operating_state == 'approached zone and ready to collect' and not self.is_robot_moving:
             self.is_robot_moving = True
             self.is_finished = False
             landing = landings[0]
@@ -273,13 +277,14 @@ class TacticsNode:
             cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
 
-        if self.operating_state == 'robot approached zone and ready to collect' and self.is_finished:
-            self.operating_state = 'robot approached nearest landing'
+        if self.operating_state == 'approached zone and ready to collect' and self.is_finished:
+            self.is_robot_moving = False
+            self.operating_state = 'approached nearest landing'
 
         # callback_response will fire and change self.robot_reached_goal_flag to True
-        if self.operating_state == 'robot approached nearest landing' and not self.is_robot_collecting_puck:
+        if self.operating_state == 'approached nearest landing' and not self.is_robot_collecting_puck:
             self.is_robot_collecting_puck = True
-            self.operating_state = 'robot started collecting puck'
+            self.operating_state = 'started collecting puck'
             print("-------------------")
             print("TN: operating status ", self.operating_state)
             print("-------------------")
@@ -287,24 +292,29 @@ class TacticsNode:
             self.stm_command_publisher.publish("null 34")
             self.imitate_manipulator()
 
-        if self.operating_state == 'robot started collecting puck' and self.is_puck_collected:
+        if self.operating_state == 'started collecting puck' and self.is_puck_collected:
+            self.operating_state = 'puck successfully collected'
             self.atoms_collected += 1
+            rospy.loginfo('TN: pucks left: ' + str(len(coords)))
             coords = np.delete(coords, 0, axis=0)
             landings = np.delete(landings, 0, axis=0)
             landings = self.sort_landing_coords_wrt_current_pose(landings)
 
-            # FIXME path_planner should decide which puck to collect and to remove from known
-            # print("TN -- ---known coords AFTER deleting ----")
-            # print(landings)
-            # print(" ")
-            # FIXME when we receive new command the number of pucks is still zero?
-            rospy.loginfo('TN: pucks left: ' + str(len(coords)))
+        if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
+            self.operating_state = 'moving_back'
+            self.is_robot_moving = True
+            self.is_finished = False
+            landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
+            cmd = self.compose_command(landing, cmd_id='drive_back', move_type='move_line')
+            self.move_command_publisher.publish(cmd)
+
+        if self.operating_state == 'moving_back' and self.is_finished:
             self.active_goal = None
             self.is_robot_moving = False
             self.is_finished = True
             self.is_robot_collecting_puck = False
             self.is_puck_collected = False
-            self.operating_state = 'robot approached zone and ready to collect'
+            self.operating_state = 'approached zone and ready to collect'
         return coords, landings
 
     def response_callback(self, data):
