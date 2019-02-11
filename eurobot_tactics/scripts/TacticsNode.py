@@ -31,6 +31,9 @@ TODO:
     - need to maintain unique id or order of pucks when deleting 
     - FIXME path_planner should decide which puck to collect and to remove from known
     - in case we parse only first frame and while collecting pucks robot moves some of them, applying sort func is useless 
+    - Alexey need to parse particular local zones
+    
+
 4 in chaos zone
 3 periodic table
 6 wall
@@ -132,6 +135,10 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
+
+        # FIXME
+        #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
+
         rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
@@ -161,18 +168,20 @@ class TacticsNode:
 
         if len(self.known_chaos_pucks) == 0:
             self.known_chaos_pucks = new_observation_pucks
-            coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
-            hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
-            hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
-            # inner_angles = self.calculate_inner_angles(hull)
-            landings_coordinates = self.calculate_possible_chaos_landing_coords(hull)
-            self.sorted_chaos_landings = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
+            self.calculate_pucks_configuration()
 
-        # TODO try this in further tests
         # else:
         #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
 
         self.mutex.release()
+
+    def calculate_pucks_configuration(self):
+        coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+        hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
+        hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
+        # inner_angles = self.calculate_inner_angles(hull)
+        landings_coordinates = self.calculate_possible_chaos_landing_coords(hull)
+        self.sorted_chaos_landings = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
 
     # noinspection PyTypeChecker
     def tactics_callback(self, data):
@@ -284,7 +293,7 @@ class TacticsNode:
         # callback_response will fire and change self.robot_reached_goal_flag to True
         if self.operating_state == 'approached nearest landing' and not self.is_robot_collecting_puck:
             self.is_robot_collecting_puck = True
-            self.operating_state = 'started collecting puck'
+            self.operating_state = 'collecting puck'
             print("-------------------")
             print("TN: operating status ", self.operating_state)
             print("-------------------")
@@ -292,7 +301,7 @@ class TacticsNode:
             self.stm_command_publisher.publish("null 34")
             self.imitate_manipulator()
 
-        if self.operating_state == 'started collecting puck' and self.is_puck_collected:
+        if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
             self.atoms_collected += 1
             rospy.loginfo('TN: pucks left: ' + str(len(coords)))
@@ -315,6 +324,8 @@ class TacticsNode:
             self.is_robot_collecting_puck = False
             self.is_puck_collected = False
             self.operating_state = 'approached zone and ready to collect'
+            self.calculate_pucks_configuration()
+
         return coords, landings
 
     def response_callback(self, data):

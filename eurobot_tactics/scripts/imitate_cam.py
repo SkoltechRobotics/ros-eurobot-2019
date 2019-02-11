@@ -39,15 +39,15 @@ if __name__ == '__main__':
     # tactics_publisher = rospy.Publisher('cmd_tactics', String, queue_size=1)
 
     rospy.sleep(2)
-    coordinates_list = np.array([[0.9, 0.9],
-                                [0.8, 1],
-                                [1, 1.1],
-                                [1.1, 1]])
+    # coordinates_list = np.array([[0.9, 0.9],
+    #                             [0.8, 1],
+    #                             [1, 1.1],
+    #                             [1.1, 1]])
 
-    # coordinates_list = np.array([[0.7, 0.8],
-    #                             [0.9, 0.9],
-    #                             [1.1, 0.85],
-    #                             [0.9, 1.1]])
+    coordinates_list = np.array([[0.7, 0.8],
+                                [0.9, 0.9],
+                                [1.1, 0.85],
+                                [0.9, 1.1]])
 
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])
