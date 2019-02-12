@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import sys
+# import sys
 import rospy
 import numpy as np
 import tf2_ros
@@ -16,7 +16,7 @@ from manipulator import Manipulator
 # sys.path.append('/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs')  # FIXME
 
 from core_functions import calculate_distance
-from core_functions import wrap_angle
+# from core_functions import wrap_angle
 from core_functions import wrap_back
 from core_functions import cvt_local2global
 
@@ -168,20 +168,38 @@ class TacticsNode:
 
         if len(self.known_chaos_pucks) == 0:
             self.known_chaos_pucks = new_observation_pucks
-            self.calculate_pucks_configuration()
+            coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+            self.calculate_pucks_configuration(coords)
 
         # else:
         #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
 
         self.mutex.release()
 
-    def calculate_pucks_configuration(self):
-        coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+    def calculate_pucks_configuration(self, coords):
+        print(" ")
+        print("inside calculate_pucks_configuration")
+        print("input coords are")
+        print(coords)
+        print(" ")
         hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
         hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
+        print(" ")
+        print("calculating hull")
+        print(hull)
+        print(" ")
         # inner_angles = self.calculate_inner_angles(hull)
         landings_coordinates = self.calculate_possible_chaos_landing_coords(hull)
+        print(" ")
+        print("calculating landings")
+        print("landings are")
+        print(landings_coordinates)
+        print(" ")
         self.sorted_chaos_landings = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
+        print(" ")
+        print("TN: NEW CONFIGURATION CALCULATED ________________________________________________")
+        print(self.sorted_chaos_landings)
+        print(" ")
 
     # noinspection PyTypeChecker
     def tactics_callback(self, data):
@@ -223,19 +241,12 @@ class TacticsNode:
         - skip
         :return:
         """
-
-        # TODO add obvious state cases like IF STATE ==
-        # inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
         rospy.loginfo(' ')
         rospy.loginfo('Tactics TIMER_CALLBACK')
         rospy.loginfo('There are ' + str(len(self.known_chaos_pucks)) + ' pucks on the field')
 
         if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
-            # a = self.known_coords_of_chaos_pucks
-            # b = self.sorted_chaos_landing_coordinates
-            # a, b = self.execute_current_puck_cmd(a, b)
-            # this doesn't work
-            self.known_chaos_pucks, self.sorted_chaos_landings = self.execute_puck_cmd(self.known_chaos_pucks, self.sorted_chaos_landings)
+            self.known_chaos_pucks = self.execute_puck_cmd(self.known_chaos_pucks, self.sorted_chaos_landings)
 
         elif self.cmd_type == "collect_wall_six" and len(self.known_wall6_pucks) > 0:
             self.known_wall6_pucks, self.wall_six_landing = self.execute_puck_cmd(self.known_wall6_pucks, self.wall_six_landing)
@@ -279,6 +290,7 @@ class TacticsNode:
             self.operating_state = 'approached zone and ready to collect'
 
         if self.operating_state == 'approached zone and ready to collect' and not self.is_robot_moving:
+            self.operating_state = 'approaching nearest landing'
             self.is_robot_moving = True
             self.is_finished = False
             landing = landings[0]
@@ -286,35 +298,34 @@ class TacticsNode:
             cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
 
-        if self.operating_state == 'approached zone and ready to collect' and self.is_finished:
+        if self.operating_state == 'approaching nearest landing' and self.is_finished:
             self.is_robot_moving = False
-            self.operating_state = 'approached nearest landing'
+            self.operating_state = 'nearest landing approached'
 
         # callback_response will fire and change self.robot_reached_goal_flag to True
-        if self.operating_state == 'approached nearest landing' and not self.is_robot_collecting_puck:
+        if self.operating_state == 'nearest landing approached' and not self.is_robot_collecting_puck:
             self.is_robot_collecting_puck = True
             self.operating_state = 'collecting puck'
-            print("-------------------")
-            print("TN: operating status ", self.operating_state)
-            print("-------------------")
             # self.is_puck_collected = self.manipulator.collect_puck()
-            self.stm_command_publisher.publish("null 34")
+            self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
             self.atoms_collected += 1
-            rospy.loginfo('TN: pucks left: ' + str(len(coords)))
             coords = np.delete(coords, 0, axis=0)
-            landings = np.delete(landings, 0, axis=0)
-            landings = self.sort_landing_coords_wrt_current_pose(landings)
+            rospy.loginfo('TN: pucks left: ' + str(len(coords)))
+            # landings = np.delete(landings, 0, axis=0)
+            self.calculate_pucks_configuration(coords[:, 1:])
+            # landings = self.sort_landing_coords_wrt_current_pose(landings)
 
         if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
             self.operating_state = 'moving_back'
             self.is_robot_moving = True
             self.is_finished = False
-            landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
-            cmd = self.compose_command(landing, cmd_id='drive_back', move_type='move_line')
+            move_back_landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
+            cmd = self.compose_command(move_back_landing, cmd_id='drive_back', move_type='move_line')
+            self.active_goal = move_back_landing
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'moving_back' and self.is_finished:
@@ -324,9 +335,8 @@ class TacticsNode:
             self.is_robot_collecting_puck = False
             self.is_puck_collected = False
             self.operating_state = 'approached zone and ready to collect'
-            self.calculate_pucks_configuration()
 
-        return coords, landings
+        return coords  # , landings
 
     def response_callback(self, data):
         """
@@ -503,7 +513,6 @@ class TacticsNode:
             dist, _ = calculate_distance(ofs, orig)
             gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
             gamma = wrap_back(gamma)
-            print("orig coord: ", orig, "And orig-ofs gamma: ", gamma)
             x_landing1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
             x_landing2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
 

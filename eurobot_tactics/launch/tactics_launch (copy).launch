@@ -1,8 +1,0 @@
-
-
- # vis.launch
-    <node pkg="eurobot_sim" name="PucksCreator" type="PucksCreator.py"  output="screen"/>
-
-  </group>
-</launch>
-
