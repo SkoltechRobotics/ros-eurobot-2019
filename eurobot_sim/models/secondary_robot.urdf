@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="secondary_robot">
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+
+  <link name="secondary_robot">
+<visual>
+      <origin
+        xyz="0.25 -0.75 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://eurobot_sim/models/secondary_robot.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+	<material
+        name="yellow">
+        <color
+          rgba="1 0.964705882 0.560784314 1" />
+      </material>
+    </visual>
+  </link>
+
+</robot>

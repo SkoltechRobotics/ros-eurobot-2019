@@ -97,26 +97,26 @@ class StmNode(STMprotocol):
         return action_name, action_type, args
 
     def finish_command(self, action_name, action_status="finished"):
-        rospy.loginfo("FINISHED STM COMMAND: " + action_name + " with status " + action_status)
+        # rospy.loginfo("FINISHED STM COMMAND: " + action_name + " with status " + action_status)
         self.pub_response.publish(action_name + " " + action_status)
 
     def stm_command_callback(self, data):
-        rospy.loginfo("Get cmd: " + data.data)
+        # rospy.loginfo("Get cmd: " + data.data)
         action_name, action_type, args = self.parse_data(data)
         successfully, responses = self.send(action_name, action_type, args)
         if action_type in IMMEDIATE_FINISHED:
-            rospy.loginfo("start immediate finished " + action_name + " " + str(action_type) + " " + str(args))
+            # rospy.loginfo("start immediate finished " + action_name + " " + str(action_type) + " " + str(args))
             self.finish_command(action_name, "finished")
         if action_type in DEBUG_COMMANDS:
-            rospy.loginfo(action_name + ' ' + str(action_type) + ' ' + str(args) + ' ' + "successfully? :" +
+            # rospy.loginfo(action_name + ' ' + str(action_type) + ' ' + str(args) + ' ' + "successfully? :" +
                           str(successfully) + ' ' + str(responses))
         if action_type in ODOMETRY_MOVEMENT or \
                 (action_type == CMD_VEL and args == [.0, .0, .0]):
-            rospy.loginfo("start odometry movement " + action_name + " " + str(action_type) + " " + str(args))
+            # rospy.loginfo("start odometry movement " + action_name + " " + str(action_type) + " " + str(args))
             self.odometry_movement_id = action_name
             self.timer_odom_move = rospy.Timer(rospy.Duration(1.0 / STATUS_RATE), self.odometry_movement_timer)
         if action_type in MANIPULATOR_JOBS:
-            rospy.loginfo("start manipulator jobs " + action_name + " " + str(action_type) + " " + str(args))
+            # rospy.loginfo("start manipulator jobs " + action_name + " " + str(action_type) + " " + str(args))
             if self.robot_name == "main_robot":
                 n = args[0]
             else:
@@ -180,14 +180,14 @@ class StmNode(STMprotocol):
             if successfully:
                 self.pub_rf.publish(Int32MultiArray(data=rf_data))
             else:
-                rospy.loginfo("RF response " + str(successfully))
+                # rospy.loginfo("RF response " + str(successfully))
 
         if self.robot_name == "secondary_robot":
             successfully, rf_data = self.send('request_rf_data_secondary_robot', REQUEST_RF_DATA_SECONDARY, [])
             if successfully:
                 self.pub_rf.publish(Int32MultiArray(data=rf_data))
             else:
-                rospy.loginfo("RF response " + str(successfully))
+                # rospy.loginfo("RF response " + str(successfully))
 
     def odometry_movement_timer(self, event):
         successfully, args_response = self.send('GET_ODOMETRY_MOVEMENT_STATUS', GET_ODOMETRY_MOVEMENT_STATUS, [])
@@ -217,7 +217,7 @@ class StmNode(STMprotocol):
         return m_timer
 
     def stm_node_command_callback(self, data):
-        rospy.loginfo("stm node command " + data.data)
+        # rospy.loginfo("stm node command " + data.data)
         splitted_data = data.data.split()
         if splitted_data[1] == "start_wire":
             self.wire_timer.shutdown()
