@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
-  <param name = "field/color" value = "orange"/>
-  <group ns = "secondary_robot">
-    <node pkg="eurobot_nav" name="MotionPlannerNode" type="MotionPlannerNode.py" respawn="true" output="log"/>
-  </group>
-</launch>
-
