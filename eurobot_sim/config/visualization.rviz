@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /TF1/Frames1
         - /TF1/Tree1
+        - /Field1
+        - /MainRobot1
       Splitter Ratio: 0.592190862
     Tree Height: 782
   - Class: rviz/Selection
@@ -83,13 +85,19 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        map:
+          Value: true
+        secondary_robot:
+          Value: true
       Marker Scale: 0.400000006
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          secondary_robot:
+            {}
       Update Interval: 0
       Value: true
     - Attached Body Color: 150; 50; 150
@@ -114,7 +122,7 @@ Visualization Manager:
           Value: true
       Name: Field
       Robot Alpha: 0.5
-      Robot Description: field_description
+      Robot Description: visualization/field_description
       Robot State Topic: display_robot_state
       Show All Links: true
       Show Highlights: true
@@ -130,6 +138,11 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        main_robot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: MainRobot
       Robot Alpha: 1
       Robot Description: main_robot/description
@@ -512,25 +525,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.2195816
+      Distance: 4.64773369
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.37899578
-        Y: 1.01821685
-        Z: -0.373539984
+        X: 0.494520128
+        Y: -0.719138265
+        Z: 0.0211531669
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.34979701
+      Pitch: 1.03479707
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.77948189
+      Yaw: 6.12448215
     Saved: ~
 Window Geometry:
   Displays:
