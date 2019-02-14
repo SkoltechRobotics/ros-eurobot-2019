@@ -223,6 +223,9 @@ In the header of each file we need to state which env to use:
 
 
 
+# Usefull shortcuts
+Ctrl Alt 9 / 3 / 6 / 7 for sticking windows to different screen corners
+
 
 
 TROOBLESHOOTING

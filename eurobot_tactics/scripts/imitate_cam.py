@@ -44,10 +44,28 @@ if __name__ == '__main__':
     #                             [1, 1.1],
     #                             [1.1, 1]])
 
-    coordinates_list = np.array([[0.7, 0.8],
-                                [0.9, 0.9],
-                                [1.1, 0.85],
-                                [0.9, 1.1]])
+    # FIXME this one fails!!
+    # coordinates_list = np.array([[0.9, 0.9],
+    #                             [0.9, 1],
+    #                             [0.9, 1.1],
+    #                             [0.9, 1.2]])
+
+    # 2-4 diagonal ok
+    # coordinates_list = np.array([[0.9, 0.9],
+    #                             [1, 1],
+    #                             [1.1, 1.1],
+    #                             [1.2, 1.2]])
+
+    # 1-3 diagonal fails
+    coordinates_list = np.array([[1.2, 0.9],
+                                 [1.1, 1],
+                                 [1, 1.1],
+                                 [0.9, 1.2]])
+
+    # coordinates_list = np.array([[0.7, 0.8],
+    #                             [0.9, 0.9],
+    #                             [1.1, 0.85],
+    #                             [0.9, 1.1]])
 
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])

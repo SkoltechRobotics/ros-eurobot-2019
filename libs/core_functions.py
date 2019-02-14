@@ -45,8 +45,12 @@ def calculate_distance(coords1, coords2):
 def cvt_local2global(local_point, src_point):
     """
     Convert points from local frame to global
-    For example we have a robot located in one point (src_point param) and we want it to move half a meter back, while keeping the same orientation.
-    The easiest way to do it is to imagine that robot stays at [x=0, y=0, theta=0] in his local frame and to substract 0.5 from corresponding axis
+
+    For example we have a robot located in one point (src_point param) and we
+    want it to move half a meter back, while keeping the same orientation.
+
+    The easiest way to do it is to imagine that robot stays at [x=0, y=0, theta=0] in his local frame and
+    to substract 0.5 from corresponding axis
     Considering X axis is looking forward, we'll get [-0.5, 0, 0] - this is a local_point param
 
     :param local_point: A local point or array of local points that must be converted 1-D np.array or 2-D np.array

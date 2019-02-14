@@ -113,7 +113,7 @@ class TacticsNode:
         self.known_wall6_pucks = np.array([])
         self.wall_six_landing = np.array([])
 
-        self.operating_state = 'waiting in the start zone'
+        self.operating_state = 'waiting for command'
         self.is_finished = False
         self.is_puck_collected_and_arm_ready = False
         self.is_robot_moving = False
@@ -140,7 +140,7 @@ class TacticsNode:
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
 
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -187,9 +187,9 @@ class TacticsNode:
         self.known_chaos_pucks = self.sort_coords_wrt_robot()
 
         print(" ")
-        print("TN: NEW LANDINGS CALCULATED ________________________________________________")
+        print("TN: NEW LANDINGS CALCULATED")
         print(self.sorted_chaos_landings)
-
+        print(" ")
         # self.mutex.release()
         return coords
 
@@ -269,54 +269,41 @@ class TacticsNode:
         # print("TN: active goal ", self.active_goal)
         # print("-------------------")
 
-        if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
+        if self.operating_state == 'waiting for command' and not self.is_robot_moving:  # FIXME
             rospy.loginfo(self.operating_state)
             self.calculate_pucks_configuration()
-            landing = self.sorted_chaos_landings[0]
-            cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
-            self.is_finished = False
-            self.move_command_publisher.publish(cmd)
-            self.operating_state = 'moving to goal zone'
-            print(self.is_finished)
-            print("must be true at the end")
 
-        if self.operating_state == 'moving to goal zone' and self.is_finished:
-            rospy.loginfo(self.operating_state)
-            self.operating_state = 'approached zone and ready to collect'
-
-        if self.operating_state == 'approached zone and ready to collect' and not self.is_robot_moving:
-            rospy.loginfo(self.operating_state)
-            self.operating_state = 'approaching nearest landing'
-            self.is_robot_moving = True
-            self.is_finished = False
             landing = self.sorted_chaos_landings[0]
             self.active_goal = landing
-            rospy.loginfo("active goal: " + str(self.active_goal))
-            cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
+            cmd = self.compose_command(landing, cmd_id='approach_nearest_landing', move_type='move_line')
             self.move_command_publisher.publish(cmd)
+            self.is_robot_moving = True
+            self.is_finished = False
+            self.operating_state = 'approaching nearest landing'
+            rospy.loginfo(self.operating_state)
 
         if self.operating_state == 'approaching nearest landing' and self.is_finished:
-            rospy.loginfo(self.operating_state)
             self.is_robot_moving = False
+            rospy.loginfo(self.operating_state)
             self.operating_state = 'nearest landing approached'
 
         # callback_response will fire and change self.robot_reached_goal_flag to True
         if self.operating_state == 'nearest landing approached' and not self.is_robot_collecting_puck:
+            self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
             self.is_robot_collecting_puck = True
-            self.operating_state = 'collecting puck'
             # self.is_puck_collected = self.manipulator.collect_puck()
             self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
-            rospy.loginfo(self.operating_state)
+            self.is_robot_collecting_puck = False
+            self.is_puck_collected = False
             self.operating_state = 'puck successfully collected'
+            rospy.loginfo(self.operating_state)
             self.atoms_collected += 1
             self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
             rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
-            # landings = np.delete(landings, 0, axis=0)
-            # landings = self.sort_landing_coords_wrt_current_pose(landings)
 
         if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
             self.operating_state = 'moving_back'
@@ -333,15 +320,102 @@ class TacticsNode:
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'moving_back' and self.is_finished:
+            self.operating_state = 'waiting for command'
+            rospy.loginfo(self.operating_state)
             self.active_goal = None
             self.is_robot_moving = False
             self.is_finished = True
-            self.is_robot_collecting_puck = False
-            self.is_puck_collected = False
             self.sorted_chaos_landings = None
-            self.calculate_pucks_configuration()
-            self.operating_state = 'approached zone and ready to collect'
-            rospy.loginfo(self.operating_state)
+
+    # def execute_puck_cmd(self):
+    #     """
+    #     0. Get the closest to robot landing from the list
+    #     1. Approach it
+    #     2. Grab and load it
+    #     3. Remove from list of known
+    #     4. Add to list of collected and count points TODO
+    #
+    #     we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
+    #     :return:
+    #     """
+    #     # print("-------------------")
+    #     # print("TN: operating status ", self.operating_state)
+    #     # print("TN: active goal ", self.active_goal)
+    #     # print("-------------------")
+    #
+    #     if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
+    #         rospy.loginfo(self.operating_state)
+    #         self.calculate_pucks_configuration()
+    #         landing = self.sorted_chaos_landings[0]
+    #         cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
+    #         self.is_finished = False
+    #         self.move_command_publisher.publish(cmd)
+    #         self.operating_state = 'moving to goal zone'
+    #         print(self.is_finished)
+    #         print("must be true at the end")
+    #
+    #     if self.operating_state == 'moving to goal zone' and self.is_finished:
+    #         rospy.loginfo(self.operating_state)
+    #         self.operating_state = 'approached zone and ready to collect'
+    #
+    #     if self.operating_state == 'approached zone and ready to collect' and not self.is_robot_moving:
+    #         rospy.loginfo(self.operating_state)
+    #         self.operating_state = 'approaching nearest landing'
+    #         self.is_robot_moving = True
+    #         self.is_finished = False
+    #         landing = self.sorted_chaos_landings[0]
+    #         self.active_goal = landing
+    #         rospy.loginfo("active goal: " + str(self.active_goal))
+    #         cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
+    #         self.move_command_publisher.publish(cmd)
+    #
+    #     if self.operating_state == 'approaching nearest landing' and self.is_finished:
+    #         rospy.loginfo(self.operating_state)
+    #         self.is_robot_moving = False
+    #         self.operating_state = 'nearest landing approached'
+    #
+    #     # callback_response will fire and change self.robot_reached_goal_flag to True
+    #     if self.operating_state == 'nearest landing approached' and not self.is_robot_collecting_puck:
+    #         rospy.loginfo(self.operating_state)
+    #         self.is_robot_collecting_puck = True
+    #         self.operating_state = 'collecting puck'
+    #         # self.is_puck_collected = self.manipulator.collect_puck()
+    #         self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
+    #         self.imitate_manipulator()
+    #
+    #     if self.operating_state == 'collecting puck' and self.is_puck_collected:
+    #         rospy.loginfo(self.operating_state)
+    #         self.operating_state = 'puck successfully collected'
+    #         self.atoms_collected += 1
+    #         self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
+    #         rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
+    #         # landings = np.delete(landings, 0, axis=0)
+    #         # landings = self.sort_landing_coords_wrt_current_pose(landings)
+    #
+    #     if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
+    #         self.operating_state = 'moving_back'
+    #         rospy.loginfo(self.operating_state)
+    #         self.is_robot_moving = True
+    #         self.is_finished = False
+    #
+    #         while not self.update_coords():
+    #             rospy.sleep(0.05)
+    #         move_back_landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
+    #
+    #         cmd = self.compose_command(move_back_landing, cmd_id='drive_back', move_type='move_line')
+    #         self.active_goal = move_back_landing
+    #         self.move_command_publisher.publish(cmd)
+    #
+    #     if self.operating_state == 'moving_back' and self.is_finished:
+    #         self.active_goal = None
+    #         self.is_robot_moving = False
+    #         self.is_finished = True
+    #         self.is_robot_collecting_puck = False
+    #         self.is_puck_collected = False
+    #         self.sorted_chaos_landings = None
+    #         self.calculate_pucks_configuration()
+    #         self.operating_state = 'approached zone and ready to collect'
+    #         rospy.loginfo(self.operating_state)
 
     def response_callback(self, data):
         """
@@ -365,10 +439,10 @@ class TacticsNode:
         command += str(y)
         command += ' '
         command += str(theta)
-        rospy.loginfo("=========================================================================")
+        rospy.loginfo("====================================================================================")
         rospy.loginfo('TN: NEW COMMAND COMPOSED')
         rospy.loginfo(command)
-        rospy.loginfo("=========================================================================")
+        rospy.loginfo("====================================================================================")
         return command
 
     def imitate_manipulator(self):
@@ -382,7 +456,15 @@ class TacticsNode:
         rospy.sleep(1.0 / 40)
         print(" ")
         print(" ")
-        self.operating_state = 'robot finished job'
+
+        self.is_robot_moving = False
+        self.active_goal = None
+        self.is_finished = True
+        self.is_robot_collecting_puck = False
+        self.is_puck_collected = False
+        self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
+        self.operating_state = 'waiting for command'
+
         print(self.operating_state)
         print(" ")
         print(" ")
