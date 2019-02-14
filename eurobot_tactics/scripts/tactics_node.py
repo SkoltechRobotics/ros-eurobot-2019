@@ -99,13 +99,14 @@ class TacticsNode:
         # self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.approach_vec = np.array([-0.11, 0, 0])
-        self.drive_back_dist = np.array([-0.15, 0, 0])
+        self.drive_back_dist = np.array([-0.05, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
-        self.scale_factor = 2  # used in calculating outer bissectrisa for hull's angles
+        self.scale_factor = 5  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
 
         self.robot_coords = np.zeros(3)
         self.active_goal = None
+        self.goal_landing = None
         self.atoms_collected = 0  # to preliminary calculate our score
 
         self.sorted_chaos_landings = np.array([])
@@ -186,6 +187,9 @@ class TacticsNode:
         self.sorted_chaos_landings = self.calculate_sort_chaos_landing_coords(hull)
         self.known_chaos_pucks = self.sort_coords_wrt_robot()
 
+        print(" ")
+        print("sorted known_chaos_pucks")
+        print(self.known_chaos_pucks)
         print(" ")
         print("TN: NEW LANDINGS CALCULATED")
         print(self.sorted_chaos_landings)
@@ -269,62 +273,66 @@ class TacticsNode:
         # print("TN: active goal ", self.active_goal)
         # print("-------------------")
 
-        if self.operating_state == 'waiting for command' and not self.is_robot_moving:  # FIXME
+        if self.operating_state == 'waiting for command' and not self.is_robot_moving:
             rospy.loginfo(self.operating_state)
             self.calculate_pucks_configuration()
 
-            landing = self.sorted_chaos_landings[0]
-            self.active_goal = landing
-            cmd = self.compose_command(landing, cmd_id='approach_nearest_landing', move_type='move_line')
+            self.goal_landing = self.sorted_chaos_landings[0]
+            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+
+            self.active_goal = prelanding
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
             self.is_robot_moving = True
             self.is_finished = False
-            self.operating_state = 'approaching nearest landing'
+            self.operating_state = 'approaching nearest PRElanding'
             rospy.loginfo(self.operating_state)
 
-        if self.operating_state == 'approaching nearest landing' and self.is_finished:
+        if self.operating_state == 'approaching nearest PRElanding' and self.is_finished:
+            self.operating_state = 'nearest PRElanding approached'
+            rospy.loginfo(self.operating_state)
             self.is_robot_moving = False
-            rospy.loginfo(self.operating_state)
-            self.operating_state = 'nearest landing approached'
+            self.active_goal = None
 
-        # callback_response will fire and change self.robot_reached_goal_flag to True
-        if self.operating_state == 'nearest landing approached' and not self.is_robot_collecting_puck:
+        if self.operating_state == 'nearest PRElanding approached' and not self.is_robot_moving:
+            self.operating_state = 'approaching nearest LANDING'
+            rospy.loginfo(self.operating_state)
+            self.active_goal = self.goal_landing
+            self.is_finished = False
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_LANDING', move_type='move_line')
+            self.move_command_publisher.publish(cmd)
+            self.is_robot_moving = True
+
+        if self.operating_state == 'approaching nearest LANDING' and self.is_finished:
+            self.operating_state = 'nearest LANDING approached'
+            rospy.loginfo(self.operating_state)
+            self.is_robot_moving = False
+
+        if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
             self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
+            self.goal_landing = None
             self.is_robot_collecting_puck = True
             # self.is_puck_collected = self.manipulator.collect_puck()
             self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
-            self.is_robot_collecting_puck = False
-            self.is_puck_collected = False
             self.operating_state = 'puck successfully collected'
             rospy.loginfo(self.operating_state)
+            self.is_robot_collecting_puck = False
             self.atoms_collected += 1
             self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
+            print("after deleting")
+            print(self.known_chaos_pucks)
             rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
 
-        if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
-            self.operating_state = 'moving_back'
-            rospy.loginfo(self.operating_state)
-            self.is_robot_moving = True
-            self.is_finished = False
-
-            while not self.update_coords():
-                rospy.sleep(0.05)
-            move_back_landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
-
-            cmd = self.compose_command(move_back_landing, cmd_id='drive_back', move_type='move_line')
-            self.active_goal = move_back_landing
-            self.move_command_publisher.publish(cmd)
-
-        if self.operating_state == 'moving_back' and self.is_finished:
+        if self.operating_state == 'puck successfully collected':
             self.operating_state = 'waiting for command'
             rospy.loginfo(self.operating_state)
-            self.active_goal = None
+            self.is_puck_collected = False
             self.is_robot_moving = False
-            self.is_finished = True
+            self.active_goal = None
             self.sorted_chaos_landings = None
 
     # def execute_puck_cmd(self):
@@ -612,10 +620,27 @@ class TacticsNode:
                 candidate1 = np.array([x_landing1 + orig[0], y_landing1 + orig[1], gamma])
                 candidate2 = np.array([x_landing2 + orig[0], y_landing2 + orig[1], gamma])
 
-                candidates.append(candidate1)
-                candidates.append(candidate2)
+                xmin = min(orig[0], ofs[0])
+                xmax = max(orig[0], ofs[0])
+                ymin = min(orig[1], ofs[1])
+                ymax = max(orig[1], ofs[1])
+                print ("ORIG=", orig)
+                print ("xmin=",xmin)
+                print ("xmax=",xmax)
+                print ("ymin=",ymin)
+                print ("ymax=",ymax)
+                print ("OFS=", ofs)
+                print ("candidate1=", candidate1)
+                print ("candidate2=", candidate2)
+                if (candidate1[0] >= xmin and candidate1[0] <= xmax and candidate1[1] >= ymin and candidate1[1] <= ymax):
+                    candidates.append(candidate1)
+                elif (candidate2[0] >= xmin and candidate2[0] <= xmax and candidate2[1] >= ymin and candidate2[1] <= ymax):
+                    candidates.append(candidate2)
+                else:
+                    print ("SOMETHING WRONGS AT LANDING CALCULATIONS")
 
             candidates = np.array(candidates)  # for two pucks there are 4 candidates, for three - 6 candidates
+            print (candidates)
 
             if len(hull) >= 3:
                 landing_indexes = self.calculate_convex_hull(candidates[:, :2])  # to get rid off
