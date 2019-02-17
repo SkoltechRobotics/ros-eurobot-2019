@@ -11,7 +11,7 @@ from threading import Lock
 from manipulator import Manipulator
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
-# from sympy import Point, Polygon
+from sympy import Point, Polygon
 # from sympy.geometry import Triangle, Point
 # sys.path.append('/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs')  # FIXME
 
@@ -19,7 +19,7 @@ from core_functions import calculate_distance
 # from core_functions import wrap_angle
 from core_functions import wrap_back
 from core_functions import cvt_local2global
-
+from math import radians, degrees
 
 """
 This algorithm knows nothing about obstacles and etc, it just generates sorted list of options.
@@ -32,7 +32,7 @@ TODO:
     - FIXME path_planner should decide which puck to collect and to remove from known
     - in case we parse only first frame and while collecting pucks robot moves some of them, applying sort func is useless 
     - Alexey need to parse particular local zones
-    
+    - FIXME !!!!!!!! need to remove coords from known list by ID, and NOT by sorting them wrt to robot -- otherwise it can lead to troubles
 
 4 in chaos zone
 3 periodic table
@@ -46,44 +46,12 @@ Receiving coords from camera each 2-3 seconds
 Each time coords are received we call function callback which compares currently known coords and newly received ones
 If difference between newly received and known are within accuracy level (threshold), do nothing, else update known coords
 
-With timer we can call 10 times per sec and recalculate environment
-
-When robot reaches landing position it publishes in response that tusk is ready and than it's time to call Alexey's code to take pucks 
-
 Inside:
-    - 
     - calculates the convex hull of these points
     - calculates inner angles and sorts them
     - calculates bissectrisa of the angle and adds offset
     -
-Output: ready-steady coordinate and go coordinate
 """
-
-
-# def wrap_angle(angle):
-#     """
-#     Wraps the given angle to the range [-pi, +pi].
-#     :param angle: The angle (in rad) to wrap (can be unbounded).
-#     :return: The wrapped angle (guaranteed to in [-pi, +pi]).
-#     """
-#     return (angle + np.pi) % (np.pi * 2) - np.pi
-
-
-# def calculate_distance(coords1, coords2):
-#     theta_diff = None
-#     distance_map_frame = coords2[:2] - coords1[:2]
-#     if len(coords1) == 3 and len(coords2) == 3:
-#         theta_diff = wrap_angle(coords2[2] - coords1[2])
-#     return distance_map_frame, theta_diff
-#
-#
-# def wrap_back(angle):
-#     """
-#
-#     :param angle: (-pi, pi)
-#     :return: (0, 2*pi)
-#     """
-#     return (angle + 2 * np.pi) % (2 * np.pi)
 
 
 class TacticsNode:
@@ -97,11 +65,12 @@ class TacticsNode:
         self.robot_name = "secondary_robot"
 
         # self.critical_angle = np.pi * 2/3
+        self.area_threshold = 0.03  # FIXME make it ydelnaya area na puck
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
         self.approach_vec = np.array([-0.11, 0, 0])
         self.drive_back_dist = np.array([-0.05, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
-        self.scale_factor = 5  # used in calculating outer bissectrisa for hull's angles
+        self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
 
         self.robot_coords = np.zeros(3)
@@ -137,7 +106,6 @@ class TacticsNode:
         self.manipulator = Manipulator()
 
         # coords are published as markers in one list according to 91-92 undistort.py
-
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
 
@@ -168,8 +136,10 @@ class TacticsNode:
         print('TN -- new_observation_pucks')
         print(new_observation_pucks)
 
+        self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
+
         if len(self.known_chaos_pucks) == 0:
-            self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+            self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [array(x0, y0), array(x1, y1), ...]
             # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
             # self.known_chaos_pucks = self.calculate_pucks_configuration(coords)
 
@@ -181,17 +151,21 @@ class TacticsNode:
     def calculate_pucks_configuration(self):
         # self.mutex.acquire()  STOPS WORKING
 
-        coords = self.known_chaos_pucks
+        coords = self.known_chaos_pucks  # [array(x0, y0), array(x1, y1), ...]
         hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
         hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
+
+        print("hull is")
+        print(hull)  # [array([ 0.98,  0.82]), array([ 1.06,  0.98]), array([ 0.98,  0.9 ])]
+
         self.sorted_chaos_landings = self.calculate_sort_chaos_landing_coords(hull)
-        self.known_chaos_pucks = self.sort_coords_wrt_robot()
+        self.known_chaos_pucks = self.sort_coords_wrt_robot()  # FIXME !!!!!!!! need to remove coords from known list by ID, and NOT by sorting them wrt to robot
 
         print(" ")
         print("sorted known_chaos_pucks")
         print(self.known_chaos_pucks)
         print(" ")
-        print("TN: NEW LANDINGS CALCULATED")
+        print("TN: NEW SORTED LANDINGS CALCULATED")
         print(self.sorted_chaos_landings)
         print(" ")
         # self.mutex.release()
@@ -295,12 +269,12 @@ class TacticsNode:
             self.active_goal = None
 
         if self.operating_state == 'nearest PRElanding approached' and not self.is_robot_moving:
-            self.operating_state = 'approaching nearest LANDING'
-            rospy.loginfo(self.operating_state)
             self.active_goal = self.goal_landing
             self.is_finished = False
             cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_LANDING', move_type='move_line')
             self.move_command_publisher.publish(cmd)
+            self.operating_state = 'approaching nearest LANDING'
+            rospy.loginfo(self.operating_state)
             self.is_robot_moving = True
 
         if self.operating_state == 'approaching nearest LANDING' and self.is_finished:
@@ -309,22 +283,23 @@ class TacticsNode:
             self.is_robot_moving = False
 
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
-            self.operating_state = 'collecting puck'
-            rospy.loginfo(self.operating_state)
             self.goal_landing = None
-            self.is_robot_collecting_puck = True
             # self.is_puck_collected = self.manipulator.collect_puck()
             self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
+            self.is_robot_collecting_puck = True
+            self.operating_state = 'collecting puck'
+            rospy.loginfo(self.operating_state)
             self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
-            rospy.loginfo(self.operating_state)
+            rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
             self.is_robot_collecting_puck = False
             self.atoms_collected += 1
+            print(" ")
+            print("now delete puck", self.known_chaos_pucks[0])
+            print(" ")
             self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
-            print("after deleting")
-            print(self.known_chaos_pucks)
             rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
 
         if self.operating_state == 'puck successfully collected':
@@ -334,96 +309,6 @@ class TacticsNode:
             self.is_robot_moving = False
             self.active_goal = None
             self.sorted_chaos_landings = None
-
-    # def execute_puck_cmd(self):
-    #     """
-    #     0. Get the closest to robot landing from the list
-    #     1. Approach it
-    #     2. Grab and load it
-    #     3. Remove from list of known
-    #     4. Add to list of collected and count points TODO
-    #
-    #     we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
-    #     :return:
-    #     """
-    #     # print("-------------------")
-    #     # print("TN: operating status ", self.operating_state)
-    #     # print("TN: active goal ", self.active_goal)
-    #     # print("-------------------")
-    #
-    #     if self.operating_state == 'waiting in the start zone' or self.operating_state == 'robot finished job':  # FIXME
-    #         rospy.loginfo(self.operating_state)
-    #         self.calculate_pucks_configuration()
-    #         landing = self.sorted_chaos_landings[0]
-    #         cmd = self.compose_command(landing, cmd_id='reach_chaos', move_type='move_line')
-    #         self.is_finished = False
-    #         self.move_command_publisher.publish(cmd)
-    #         self.operating_state = 'moving to goal zone'
-    #         print(self.is_finished)
-    #         print("must be true at the end")
-    #
-    #     if self.operating_state == 'moving to goal zone' and self.is_finished:
-    #         rospy.loginfo(self.operating_state)
-    #         self.operating_state = 'approached zone and ready to collect'
-    #
-    #     if self.operating_state == 'approached zone and ready to collect' and not self.is_robot_moving:
-    #         rospy.loginfo(self.operating_state)
-    #         self.operating_state = 'approaching nearest landing'
-    #         self.is_robot_moving = True
-    #         self.is_finished = False
-    #         landing = self.sorted_chaos_landings[0]
-    #         self.active_goal = landing
-    #         rospy.loginfo("active goal: " + str(self.active_goal))
-    #         cmd = self.compose_command(landing, cmd_id='empty_chaos', move_type='move_arc')
-    #         self.move_command_publisher.publish(cmd)
-    #
-    #     if self.operating_state == 'approaching nearest landing' and self.is_finished:
-    #         rospy.loginfo(self.operating_state)
-    #         self.is_robot_moving = False
-    #         self.operating_state = 'nearest landing approached'
-    #
-    #     # callback_response will fire and change self.robot_reached_goal_flag to True
-    #     if self.operating_state == 'nearest landing approached' and not self.is_robot_collecting_puck:
-    #         rospy.loginfo(self.operating_state)
-    #         self.is_robot_collecting_puck = True
-    #         self.operating_state = 'collecting puck'
-    #         # self.is_puck_collected = self.manipulator.collect_puck()
-    #         self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
-    #         self.imitate_manipulator()
-    #
-    #     if self.operating_state == 'collecting puck' and self.is_puck_collected:
-    #         rospy.loginfo(self.operating_state)
-    #         self.operating_state = 'puck successfully collected'
-    #         self.atoms_collected += 1
-    #         self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
-    #         rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
-    #         # landings = np.delete(landings, 0, axis=0)
-    #         # landings = self.sort_landing_coords_wrt_current_pose(landings)
-    #
-    #     if self.operating_state == 'puck successfully collected' and not self.is_robot_moving:
-    #         self.operating_state = 'moving_back'
-    #         rospy.loginfo(self.operating_state)
-    #         self.is_robot_moving = True
-    #         self.is_finished = False
-    #
-    #         while not self.update_coords():
-    #             rospy.sleep(0.05)
-    #         move_back_landing = cvt_local2global(self.drive_back_dist, self.robot_coords)
-    #
-    #         cmd = self.compose_command(move_back_landing, cmd_id='drive_back', move_type='move_line')
-    #         self.active_goal = move_back_landing
-    #         self.move_command_publisher.publish(cmd)
-    #
-    #     if self.operating_state == 'moving_back' and self.is_finished:
-    #         self.active_goal = None
-    #         self.is_robot_moving = False
-    #         self.is_finished = True
-    #         self.is_robot_collecting_puck = False
-    #         self.is_puck_collected = False
-    #         self.sorted_chaos_landings = None
-    #         self.calculate_pucks_configuration()
-    #         self.operating_state = 'approached zone and ready to collect'
-    #         rospy.loginfo(self.operating_state)
 
     def response_callback(self, data):
         """
@@ -447,10 +332,10 @@ class TacticsNode:
         command += str(y)
         command += ' '
         command += str(theta)
-        rospy.loginfo("====================================================================================")
+        rospy.loginfo("=============================")
         rospy.loginfo('TN: NEW COMMAND COMPOSED')
         rospy.loginfo(command)
-        rospy.loginfo("====================================================================================")
+        rospy.loginfo("=============================")
         return command
 
     def imitate_manipulator(self):
@@ -551,32 +436,6 @@ class TacticsNode:
         # hull = [coords[i] for i in h]  # this was used to extract coords from input list using calculated indexes
         return h
 
-    # def calculate_inner_angles(self, hull):
-    #     """
-    #     Input:
-    #     hull
-    #
-    #     Calculates inner angles of a convex hull
-    #     Sorts them
-    #     optional (Removes angles that are below threshold safe level)
-    #
-    #     :return: sorted list of angles starting with sharpest one
-    #     """
-    #     # p1, p2, p3, p4 = map(Point, [(0, 0), (1, 0), (5, 1), (0, 1)])
-    #     # p1, p2, p3, p4 = map(Point, hull)  # need to unpack hull?
-    #     poly = Polygon(hull)
-    #     inner_angles = np.array(poly.angles)
-    #
-    #     # angles bigger that critical value are marked with big value and are not considered
-    #     # inner_safe_angles = np.putmask(inner_angles, (inner_angles > self.critical_angle), 1000)
-    #     inner_safe_angles = np.where(inner_angles > self.critical_angle, None, inner_angles)
-    #     inner_safe_angles = zip(hull, inner_safe_angles)  # returns for ex [((x0, y0), pi/3), ((x1, y1), pi/2), ((x2, y2), pi/6), ((x3, y3), None)]
-    #     inner_safe_angles.sort(key=lambda t: t[1])  # sorts by calculated angle. But how will 'None' perform? TODO reverse?
-    #
-    #     # TODO need to maintain unique id or order of pucks when deleting
-    #
-    #     return inner_safe_angles
-
     def calculate_sort_chaos_landing_coords(self, hull):
         """
         Calculates offset a hull,
@@ -591,59 +450,12 @@ class TacticsNode:
 
         :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
         """
-
-        # this method can be applied when pucks are close to each other
-        # calculate offset
-        # calc angle of bissectrisa which it outer wrt original hull
-        # calc point that is const vector away from centre of puck
-
         landings_coordinates = []
-        candidates = []
-
         if len(hull) >= 2:
-            mc = np.mean(hull, axis=0)
-            offset = list(hull)  # a miserable attempt to copy a list
-            offset -= mc  # Normalize the polygon by subtracting the center values from every point.
-            offset *= self.scale_factor
-            offset += mc
-
-            for orig, ofs in zip(hull, offset):
-                dist, _ = calculate_distance(ofs, orig)
-                gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
-                gamma = wrap_back(gamma)
-                x_landing1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
-                x_landing2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
-
-                y_landing1 = np.tan(gamma) * x_landing1
-                y_landing2 = np.tan(gamma) * x_landing2
-
-                candidate1 = np.array([x_landing1 + orig[0], y_landing1 + orig[1], gamma])
-                candidate2 = np.array([x_landing2 + orig[0], y_landing2 + orig[1], gamma])
-
-                xmin = min(orig[0], ofs[0])
-                xmax = max(orig[0], ofs[0])
-                ymin = min(orig[1], ofs[1])
-                ymax = max(orig[1], ofs[1])
-                print ("ORIG=", orig)
-                print ("xmin=",xmin)
-                print ("xmax=",xmax)
-                print ("ymin=",ymin)
-                print ("ymax=",ymax)
-                print ("OFS=", ofs)
-                print ("candidate1=", candidate1)
-                print ("candidate2=", candidate2)
-                if (candidate1[0] >= xmin and candidate1[0] <= xmax and candidate1[1] >= ymin and candidate1[1] <= ymax):
-                    candidates.append(candidate1)
-                elif (candidate2[0] >= xmin and candidate2[0] <= xmax and candidate2[1] >= ymin and candidate2[1] <= ymax):
-                    candidates.append(candidate2)
-                else:
-                    print ("SOMETHING WRONGS AT LANDING CALCULATIONS")
-
-            candidates = np.array(candidates)  # for two pucks there are 4 candidates, for three - 6 candidates
-            print (candidates)
+            candidates = self.calculate_candidates(hull)
 
             if len(hull) >= 3:
-                landing_indexes = self.calculate_convex_hull(candidates[:, :2])  # to get rid off
+                landing_indexes = self.calculate_convex_hull(candidates[:, :2])  # convex hull of landings this time
                 landings_coordinates = [candidates[i] for i in landing_indexes]
 
             elif len(hull) == 2:
@@ -657,6 +469,61 @@ class TacticsNode:
             landings_coordinates = self.calculate_closest_landing_to_point(hull)
 
         return landings_coordinates
+
+    @staticmethod
+    def polygon_area(hull):
+        x = np.array([h[0] for h in hull])
+        y = np.array([h[1] for h in hull])  # because slicing doesn't work for some reason
+        # coordinate shift
+        x_ = x - np.mean(x)
+        y_ = y - np.mean(y)
+        correction = x_[-1] * y_[0] - y_[-1] * x_[0]
+        main_area = np.dot(x_[:-1], y_[1:]) - np.dot(y_[:-1], x_[1:])
+        return 0.5*np.abs(main_area + correction)
+
+    def calculate_candidates(self, hull):
+        candidates = []
+        mc = np.mean(hull, axis=0)
+        offset = list(hull)  # a miserable attempt to copy a list
+        offset -= mc  # Normalize the polygon by subtracting the center values from every point.
+        offset *= self.scale_factor
+        offset += mc
+
+        for orig, ofs in zip(hull, offset):
+            dist, _ = calculate_distance(ofs, orig)
+            gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
+            gamma = wrap_back(gamma)
+            x_landing1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
+            x_landing2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
+
+            y_landing1 = np.tan(gamma) * x_landing1
+            y_landing2 = np.tan(gamma) * x_landing2
+
+            candidate1 = np.array([x_landing1 + orig[0], y_landing1 + orig[1], gamma])
+            candidate2 = np.array([x_landing2 + orig[0], y_landing2 + orig[1], gamma])
+
+            xmin = min(orig[0], ofs[0])
+            xmax = max(orig[0], ofs[0])
+            ymin = min(orig[1], ofs[1])
+            ymax = max(orig[1], ofs[1])
+
+            if candidate1[0] >= xmin and candidate1[0] <= xmax and candidate1[1] >= ymin and candidate1[1] <= ymax:
+                candidates.append(candidate1)
+            elif candidate2[0] >= xmin and candidate2[0] <= xmax and candidate2[1] >= ymin and candidate2[1] <= ymax:
+                candidates.append(candidate2)
+            else:
+                print ("ORIG=", orig)
+                print ("OFS=", ofs)
+                print ("candidate1=", candidate1)
+                print ("candidate2=", candidate2)
+                print ("SOMETHING WRONG AT LANDING CALCULATIONS")
+
+        candidates = np.array(candidates)  # for two pucks there are 4 candidates, for three - 6 candidates
+        print(" ")
+        print("candidates are: ")
+        print (candidates)
+        print(" ")
+        return candidates
 
     def calculate_closest_landing_to_point(self, point):
         """
@@ -706,29 +573,90 @@ class TacticsNode:
         :param landings_coordinates: [[x_l, y_l, gamma], ...]
         :return: format: [[3, 3, 1.57], [1, 1, 3.14], [2, 2, 4, 71], [0, 0, 6.28]]
         """
+        landings_coordinates = np.array(landings_coordinates)
+
         if len(landings_coordinates) == 1:
             return landings_coordinates
         else:
-            while not self.update_coords():
-                rospy.sleep(0.05)
+            hull_area = self.polygon_area(landings_coordinates)
+            print(" ")
+            print("hull area is", hull_area)
+            print(" ")
+            # if pucks are lying on a line or nearly on a line, than we start collecting from the sharpest angle
+            if hull_area <= self.area_threshold and len(landings_coordinates) > 2:
+                sorted_coords = self.calculate_and_sort_by_inner_angles(landings_coordinates)
 
-            distances_from_robot_to_landings = []
-            for landing in landings_coordinates:
-                # print("landing is", landing)
-                dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
-                dist_norm = np.linalg.norm(dist)
-                distances_from_robot_to_landings.append(dist_norm)
-            a = zip(landings_coordinates, distances_from_robot_to_landings)
-            a.sort(key=lambda t: t[1])
-            sorted_coords = [v[0] for v in a]
+            # if pucks are lying far from each other, start collecting with the closest puck
+            else:
+                while not self.update_coords():
+                    rospy.sleep(0.05)
+
+                distances_from_robot_to_landings = []
+                for landing in landings_coordinates:
+                    # print("landing is", landing)
+                    dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
+                    dist_norm = np.linalg.norm(dist)
+                    distances_from_robot_to_landings.append(dist_norm)
+                a = zip(landings_coordinates, distances_from_robot_to_landings)
+                a.sort(key=lambda t: t[1])
+                sorted_coords = [v[0] for v in a]
             return sorted_coords
+
+    @staticmethod
+    def calculate_and_sort_by_inner_angles(landings_coordinates):
+        """
+        Input:
+        hull [array([ 0.9,  0.9]), array([ 1.06,  0.98]), array([ 0.98,  0.82]), array([ 0.98,  0.9 ])]
+
+        Calculates inner angles of a convex hull
+        Sorts them
+        TODO Remove DANGEROUS angles that are below threshold safe level
+
+        :return: list of vertices sorted by their angles starting with sharpest one
+        [array([ 1.06,  0.98]),
+         array([ 0.98,  0.82]),
+         array([ 0.9,  0.9]),
+         array([ 0.98,  0.9 ])]
+        """
+        print("INSIDE INNER ANGLES FUNC")
+        poly = None
+        landings_coordinates = np.array(landings_coordinates)
+        if len(landings_coordinates) == 4:
+            p1, p2, p3, p4 = map(Point, landings_coordinates[:, :2])
+            poly = Polygon(p1, p2, p3, p4)
+        elif len(landings_coordinates) == 3:
+            p1, p2, p3 = map(Point, landings_coordinates[:, :2])
+            poly = Polygon(p1, p2, p3)
+        # print("poly")
+        # print(poly)
+        # print(" ")
+        inner_angles = np.array([poly.angles[k] for k in poly.angles])  # [acos(4/5), 3*pi/2, ...]
+        inner_angles_rad = [radians(degrees(k)) for k in inner_angles]
+        print("landings_coordinates")
+        print(landings_coordinates)
+        print(" ")
+
+        print("inner_angles_rad")
+        print(inner_angles_rad)
+        print(" ")
+
+        vertices_angles = zip(landings_coordinates, inner_angles_rad)  # returns [(array([ 0.9,  0.9]), acos(4/5)), ...]
+        vertices_angles.sort(key=lambda t: t[1])  # sorts by calculated angle
+        print(" ")
+        print("vertices_angles sorted")
+        print(vertices_angles)
+        print(" ")
+        sorted_vertices_by_angle = [v[0] for v in vertices_angles]
+        # TODO need to maintain unique id or order of pucks when deleting
+        return sorted_vertices_by_angle
 
     def sort_coords_wrt_robot(self):
         """
         To make operation more quick there is no need to choose the sharpest angle,
         instead better choose the closest one from angles that are marked as safe.
-        :return: format [[(id0, x0, y0), d0], ...]
+        :return: format [[(id0, x0, y0), d0], ...]  NOT ANYMORE
         """
+        # TODO remove this function and generalise function above
         if len(self.known_chaos_pucks) == 1:
             return self.known_chaos_pucks
         else:

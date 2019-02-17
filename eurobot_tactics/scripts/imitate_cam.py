@@ -28,7 +28,7 @@ def publish_pucks(publisher_pucks, coordinates):
         marker.scale.z = 0.0125
         marker.color.a = 1
         marker.color.r = 1
-        marker.lifetime = rospy.Duration(50)
+        marker.lifetime = rospy.Duration(70)
         markers.append(marker)
 
     # print (markers)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
                                     [0.8, 1],
                                     [1, 1.1],
                                     [1.1, 1]])
-    elif number == 3:  # failing
+    elif number == 3:  # fails
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 0.82],
                                     [0.98, 0.82],
@@ -74,28 +74,36 @@ if __name__ == '__main__':
                                     [0.9, 0.9],
                                     [1.1, 0.85],
                                     [0.9, 1.1]])
+    elif number == 5:  # fails
+        coordinates_list = np.array([[0.9, 0.9],
+                                    [1.06, 0.98],
+                                    [0.98, 0.82],
+                                    [0.98, 0.9]])
 
+    # works but only if robot moves from side.
+    # Need to test how it moves when the closest puck is in the middle of the line
+    elif number == 6:
+        coordinates_list = np.array([[0.9, 0.9],
+                                    [0.9, 1],
+                                    [0.9, 1.1],
+                                    [0.9, 1.2]])
 
-
-
-
-    # FIXME this one fails!!
-    # coordinates_list = np.array([[0.9, 0.9],
-    #                             [0.9, 1],
-    #                             [0.9, 1.1],
-    #                             [0.9, 1.2]])
+    elif number == 7:  # 1-3 diagonal fails
+        coordinates_list = np.array([[1.2, 0.9],
+                                     [1.1, 1],
+                                     [1, 1.1],
+                                     [0.9, 1.2]])
+    elif number == 8:  # 1-3 diagonal fails
+        coordinates_list = np.array([[1.21, 0.91],
+                                     [1.15, 0.99],
+                                     [1.01, 1.09],
+                                     [0.91, 1.19]])
 
     # 2-4 diagonal ok
     # coordinates_list = np.array([[0.9, 0.9],
     #                             [1, 1],
     #                             [1.1, 1.1],
     #                             [1.2, 1.2]])
-
-    # 1-3 diagonal fails
-    # coordinates_list = np.array([[1.2, 0.9],
-    #                              [1.1, 1],
-    #                              [1, 1.1],
-    #                              [0.9, 1.2]])
 
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])
