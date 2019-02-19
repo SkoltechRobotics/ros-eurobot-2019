@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg = "eurobot_nav" name="motion_planner" type = "MotionPlannerNode.py" />
+    <node pkg="eurobot_sim" name="stm_node" type="stm_node.py"/>
+    <include file="$(find eurobot_loc)/launch/visualization.launch" />
+    <node pkg="eurobot_nav" name="MapPublisher" type="MapPublisher.py"/>
+    <group ns="navigation">
+        <node pkg="eurobot_nav" name="path_planner" type="path_planner_node" output="screen">
+            <remap from="goal" to="/move_base_simple/goal"/>
+            <remap from="move_cmd" to="cmd_move"/>
+            <remap from="map" to="/map"/>
+        </node>
+    </group>
+</launch>
