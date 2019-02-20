@@ -30,7 +30,7 @@ class Manipulator():
         else:
             message = str(self.id_command) + str(cmd) + str(args)
         while (True):
-            self.publisher.publish(String(message))
+            self.publisher.publish(String("manipulator-"+self.id_command+" "+str(cmd)))
             self.id_command += 1
             rospy.sleep(0.1)
             if self.last_response_id == (str(self.id_command)):
