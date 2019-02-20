@@ -33,7 +33,7 @@ class Manipulator():
             self.publisher.publish(String(message))
 
             rospy.sleep(0.1)
-            if self.last_response_id == (str(self.id_command)):
+            if self.last_response_id == ("manipulator-" + str(self.id_command)):
                 if self.last_response_args == "OK":
                     self.id_command += 1
                     return self.last_response_args
@@ -70,31 +70,59 @@ class Manipulator():
     def collect_puck_big(self):
         # Release grabber
         self.send_command(22)
+        rospy.sleep(0.5)
         # Collector move default
         self.send_command(25)
+        rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command(20)
+        rospy.sleep(0.5)
         # Set pump to the ground
         self.send_command(19)
+        rospy.sleep(0.5)
         # Start pump
         self.send_command(17)
+        rospy.sleep(0.5)
         # Set pump to the platform
         self.send_command(21)
+        rospy.sleep(0.5)
         # Prop pack
         self.send_command(23)
+        rospy.sleep(0.5)
         # Stop pump
         self.send_command(18)
+        rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command(20)
+        rospy.sleep(0.5)
         # Grab pack
         self.send_command(24)
+        rospy.sleep(0.5)
         # Collector move right/left
         self.send_command(32)
+        rospy.sleep(0.5)
         # Make step down left / right collector
         self.send_command(50, 1)
+        rospy.sleep(0.5)
         # Release grabber
         self.send_command(22)
 
+    def release_puck(self):
+        # Release grabber
+        self.send_command(33)
+        rospy.sleep(0.5)
+        # Collector move default
+        self.send_command(34)
+        rospy.sleep(0.5)
+        # Set pump to the wall
+        self.send_command(51, 1)
+        rospy.sleep(0.5)
+        # Release grabber
+        self.send_command(51, 1)
+        rospy.sleep(0.5)
+        # Collector move default
+        self.send_command(35)
+        rospy.sleep(0.5)
 
 
 
