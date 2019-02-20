@@ -27,10 +27,15 @@ class STMprotocol(object):
             0x16: "=",
             0x17: "=",
             0x18: "=",
+            0x19: "=",
             0x20: "=",
-            0x21: "=I",
+            0x21: "=B",
             0x22: "=",
             0x23: "=",
+            0x30: "=B",
+            0x31: "=",
+            0x32: "=B",
+            0x33: "=B",
         }
 
         self.unpack_format = {
@@ -49,12 +54,18 @@ class STMprotocol(object):
             0x16: "=cc",
             0x17: "=cc",
             0x18: "=cc",
+            0x19: "=cc",
             0x20: "=cc",
             0x21: "=cc",
             0x22: "=cc",
             0x23: "=cc",
+            0x30: "=cc",
+            0x31: "=cc",
+            0x32: "=cc",
+            0x33: "=cc",
+
         }
-        
+
         self.response_bytes = {
             0x01: 4,
             0x07: 12,
@@ -71,10 +82,15 @@ class STMprotocol(object):
             0x16: 2,
             0x17: 2,
             0x18: 2,
+            0x19: 2,
             0x20: 2,
             0x21: 2,
             0x22: 2,
             0x23: 2,
+            0x30: 2,
+            0x31: 2,
+            0x32: 2,
+            0x33: 2,
         }
 
     def send(self, cmd, args):
@@ -101,8 +117,8 @@ class STMprotocol(object):
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
         return True, values
-        
-        
+
+
     def send_command(self, cmd, args, n_repeats=5):
         for i in range(n_repeats):
             try:
