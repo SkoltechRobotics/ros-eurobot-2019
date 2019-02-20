@@ -23,9 +23,14 @@ class Manipulator():
             self.last_response_id = response[0]
             self.last_response_args = response[1]
 
-    def send_command(self, id, cmd, args):
+    def send_command(self, id, cmd, args=None):
+        message = ""
+        if args == None:
+            message = str(id) +str(cmd)
+        else:
+            message = str(id) + str(cmd) + str(args)
         while (True):
-            self.publisher.publish(String(str(id) +str(cmd) + str(args)))
+            self.publisher.publish(String(message))
             self.id_command += 1
             rospy.sleep(0.1)
             if self.last_response_id == (str(id)):
