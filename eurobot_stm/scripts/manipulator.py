@@ -26,15 +26,16 @@ class Manipulator():
     def send_command(self, cmd, args=None):
         message = ""
         if args == None:
-            message = str(self.id_command) + str(cmd)
+            message = "manipulator-" + str(self.id_command) + " " + str(cmd)
         else:
-            message = str(self.id_command) + str(cmd) + str(args)
+            message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
         while (True):
-            self.publisher.publish(String("manipulator-"+self.id_command+" "+str(cmd)))
-            self.id_command += 1
+            self.publisher.publish(String(message))
+
             rospy.sleep(0.1)
             if self.last_response_id == (str(self.id_command)):
                 if self.last_response_args == "OK":
+                    self.id_command += 1
                     return self.last_response_args
                 # if don't get response a lot of time
 
@@ -55,6 +56,7 @@ class Manipulator():
         self.send_command(48, 1)
 
         self.send_command(50, 1)
+        rospy.sleep(2)
         self.send_command(32)
 
         self.send_command(48, 0)
@@ -65,24 +67,55 @@ class Manipulator():
         self.send_command(25)
 
 
+    def collect_puck_big(self):
+        # Release grabber
+        self.send_command(22)
+        # Collector move default
+        self.send_command(25)
+        # Set pump to the wall
+        self.send_command(20)
+        # Set pump to the ground
+        self.send_command(19)
+        # Start pump
+        self.send_command(17)
+        # Set pump to the platform
+        self.send_command(21)
+        # Prop pack
+        self.send_command(23)
+        # Stop pump
+        self.send_command(18)
+        # Set pump to the wall
+        self.send_command(20)
+        # Grab pack
+        self.send_command(24)
+        # Collector move right/left
+        self.send_command(32)
+        # Make step down left / right collector
+        self.send_command(50, 1)
+        # Release grabber
+        self.send_command(22)
+
+
+
+
     def collect_puck(self):
         # Release grabber
-        self.send_command("manipulator-release_grabber", 22)
+        self.send_command(22)
         # Set pump to the wall
-        self.send_command("manipulator-set_pump_to_the_wall", 20)
+        self.send_command(20)
         # Set pump to the ground
-        self.send_command("manipulator-set_pump_to_the_ground", 19)
+        self.send_command(19)
         # Start pump
-        self.send_command("manipulator-start_pump", 17)
+        self.send_command(17)
         # Set pump to the platform
-        self.send_command("manipulator-set_pump_to_the_platform", 21)
+        self.send_command(21)
         # Prop pack
-        self.send_command("manipulator-prop_pack", 23)
+        self.send_command(23)
         # Stop pump
-        self.send_command("manipulator-stop_pump", 18)
+        self.send_command(18)
         # Set pump to the wall
-        self.send_command("manipulator-set_pump_to_the_wall", 20)
+        self.send_command(20)
         # Grab pack
-        self.send_command("manipulator-grab_pack", 24)
+        self.send_command(24)
         # Release grabber
-        self.send_command("manipulator-release_grabber", 22)
+        self.send_command(22)
