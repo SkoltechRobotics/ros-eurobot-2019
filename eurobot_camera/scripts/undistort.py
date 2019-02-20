@@ -110,14 +110,15 @@ class CameraUndistortNode():
         rospy.loginfo(rospy.get_caller_id())
 
         # Process image
-        # image = image_processing.equalize_histogram(image, 1.0, (21,21))
+        # TODO:: ADD cropping the image to
+        image = image_processing.equalize_histogram(image, 1.0, (21,21))
         undistorted_image = self.camera.undistort(image)
         image = undistorted_image
 
         # Align image using field template
         if self.camera.align_image(image, self.templ_path):
-            image = image_processing.decrease_noise(image, 15, 100, 100)
-            image = image_processing.equalize_histogram(image)
+            image = image_processing.decrease_noise(image, 5, 100, 100)
+            # image = image_processing.equalize_histogram(image)
 
 
             # Find all contours on the image
