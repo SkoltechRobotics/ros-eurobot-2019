@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <param name = "field/color" value = "orange"/>
+    <!--<param name = "field/color" value = "orange"/>-->
     <include file="$(find eurobot_main)/launch/visualization.launch"/>
+    <include file="$(find eurobot_nav)/launch/nav.launch"/>
+    <node pkg="eurobot_main" type="test_bt_node.py" name="test_bt_node" output="screen"/>
 </launch>

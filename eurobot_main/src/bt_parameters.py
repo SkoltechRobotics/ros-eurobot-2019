@@ -1,7 +1,7 @@
 import threading
 
 
-class BTParameter(object):
+class BTVariable(object):
     def __init__(self, default_data=None):
         self.data = default_data
         self.mutex = threading.Lock()

@@ -213,7 +213,7 @@ class MotionPlannerNode:
         rospy.loginfo("Robot has stopped.")
         rospy.sleep(1.0 / 40)
         #self.current_state = 'start'
-        self.pub_response.publish("finished")
+        self.pub_response.publish(self.cmd_id + " success")
 
     def create_linear_path(self):
         x = np.linspace(self.coords[0], self.goal[0], self.num_points_in_path)

@@ -1,6 +1,7 @@
 import rospy
 import enum
-from bt_parameters import BTParameter
+from bt_parameters import BTVariable
+from termcolor import colored
 
 
 class Status(enum.Enum):
@@ -13,11 +14,12 @@ class BTNode(object):
     """
         Base class for all possible nodes in tree.
     """
-    def __init__(self):
+    def __init__(self, name=None):
         self.status = Status.SUCCESS
         self.parent = None
         self.root = None
         self.is_parent_set = False
+        self.name = name
 
     def set_parent(self, parent):
         assert not self.is_parent_set
@@ -28,18 +30,37 @@ class BTNode(object):
     def tick(self):
         return self.status
 
+    def log(self, level):
+        colors = {Status.SUCCESS: "green",
+                  Status.FAILED: "red",
+                  Status.RUNNING: "blue",
+                  }
+        if self.name is None:
+            name = self.__class__.__name__
+        else:
+            name = self.name
+        print level * "    " + name + " ---> " + colored(str(self.status), colors[self.status])
+
 
 class ControlNode(BTNode):
-    def __init__(self, children):
-        BTNode.__init__(self)
+    def __init__(self, children, **kwargs):
+        BTNode.__init__(self, **kwargs)
         self.children = children
+
+    def set_parent(self, parent):
+        BTNode.set_parent(self, parent)
         for child in self.children:
             child.set_parent(self)
 
+    def log(self, level):
+        BTNode.log(self, level)
+        for child in self.children:
+            child.log(level + 1)
+
 
 class SequenceNode(ControlNode):
-    def __init__(self, children):
-        ControlNode.__init__(self, children)
+    def __init__(self, children, **kwargs):
+        ControlNode.__init__(self, children, **kwargs)
 
     def tick(self):
         self.status = Status.SUCCESS
@@ -60,8 +81,8 @@ class SequenceNode(ControlNode):
 
 
 class FallbackNode(ControlNode):
-    def __init__(self, children):
-        ControlNode.__init__(self, children)
+    def __init__(self, children, **kwargs):
+        ControlNode.__init__(self, children, **kwargs)
 
     def tick(self):
         self.status = Status.FAILED
@@ -82,12 +103,12 @@ class FallbackNode(ControlNode):
 
 
 class Latch(ControlNode):
-    def __init__(self, child):
-        ControlNode.__init__(self, [child])
-        self.is_init = BTParameter(False)
+    def __init__(self, child, **kwargs):
+        ControlNode.__init__(self, [child], **kwargs)
+        self.is_init = BTVariable(False)
 
     def tick(self):
-        if self.is_init.get():
+        if not self.is_init.get():
             self.status = self.children[0].tick()
         if self.status == Status.FAILED or self.status == Status.SUCCESS:
             self.is_init.set(True)
@@ -98,9 +119,9 @@ class Latch(ControlNode):
 
 
 class ActionNode(BTNode):
-    def __init__(self, function):
+    def __init__(self, function, **kwargs):
         self.function = function
-        BTNode.__init__(self)
+        BTNode.__init__(self, **kwargs)
 
     def tick(self):
         self.function()
@@ -108,9 +129,9 @@ class ActionNode(BTNode):
 
 
 class ConditionNode(BTNode):
-    def __init__(self, function):
+    def __init__(self, function, **kwargs):
         self.function = function
-        BTNode.__init__(self)
+        BTNode.__init__(self, **kwargs)
 
     def tick(self):
         self.status = self.function()
@@ -126,19 +147,11 @@ class Root(BTNode):
             self.action_clients = action_clients
         else:
             self.action_clients = {}
+        child.set_parent(self)
 
     def tick(self):
         self.status = self.children[0].tick()
         return self.status
 
-
-def log_node(node, level):
-    print(level * "    " + node.__class__.__name__ + " ---> " + str(node.status))
-    if isinstance(node, ControlNode):
-        for child in node.children:
-            log_node(child, level + 1)
-
-
-def log_bt(bt):
-    print("============== BT LOG ================")
-    log_node(bt, 0)
+    def log(self, level):
+        self.children[0].log(0)
