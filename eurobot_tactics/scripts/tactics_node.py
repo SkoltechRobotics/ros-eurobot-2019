@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-# import sys
 import rospy
 import numpy as np
 import tf2_ros
@@ -12,8 +11,6 @@ from manipulator import Manipulator
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
 from sympy import Point, Polygon
-# from sympy.geometry import Triangle, Point
-# sys.path.append('/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs')  # FIXME
 
 from core_functions import calculate_distance
 # from core_functions import wrap_angle
@@ -27,12 +24,11 @@ And path-planner will choose from these options according to obstacles around
 
 TODO:
     - clockwise approaching in order to keep camera view open
-    - if all or most of pucks lie separately and safely, just start with the closest one and move counter / clockwise depending on the side
-    - need to maintain unique id or order of pucks when deleting 
     - FIXME path_planner should decide which puck to collect and to remove from known
     - in case we parse only first frame and while collecting pucks robot moves some of them, applying sort func is useless 
     - Alexey need to parse particular local zones
-    - FIXME !!!!!!!! need to remove coords from known list by ID, and NOT by sorting them wrt to robot -- otherwise it can lead to troubles
+    - add check if there are more than 4 pucks in zone
+    - add approach_immidiately flag
 
 4 in chaos zone
 3 periodic table
@@ -64,9 +60,8 @@ class TacticsNode:
         self.mutex = Lock()
         self.robot_name = "secondary_robot"
 
-        # self.critical_angle = np.pi * 2/3
-        self.area_threshold = 0.03  # FIXME make it ydelnaya area na puck
-        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it # FIXME
+        self.critical_angle = np.pi * 2/3
+        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
         self.approach_vec = np.array([-0.11, 0, 0])
         self.drive_back_dist = np.array([-0.05, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
@@ -109,7 +104,7 @@ class TacticsNode:
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
 
-        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -130,13 +125,13 @@ class TacticsNode:
         self.mutex.acquire()
 
         # FIXME IDs are not guaranteed to be the same from frame to frame
-        # TODO add id of zone!!!!!!!!!!!!
+        # add id of zone!!!!!!!!!!!!
         new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         new_observation_pucks = np.array(new_observation_pucks)
         print('TN -- new_observation_pucks')
         print(new_observation_pucks)
 
-        self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
+        # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
 
         if len(self.known_chaos_pucks) == 0:
             self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [array(x0, y0), array(x1, y1), ...]
@@ -147,29 +142,6 @@ class TacticsNode:
         #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
 
         self.mutex.release()
-
-    def calculate_pucks_configuration(self):
-        # self.mutex.acquire()  STOPS WORKING
-
-        coords = self.known_chaos_pucks  # [array(x0, y0), array(x1, y1), ...]
-        hull_indexes = self.calculate_convex_hull(coords)  # Calculate pucks configuration once
-        hull = [coords[i] for i in hull_indexes]  # using returned indexes to extract hull's coords
-
-        print("hull is")
-        print(hull)  # [array([ 0.98,  0.82]), array([ 1.06,  0.98]), array([ 0.98,  0.9 ])]
-
-        self.sorted_chaos_landings = self.calculate_sort_chaos_landing_coords(hull)
-        self.known_chaos_pucks = self.sort_coords_wrt_robot()  # FIXME !!!!!!!! need to remove coords from known list by ID, and NOT by sorting them wrt to robot
-
-        print(" ")
-        print("sorted known_chaos_pucks")
-        print(self.known_chaos_pucks)
-        print(" ")
-        print("TN: NEW SORTED LANDINGS CALCULATED")
-        print(self.sorted_chaos_landings)
-        print(" ")
-        # self.mutex.release()
-        return coords
 
     # noinspection PyTypeChecker
     def tactics_callback(self, data):
@@ -187,10 +159,10 @@ class TacticsNode:
         rospy.loginfo("")
 
         data_split = data.data.split()
-        self.cmd_id = data_split[0]  # FIXME WHAT TO DO WITH CMD_ID
+        self.cmd_id = data_split[0]
         self.cmd_type = data_split[1]
 
-        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)  # FIXME ask Misha
+        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
 
         # FIXME There is a time delay for coords from camera to come
         self.mutex.release()
@@ -242,14 +214,10 @@ class TacticsNode:
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-        # print("-------------------")
-        # print("TN: operating status ", self.operating_state)
-        # print("TN: active goal ", self.active_goal)
-        # print("-------------------")
 
         if self.operating_state == 'waiting for command' and not self.is_robot_moving:
             rospy.loginfo(self.operating_state)
-            self.calculate_pucks_configuration()
+            self.sorted_chaos_landings = self.calculate_pucks_configuration()
 
             self.goal_landing = self.sorted_chaos_landings[0]
             prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
@@ -363,80 +331,135 @@ class TacticsNode:
         print(" ")
         self.response_publisher.publish(self.cmd_id + " finished")
 
-    def compare_to_update_or_ignore(self, new_obs_of_pucks):
+    # def compare_to_update_or_ignore(self, new_obs_of_pucks):
+    #
+    #     """
+    #     Input: [(id, x, y), ...]
+    #     Output: format: [(id, x, y), ...]
+    #
+    #     Old
+    #     [(1, x1, y1),
+    #      (2, x2, y2)
+    #      (3, x3, y3)]
+    #
+    #      New obs
+    #      [(2, x2', y2'),
+    #       (3, x3', y3')]
+    #
+    #     In a new list first puck may be absent for at least three reasons:
+    #     - it was collected by our robot
+    #     - it is not visible (but it's still there) either because of robot in the line of view or light conditions
+    #     - it was collected by enemy robot (and it's not there anymore)
+    #
+    #     """
+    #
+    #     assert new_obs_of_pucks.shape[1] == 3
+    #
+    #     known_ids = self.known_chaos_pucks[:, 0]
+    #     known_pucks = self.known_chaos_pucks
+    #     for puck in new_obs_of_pucks:
+    #         puck_id = puck[0]
+    #         if puck_id in known_ids:
+    #             ind = known_ids.index(puck_id)  # correct? FIXME
+    #             x_new, y_new = puck[1], puck[2]
+    #             x_old, y_old = known_pucks[1], known_pucks[2]
+    #             if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
+    #                 self.known_chaos_pucks[ind][1:] = puck[1:]
+    #         else:
+    #             # wtf happened? blink from sun? wasn't recognised at first time?
+    #             self.known_chaos_pucks = np.stack((self.known_chaos_pucks, puck), axis=0)
+    #             # self.known_coords_of_pucks.append(puck)
+
+    def calculate_pucks_configuration(self):
+
+        landings_sorted = np.array([])
+
+        if len(self.known_chaos_pucks) == 1:
+            landings_sorted = self.calculate_closest_landing_to_point(self.known_chaos_pucks)
+
+        elif len(self.known_chaos_pucks) == 2:
+            self.known_chaos_pucks = self.sort_wrt_robot(self.known_chaos_pucks)
+            # print(" ")
+            # print("only 2 pucks, so sort wrt robot")
+            # print(self.known_chaos_pucks)
+            # print(" ")
+            landings_sorted = self.calculate_landings(self.known_chaos_pucks)  # they are already sorted
+
+        elif len(self.known_chaos_pucks) >= 3:
+            self.known_chaos_pucks = self.sort_wrt_robot(self.known_chaos_pucks)
+            is_hull_safe_to_approach, coords_sorted_by_angle = self.sort_by_inner_angle_and_check_if_safe(self.known_chaos_pucks)
+
+            if is_hull_safe_to_approach:  # only sharp angles
+                # print(" ")
+                # print("hull is SAFE to approach, sorted wrt robot")
+                # print(self.known_chaos_pucks)
+                # print(" ")
+                landings_sorted = self.calculate_landings(self.known_chaos_pucks)  # without sorting, because they are already sorted
+
+            elif not is_hull_safe_to_approach:
+                self.known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
+                # print(" ")
+                # print("hull is not safe to approach, sorted by angle")
+                # print(self.known_chaos_pucks)
+                # print(" ")
+                landings_sorted = self.calculate_landings(self.known_chaos_pucks)
+
+        return landings_sorted
+
+    def sort_by_inner_angle_and_check_if_safe(self, coords):
 
         """
-        Input: [(id, x, y), ...]
-        Output: format: [(id, x, y), ...]
-
-        Old
-        [(1, x1, y1),
-         (2, x2, y2)
-         (3, x3, y3)]
-
-         New obs
-         [(2, x2', y2'),
-          (3, x3', y3')]
-
-        In a new list first puck may be absent for at least three reasons:
-        - it was collected by our robot
-        - it is not visible (but it's still there) either because of robot in the line of view or light conditions
-        - it was collected by enemy robot (and it's not there anymore)
-
+        here we first find inner angles
+        than sort them with sharpest first
+        than compares them with trheshold and returns True False
+        :param coords:
+        :return:
         """
+        poly = None
+        is_hull_safe_to_approach = False
+        coords = np.array(coords)
+        try:
+            if len(coords) == 4:
+                p1, p2, p3, p4 = map(Point, coords[:, :2])
+                poly = Polygon(p1, p2, p3, p4)
+            elif len(coords) == 3:
+                p1, p2, p3 = map(Point, coords[:, :2])
+                poly = Polygon(p1, p2, p3)
 
-        assert new_obs_of_pucks.shape[1] == 3
+            vertices_angles_raw = poly.angles.items()
+            vertices_angles = [[(float(k[0].x), float(k[0].y)), radians(degrees(k[1]))] for k in vertices_angles_raw]
+            vertices_angles.sort(key=lambda t: t[1])  # sorts by calculated angle
+            vertices_angles = np.array(vertices_angles)
 
-        known_ids = self.known_chaos_pucks[:, 0]
-        known_pucks = self.known_chaos_pucks
-        for puck in new_obs_of_pucks:
-            puck_id = puck[0]
-            if puck_id in known_ids:
-                ind = known_ids.index(puck_id)  # correct? FIXME
-                x_new, y_new = puck[1], puck[2]
-                x_old, y_old = known_pucks[1], known_pucks[2]
-                if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
-                    self.known_chaos_pucks[ind][1:] = puck[1:]
-            else:
-                # wtf happened? blink from sun? wasn't recognised at first time?
-                self.known_chaos_pucks = np.stack((self.known_chaos_pucks, puck), axis=0)
-                # self.known_coords_of_pucks.append(puck)
+            # print("vertices_angles")
+            # print(vertices_angles)  # [[(1.12101702, 1.07152553), 0.5125220134823292], ...]
+            # print(" ")
 
-    @staticmethod
-    def rotate(a, b, c):
-        return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+            sorted_vertices = np.array([v[0] for v in vertices_angles])
+            sorted_vertices[:2] = self.sort_wrt_robot(sorted_vertices[:2])
+            # print(" ")
+            # print("trick with sorting two sharpes below")
+            # print(sorted_vertices)  # [[1.12101702, 1.07152553], ...]
+            # print(" ")
 
-    @staticmethod
-    def calculate_convex_hull(coords):
-        """
-        jarvis march
-        input: [(x0, y0), (x1, y1), ...]
-        :return: convex hull, INDEXES of coordinates in input list, not coords themselves, TODO counter or clockwise, need to figure out
-        """
-        n = len(coords)
-        p = range(n)
-        # start point
-        for i in range(1, n):
-            if coords[p[i]][0] < coords[p[0]][0]:
-                p[i], p[0] = p[0], p[i]
-        h = [p[0]]
-        del p[0]
-        p.append(h[0])
-        while True:
-            right = 0
-            for i in range(1, len(p)):
-                if TacticsNode.rotate(coords[h[-1]], coords[p[right]], coords[p[i]]) < 0:  # FIXME
-                    right = i
-            if p[right] == h[0]:
-                break
-            else:
-                h.append(p[right])
-                del p[right]
+            if any(vertices_angles[:3, 1] > self.critical_angle):
+                is_hull_safe_to_approach = False
+            elif all(vertices_angles[:3, 1] < self.critical_angle):
+                is_hull_safe_to_approach = True
 
-        # hull = [coords[i] for i in h]  # this was used to extract coords from input list using calculated indexes
-        return h
+        except AttributeError:
+            print("pucks lie in straigt line, so no angles")
+            indexes_sorted = self.find_indexes_of_outer_points_on_line(coords)
+            sorted_vertices = np.array([coords[i] for i in indexes_sorted])
+            if len(sorted_vertices) == 4:
+                sorted_vertices[:2] = self.sort_wrt_robot(sorted_vertices[:2])  # sort side pucks so robot first collect closest one
+            if len(sorted_vertices) == 3:
+                sorted_vertices = self.sort_wrt_robot(sorted_vertices)
+            # print("sorted_vertices by angles", sorted_vertices)
 
-    def calculate_sort_chaos_landing_coords(self, hull):
+        return is_hull_safe_to_approach, sorted_vertices
+
+    def calculate_landings(self, coords):
         """
         Calculates offset a hull,
         get line between orig hull and offset
@@ -448,69 +471,41 @@ class TacticsNode:
         y = tg(gamma) * x, using calculated slope to get equation of the line
         Orbit inersects line in two points, so we get two landings
 
+        for two pucks there are 4 candidates, for three - 6 candidates
+        we calculate to keep only those that lie between puck and it's outer offset
+
         :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
         """
-        landings_coordinates = []
-        if len(hull) >= 2:
-            candidates = self.calculate_candidates(hull)
+        landings = []
 
-            if len(hull) >= 3:
-                landing_indexes = self.calculate_convex_hull(candidates[:, :2])  # convex hull of landings this time
-                landings_coordinates = [candidates[i] for i in landing_indexes]
-
-            elif len(hull) == 2:
-                landing_indexes = self.find_indexes_of_outer_points_on_line(candidates)
-                landings_coordinates = [candidates[i] for i in landing_indexes]
-
-            # for both options we sort landings that we found and return to main logic function
-            landings_coordinates = self.sort_landing_coords_wrt_current_pose(landings_coordinates)
-
-        elif len(hull) == 1:
-            landings_coordinates = self.calculate_closest_landing_to_point(hull)
-
-        return landings_coordinates
-
-    @staticmethod
-    def polygon_area(hull):
-        x = np.array([h[0] for h in hull])
-        y = np.array([h[1] for h in hull])  # because slicing doesn't work for some reason
-        # coordinate shift
-        x_ = x - np.mean(x)
-        y_ = y - np.mean(y)
-        correction = x_[-1] * y_[0] - y_[-1] * x_[0]
-        main_area = np.dot(x_[:-1], y_[1:]) - np.dot(y_[:-1], x_[1:])
-        return 0.5*np.abs(main_area + correction)
-
-    def calculate_candidates(self, hull):
-        candidates = []
-        mc = np.mean(hull, axis=0)
-        offset = list(hull)  # a miserable attempt to copy a list
+        mc = np.mean(coords, axis=0)
+        offset = list(coords)  # a miserable attempt to copy a list
         offset -= mc  # Normalize the polygon by subtracting the center values from every point.
         offset *= self.scale_factor
         offset += mc
 
-        for orig, ofs in zip(hull, offset):
+        for orig, ofs in zip(coords, offset):
             dist, _ = calculate_distance(ofs, orig)
             gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
             gamma = wrap_back(gamma)
-            x_landing1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
-            x_landing2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
+            x_candidate1 = np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
+            x_candidate2 = - np.sqrt(self.approach_dist**2 / (1 + np.tan(gamma)**2))
 
-            y_landing1 = np.tan(gamma) * x_landing1
-            y_landing2 = np.tan(gamma) * x_landing2
+            y_candidate1 = np.tan(gamma) * x_candidate1
+            y_candidate2 = np.tan(gamma) * x_candidate2
 
-            candidate1 = np.array([x_landing1 + orig[0], y_landing1 + orig[1], gamma])
-            candidate2 = np.array([x_landing2 + orig[0], y_landing2 + orig[1], gamma])
+            candidate1 = np.array([x_candidate1 + orig[0], y_candidate1 + orig[1], gamma])
+            candidate2 = np.array([x_candidate2 + orig[0], y_candidate2 + orig[1], gamma])
 
             xmin = min(orig[0], ofs[0])
             xmax = max(orig[0], ofs[0])
             ymin = min(orig[1], ofs[1])
             ymax = max(orig[1], ofs[1])
 
-            if candidate1[0] >= xmin and candidate1[0] <= xmax and candidate1[1] >= ymin and candidate1[1] <= ymax:
-                candidates.append(candidate1)
-            elif candidate2[0] >= xmin and candidate2[0] <= xmax and candidate2[1] >= ymin and candidate2[1] <= ymax:
-                candidates.append(candidate2)
+            if all([candidate1[0] >= xmin, candidate1[0] <= xmax, candidate1[1] >= ymin, candidate1[1] <= ymax]):
+                landings.append(candidate1)
+            elif all([candidate2[0] >= xmin, candidate2[0] <= xmax, candidate2[1] >= ymin, candidate2[1] <= ymax]):
+                landings.append(candidate2)
             else:
                 print ("ORIG=", orig)
                 print ("OFS=", ofs)
@@ -518,12 +513,12 @@ class TacticsNode:
                 print ("candidate2=", candidate2)
                 print ("SOMETHING WRONG AT LANDING CALCULATIONS")
 
-        candidates = np.array(candidates)  # for two pucks there are 4 candidates, for three - 6 candidates
-        print(" ")
-        print("candidates are: ")
-        print (candidates)
-        print(" ")
-        return candidates
+        landings = np.array(landings)
+        # print(" ")
+        # print("candidates are: ")
+        # print (landings)
+        # print(" ")
+        return landings
 
     def calculate_closest_landing_to_point(self, point):
         """
@@ -543,136 +538,63 @@ class TacticsNode:
         landing = landing[np.newaxis, :]
         return landing
 
-    @staticmethod
-    def find_indexes_of_outer_points_on_line(coords):
-        """
-        finds indexes of minimum and maximum coords, for example there are 4 points in a raw and we'll get outers [0, 3]
-        checkk if line is horizontal (look at gamma of any point provided)
-        if line of 4 points is horizontal than just take two points with max and min X-coord,
-        else choose points with max and min Y-coord
-        :param coords: [[x1, y1], [x2, y2], ...]
-        :return: indexes [0, 3]
-        """
-        indexes = []
-        is_line_horizontal = [True if abs(coords[0][2]) < 1e-4 else False]  # FIXME
-        if is_line_horizontal:
-            srt = np.argsort(coords[:, 0], axis=0)
-        else:
-            srt = np.argsort(coords[:, 1], axis=0)
-
-        indexes.append(srt[0])
-        indexes.append(srt[-1])
-
-        return indexes
-
-    def sort_landing_coords_wrt_current_pose(self, landings_coordinates):
+    def sort_wrt_robot(self, coords):
         """
         To make operation more quick there is no need to choose the sharpest angle,
         instead better choose the closest one from angles that are marked as safe.
         TODO add id to every landing so it corresponds to color of puck
-        :param landings_coordinates: [[x_l, y_l, gamma], ...]
+        :param coords: [[x_l, y_l, gamma], ...]
         :return: format: [[3, 3, 1.57], [1, 1, 3.14], [2, 2, 4, 71], [0, 0, 6.28]]
         """
-        landings_coordinates = np.array(landings_coordinates)
+        coords = np.array(coords)
 
-        if len(landings_coordinates) == 1:
-            return landings_coordinates
-        else:
-            hull_area = self.polygon_area(landings_coordinates)
-            print(" ")
-            print("hull area is", hull_area)
-            print(" ")
-            # if pucks are lying on a line or nearly on a line, than we start collecting from the sharpest angle
-            if hull_area <= self.area_threshold and len(landings_coordinates) > 2:
-                sorted_coords = self.calculate_and_sort_by_inner_angles(landings_coordinates)
-
-            # if pucks are lying far from each other, start collecting with the closest puck
-            else:
-                while not self.update_coords():
-                    rospy.sleep(0.05)
-
-                distances_from_robot_to_landings = []
-                for landing in landings_coordinates:
-                    # print("landing is", landing)
-                    dist, _ = calculate_distance(self.robot_coords, landing)  # return deltaX and deltaY coords
-                    dist_norm = np.linalg.norm(dist)
-                    distances_from_robot_to_landings.append(dist_norm)
-                a = zip(landings_coordinates, distances_from_robot_to_landings)
-                a.sort(key=lambda t: t[1])
-                sorted_coords = [v[0] for v in a]
-            return sorted_coords
-
-    @staticmethod
-    def calculate_and_sort_by_inner_angles(landings_coordinates):
-        """
-        Input:
-        hull [array([ 0.9,  0.9]), array([ 1.06,  0.98]), array([ 0.98,  0.82]), array([ 0.98,  0.9 ])]
-
-        Calculates inner angles of a convex hull
-        Sorts them
-        TODO Remove DANGEROUS angles that are below threshold safe level
-
-        :return: list of vertices sorted by their angles starting with sharpest one
-        [array([ 1.06,  0.98]),
-         array([ 0.98,  0.82]),
-         array([ 0.9,  0.9]),
-         array([ 0.98,  0.9 ])]
-        """
-        print("INSIDE INNER ANGLES FUNC")
-        poly = None
-        landings_coordinates = np.array(landings_coordinates)
-        if len(landings_coordinates) == 4:
-            p1, p2, p3, p4 = map(Point, landings_coordinates[:, :2])
-            poly = Polygon(p1, p2, p3, p4)
-        elif len(landings_coordinates) == 3:
-            p1, p2, p3 = map(Point, landings_coordinates[:, :2])
-            poly = Polygon(p1, p2, p3)
-        # print("poly")
-        # print(poly)
-        # print(" ")
-        inner_angles = np.array([poly.angles[k] for k in poly.angles])  # [acos(4/5), 3*pi/2, ...]
-        inner_angles_rad = [radians(degrees(k)) for k in inner_angles]
-        print("landings_coordinates")
-        print(landings_coordinates)
-        print(" ")
-
-        print("inner_angles_rad")
-        print(inner_angles_rad)
-        print(" ")
-
-        vertices_angles = zip(landings_coordinates, inner_angles_rad)  # returns [(array([ 0.9,  0.9]), acos(4/5)), ...]
-        vertices_angles.sort(key=lambda t: t[1])  # sorts by calculated angle
-        print(" ")
-        print("vertices_angles sorted")
-        print(vertices_angles)
-        print(" ")
-        sorted_vertices_by_angle = [v[0] for v in vertices_angles]
-        # TODO need to maintain unique id or order of pucks when deleting
-        return sorted_vertices_by_angle
-
-    def sort_coords_wrt_robot(self):
-        """
-        To make operation more quick there is no need to choose the sharpest angle,
-        instead better choose the closest one from angles that are marked as safe.
-        :return: format [[(id0, x0, y0), d0], ...]  NOT ANYMORE
-        """
-        # TODO remove this function and generalise function above
-        if len(self.known_chaos_pucks) == 1:
-            return self.known_chaos_pucks
+        if len(coords) == 1:
+            return coords
         else:
             while not self.update_coords():
                 rospy.sleep(0.05)
 
-        distances_from_robot_to_pucks = []
-        for puck in self.known_chaos_pucks:
-            dist, _ = calculate_distance(self.robot_coords, puck)  # return deltaX and deltaY coords
-            dist_norm = np.linalg.norm(dist)
-            distances_from_robot_to_pucks.append(dist_norm)
-        distances_from_robot_to_pucks = np.array(distances_from_robot_to_pucks)
-        a = zip(self.known_chaos_pucks, distances_from_robot_to_pucks)
-        a.sort(key=lambda t: t[1])  # reverse=True
-        pucks_wrt_robot_sorted = [v[0] for v in a]
-        return pucks_wrt_robot_sorted
+            distances_from_robot_to_landings = []
+            for coordinate in coords:
+                # print("landing is", landing)
+                dist, _ = calculate_distance(self.robot_coords, coordinate)  # return deltaX and deltaY coords
+                dist_norm = np.linalg.norm(dist)
+                distances_from_robot_to_landings.append(dist_norm)
+            a = zip(coords, distances_from_robot_to_landings)
+            a.sort(key=lambda t: t[1])
+            sorted_coords = np.array([v[0] for v in a])
+            return sorted_coords
+
+    @staticmethod
+    def find_indexes_of_outer_points_on_line(coords):
+        """
+        finds indexes of minimum and maximum coords, for example there are 4 points in a raw and we'll get outers [1, 2]
+        checkk if line is horizontal (look at gamma of any point provided)
+        if line of 4 points is horizontal than just take two points with max and min Y-coord,
+        else choose points with max and min X-coord
+        :param coords: [[x1, y1], [x2, y2], ...]
+        :return: indexes [1, 2, 0, 3]
+        """
+        # print("inside find outer indexes")
+        # print("coords")
+        # print(coords)
+        indexes = []
+        is_line_horizontal = [True if coords[0][0] == coords[-1][0] else False]
+        # print("is_line_horizontal", is_line_horizontal)
+        if is_line_horizontal:
+            srt = np.argsort(coords[:, 1], axis=0)
+        else:
+            srt = np.argsort(coords[:, 0], axis=0)  # argsort returns indexes
+
+        srt = list(srt)
+
+        indexes.append(srt.pop(0))
+        indexes.append(srt.pop(-1))
+        while len(srt) > 0:
+            indexes.append(srt.pop(0))
+        # print("indexes_sorted", indexes)
+
+        return indexes
 
     def update_coords(self):
         try:

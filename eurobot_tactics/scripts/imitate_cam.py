@@ -51,59 +51,63 @@ if __name__ == '__main__':
     rospy.sleep(2)
     print (number)
 
-    if number == 1: # fails
-        coordinates_list = np.array([[0.7, 0.8],
-                                [0.9, 0.9],
-                                [1.1, 0.85],
-                                [0.9, 1.1],
-                                [1, 1.1],
-                                [1, 1.1],
-                                [0.8, 1]])
-    elif number == 2:  # works
+    # if number == 1:  # fails
+    #     coordinates_list = np.array([[0.7, 0.8],
+    #                             [0.9, 0.9],
+    #                             [1.1, 0.85],
+    #                             [0.9, 1.1],
+    #                             [1, 1.1],
+    #                             [1, 1.1],
+    #                             [0.8, 1]])
+    if number == 2:  # works
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.8, 1],
                                     [1, 1.1],
                                     [1.1, 1]])
-    elif number == 3:  # fails
+    elif number == 3:  # works
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 0.82],
                                     [0.98, 0.82],
                                     [0.98, 0.9]])
-    elif number == 4:  # works
+    elif number == 4:  # works - one puck in center
         coordinates_list = np.array([[0.7, 0.8],
                                     [0.9, 0.9],
                                     [1.1, 0.85],
                                     [0.9, 1.1]])
-    elif number == 5:  # fails
+    elif number == 5:  # works
         coordinates_list = np.array([[0.9, 0.9],
                                     [1.06, 0.98],
                                     [0.98, 0.82],
                                     [0.98, 0.9]])
 
-    # works but only if robot moves from side.
     # Need to test how it moves when the closest puck is in the middle of the line
-    elif number == 6:
+    elif number == 6:  # fails - horizontal line
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 1],
                                     [0.9, 1.1],
                                     [0.9, 1.2]])
 
-    elif number == 7:  # 1-3 diagonal fails
+    elif number == 7:  # works - 1-3 diagonal
         coordinates_list = np.array([[1.2, 0.9],
                                      [1.1, 1],
                                      [1, 1.1],
                                      [0.9, 1.2]])
-    elif number == 8:  # 1-3 diagonal fails
+    elif number == 8:  # works - 1-3 diagonal
         coordinates_list = np.array([[1.21, 0.91],
                                      [1.15, 0.99],
                                      [1.01, 1.09],
                                      [0.91, 1.19]])
 
-    # 2-4 diagonal ok
-    # coordinates_list = np.array([[0.9, 0.9],
-    #                             [1, 1],
-    #                             [1.1, 1.1],
-    #                             [1.2, 1.2]])
+    elif number == 9:  # works - 2-4 diagonal
+        coordinates_list = np.array([[0.9, 0.9],
+                                    [1, 1],
+                                    [1.1, 1.1],
+                                    [1.2, 1.2]])
+    elif number == 10:  # works - 2-4 non-perfect diagonal
+        coordinates_list = np.array([[0.91, 0.9],
+                                    [0.99, 1],
+                                    [1.12, 1.1],
+                                    [1.18, 1.2]])
 
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])
