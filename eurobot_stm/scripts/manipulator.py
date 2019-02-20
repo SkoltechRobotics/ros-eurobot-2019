@@ -35,16 +35,18 @@ class Manipulator():
                 # if don't get response a lot of time
 
 
+    def calibrate_small_robot(self):
+        self.send_command("manipulator-calibrate_step_motor_1", 48)
 
-    def calibrate_step_motor(self):
-# 1) collector move left
-# 2) start calibration right stepper
-# 3) make step down by right stepper
-# 4) collector move right
-# 5) start calibration left stepper
-# 6) make step down by left stepper
-# 7) make step down by left stepper
-# 9) collector move default
+    def calibrate_big_robot(self):
+        # 1) collector move left
+        # 2) start calibration right stepper
+        # 3) make step down by right stepper
+        # 4) collector move right
+        # 5) start calibration left stepper
+        # 6) make step down by left stepper
+        # 7) make step down by left stepper
+        # 9) collector move default
         self.send_command("manipulator-calibrate_step_motor_1", 33)
         self.send_command("manipulator-calibrate_step_motor_2", 48, 1)
 
