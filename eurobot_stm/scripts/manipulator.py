@@ -33,9 +33,8 @@ class Manipulator():
             self.publisher.publish(String("manipulator-"+self.id_command+" "+str(cmd)))
             self.id_command += 1
             rospy.sleep(0.1)
-            if self.last_response_id == (str(id)):
+            if self.last_response_id == (str(self.id_command)):
                 if self.last_response_args == "OK":
-
                     return self.last_response_args
                 # if don't get response a lot of time
 
