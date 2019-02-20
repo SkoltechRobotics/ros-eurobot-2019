@@ -23,9 +23,9 @@ class Manipulator():
             self.last_response_id = response[0]
             self.last_response_args = response[1]
 
-    def send_command(self, cmd):
+    def send_command(self, cmd, args):
         while (True):
-            self.publisher.publish(String("manipulator-"+self.id_command+" "+str(cmd)))
+            self.publisher.publish(String("manipulator-"+self.id_command+" "+str(cmd) + str(args)))
             self.id_command += 1
             rospy.sleep(0.1)
             if self.last_response_id == (str(id)):
@@ -37,36 +37,46 @@ class Manipulator():
 
 
     def calibrate_step_motor(self):
-        self.send_command("manipulator-calibrate_step_motor", 32)
+# 1) collector move left
+# 2) start calibration right stepper
+# 3) make step down by right stepper
+# 4) collector move right
+# 5) start calibration left stepper
+# 6) make step down by left stepper
+# 7) make step down by left stepper
+# 9) collector move default
+        self.send_command("manipulator-calibrate_step_motor_1", 33)
+        self.send_command("manipulator-calibrate_step_motor_2", 48, 1)
+
+        self.send_command("manipulator-calibrate_step_motor_3", 50, 1)
+        self.send_command("manipulator-calibrate_step_motor_4", 32)
+
+        self.send_command("manipulator-calibrate_step_motor_5", 48, 0)
+        self.send_command("manipulator-calibrate_step_motor_6", 50, 0)
+
+
+        self.send_command("manipulator-calibrate_step_motor_7", 50, 0)
+        self.send_command("manipulator-calibrate_step_motor_8", 25)
 
 
     def collect_puck(self):
         # Release grabber
         self.send_command("manipulator-release_grabber", 22)
-        rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command("manipulator-set_pump_to_the_wall", 20)
-        rospy.sleep(0.5)
         # Set pump to the ground
         self.send_command("manipulator-set_pump_to_the_ground", 19)
-        rospy.sleep(0.5)
         # Start pump
         self.send_command("manipulator-start_pump", 17)
-        rospy.sleep(0.5)
         # Set pump to the platform
         self.send_command("manipulator-set_pump_to_the_platform", 21)
-        rospy.sleep(0.5)
         # Prop pack
         self.send_command("manipulator-prop_pack", 23)
-        rospy.sleep(0.5)
         # Stop pump
         self.send_command("manipulator-stop_pump", 18)
-        rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command("manipulator-set_pump_to_the_wall", 20)
-        rospy.sleep(0.5)
         # Grab pack
         self.send_command("manipulator-grab_pack", 24)
-        rospy.sleep(0.5)
         # Release grabber
         self.send_command("manipulator-release_grabber", 22)
