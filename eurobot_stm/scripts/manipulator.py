@@ -14,7 +14,7 @@ class Manipulator():
         rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
         self.last_response_id = None
         self.last_response_args = None
-        self.id_command = 0
+        self.id_command = 1
         rospy.sleep(2)
 
     def response_callback(self, data):
@@ -23,19 +23,18 @@ class Manipulator():
             self.last_response_id = response[0]
             self.last_response_args = response[1]
 
-    def send_command(self, id, cmd, args=None):
+    def send_command(self, cmd, args=None):
         message = ""
         if args == None:
-            message = str(id) +str(cmd)
+            message = str(self.id_command) + str(cmd)
         else:
-            message = str(id) + str(cmd) + str(args)
+            message = str(self.id_command) + str(cmd) + str(args)
         while (True):
             self.publisher.publish(String(message))
             self.id_command += 1
             rospy.sleep(0.1)
-            if self.last_response_id == (str(id)):
+            if self.last_response_id == (str(self.id_command)):
                 if self.last_response_args == "OK":
-
                     return self.last_response_args
                 # if don't get response a lot of time
 
@@ -52,18 +51,18 @@ class Manipulator():
         # 6) make step down by left stepper
         # 7) make step down by left stepper
         # 9) collector move default
-        self.send_command("manipulator-calibrate_step_motor_1", 33)
-        self.send_command("manipulator-calibrate_step_motor_2", 48, 1)
+        self.send_command(33)
+        self.send_command(48, 1)
 
-        self.send_command("manipulator-calibrate_step_motor_3", 50, 1)
-        self.send_command("manipulator-calibrate_step_motor_4", 32)
+        self.send_command(50, 1)
+        self.send_command(32)
 
-        self.send_command("manipulator-calibrate_step_motor_5", 48, 0)
-        self.send_command("manipulator-calibrate_step_motor_6", 50, 0)
+        self.send_command(48, 0)
+        self.send_command(50, 0)
 
 
-        self.send_command("manipulator-calibrate_step_motor_7", 50, 0)
-        self.send_command("manipulator-calibrate_step_motor_8", 25)
+        self.send_command(50, 0)
+        self.send_command(25)
 
 
     def collect_puck(self):
