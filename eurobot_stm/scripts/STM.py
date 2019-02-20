@@ -30,10 +30,14 @@ class STM():
 
     def parse_data(self, data):
         data_splitted = data.data.split()
+        print (data_splitted)
         id = data_splitted[0]
-        cmd = int(data_splitted[1])
-        args_dict = {'c': str, 'H': int, 'f': float}
-        args = [args_dict[t](s) for t, s in itertools.izip(self.stm_protocol.pack_format[cmd][1:], data_splitted[1:])]
+        try:
+            cmd = int(data_splitted[1])
+        except ValueError as e:
+            cmd = int(data_splitted[1], 16)
+        args_dict = {'c': str, 'B': int, 'f': float}
+        args = [args_dict[t](s) for t, s in itertools.izip(self.stm_protocol.pack_format[cmd][1:], data_splitted[2:])]
         return id, cmd, args
 
 if __name__ == '__main__':
