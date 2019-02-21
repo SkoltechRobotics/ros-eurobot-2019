@@ -110,6 +110,22 @@ class Manipulator():
         # Release grabber
         self.send_command(22)
 
+    def release_puck(self):
+        # Release grabber
+        self.send_command(33)
+        rospy.sleep(0.5)
+        # Collector move default
+        self.send_command(34)
+        rospy.sleep(0.5)
+        # Set pump to the wall
+        self.send_command(51, 1)
+        rospy.sleep(0.5)
+        # Release grabber
+        self.send_command(51, 1)
+        rospy.sleep(0.5)
+        # Collector move default
+        self.send_command(35)
+        rospy.sleep(0.5)
 
 
 
