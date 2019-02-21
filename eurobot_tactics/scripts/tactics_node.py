@@ -63,7 +63,7 @@ class TacticsNode:
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
         # self.approach_vec = np.array([-0.11, 0, 0])
-        self.approach_vec = np.array([-0.13, 0, 0])
+        self.approach_vec = np.array([-0.153, 0, 0])  # big robot
 	self.drive_back_dist = np.array([-0.07, 0, 0])
         # self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
@@ -99,7 +99,7 @@ class TacticsNode:
         self.timer = None
 
         self.manipulator = Manipulator()
-	if not self.manipulator.calibrate_big_robot():
+	if not self.manipulator.calibrate_big():
 	    return
 	
         # coords are published as markers in one list according to 91-92 undistort.py
@@ -293,7 +293,7 @@ class TacticsNode:
 
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
             self.goal_landing = None
-            self.is_puck_collected = self.manipulator.collect_big_robot()
+            self.is_puck_collected = self.manipulator.collect_big()
             # self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.is_robot_collecting_puck = True
             self.operating_state = 'collecting puck'
