@@ -36,6 +36,7 @@ class STMprotocol(object):
             0x31: "=",
             0x32: "=B",
             0x33: "=B",
+	    0x34: "=B"
         }
 
         self.unpack_format = {
@@ -63,7 +64,7 @@ class STMprotocol(object):
             0x31: "=cc",
             0x32: "=cc",
             0x33: "=cc",
-
+	    0x34: "=cc"
         }
 
         self.response_bytes = {
@@ -91,6 +92,7 @@ class STMprotocol(object):
             0x31: 2,
             0x32: 2,
             0x33: 2,
+	    0x34: 2
         }
 
     def send(self, cmd, args):
