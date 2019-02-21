@@ -1,7 +1,6 @@
 import rospy
 import threading
 import behavior_tree as bt
-from bt_parameters import BTVariable
 
 
 class ActionClient(object):
@@ -40,8 +39,8 @@ class ActionClient(object):
 class ActionClientNode(bt.SequenceNode):
     def __init__(self, cmd, action_client_id, **kwargs):
         self.action_client_id = action_client_id
-        self.cmd = BTVariable(cmd)
-        self.cmd_id = BTVariable()
+        self.cmd = bt.BTVariable(cmd)
+        self.cmd_id = bt.BTVariable()
 
         self.start_move_node = bt.Latch(bt.ActionNode(self.start_action))
         bt.SequenceNode.__init__(self, [self.start_move_node, bt.ConditionNode(self.action_status)], **kwargs)
@@ -68,17 +67,23 @@ class ActionClientNode(bt.SequenceNode):
 
 class MoveWaypoints(bt.FallbackNode):
     def __init__(self, waypoints, action_client_id):
-        self.waypoints = BTVariable(waypoints)
+        # Init parameters
+        self.waypoints = bt.BTVariable(waypoints)
 
+        # Init useful child nodes
         self.move_to_waypoint_node = ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
+        self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
 
+        # Make BT
         bt.FallbackNode.__init__(self, [
             bt.ConditionNode(self.is_waypoints_empty),
             bt.SequenceNode([
-                bt.ActionNode(self.choose_new_waypoint),
+                self.choose_new_waypoint_latch,
                 self.move_to_waypoint_node,
-                bt.ActionNode(self.remove_waypoint)
-            ])
+                bt.ActionNode(self.remove_waypoint),
+                bt.ActionNode(self.choose_new_waypoint_latch.reset),
+                bt.ConditionNode(lambda: bt.Status.RUNNING)
+            ]),
         ])
 
     def is_waypoints_empty(self):
@@ -89,7 +94,8 @@ class MoveWaypoints(bt.FallbackNode):
 
     def choose_new_waypoint(self):
         current_waypoint = self.waypoints.get()[0]
+        print(self.waypoints.get())
         self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))
 
     def remove_waypoint(self):
-        self.waypoints.set(self.waypoints.get().pop(0))
+        self.waypoints.set(self.waypoints.get()[1:])

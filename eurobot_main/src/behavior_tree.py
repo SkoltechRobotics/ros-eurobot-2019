@@ -1,6 +1,5 @@
-import rospy
 import enum
-from bt_parameters import BTVariable
+import threading
 from termcolor import colored
 
 
@@ -8,6 +7,21 @@ class Status(enum.Enum):
     SUCCESS = 0
     FAILED = 1
     RUNNING = 2
+
+
+class BTVariable(object):
+    def __init__(self, default_data=None):
+        self.data = default_data
+        self.mutex = threading.Lock()
+
+    def set(self, data):
+        with self.mutex:
+            self.data = data
+
+    def get(self):
+        with self.mutex:
+            data = self.data
+        return data
 
 
 class BTNode(object):
@@ -46,6 +60,8 @@ class ControlNode(BTNode):
     def __init__(self, children, **kwargs):
         BTNode.__init__(self, **kwargs)
         self.children = children
+        for child in self.children:
+            assert isinstance(child, BTNode)
 
     def set_parent(self, parent):
         BTNode.set_parent(self, parent)
@@ -120,6 +136,7 @@ class Latch(ControlNode):
 
 class ActionNode(BTNode):
     def __init__(self, function, **kwargs):
+        assert callable(function)
         self.function = function
         BTNode.__init__(self, **kwargs)
 
@@ -130,6 +147,7 @@ class ActionNode(BTNode):
 
 class ConditionNode(BTNode):
     def __init__(self, function, **kwargs):
+        assert callable(function)
         self.function = function
         BTNode.__init__(self, **kwargs)
 
