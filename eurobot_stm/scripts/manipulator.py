@@ -5,10 +5,9 @@ import rospy
 from std_msgs.msg import String
 
 
-
 class Manipulator():
     def __init__(self):
-        rospy.init_node("manuipulator_node", anonymous=True)
+        # rospy.init_node("manuipulator_node", anonymous=True)
 
         self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
         rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
@@ -20,12 +19,11 @@ class Manipulator():
     def response_callback(self, data):
         response = data.data.split()
         print ("RESPONSE=", response)
-	if re.match(r"manipulator-\d", response[0]):
+        if re.match(r"manipulator-\d", response[0]):
             self.last_response_id = response[0]
             self.last_response_args = response[1]
 
     def send_command(self, cmd, args=None):
-        message = ""
         if args == None:
             message = "manipulator-" + str(self.id_command) + " " + str(cmd)
         else:
@@ -39,7 +37,6 @@ class Manipulator():
                     self.id_command += 1
                     return self.last_response_args
                 # if don't get response a lot of time
-
 
     def calibrate_small_robot(self):
         self.send_command("manipulator-calibrate_step_motor_1", 48)
@@ -57,92 +54,55 @@ class Manipulator():
         self.send_command(48, 1)
 
         self.send_command(50, 1)
-	self.send_command(52, 1)
-	#rospy.sleep(3)
+        self.send_command(52, 1)
+        # rospy.sleep(3)
         self.send_command(32)
 
         self.send_command(48, 0)
         self.send_command(50, 0)
 
-
         self.send_command(50, 0)
         self.send_command(52, 0)
-	self.send_command(25)
-
+        self.send_command(25)
 
     def collect_puck_big(self):
         # Release grabber
         self.send_command(22)
-	#rospy.sleep(0.5)
         # Collector move default
         self.send_command(25)
-	#rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command(20)
-	#rospy.sleep(0.5)
         # Set pump to the ground
         self.send_command(19)
-	#rospy.sleep(0.5)
         # Start pump
         self.send_command(17)
-	#rospy.sleep(0.5)
         # Set pump to the platform
         self.send_command(21)
-	#rospy.sleep(0.5)
         # Prop pack
         self.send_command(23)
-        #rospy.sleep(0.5)
-	# Stop pump
+        # Stop pump
         self.send_command(18)
-	#rospy.sleep(0.5)
         # Set pump to the wall
         self.send_command(20)
-	#rospy.sleep(0.5)
         # Grab pack
         self.send_command(24)
-	#rospy.sleep(0.5)
         # Collector move right/left
         self.send_command(32)
-	#rospy.sleep(0.5)
         # Make step down left / right collector
         self.send_command(50, 1)
-	#rospy.sleep(0.5)
         # Release grabber
         self.send_command(22)
 
-    def release_puck(self):
-        # Release grabber
-        self.send_command(33)
-        rospy.sleep(0.5)
-        # Collector move default
-        self.send_command(34)
-        rospy.sleep(0.5)
-        # Set pump to the wall
-        self.send_command(51, 1)
-        rospy.sleep(0.5)
-        # Release grabber
-        self.send_command(51, 1)
-        rospy.sleep(0.5)
-        # Collector move default
-        self.send_command(35)
-        rospy.sleep(0.5)
-
-
 
     def release_puck(self):
         self.send_command(33)
-        #rospy.sleep(0.5)
         self.send_command(34)
-        #rospy.sleep(0.5)
         self.send_command(51, 1)
-        #rospy.sleep(0.5)
         self.send_command(51, 1)
-        #rospy.sleep(0.5)
         self.send_command(52, 1)
-	self.send_command(35)
-        #rospy.sleep(0.5)
-  
-    def collect_puck(self): 
+        self.send_command(35)
+
+    def collect_puck(self):
         # Release grabber
         self.send_command(22)
         # Set pump to the wall
