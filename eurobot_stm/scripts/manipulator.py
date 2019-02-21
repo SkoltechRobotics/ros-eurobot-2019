@@ -93,7 +93,7 @@ class Manipulator():
         # Release grabber
         self.send_command(22)
 
-    def collect_big(self):
+    def collect_small(self):
         # Release grabber
         self.send_command(22)
         # Set pump to the wall
