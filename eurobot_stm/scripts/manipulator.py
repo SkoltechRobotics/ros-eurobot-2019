@@ -7,7 +7,7 @@ from std_msgs.msg import String
 
 class Manipulator():
     def __init__(self):
-        # rospy.init_node("manuipulator_node", anonymous=True)
+        rospy.init_node("manuipulator_node", anonymous=True)
 
         self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
         rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
@@ -64,6 +64,7 @@ class Manipulator():
         self.send_command(50, 0)
         self.send_command(52, 0)
         self.send_command(25)
+	return True
 
     def collect_puck_big(self):
         # Release grabber
@@ -92,7 +93,7 @@ class Manipulator():
         self.send_command(50, 1)
         # Release grabber
         self.send_command(22)
-
+	return True
 
     def release_puck(self):
         self.send_command(33)
