@@ -14,7 +14,7 @@
             <param name="frame_id" value="/secondary_robot_laser"/>
         </node>
         <node pkg="eurobot_loc" name="particle_f1ilter_node" type="particle_filter_node.py" respawn="true" output="log"/>
-        <node pkg="eurobot_nav" name="MotionPlannerNode" type="MotionPlannerNode.py" respawn="true" output="screen"/>
-        <node pkg="eurobot_tactics" name="TacticsNode" type="TacticsNode.py" respawn="true" output="screen"/>
+        <node pkg="eurobot_nav" name="motion_planner_node" type="motion_planner_node.py" respawn="true" output="screen"/>
+        <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node.py" respawn="true" output="screen"/>
     </group>
 </launch>

@@ -428,7 +428,7 @@ class MotionPlannerNode:
             # rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
 
             self.current_state = 'following'
-        elif self.current_state == 'following' and self.delta_dist > 0.2:
+        elif self.current_state == 'following' and self.delta_dist > 0.4:
             self.follow_path()
             self.update_coords()
             delta_coords = self.coords - self.path[-1, :]
@@ -436,7 +436,7 @@ class MotionPlannerNode:
             delta_coords[2] *= self.r
             self.delta_dist = np.linalg.norm(delta_coords, axis=0)
             rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
-        elif self.current_state == 'following' and self.delta_dist < 0.2:
+        elif self.current_state == 'following' and self.delta_dist < 0.4:
             self.current_state = 'move_arc'
         elif self.current_state == 'move_arc':
             self.move_arc()

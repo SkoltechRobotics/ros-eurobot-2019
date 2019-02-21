@@ -37,7 +37,7 @@ def calculate_distance(coords1, coords2):
     """
     theta_diff = None
     distance_map_frame = coords2[:2] - coords1[:2]
-    if len(coords1) == 3 and len(coords2) == 3:
+    if len(coords1) > 2 and len(coords2) > 2:
         theta_diff = wrap_angle(coords2[2] - coords1[2])
     return distance_map_frame, theta_diff
 

@@ -9,29 +9,38 @@ from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import String
 
 
-def publish_pucks(publisher_pucks, coordinates):
+def publish_pucks(publisher_pucks, coordinates, colors):
     markers = []
-    for num, coord in enumerate(coordinates):
-        # print (num,"    coord", coord)
+    for i in range(len(coordinates)):
         marker = Marker()
         marker.header.frame_id = 'map'
         marker.header.stamp = rospy.Time.now()
         marker.ns = "pucks"
-        marker.id = num
+        marker.id = i
         marker.type = 3
-        marker.pose.position.x = coord[0]
-        marker.pose.position.y = coord[1]
+        marker.pose.position.x = coordinates[i][0]
+        marker.pose.position.y = coordinates[i][1]
         marker.pose.position.z = 0.0125
         marker.pose.orientation.w = 1
         marker.scale.x = 0.075
         marker.scale.y = 0.075
         marker.scale.z = 0.0125
+        # redium = [r=1,g=0,b=0], grenium = [r=0,g=1,b=0], blueimium = [r=0,g=0,b=1]
         marker.color.a = 1
-        marker.color.r = 1
+        if colors[i] == "red":
+            marker.color.r = 1
+            marker.color.g = 0
+            marker.color.b = 0
+        elif colors[i] == "green":
+            marker.color.r = 0
+            marker.color.g = 1
+            marker.color.b = 0
+        elif colors[i] == "blue":
+            marker.color.r = 0
+            marker.color.g = 0
+            marker.color.b = 1
         marker.lifetime = rospy.Duration(70)
         markers.append(marker)
-
-    # print (markers)
     publisher_pucks.publish(markers)
 
 
@@ -50,7 +59,7 @@ if __name__ == '__main__':
     coordinates_list = np.zeros((4, 2))
     rospy.sleep(2)
     print (number)
-
+    colors = ["blue", "green", "red", "red"]
     # if number == 1:  # fails
     #     coordinates_list = np.array([[0.7, 0.8],
     #                             [0.9, 0.9],
@@ -81,7 +90,7 @@ if __name__ == '__main__':
                                     [0.98, 0.9]])
 
     # Need to test how it moves when the closest puck is in the middle of the line
-    elif number == 6:  # fails - horizontal line
+    elif number == 6:  # works - horizontal line
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 1],
                                     [0.9, 1.1],
@@ -109,10 +118,16 @@ if __name__ == '__main__':
                                     [1.12, 1.1],
                                     [1.18, 1.2]])
 
+    elif number == 11:  # works - arc outer convexivity
+        coordinates_list = np.array([[0.9, 0.9],
+                                    [0.92, 1],
+                                    [0.93, 1.1],
+                                    [0.9, 1.2]])
+
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])
 
-    publish_pucks(publisher_pucks, coordinates_list)
+    publish_pucks(publisher_pucks, coordinates_list, colors)
     # rospy.sleep(2)
     # tactics_publisher.publish('abc collect_chaos')
     # rospy.spin()  # FIXME
