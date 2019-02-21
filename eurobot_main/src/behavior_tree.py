@@ -58,26 +58,23 @@ class BTNode(object):
 
 class ControlNode(BTNode):
     def __init__(self, children, **kwargs):
-        BTNode.__init__(self, **kwargs)
+        super(ControlNode, self).__init__(**kwargs)
         self.children = children
         for child in self.children:
             assert isinstance(child, BTNode)
 
     def set_parent(self, parent):
-        BTNode.set_parent(self, parent)
+        super(ControlNode, self).set_parent(parent)
         for child in self.children:
             child.set_parent(self)
 
     def log(self, level):
-        BTNode.log(self, level)
+        super(ControlNode, self).log(level)
         for child in self.children:
             child.log(level + 1)
 
 
 class SequenceNode(ControlNode):
-    def __init__(self, children, **kwargs):
-        ControlNode.__init__(self, children, **kwargs)
-
     def tick(self):
         self.status = Status.SUCCESS
         for child in self.children:
@@ -97,9 +94,6 @@ class SequenceNode(ControlNode):
 
 
 class FallbackNode(ControlNode):
-    def __init__(self, children, **kwargs):
-        ControlNode.__init__(self, children, **kwargs)
-
     def tick(self):
         self.status = Status.FAILED
         for child in self.children:
@@ -120,7 +114,7 @@ class FallbackNode(ControlNode):
 
 class Latch(ControlNode):
     def __init__(self, child, **kwargs):
-        ControlNode.__init__(self, [child], **kwargs)
+        super(Latch, self).__init__([child], **kwargs)
         self.is_init = BTVariable(False)
 
     def tick(self):
@@ -138,7 +132,7 @@ class ActionNode(BTNode):
     def __init__(self, function, **kwargs):
         assert callable(function)
         self.function = function
-        BTNode.__init__(self, **kwargs)
+        super(ActionNode, self).__init__(**kwargs)
 
     def tick(self):
         self.function()
@@ -149,7 +143,7 @@ class ConditionNode(BTNode):
     def __init__(self, function, **kwargs):
         assert callable(function)
         self.function = function
-        BTNode.__init__(self, **kwargs)
+        super(ConditionNode, self).__init__(**kwargs)
 
     def tick(self):
         self.status = self.function()
@@ -158,7 +152,7 @@ class ConditionNode(BTNode):
 
 class Root(BTNode):
     def __init__(self, child, action_clients=None):
-        BTNode.__init__(self)
+        super(Root, self).__init__()
         self.root = self
         self.children = [child]
         if action_clients is not None:

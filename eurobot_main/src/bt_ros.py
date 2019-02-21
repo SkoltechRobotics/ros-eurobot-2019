@@ -75,7 +75,7 @@ class MoveWaypoints(bt.FallbackNode):
         self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
 
         # Make BT
-        bt.FallbackNode.__init__(self, [
+        super(MoveWaypoints, self).__init__([
             bt.ConditionNode(self.is_waypoints_empty),
             bt.SequenceNode([
                 self.choose_new_waypoint_latch,
