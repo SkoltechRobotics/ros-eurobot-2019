@@ -62,8 +62,9 @@ class TacticsNode:
 
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_vec = np.array([-0.11, 0, 0])
-        self.drive_back_dist = np.array([-0.05, 0, 0])
+        # self.approach_vec = np.array([-0.11, 0, 0])
+        self.approach_vec = np.array([-0.13, 0, 0])
+	self.drive_back_dist = np.array([-0.07, 0, 0])
         # self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
@@ -97,9 +98,10 @@ class TacticsNode:
 
         self.timer = None
 
-        self.stm_command_publisher.publish("null 32")
         self.manipulator = Manipulator()
-
+	if not self.manipulator.calibrate_big_robot():
+	    return
+	
         # coords are published as markers in one list according to 91-92 undistort.py
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
@@ -126,18 +128,34 @@ class TacticsNode:
 
         # FIXME IDs are not guaranteed to be the same from frame to frame
         # add id of zone!!!!!!!!!!!!
-        new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
+        # new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
         # new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
-        new_observation_pucks = np.array(new_observation_pucks)
-        print('TN -- new_observation_pucks')
-        print(new_observation_pucks)
+        # new_observation_pucks = np.array(new_observation_pucks)
+        # print('TN -- new_observation_pucks')
+        # print(new_observation_pucks)
 
         # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
 
         if len(self.known_chaos_pucks) == 0:
-            self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [array(x0, y0), array(x1, y1), ...]
-            # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+
+            # FIXME IDs are not guaranteed to be the same from frame to frame
+            # add id of zone!!!!!!!!!!!!
+            new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
+            # new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
+            # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
+            new_observation_pucks = np.array(new_observation_pucks)
+            # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
+
+            print('TN -- new_observation_pucks')
+            print(new_observation_pucks)
+	    try:
+                self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [array(x0, y0), array(x1, y1), ...]
+	        print("known")
+	        print(self.known_chaos_pucks)
+            except Exception as Error:
+		print("list index out of  range - no pucks on the field ")
+	    # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
             # self.known_chaos_pucks = self.calculate_pucks_configuration(coords)
 
         # else:
@@ -275,12 +293,12 @@ class TacticsNode:
 
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
             self.goal_landing = None
-            # self.is_puck_collected = self.manipulator.collect_puck()
-            self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
+            self.is_puck_collected = self.manipulator.collect_big_robot()
+            # self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.is_robot_collecting_puck = True
             self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
-            self.imitate_manipulator()
+            #self.manipulator.collect_
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'

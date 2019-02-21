@@ -51,7 +51,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--number",
                         help="puck collection number",
-                        default="1")
+                        default="5")
     args = parser.parse_args()
     number = int(args.number)
 
