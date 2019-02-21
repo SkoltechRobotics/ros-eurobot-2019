@@ -42,7 +42,7 @@ class STMprotocol(object):
         self.unpack_format = {
             0x01: "=cccc",
             0x07: "=fff",
-            0x08: "=ccc",
+            0x08: "=cc",
             0x09: "=fff",
             0x0e: "=cc",
             0x0f: "=fff",
