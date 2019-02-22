@@ -37,9 +37,21 @@ def calculate_distance(coords1, coords2):
     """
     theta_diff = None
     distance_map_frame = coords2[:2] - coords1[:2]
-    if len(coords1) > 2 and len(coords2) > 2:
+    if len(coords1) == 3 and len(coords2) == 3:
         theta_diff = wrap_angle(coords2[2] - coords1[2])
     return distance_map_frame, theta_diff
+
+
+def batch_calculate_distance(coords1, coords2):
+    """
+    Calculates x_diff, y_diff between two points
+    Calculates x_diff, y_diff and theta_diff between two vectors and wrapes angle so it lies
+    :param coords1:
+    :param coords2:
+    :return:
+    """
+    distance_map_frame = coords2[:, :2] - coords1[:, :2]
+    return distance_map_frame
 
 
 def cvt_local2global(local_point, src_point):

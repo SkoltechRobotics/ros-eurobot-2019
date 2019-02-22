@@ -59,7 +59,7 @@ if __name__ == '__main__':
     coordinates_list = np.zeros((4, 2))
     rospy.sleep(2)
     print (number)
-    colors = ["blue", "green", "red", "red"]
+    colors = ["green", "blue", "red", "red"]
     # if number == 1:  # fails
     #     coordinates_list = np.array([[0.7, 0.8],
     #                             [0.9, 0.9],

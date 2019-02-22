@@ -7,16 +7,18 @@ from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-from manipulator import Manipulator
+# from manipulator import Manipulator
+
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
-from sympy import Point, Polygon
+# from sympy import Point, Polygon
 
 from core_functions import calculate_distance
-# from core_functions import wrap_angle
+from core_functions import batch_calculate_distance
+from core_functions import wrap_angle
 from core_functions import wrap_back
 from core_functions import cvt_local2global
-from math import radians, degrees
+# from math import radians, degrees
 
 """
 This algorithm knows nothing about obstacles and etc, it just generates sorted list of options.
@@ -62,9 +64,11 @@ class TacticsNode:
 
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        # self.approach_vec = np.array([-0.11, 0, 0])
-        self.approach_vec = np.array([-0.153, 0, 0])  # big robot
-	self.drive_back_dist = np.array([-0.07, 0, 0])
+        self.approach_vec = np.array([-0.11, 0, 0])
+        # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+        self.drive_back_dist = np.array([-0.05, 0, 0])
+        # self.drive_back_dist = np.array([-0.07, 0, 0])
+
         # self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
@@ -98,15 +102,15 @@ class TacticsNode:
 
         self.timer = None
 
-        self.manipulator = Manipulator()
-	if not self.manipulator.calibrate_big():
-	    return
-	
+        # self.manipulator = Manipulator()
+        # if not self.manipulator.calibrate_big():
+        #     return
+
         # coords are published as markers in one list according to 91-92 undistort.py
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
 
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -141,21 +145,21 @@ class TacticsNode:
 
             # FIXME IDs are not guaranteed to be the same from frame to frame
             # add id of zone!!!!!!!!!!!!
-            new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
-            # new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
+            # new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
+            new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
             # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
             new_observation_pucks = np.array(new_observation_pucks)
             # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
 
             print('TN -- new_observation_pucks')
             print(new_observation_pucks)
-	    try:
-                self.known_chaos_pucks = new_observation_pucks[:, 1:]  # [array(x0, y0), array(x1, y1), ...]
-	        print("known")
-	        print(self.known_chaos_pucks)
+            try:
+                self.known_chaos_pucks = new_observation_pucks  # [:, 1:]  # [array(x0, y0), array(x1, y1), ...]
+                print("known")
+                print(self.known_chaos_pucks)
             except Exception as Error:
-		print("list index out of  range - no pucks on the field ")
-	    # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
+                print("list index out of  range - no pucks on the field ")
+            # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
             # self.known_chaos_pucks = self.calculate_pucks_configuration(coords)
 
         # else:
@@ -240,8 +244,8 @@ class TacticsNode:
             self.known_chaos_pucks = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
 
             # TODO
-            # if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):  # blue not the last left in chaos zone
-            #     self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)
+            if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):  # blue not the last left in chaos zone
+                self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)
 
             self.sorted_chaos_landings = self.calculate_landings(self.known_chaos_pucks)  # Should be [(0.95, 1.1), ...]
 
@@ -249,7 +253,7 @@ class TacticsNode:
             prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
 
             self.active_goal = prelanding
-            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_line')
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
             self.is_robot_moving = True
             self.is_finished = False
@@ -293,12 +297,12 @@ class TacticsNode:
 
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
             self.goal_landing = None
-            self.is_puck_collected = self.manipulator.collect_big()
+            # self.is_puck_collected = self.manipulator.collect_big()
             # self.stm_command_publisher.publish("null 34")  # TODO what's this cmd about?
             self.is_robot_collecting_puck = True
             self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
-            #self.manipulator.collect_
+            self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
@@ -418,19 +422,91 @@ class TacticsNode:
         if len(self.known_chaos_pucks) >= 3:
             is_hull_safe_to_approach, coords_sorted_by_angle = self.sort_by_inner_angle_and_check_if_safe(self.known_chaos_pucks)  # FIXME now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
 
-            # if is_hull_safe_to_approach:  # only sharp angles
-            # print(" ")
-            # print("hull is SAFE to approach, sorted wrt robot")
-            # print(self.known_chaos_pucks)
-            # print(" ")
+            if is_hull_safe_to_approach:  # only sharp angles
+                print(" ")
+                print("hull is SAFE to approach, sorted wrt robot")
+                print(self.known_chaos_pucks)
+                print(" ")
 
             if not is_hull_safe_to_approach:
                 self.known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
-                # print(" ")
-                # print("hull is not safe to approach, sorted by angle")
-                # print(self.known_chaos_pucks)
-                # print(" ")
+                print(" ")
+                print("hull is not safe to approach, sorted by angle")
+                print(self.known_chaos_pucks)
+                print(" ")
         return self.known_chaos_pucks
+
+    def calc_inner_angles(self, coords):
+        is_line = self.polygon_area(coords)
+        # print(is_streigt_line)
+        # is_streigt_line = True
+        if is_line < 1e-4:
+            raise AttributeError('pucks lie on a straigt line, so no inner angles')
+
+        else:
+            hull_indexes = self.calculate_convex_hull(coords)
+            hull = np.array([coords[i] for i in hull_indexes])  # using returned indexes to extract hull's coords
+
+            next_ = np.roll(hull, -1, axis=0)
+            prev_ = np.roll(hull, 1, axis=0)
+
+            prev_dist = batch_calculate_distance(hull[:, :2], prev_[:, :2])
+            next_dist = batch_calculate_distance(hull[:, :2], next_[:, :2])
+
+            prev_a = np.arctan2(prev_dist[:, 1], prev_dist[:, 0])
+            next_a = np.arctan2(next_dist[:, 1], next_dist[:, 0])
+            angles = wrap_angle(prev_a - next_a)
+
+            coords_angles = list(zip(hull, angles))
+            coords_angles.sort(key=lambda t: t[1])
+            coords_sorted = np.array([v[0] for v in coords_angles])
+            angles_sorted = np.array([v[1] for v in coords_angles])
+
+            return coords_sorted, angles_sorted
+
+    @staticmethod
+    def polygon_area(hull):
+        x = np.array([h[0] for h in hull])
+        y = np.array([h[1] for h in hull])  # because slicing doesn't work for some reason
+        # coordinate shift
+        x_ = x - np.mean(x)
+        y_ = y - np.mean(y)
+        correction = x_[-1] * y_[0] - y_[-1] * x_[0]
+        main_area = np.dot(x_[:-1], y_[1:]) - np.dot(y_[:-1], x_[1:])
+        return 0.5*np.abs(main_area + correction)
+
+    @staticmethod
+    def rotate(a, b, c):
+        return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+
+    def calculate_convex_hull(self, coords):
+        """
+        jarvis march
+        input: [(x0, y0), (x1, y1), ...]
+        :return: convex hull, INDEXES of coordinates in input list, not coords themselves, TODO counter or clockwise, need to figure out
+        """
+        n = len(coords)
+        p = range(n)
+        # start point
+        for i in range(1, n):
+            if coords[p[i]][0] < coords[p[0]][0]:
+                p[i], p[0] = p[0], p[i]
+        h = [p[0]]
+        del p[0]
+        p.append(h[0])
+        while True:
+            right = 0
+            for i in range(1, len(p)):
+                if self.rotate(coords[h[-1]], coords[p[right]], coords[p[i]]) < 0:  # FIXME
+                    right = i
+            if p[right] == h[0]:
+                break
+            else:
+                h.append(p[right])
+                del p[right]
+
+        # hull = [coords[i] for i in h]  # this was used to extract coords from input list using calculated indexes
+        return h
 
     def sort_by_inner_angle_and_check_if_safe(self, coords):
 
@@ -441,49 +517,48 @@ class TacticsNode:
         :param coords: [(0.95, 1.1, 3, 0, 0, 1), ...]
         :return: # Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
         """
-        poly = None
         is_hull_safe_to_approach = False
-        coords = np.array(coords)
         try:
-            if len(coords) == 4:
-                p1, p2, p3, p4 = map(Point, coords[:, :2])
-                poly = Polygon(p1, p2, p3, p4)
-            elif len(coords) == 3:
-                p1, p2, p3 = map(Point, coords[:, :2])
-                poly = Polygon(p1, p2, p3)
+            coords_sorted, angles_sorted = self.calc_inner_angles(coords)
 
-            vertices_angles_raw = poly.angles.items()
-            vertices_angles = [[(float(k[0].x), float(k[0].y)), radians(degrees(k[1]))] for k in vertices_angles_raw]
-            vertices_angles.sort(key=lambda t: t[1])  # sorts by calculated angle
-            vertices_angles = np.array(vertices_angles)
+        # poly = None
+        # coords = np.array(coords)
+        # try:
+        #     if len(coords) == 4:
+        #         p1, p2, p3, p4 = map(Point, coords[:, :2])
+        #         poly = Polygon(p1, p2, p3, p4)
+        #     elif len(coords) == 3:
+        #         p1, p2, p3 = map(Point, coords[:, :2])
+        #         poly = Polygon(p1, p2, p3)
+        #
+        #     vertices_angles_raw = poly.angles.items()
+        #     vertices_angles = [[(float(k[0].x), float(k[0].y)), radians(degrees(k[1]))] for k in vertices_angles_raw]
+        #     vertices_angles.sort(key=lambda t: t[1])  # sorts by calculated angle
+        #     vertices_angles = np.array(vertices_angles)
+        #
+        #     # print("vertices_angles")
+        #     # print(vertices_angles)  # [[(1.12101702, 1.07152553), 0.5125220134823292], ...]
+        #     # print(" ")
+        #
+        #     sorted_vertices = np.array([v[0] for v in vertices_angles])
 
-            # print("vertices_angles")
-            # print(vertices_angles)  # [[(1.12101702, 1.07152553), 0.5125220134823292], ...]
-            # print(" ")
+            coords_sorted[:2] = self.sort_wrt_robot(coords_sorted[:2])  # trick with sorting two sharpest
 
-            sorted_vertices = np.array([v[0] for v in vertices_angles])
-            sorted_vertices[:2] = self.sort_wrt_robot(sorted_vertices[:2])
-            # print(" ")
-            # print("trick with sorting two sharpes below")
-            # print(sorted_vertices)  # [[1.12101702, 1.07152553], ...]
-            # print(" ")
-
-            if any(vertices_angles[:3, 1] > self.critical_angle):
+            if any(angles_sorted > self.critical_angle):
                 is_hull_safe_to_approach = False
-            elif all(vertices_angles[:3, 1] < self.critical_angle):
+            elif all(angles_sorted < self.critical_angle):
                 is_hull_safe_to_approach = True
 
         except AttributeError:
             print("pucks lie in straigt line, so no angles")
             indexes_sorted = self.find_indexes_of_outer_points_on_line(coords)
-            sorted_vertices = np.array([coords[i] for i in indexes_sorted])
-            if len(sorted_vertices) == 4:
-                sorted_vertices[:2] = self.sort_wrt_robot(sorted_vertices[:2])  # sort side pucks so robot first collect closest one
-            if len(sorted_vertices) == 3:
-                sorted_vertices = self.sort_wrt_robot(sorted_vertices)
-            # print("sorted_vertices by angles", sorted_vertices)
+            coords_sorted = np.array([coords[i] for i in indexes_sorted])
+            if len(coords_sorted) == 4:
+                coords_sorted[:2] = self.sort_wrt_robot(coords_sorted[:2])  # sort side pucks so robot first collect closest one
+            if len(coords_sorted) == 3:
+                coords_sorted = self.sort_wrt_robot(coords_sorted)
 
-        return is_hull_safe_to_approach, sorted_vertices
+        return is_hull_safe_to_approach, coords_sorted
 
     def calculate_landings(self, coordinates):
         """
@@ -581,6 +656,7 @@ class TacticsNode:
 
         if len(coords) == 1:
             return coords
+
         else:
             while not self.update_coords():
                 rospy.sleep(0.05)
