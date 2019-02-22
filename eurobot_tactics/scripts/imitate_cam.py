@@ -46,7 +46,7 @@ def publish_pucks(publisher_pucks, coordinates, colors):
 
 if __name__ == '__main__':
     rospy.init_node('imitate_cam_node', anonymous=True)
-    publisher_pucks = rospy.Publisher("/secondary_robot/pucks", MarkerArray, queue_size=1)
+    publisher_pucks = rospy.Publisher("/secondary_robot/pucks", MarkerArray, queue_size=1)  #
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--number",

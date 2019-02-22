@@ -531,7 +531,7 @@ Visualization Manager:
       Marker Topic: /secondary_robot/pucks
       Name: MarkerArray
       Namespaces:
-        pucks: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -539,7 +539,7 @@ Visualization Manager:
       Marker Topic: /pucks
       Name: MarkerArray
       Namespaces:
-        pucks: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -567,25 +567,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10.6311369
+      Distance: 7.0918498
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.289585352
-        Y: 0.343447477
-        Z: -0.605894148
+        X: 1.23110986
+        Y: 0.825831473
+        Z: -0.577006936
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.56979632
+      Pitch: 1.53979635
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.45630217
+      Yaw: 3.12130189
     Saved: ~
 Window Geometry:
   Displays:

@@ -110,7 +110,7 @@ class TacticsNode:
         # FIXME
         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
 
-        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -130,35 +130,21 @@ class TacticsNode:
         """
         self.mutex.acquire()
 
-        # FIXME IDs are not guaranteed to be the same from frame to frame
-        # add id of zone!!!!!!!!!!!!
-        # new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
-        # new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
-        # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
-        # new_observation_pucks = np.array(new_observation_pucks)
-        # print('TN -- new_observation_pucks')
-        # print(new_observation_pucks)
-
-        # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
-
         if len(self.known_chaos_pucks) == 0:
 
-            # FIXME IDs are not guaranteed to be the same from frame to frame
-            # add id of zone!!!!!!!!!!!!
-            # new_observation_pucks = [(x_.id, x_.pose.position.x, x_.pose.position.y) for x_ in data.markers]
+            # FIXME IDs are not guaranteed to be the same from frame to frame, add id of zone
             new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
             # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
             new_observation_pucks = np.array(new_observation_pucks)
-            # self.known_chaos_pucks = np.array([])  # FIXME this is just for tests!
 
             print('TN -- new_observation_pucks')
             print(new_observation_pucks)
             try:
-                self.known_chaos_pucks = new_observation_pucks  # [:, 1:]  # [array(x0, y0), array(x1, y1), ...]
+                self.known_chaos_pucks = new_observation_pucks
                 print("known")
                 print(self.known_chaos_pucks)
             except Exception as Error:
-                print("list index out of  range - no pucks on the field ")
+                print("list index out of range - no visible pucks on the field ")
             # coords = self.known_chaos_pucks[:, 1:]  # [(x0, y0), (x1, y1), ...]
             # self.known_chaos_pucks = self.calculate_pucks_configuration(coords)
 
@@ -241,9 +227,11 @@ class TacticsNode:
             self.known_chaos_pucks = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
 
             if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):  # blue not the last left in chaos zone
+                print("blue not the last left in chaos zone, roll it!")
                 self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)  # roll sorted list of knowns so blue becomes last one to collect
 
             self.sorted_chaos_landings = self.calculate_landings(self.known_chaos_pucks)
+
             self.goal_landing = self.sorted_chaos_landings[0]
             prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
             self.active_goal = prelanding
@@ -431,8 +419,9 @@ class TacticsNode:
 
     def calc_inner_angles(self, coords):
         is_line = self.polygon_area(coords)  # FIXME returns area
-
-        if is_line < 1e-4:
+        print("poly area")
+        print(is_line)
+        if is_line == 0:
             raise AttributeError('pucks lie on a straigt line, so no inner angles')
 
         else:
@@ -550,7 +539,7 @@ class TacticsNode:
         landings = []
         coords = coordinates[:2]
         if len(coords) == 1:
-            landings = self.calculate_closest_landing_to_point(coords)  # Should be [(0.95, 1.1), ...]
+            landings = self.calculate_closest_landing_to_point(coords)  # Should be [(x, y, theta), ...]
 
         else:
             mc = np.mean(coords, axis=0)
@@ -589,6 +578,10 @@ class TacticsNode:
                     print ("SOMETHING WRONG AT LANDING CALCULATIONS")
 
             landings = np.array(landings)
+        print(" ")
+        print("landings calculated")
+        print(landings)
+        print(" ")
 
         return landings
 
