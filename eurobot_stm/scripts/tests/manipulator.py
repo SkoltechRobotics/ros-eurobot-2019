@@ -64,9 +64,8 @@ class Manipulator():
         self.send_command(50, 0)
         self.send_command(52, 0)
         self.send_command(25)
-	return True
 
-    def collect_big(self, num):
+    def collect_big(self):
         # Release grabber
         self.send_command(22)
         # Collector move default
