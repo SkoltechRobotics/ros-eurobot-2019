@@ -109,7 +109,22 @@ class Camera():
         W = warp_matrix
         C_inv = np.linalg.inv(C)
         W_inv = np.linalg.inv(W)
-        K1 = C_inv.dot(self.K_projection)
+
+        rotation_matrix = find_rotation_matrix(CAMERA_ANGLE)
+        camera_position = np.array([ [CAMERA_X],
+                                     [CAMERA_Y],
+                                     [CAMERA_Z] ])
+        t = -np.dot(rotation_matrix, camera_position)
+        M = np.concatenate((rotation_matrix, t), axis=1)
+        L = np.array([ [TABLE_LENGTH_X/CAMERA_WIDTH, 0, 0],
+                       [0, -TABLE_LENGTH_Y/CAMERA_HEIGHT, TABLE_LENGTH_Y],
+                       [0, 0, 0.025],
+                       [0, 0, 1] ])
+        H = np.dot(M, L)
+
+        K_new = np.linalg.inv(H)
+
+        K1 = C_inv.dot(K_new)
         K2 = W_inv.dot(K1)
         K3 = C.dot(K2)
         K_new = K3

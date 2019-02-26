@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import cv2
 import skimage
+import skimage.morphology
+import skimage.segmentation
 import numpy as np
 
 import rospy
@@ -37,11 +39,16 @@ class Contour():
 
     def find(self, image_gray):
         ret, th = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        th1 = skimage.morphology.closing(th)
+        cleared = skimage.segmentation.clear_border(th1)
         image, contours, hierarchy = cv2.findContours(th, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
+        # contours = skimage.morphology.convex_hull_image(contours)
         self.hierarchy = hierarchy
         self.all_contours = contours
         self.filtered_contours = []
+        return cleared
+    #def
 
     def filter(self, area_epsilon, perimeter_epsilon, radius_epsilon):
         for cnt in self.all_contours:
@@ -72,7 +79,7 @@ class Contour():
             # Cy = 2-cy/pixel_scale_y
             image = cv2.putText(img=image,
                                 text="Cx=%.2f,Cy=%.2f,%s" % (cx, cy, color),
-                                org=(int(cx),int(cy)),
+                                org=(int(cx*pixel_scale_x),int((2-cy)*pixel_scale_y)),
                                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                 fontScale=2,
                                 color=(255,255,255),

@@ -62,6 +62,7 @@ class CameraUndistortNode():
         self.publisher_contours = rospy.Publisher("/contours_image", Image, queue_size=1)
         self.publisher_filter_contours = rospy.Publisher("/filtered_contours_image", Image, queue_size=1)
         self.publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)
+        self.publisher_thresh = rospy.Publisher("/thresh", Image, queue_size=1)
 
         self.bridge = CvBridge()
         self.camera = Camera(DIM, K, D)
@@ -123,12 +124,12 @@ class CameraUndistortNode():
 
             # Find all contours on the image
             image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            self.contour.find(image_gray)
+            image_thresh = self.contour.find(image_gray)
             image_contours = copy.copy(image)
             image_contours = self.contour.draw(image_contours, self.contour.all_contours)
 
             # Filter contours
-            contours_filtered = self.contour.filter(600, 150, 200)
+            contours_filtered = self.contour.filter(800, 150, 200)
             image_filter_contours = copy.copy(image)
             image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
@@ -143,6 +144,7 @@ class CameraUndistortNode():
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
+            self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresh))
             self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
             self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
