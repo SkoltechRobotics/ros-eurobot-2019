@@ -46,7 +46,7 @@ def publish_pucks(publisher_pucks, coordinates, colors):
 
 if __name__ == '__main__':
     rospy.init_node('imitate_cam_node', anonymous=True)
-    publisher_pucks = rospy.Publisher("/secondary_robot/pucks", MarkerArray, queue_size=1)  #
+    publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)  # /secondary_robot
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--number",
@@ -89,8 +89,14 @@ if __name__ == '__main__':
                                     [0.98, 0.82],
                                     [0.98, 0.9]])
 
-    # Need to test how it moves when the closest puck is in the middle of the line
     elif number == 6:  # works - horizontal line
+        coordinates_list = np.array([[0.85, 0.89],
+                                    [0.9, 1.02],
+                                    [0.88, 1.12],
+                                    [0.9, 1.25]])
+
+    # Need to test how it moves when the closest puck is in the middle of the line
+    elif number == 12:  # fails - horizontal line
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 1],
                                     [0.9, 1.1],
@@ -108,6 +114,12 @@ if __name__ == '__main__':
                                      [0.91, 1.19]])
 
     elif number == 9:  # works - 2-4 diagonal
+        coordinates_list = np.array([[0.89, 0.93],
+                                    [1.03, 1.01],
+                                    [1.15, 1.1],
+                                    [1.18, 1.21]])
+
+    elif number == 13:  # fails - 2-4 diagonal
         coordinates_list = np.array([[0.9, 0.9],
                                     [1, 1],
                                     [1.1, 1.1],
@@ -123,6 +135,19 @@ if __name__ == '__main__':
                                     [0.92, 1],
                                     [0.93, 1.1],
                                     [0.9, 1.2]])
+
+# x = 1.0
+# y = 1.05
+# r = 0.38
+# d = 0.76
+# D = 0.3
+
+    if number == 20:  # works  - Real CHAOS
+        coordinates_list = np.array([[0.9, 0.9],
+                                    [0.8, 1],
+                                    [1, 1.1],
+                                    [1.1, 1]])
+
 
     # coordinates_list = np.array([[0.5, 0.5],
     #                              [0.9, 1.1]])
