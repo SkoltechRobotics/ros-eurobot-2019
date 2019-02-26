@@ -171,7 +171,9 @@ class ParticleFilter:
         buf_beacons = beacons[0, :]
         distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
                                             (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
+        landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
         self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
+        self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
         r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
         phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
         phi = wrap_angle(phi).T

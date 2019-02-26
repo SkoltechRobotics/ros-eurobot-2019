@@ -114,7 +114,7 @@ class Manipulator():
         self.send_command(24)
         # Release grabber
         self.send_command(22)
-
+	self.send_command(50)
 
     def release_big(self):
         self.send_command(33)
@@ -125,5 +125,10 @@ class Manipulator():
         self.send_command(35)
 
     def release_small(self):
-        pass
-
+	self.send_command(32)
+	self.send_command(51)
+	self.send_command(51)
+	self.send_command(52)
+	self.send_command(25)
+	self.send_command(50)
+	self.send_command(50)

@@ -7,7 +7,7 @@ from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-from manipulator import Manipulator
+# from manipulator import Manipulator
 
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
@@ -64,7 +64,7 @@ class TacticsNode:
 
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_vec = np.array([-0.12, 0, 0])
+        self.approach_vec = np.array([-0.11, 0, 0])
         # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
         self.drive_back_dist = np.array([-0.05, 0, 0])
         # self.drive_back_dist = np.array([-0.07, 0, 0])
@@ -83,7 +83,7 @@ class TacticsNode:
         self.known_wall6_pucks = np.array([])
         self.wall_six_landing = np.array([])
 
-        self.operating_state = 'waiting somewhere'
+        self.operating_state = 'waiting for command'
         self.is_finished = False
         self.is_puck_collected_and_arm_ready = False
         self.is_robot_moving = False
@@ -222,31 +222,6 @@ class TacticsNode:
         :return:
         """
 
-        if self.operating_state == 'waiting somewhere' and not self.is_robot_moving:
-            rospy.loginfo(self.operating_state)
-            self.known_chaos_pucks = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
-
-            if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):  # blue not the last left in chaos zone
-                print("blue not the last left in chaos zone, roll it!")
-                self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)  # roll sorted list of knowns so blue becomes last one to collect
-
-            self.sorted_chaos_landings = self.calculate_landings(self.known_chaos_pucks)
-            self.goal_landing = self.sorted_chaos_landings[0]
-            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
-            self.active_goal = prelanding
-            self.is_finished = False
-            cmd = self.compose_command(self.active_goal, cmd_id='approach_first_PRElanding', move_type='move_line')
-            self.move_command_publisher.publish(cmd)
-            self.is_robot_moving = True
-            self.operating_state = 'approaching first PRElanding'
-            rospy.loginfo(self.operating_state)
-
-        if self.operating_state == 'approaching first PRElanding' and self.is_finished:
-            self.operating_state = 'waiting for command'
-            rospy.loginfo(self.operating_state)
-            self.is_robot_moving = False
-            self.is_finished = False
-
         if self.operating_state == 'waiting for command' and not self.is_robot_moving:
             rospy.loginfo(self.operating_state)
             self.known_chaos_pucks = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
@@ -254,18 +229,33 @@ class TacticsNode:
             if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):  # blue not the last left in chaos zone
                 print("blue not the last left in chaos zone, roll it!")
                 self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)  # roll sorted list of knowns so blue becomes last one to collect
-                print(self.known_chaos_pucks)
 
             self.sorted_chaos_landings = self.calculate_landings(self.known_chaos_pucks)
+
             self.goal_landing = self.sorted_chaos_landings[0]
             prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
             self.active_goal = prelanding
-            self.is_finished = False
             cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
             self.is_robot_moving = True
+            self.is_finished = False
             self.operating_state = 'approaching nearest PRElanding'
             rospy.loginfo(self.operating_state)
+
+        # if self.operating_state == 'waiting for command' and not self.is_robot_moving:
+        #     rospy.loginfo(self.operating_state)
+        #     self.sorted_chaos_landings = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0, 0.95, 1.1, 0, 0, 1), ...]
+        #
+        #     self.goal_landing = self.sorted_chaos_landings[0]
+        #     prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+        #
+        #     self.active_goal = prelanding
+        #     cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_line')
+        #     self.move_command_publisher.publish(cmd)
+        #     self.is_robot_moving = True
+        #     self.is_finished = False
+        #     self.operating_state = 'approaching nearest PRElanding'
+        #     rospy.loginfo(self.operating_state)
 
         if self.operating_state == 'approaching nearest PRElanding' and self.is_finished:
             self.operating_state = 'nearest PRElanding approached'
@@ -360,7 +350,7 @@ class TacticsNode:
         self.is_robot_collecting_puck = False
         self.is_puck_collected = False
         self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
-        self.operating_state = 'waiting somewhere'
+        self.operating_state = 'waiting for command'
 
         print(self.operating_state)
         print(" ")
@@ -411,7 +401,7 @@ class TacticsNode:
         self.known_chaos_pucks = self.sort_wrt_robot(self.known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
 
         if len(self.known_chaos_pucks) >= 3:
-            is_hull_safe_to_approach, coords_sorted_by_angle = self.sort_by_inner_angle_and_check_if_safe(self.known_chaos_pucks)
+            is_hull_safe_to_approach, coords_sorted_by_angle = self.sort_by_inner_angle_and_check_if_safe(self.known_chaos_pucks)  # FIXME now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
 
             if is_hull_safe_to_approach:  # only sharp angles
                 print(" ")
