@@ -7,7 +7,7 @@ from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-# from manipulator import Manipulator
+from manipulator import Manipulator
 
 # from geometry_msgs.msg import Twist
 # from std_msgs.msg import Int32MultiArray
@@ -64,7 +64,7 @@ class TacticsNode:
 
         self.critical_angle = np.pi * 2/3
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_vec = np.array([-0.11, 0, 0])
+        self.approach_vec = np.array([-0.12, 0, 0])
         # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
         self.drive_back_dist = np.array([-0.05, 0, 0])
         # self.drive_back_dist = np.array([-0.07, 0, 0])
@@ -235,7 +235,7 @@ class TacticsNode:
             self.goal_landing = self.sorted_chaos_landings[0]
             prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
             self.active_goal = prelanding
-            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_line')
             self.move_command_publisher.publish(cmd)
             self.is_robot_moving = True
             self.is_finished = False
