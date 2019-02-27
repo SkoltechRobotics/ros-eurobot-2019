@@ -74,10 +74,17 @@ if __name__ == '__main__':
                                     [1, 1.1],
                                     [1.1, 1]])
     elif number == 3:  # works
+        coordinates_list = np.array([[0.91, 0.9],
+                                    [0.9, 0.82],
+                                    [0.99, 0.82],
+                                    [1.0, 0.91]])
+
+    elif number == 13:  # fails on the first approach
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 0.82],
                                     [0.98, 0.82],
                                     [0.98, 0.9]])
+
     elif number == 4:  # works - one puck in center
         coordinates_list = np.array([[0.7, 0.8],
                                     [0.9, 0.9],
@@ -96,7 +103,7 @@ if __name__ == '__main__':
                                     [0.9, 1.25]])
 
     # Need to test how it moves when the closest puck is in the middle of the line
-    elif number == 12:  # fails - horizontal line
+    elif number == 16:  # fails - horizontal line
         coordinates_list = np.array([[0.9, 0.9],
                                     [0.9, 1],
                                     [0.9, 1.1],
@@ -119,7 +126,7 @@ if __name__ == '__main__':
                                     [1.15, 1.1],
                                     [1.18, 1.21]])
 
-    elif number == 13:  # fails - 2-4 diagonal
+    elif number == 19:  # fails - 2-4 diagonal
         coordinates_list = np.array([[0.9, 0.9],
                                     [1, 1],
                                     [1.1, 1.1],
