@@ -69,9 +69,11 @@ class TacticsNode:
         self.robot_name = "secondary_robot"
 
         self.critical_angle = np.pi * 2/3
-        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_vec = np.array([-0.11, 0, 0])
-        self.drive_back_dist = np.array([-0.05, 0, 0])
+        # self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = 0.153  # meters, distance from robot to puck where robot will try to grab it
+        # self.approach_vec = np.array([-0.11, 0, 0])
+        self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+        self.drive_back_dist = np.array([-0.07, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
@@ -105,12 +107,19 @@ class TacticsNode:
 
         self.timer = None
 
-        # print("here is ok should be")
-        # self.manipulator = Manipulator()
-        # print("here is ok? init = Manip")
+        print("here is ok should be")
+        self.manipulator = Manipulator()
+        print("here is ok? init = Manip")
+
+        # ON SECONDARY
         # if not self.manipulator.calibrate_small():
         #     print("here shouldn't be")
         #     return
+
+        # ON MAIN
+        if not self.manipulator.calibrate_big():
+            print("here shouldn't be")
+            return
 
         # coords are published as markers in one list according to 91-92 undistort.py
         # FIXME
@@ -323,10 +332,12 @@ class TacticsNode:
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
             self.goal_landing = None
             # self.is_puck_collected = self.manipulator.collect_small()
+            self.is_puck_collected = self.manipulator.collect_big()
+
             self.is_robot_collecting_puck = True
             self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
-            self.imitate_manipulator()
+            # self.imitate_manipulator()
 
         if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
