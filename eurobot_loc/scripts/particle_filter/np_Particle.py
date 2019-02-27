@@ -1,20 +1,27 @@
 #!/usr/bin/env python
 from core_functions import *
 import numpy as np
+import yaml
 
+word_params_config_file_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/world_params.yaml"
+particle_filter_config_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/particle_filter_params.yaml"
+with open(word_params_config_file_path, 'r') as params:
+    world_params = yaml.load(params)
+with open(particle_filter_config_path, 'r') as params:
+    pf_params = yaml.load(params)
 # Dimensions of the playing field
-WORLD_X = 3
-WORLD_Y = 2
-WORLD_BORDER = 0.022
-BEAC_R = 0.096 / 2
-BEAC_L = 0.100
-BEAC_BORDER = 0.022
+WORLD_X = world_params["world_x"]
+WORLD_Y = world_params["world_y"]
+WORLD_BORDER = world_params["world_border"]
+BEAC_R = world_params["beac_radius"]
+BEAC_L = world_params["beac_l"]
+BEAC_BORDER = world_params["beac_border"]
 
-ORANGE_BEACONS = np.array([[WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y / 2.],
+PURPLE_BEACONS = np.array([[WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y / 2.],
                            [-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y - BEAC_L / 2.],
                            [-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), BEAC_L / 2.]])
 
-GREEN_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y / 2.],
+YELLOW_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y - BEAC_L / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
 
@@ -25,44 +32,39 @@ LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
 
 
 class ParticleFilter:
-    def __init__(self, particles_num=500, sense_noise=0.0050, distance_noise=5, angle_noise=0.02,
-                 start_x=0.293, start_y=0.425, start_angle=3 * np.pi / 2, color='orange', min_intens=3500.0,
-                 max_dist=3.7, beac_dist_thresh=0.200, k_angle=2, num_is_near_thresh=0.1, distance_noise_1_beacon=0.001,
-                 angle_noise_1_beacon=0.05, k_bad=1):
+    def __init__(self, start_x=0.293, start_y=0.425, start_angle=3 * np.pi / 2, color='orange'):
 
         self.start_coords = np.array([start_x, start_y, start_angle])
         self.color = color
-        if color == 'orange':
-            self.beacons = ORANGE_BEACONS
+        if color == 'purple':
+            self.beacons = PURPLE_BEACONS
         else:
-            self.beacons = GREEN_BEACONS
-
-        self.particles_num = particles_num
-        self.sense_noise = sense_noise
-        self.distance_noise = distance_noise
-        self.angle_noise = angle_noise
-        self.min_intens = min_intens
-        self.max_dist = max_dist
+            self.beacons = YELLOW_BEACONS
+        self.particles_num_from_measurement_model = pf_params["particles_num_from_measurement_model"]
+        self.particles_num = pf_params["particles_num"]
+        self.sense_noise = pf_params["sense_noise"]
+        self.distance_noise = pf_params["distance_noise"]
+        self.angle_noise = pf_params["angle_noise"]
+        self.min_intens = pf_params["min_intens"]
+        self.max_dist = pf_params["max_dist"]
         self.last = (start_x, start_y, start_angle)
-        self.beac_dist_thresh = beac_dist_thresh
-        self.k_angle = k_angle
-        self.k_bad = k_bad
-        self.num_is_near_thresh = num_is_near_thresh
-        self.distance_noise_1_beacon = distance_noise_1_beacon
-        self.angle_noise_1_beacon = angle_noise_1_beacon
-        self.sigma_r = 0.05
-        self.num_seeing_beacons = 3
+        self.beac_dist_thresh = pf_params["beac_dist_thresh"]
+        self.k_angle = pf_params["k_angle"]
+        self.k_bad = pf_params["k_bad"]
+        self.num_is_near_thresh = pf_params["num_is_near_thresh"]
+        self.distance_noise_1_beacon = pf_params["distance_noise_1_beacon"]
+        self.angle_noise_1_beacon = pf_params["angle_noise_1_beacon"]
+        self.sigma_r = pf_params["sigma_r"]
+        self.num_seeing_beacons = pf_params["num_seeing_beacons"]
         # Create Particles
-        x = np.random.normal(start_x, distance_noise, particles_num)
-        y = np.random.normal(start_y, distance_noise, particles_num)
-        angle = np.random.normal(start_angle, angle_noise, particles_num) % (2 * np.pi)
+        x = np.random.normal(start_x, self.distance_noise, self.particles_num)
+        y = np.random.normal(start_y, self.distance_noise, self.particles_num)
+        angle = np.random.normal(start_angle, self.angle_noise, self.particles_num) % (2 * np.pi)
         self.particles = np.array([x, y, angle]).T
-        self.landmarks = [[], []]
-        self.cost_function = []
-        self.best_particles = {}
-        self.sigma_phi = 0.06
-        self.min_sin = 0.4
-        self.min_cost_function = 0
+        self.landmarks = np.zeros((2, 0))
+        self.sigma_phi = pf_params["sigma_phi"]
+        self.min_sin = pf_params["min_sin"]
+        self.min_cost_function = pf_params["min_cost_function"]
         self.r_lid = np.array([])
         self.phi_lid = np.array([])
         self.beacon_ind = np.array([])
@@ -78,21 +80,19 @@ class ParticleFilter:
         y_beac = d * np.sin(a)
         return x_beac, y_beac
 
-    def localisation(self, delta_coords, lidar_data, beacons):
-        print "HERE@!@"
-        self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]])
-        self.particles = self.particle_sense(self.particles, beacons)
+    def localization(self, delta_coords,  beacons):
+        self.motion_model([delta_coords[0], delta_coords[1], delta_coords[2]])
+        self.particles = self.measurement_model(self.particles, beacons)
         main_robot = self.calculate_main()
         return main_robot
 
-    def particle_sense(self, particles, beacons):
+    def measurement_model(self, particles, beacons):
         self.landmarks = beacons
 
-        particles_measurement_model = self.get_particle_measurement_model(beacons)
-        particles = np.concatenate((particles[:990], particles_measurement_model), axis=0)
-        print particles
+        # particles_measurement_model = self.get_particle_measurement_model(beacons)
+        # particles = np.concatenate((particles[:995], particles_measurement_model), axis=0)
         weights = self.weights(beacons, particles)
-        inds = self.resample(weights)
+        inds = self.resample(weights, self.particles_num)
         # self.min_cost_function = np.mean(self.cost_function)
         particles = particles[inds, :]
         return particles
@@ -106,15 +106,15 @@ class ParticleFilter:
             r = (np.sqrt((landmarks[np.newaxis, :, 1]) ** 2 + (landmarks[np.newaxis, :, 0]) ** 2)).T
             phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0])
             phi = wrap_angle(phi).T
-            r_lid = r + np.random.normal(0, self.sigma_r, 10)
-            phi_lid = phi + np.random.normal(0, self.sigma_phi, 10)
+            r_lid = r + np.random.normal(0, self.sigma_r, self.particles_num_from_measurement_model)
+            phi_lid = phi + np.random.normal(0, self.sigma_phi, self.particles_num_from_measurement_model)
             phi_lid = wrap_angle(phi_lid)
             if (len(self.beacon_ind) > 0 ):
-                y_lid = np.random.uniform(0, 2 * np.pi, 10)
-                x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :10] * np.cos(y_lid)
-                y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :10] * np.sin(y_lid)
-                theta = wrap_angle(y_lid - np.pi - phi_lid[0, :10])
-                index = (x < 3) & (x > 0) & ( y < 2) & ( y >  0)
+                y_lid = np.random.uniform(0, 2 * np.pi, self.particles_num_from_measurement_model)
+                x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :5] * np.cos(y_lid)
+                y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :5] * np.sin(y_lid)
+                theta = wrap_angle(y_lid - np.pi - phi_lid[0, :self.particles_num_from_measurement_model])
+                index = (x < 3) & (x > 0) & (y < 2) & (y > 0)
                 return np.array([x, y, theta]).T[index]
             else:
                 x = np.zeros(10)
@@ -122,7 +122,7 @@ class ParticleFilter:
                 theta = np.zeros(10)
                 return np.array([x, y, theta]).T
 
-    def move_particles(self, delta):  # delta = [dx,dy,d_rot]
+    def motion_model(self, delta):  # delta = [dx,dy,d_rot]
             if self.num_seeing_beacons > 1:
                 d_n = self.distance_noise
                 a_n = self.angle_noise
@@ -171,7 +171,10 @@ class ParticleFilter:
         buf_beacons = beacons[0, :]
         distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
                                             (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
+        # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4 * BEAC_R)]
+        landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
         self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
+        self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
         r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
         phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
         phi = wrap_angle(phi).T
@@ -216,4 +219,7 @@ class ParticleFilter:
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
         return angles, distances
+
+
+
 
