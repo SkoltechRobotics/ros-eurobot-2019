@@ -361,6 +361,8 @@ class MotionPlannerNode:
     def get_deceleration_coefficient(self, distance):
         """
         Exponential function that is used to perform accurate approach to goal position
+        type in Wolfram Alpha:
+        e ^ (-1/(3*x + 0.8)) for x from 0 to 3 and y from 0 to 1
         :param distance: Euclidean distance from robot's location to goal location
         :return:
         """

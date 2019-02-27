@@ -20,6 +20,10 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 8 - vels
 14 - pos
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
+
+# to ride by odometry
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
+
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
@@ -68,12 +72,13 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.1
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
-rosrun eurobot_tactics imitate_cam.py -n 5
+rosrun eurobot_tactics imitate_cam.py -n 4
 
 rosrun rqt_graph rqt_graph
 
-
-
+to puck near red field SMALL
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.6 0.45 3.14'"
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x30'"
 
 
 
@@ -220,6 +225,7 @@ http://wiki.ros.org/catkin/workspaces
 Creating a ROS Package
 http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
+http://wiki.ros.org/ROS/NetworkSetup
 
 
 # create new node
