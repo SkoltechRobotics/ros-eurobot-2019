@@ -125,10 +125,9 @@ class Manipulator():
         self.send_command(35)
 
     def release_small(self):
-	self.send_command(32)
 	self.send_command(51)
-	self.send_command(51)
-	self.send_command(52)
 	self.send_command(25)
 	self.send_command(50)
 	self.send_command(50)
+	self.send_command(32)
+	self.send_command(51)
