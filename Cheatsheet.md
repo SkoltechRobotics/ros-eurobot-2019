@@ -66,7 +66,7 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
-
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 rosrun eurobot_tactics imitate_cam.py -n 5
 

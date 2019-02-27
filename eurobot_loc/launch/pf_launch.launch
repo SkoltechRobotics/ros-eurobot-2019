@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+  <rosparam file="$(find eurobot_loc)/config/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
   <param name = "field/color" value = "orange"/>
   <include file="$(find my_pkg)/launch/lidar.launch" />
   <include file="$(find eurobot_stm)/launch/STM_node.launch" />
