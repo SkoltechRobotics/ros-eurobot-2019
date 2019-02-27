@@ -7,7 +7,7 @@ from std_msgs.msg import String
 
 class Manipulator():
     def __init__(self):
-        rospy.init_node("manuipulator_node", anonymous=True)
+        # rospy.init_node("manuipulator_node", anonymous=True)
 
         self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
         rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
@@ -38,10 +38,11 @@ class Manipulator():
                     return self.last_response_args
                 # if don't get response a lot of time
 
-    def calibrate_small_robot(self):
-        self.send_command("manipulator-calibrate_step_motor_1", 48)
+    def calibrate_small(self):
+        self.send_command(48)
+        return True
 
-    def calibrate_big_robot(self):
+    def calibrate_big(self):
         # 1) collector move left
         # 2) start calibration right stepper
         # 3) make step down by right stepper
@@ -64,9 +65,9 @@ class Manipulator():
         self.send_command(50, 0)
         self.send_command(52, 0)
         self.send_command(25)
-	return True
+        return True
 
-    def collect_puck_big(self):
+    def collect_big(self, num):
         # Release grabber
         self.send_command(22)
         # Collector move default
@@ -93,17 +94,9 @@ class Manipulator():
         self.send_command(50, 1)
         # Release grabber
         self.send_command(22)
-	return True
+        return True
 
-    def release_puck(self):
-        self.send_command(33)
-        self.send_command(34)
-        self.send_command(51, 1)
-        self.send_command(51, 1)
-        self.send_command(52, 1)
-        self.send_command(35)
-
-    def collect_puck(self):
+    def collect_small(self):
         # Release grabber
         self.send_command(22)
         # Set pump to the wall
@@ -124,3 +117,23 @@ class Manipulator():
         self.send_command(24)
         # Release grabber
         self.send_command(22)
+        return True
+
+
+    def release_big(self):
+        self.send_command(33)
+        self.send_command(34)
+        self.send_command(51, 1)
+        self.send_command(51, 1)
+        self.send_command(52, 1)
+        self.send_command(35)
+        return True
+
+    def release_small(self):
+        self.send_command(51)
+        self.send_command(25)
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(32)
+        self.send_command(51)
+        return True

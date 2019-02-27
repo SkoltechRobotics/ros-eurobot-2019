@@ -41,7 +41,7 @@ class MotionPlannerNode:
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
         self.robot_name = "secondary_robot"
         self.max_diff_w = 0.7
-        self.max_diff_v = 0.5
+        self.max_diff_v = 0.2
         self.mutex = Lock()
         self.prev_vel = np.array([0., 0., 0.])
         self.result_vel = np.array([0., 0., 0.])
@@ -218,24 +218,16 @@ class MotionPlannerNode:
         vx, vy, w = vel_cur
         if np.abs(vel_cur[2] - prev_vel[2]) > self.max_diff_w * dt:
             w_new = prev_vel[2] + self.max_diff_v * dt * np.sign(w - prev_vel[2])
-            #         if abs(w) > 5 * max_diff_w * dt:
-            vx *= w_new / w
-            vy *= w_new / w
+            if abs(w) > 5 * max_diff_w * dt:
+            	vx *= w_new / w
+                vy *= w_new / w
             w = w_new
 
         if np.abs(vx - prev_vel[0]) > self.max_diff_v * dt:
-            vx_new = prev_vel[0] + self.max_diff_v * dt * np.sign(vx - prev_vel[0])
-            k = vx_new / vx
-            vy /= k
-            w /= k
-            vx = vx_new
+            vx = prev_vel[0] + self.max_diff_v * dt * np.sign(vx - prev_vel[0])
 
         if np.abs(vy - prev_vel[1]) > self.max_diff_v * dt:
-            vy_new = prev_vel[1] + self.max_diff_v * dt * np.sign(vy - prev_vel[1])
-            k = vy_new / vy
-            vx /= k
-            w /= k
-            vy = vy_new
+            vy = prev_vel[1] + self.max_diff_v * dt * np.sign(vy - prev_vel[1])
 
         if abs(vx) > self.V_MAX:
             k = abs(vx) / self.V_MAX
@@ -309,6 +301,7 @@ class MotionPlannerNode:
         self.result_vel = self.constraint_v(self.result_vel)
         curr_time = rospy.Time.now().to_sec()
         dt = curr_time - self.prev_time
+        self.prev_time = curr_time
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         #self.result_vel = self.constraint_a(self.result_vel, self.prev_vel, dt) * deceleration_coefficient
@@ -418,7 +411,8 @@ class MotionPlannerNode:
             self.update_coords()
             self.create_linear_path()
             self.pub_path()
-
+            self.prev_vel = np.array([0., 0., 0.])
+            self.prev_time = rospy.Time.now().to_sec()
             self.follow_path()
             delta_coords = self.coords - self.path[-1, :]
             delta_coords[2] = wrap_angle(delta_coords[2])
