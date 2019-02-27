@@ -130,7 +130,7 @@ class Manipulator():
         return True
 
     def release_small(self):
-	    self.send_command(51)
+        self.send_command(51)
         self.send_command(25)
         self.send_command(50)
         self.send_command(50)

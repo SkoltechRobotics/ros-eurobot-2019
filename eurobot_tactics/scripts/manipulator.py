@@ -117,6 +117,7 @@ class Manipulator():
         self.send_command(24)
         # Release grabber
         self.send_command(22)
+        self.send_command(50)
         return True
 
 

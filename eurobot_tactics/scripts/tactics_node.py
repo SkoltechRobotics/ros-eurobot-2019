@@ -70,12 +70,12 @@ class TacticsNode:
 
         self.critical_angle = np.pi * 2/3
         
-        # self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_dist = 0.153  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
+        # self.approach_dist = 0.153  # meters, distance from robot to puck where robot will try to grab it
 
-        # self.approach_vec = np.array([-0.11, 0, 0])
-        self.approach_vec = np.array([-0.153, 0, 0])  # big robot
-        
+        self.approach_vec = np.array([-0.11, 0, 0])
+        # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+
         self.drive_back_dist = np.array([-0.07, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
@@ -160,7 +160,7 @@ class TacticsNode:
             print('TN -- new_observation_pucks')
             print(new_observation_pucks)
             try:
-                self.known_chaos_pucks = new_observation_pucks
+                self.known_chaos_pucks = new_observation_pucks[:, :2]
                 print("known")
                 print(self.known_chaos_pucks)
             except Exception as Error:
@@ -616,7 +616,9 @@ class TacticsNode:
 
         while not self.update_coords():
             rospy.sleep(0.05)
-
+        print("mistake here _____________________________-----------------")
+        print("point is")
+        print(point)
         dist, _ = calculate_distance(self.robot_coords, point)  # return deltaX and deltaY coords
         gamma = np.arctan2(dist[1], dist[0])
         point = np.hstack((point, gamma))
