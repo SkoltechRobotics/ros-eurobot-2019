@@ -76,7 +76,7 @@ class TacticsNode:
         self.approach_vec = np.array([-0.11, 0, 0])
         # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
 
-        self.drive_back_dist = np.array([-0.07, 0, 0])
+        self.drive_back_dist = np.array([-0.04, 0, 0])
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
@@ -85,7 +85,7 @@ class TacticsNode:
         self.robot_coords = np.zeros(3)
         self.active_goal = None
         self.goal_landing = None
-        self.atoms_collected = 0  # to preliminary calculate our score
+        self.atoms_inside = 0  # to preliminary calculate our score
 
         self.sorted_chaos_landings = np.array([])
         self.known_chaos_pucks = np.array([])  # (id, x, y)
@@ -226,59 +226,65 @@ class TacticsNode:
         - skip
         :return:
         """
-        # rospy.loginfo(' ')
-        # rospy.loginfo('Tactics TIMER_CALLBACK')
-        # rospy.loginfo('There are ' + str(len(self.known_chaos_pucks)) + ' pucks on the field')
+        print("is finished?___1", self.is_finished)
+        print ("OPERATING_STATE=",self.operating_state)
 
         if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
             self.execute_puck_cmd()
 
-        # elif self.cmd_type == "collect_wall_six" and len(self.known_wall6_pucks) > 0:
-            # self.known_wall6_pucks, self.wall_six_landing = self.execute_puck_cmd(self.known_wall6_pucks, self.wall_six_landing)
-
-        # elif self.cmd_type == "collect_wall_3" and len(self.known_coords_of_wall_three_pucks) > 0:
-        #     grab_from_wall
-        # elif self.cmd_type == "collect_accel_blue_and_hold_up" and len(self.known_coords_of_pucks) > 0:
-        #     func()
-        # TODO inside collect_puck we need to provide type of collect: to collect it, to pick and hold or else
-        # elif self.cmd_type == "take_goldenium_and_hold_middle" and len(self.known_coords_of_pucks) > 0:
-        #     func()
-        # place_atom_on_weights
-
-        elif len(self.known_chaos_pucks) == 0:
-            self.stop_collecting()
-            self.move_to_start_zone_and_unload()
-
-        elif self.pucks_unloaded == 4:
-            self.completely_stop()
-
-    def move_to_start_zone_and_unload(self):
-        
-        if self.operating_state == "robot collected all pucks":
-            self.operating_state = 'moving to red zone'
+        if self.atoms_inside == 4 and self.operating_state == "waiting for command":
+            self.operating_state = "moving to red zone"
             rospy.loginfo(self.operating_state)
-            self.is_robot_moving = False
-            self.is_finished = False
-            self.active_goal = self.red_zone_coords
-            cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
-            self.move_command_publisher.publish(cmd)
-            self.is_robot_moving = True
-
-        
+            self.move_to_start_zone()
+            
+        # print("is finished?___2", self.is_finished)
 
         if self.operating_state == "moving to red zone" and self.is_finished:
-            self.stm_command_publisher.publish("1 50")
-            rospy.sleep(1.5)
-            self.stm_command_publisher.publish("1 50")
-            rospy.sleep(1.5)
-            manipulator.release_small()
-            self.pucks_unloaded += 1
-            manipulator.release_small()
-            self.pucks_unloaded += 1
-            manipulator.release_small()
-            self.pucks_unloaded += 1
-            manipulator.release_small()
-            self.pucks_unloaded += 1
+            print("is finished?", self.is_finished)
+            self.operating_state = "start unloading"
+            rospy.loginfo(self.operating_state)
+            # self.unload_pucks_on_table()
+            self.manipulator.release_small()
+            self.pucks_unloaded = 4
+            self.atoms_inside = 0
+
+        if self.operating_state == "start unloading" and self.pucks_unloaded == 4:
+            self.completely_stop()
+
+
+
+
+        if self.cmd_type == "unload_in_red" and self.atoms_inside == 4:
+            # self.unload_pucks_on_table()
+            self.manipulator.release_small()
+            self.pucks_unloaded = 4
+            self.atoms_inside = 0
+
+    def move_to_start_zone(self):
+        self.is_finished = False
+        self.active_goal = self.red_zone_coords
+        cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
+        self.move_command_publisher.publish(cmd)
+        print("is finished?", self.is_finished)
+
+    # def unload_pucks_on_table(self):
+    #     self.stm_command_publisher.publish("1 50")
+    #     rospy.sleep(1.5)
+    #     self.stm_command_publisher.publish("1 50")
+    #     rospy.sleep(1.5)
+    #     self.manipulator.release_small()
+    #     self.pucks_unloaded += 1
+    #     self.atoms_inside -= 1
+    #     self.manipulator.release_small()
+    #     self.pucks_unloaded += 1
+    #     self.atoms_inside -= 1
+    #     self.manipulator.release_small()
+    #     self.pucks_unloaded += 1
+    #     self.atoms_inside -= 1
+    #     self.manipulator.release_small()
+    #     self.pucks_unloaded += 1
+    #     self.atoms_inside -= 1
+        
 
     def execute_puck_cmd(self):
         """
@@ -390,7 +396,7 @@ class TacticsNode:
         #     self.operating_state = 'puck successfully collected'
         #     rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
         #     self.is_robot_collecting_puck = False
-        #     self.atoms_collected += 1
+        #     self.atoms_inside += 1
         #     print(" ")
         #     print("now delete puck", self.known_chaos_pucks[0])
         #     print(" ")
@@ -432,22 +438,23 @@ class TacticsNode:
             self.operating_state = 'puck successfully collected'
             rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
             self.is_robot_collecting_puck = False
-            self.atoms_collected += 1
+            self.atoms_inside += 1
             print(" ")
             print("now delete puck", self.known_chaos_pucks[0])
             print(" ")
             self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
             rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
+            rospy.loginfo('TN: pucks Inside: ' + str(self.atoms_inside))
 
         if self.operating_state == 'puck successfully collected':
-            self.operating_state = 'waiting for command'
-            rospy.loginfo(self.operating_state)
             self.is_puck_collected = False
             self.is_robot_moving = False
             self.active_goal = None
             self.sorted_chaos_landings = None
             self.is_robot_collecting_puck = False
             self.is_puck_sucked = False
+            self.operating_state = 'waiting for command'
+            rospy.loginfo(self.operating_state)
 
 
     def response_callback(self, data):
@@ -483,35 +490,28 @@ class TacticsNode:
         rospy.loginfo('TN: puck collected by imitator!!')
         self.is_puck_collected = True
 
-    def stop_collecting(self):
-        # self.timer.shutdown()
-        # rospy.loginfo("TN -- Robot has stopped collecting pucks.")
-        # rospy.sleep(1.0 / 40)
-        # print(" ")
-        # print(" ")
+    # def stop_collecting(self):
+    #     # self.timer.shutdown()
+    #     # rospy.sleep(1.0 / 40)
+    #     # print(" ")
+    #     # print(" ")
 
-        self.is_robot_moving = False
-        self.active_goal = None
-        self.is_finished = True
-        self.is_robot_collecting_puck = False
-        self.is_puck_collected = False
-        self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
+    #     rospy.loginfo("TN -- Robot has stopped collecting pucks.")
+    #     self.is_robot_moving = False
+    #     # self.active_goal = None
+    #     # self.is_finished = True
+    #     self.is_robot_collecting_puck = False
+    #     self.is_puck_collected = False
+    #     self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
 
-        self.operating_state = 'robot collected all pucks'
-        print(self.operating_state)
-        print(" ")
-        print(" ")
-        self.response_publisher.publish(self.cmd_id + " finished")
+        # self.response_publisher.publish(self.cmd_id + " finished")  FIXME
 
     def completely_stop(self):
         self.timer.shutdown()
-        rospy.loginfo("TN -- Robot has stopped collecting pucks.")
+        rospy.loginfo("TN -- Robot has completely stopped")
         rospy.sleep(1.0 / 40)
-        print(" ")
-        print(" ")
-
         self.operating_state = 'waiting for command'
-        print(self.operating_state)
+        rospy.loginfo(self.operating_state)
         print(" ")
         print(" ")
         self.response_publisher.publish(self.cmd_id + " finished")
