@@ -67,7 +67,7 @@ class TacticsNode:
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
         self.robot_name = "secondary_robot"
-
+        self.red_zone_coords = np.array([0.4, 0.4, 3.14])
         self.critical_angle = np.pi * 2/3
         
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
@@ -80,6 +80,7 @@ class TacticsNode:
         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         self.RATE = 10
+        self.pucks_unloaded = 0
 
         self.robot_coords = np.zeros(3)
         self.active_goal = None
@@ -97,6 +98,7 @@ class TacticsNode:
         self.is_robot_moving = False
         self.is_robot_collecting_puck = False
         self.is_puck_collected = False
+        self.is_puck_sucked = False
 
         self.cmd_id = None
         self.cmd_type = None
@@ -243,8 +245,40 @@ class TacticsNode:
         #     func()
         # place_atom_on_weights
 
-        else:
+        elif len(self.known_chaos_pucks) == 0:
             self.stop_collecting()
+            self.move_to_start_zone_and_unload()
+
+        elif self.pucks_unloaded == 4:
+            self.completely_stop()
+
+    def move_to_start_zone_and_unload(self):
+        
+        if self.operating_state == "robot collected all pucks":
+            self.operating_state = 'moving to red zone'
+            rospy.loginfo(self.operating_state)
+            self.is_robot_moving = False
+            self.is_finished = False
+            self.active_goal = self.red_zone_coords
+            cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
+            self.move_command_publisher.publish(cmd)
+            self.is_robot_moving = True
+
+        
+
+        if self.operating_state == "moving to red zone" and self.is_finished:
+            self.stm_command_publisher.publish("1 50")
+            rospy.sleep(1.5)
+            self.stm_command_publisher.publish("1 50")
+            rospy.sleep(1.5)
+            manipulator.release_small()
+            self.pucks_unloaded += 1
+            manipulator.release_small()
+            self.pucks_unloaded += 1
+            manipulator.release_small()
+            self.pucks_unloaded += 1
+            manipulator.release_small()
+            self.pucks_unloaded += 1
 
     def execute_puck_cmd(self):
         """
@@ -334,18 +368,67 @@ class TacticsNode:
             rospy.loginfo(self.operating_state)
             self.is_robot_moving = False
 
+
+        # if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
+        #     # self.goal_landing = None
+        #     self.is_robot_collecting_puck = True
+        #     self.is_puck_sucked = self.manipulator.grab_and_suck_small()
+
+        #     prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+        #     self.active_goal = prelanding
+        #     cmd = self.compose_command(self.active_goal, cmd_id='driving_back_for_safety', move_type='move_line')
+        #     self.move_command_publisher.publish(cmd)
+
+        #     self.is_puck_collected = self.manipulator.finish_collect_small()
+        #     # self.is_puck_collected = self.manipulator.collect_big()
+
+        #     self.operating_state = 'collecting puck'
+        #     rospy.loginfo(self.operating_state)
+        #     # self.imitate_manipulator()
+
+        # if self.operating_state == 'collecting puck' and self.is_puck_collected:
+        #     self.operating_state = 'puck successfully collected'
+        #     rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
+        #     self.is_robot_collecting_puck = False
+        #     self.atoms_collected += 1
+        #     print(" ")
+        #     print("now delete puck", self.known_chaos_pucks[0])
+        #     print(" ")
+        #     self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
+        #     rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
+
+
         if self.operating_state == 'nearest LANDING approached' and not self.is_robot_collecting_puck:
-            self.goal_landing = None
-
-            self.is_puck_collected = self.manipulator.collect_small()
-            # self.is_puck_collected = self.manipulator.collect_big()
-
-            self.is_robot_collecting_puck = True
-            self.operating_state = 'collecting puck'
+            self.is_puck_sucked = self.manipulator.grab_and_suck_small()
+            self.operating_state = 'sucking puck'
             rospy.loginfo(self.operating_state)
+            self.is_robot_collecting_puck = True
+
+        if self.operating_state == 'sucking puck' and self.is_puck_sucked:
+            rospy.sleep(0.5)
+            self.operating_state = 'driving back for safety'
+            rospy.loginfo(self.operating_state)
+            self.is_finished = False
+
+            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+            self.active_goal = prelanding
+            cmd = self.compose_command(self.active_goal, cmd_id='driving_back_for_safety', move_type='move_line')
+            self.move_command_publisher.publish(cmd)
+
+            self.is_robot_collecting_puck = False
+            self.is_robot_moving = True
+
+        if self.operating_state == 'driving back for safety' and self.is_finished:
+            self.operating_state = 'finishing collecting puck'
+            rospy.loginfo(self.operating_state)
+            self.goal_landing = None
+            self.is_finished = False
+            self.is_puck_collected = self.manipulator.finish_collect_small()
+            # self.is_puck_collected = self.manipulator.collect_big()
+            self.is_robot_collecting_puck = True
             # self.imitate_manipulator()
 
-        if self.operating_state == 'collecting puck' and self.is_puck_collected:
+        if self.operating_state == 'finishing collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
             rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
             self.is_robot_collecting_puck = False
@@ -363,6 +446,9 @@ class TacticsNode:
             self.is_robot_moving = False
             self.active_goal = None
             self.sorted_chaos_landings = None
+            self.is_robot_collecting_puck = False
+            self.is_puck_sucked = False
+
 
     def response_callback(self, data):
         """
@@ -398,11 +484,11 @@ class TacticsNode:
         self.is_puck_collected = True
 
     def stop_collecting(self):
-        self.timer.shutdown()
-        rospy.loginfo("TN -- Robot has stopped collecting pucks.")
-        rospy.sleep(1.0 / 40)
-        print(" ")
-        print(" ")
+        # self.timer.shutdown()
+        # rospy.loginfo("TN -- Robot has stopped collecting pucks.")
+        # rospy.sleep(1.0 / 40)
+        # print(" ")
+        # print(" ")
 
         self.is_robot_moving = False
         self.active_goal = None
@@ -410,8 +496,21 @@ class TacticsNode:
         self.is_robot_collecting_puck = False
         self.is_puck_collected = False
         self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
-        self.operating_state = 'waiting for command'
 
+        self.operating_state = 'robot collected all pucks'
+        print(self.operating_state)
+        print(" ")
+        print(" ")
+        self.response_publisher.publish(self.cmd_id + " finished")
+
+    def completely_stop(self):
+        self.timer.shutdown()
+        rospy.loginfo("TN -- Robot has stopped collecting pucks.")
+        rospy.sleep(1.0 / 40)
+        print(" ")
+        print(" ")
+
+        self.operating_state = 'waiting for command'
         print(self.operating_state)
         print(" ")
         print(" ")
