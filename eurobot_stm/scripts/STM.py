@@ -41,6 +41,8 @@ class STM():
         return id, cmd, args
 
 if __name__ == '__main__':
+
+
     #TODO::search for ports
 
     serial_port = "/dev/ttyUSB0"

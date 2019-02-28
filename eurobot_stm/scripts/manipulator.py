@@ -40,7 +40,10 @@ class Manipulator():
 
     def calibrate_small(self):
         self.send_command(48)
+        self.send_command(20)
+        self.send_command(25)
         return True
+
 
     def calibrate_big(self):
         # 1) collector move left
@@ -119,6 +122,82 @@ class Manipulator():
         self.send_command(22)
         return True
 
+    def grab_and_suck_small(self):
+        # Release grabber
+        self.send_command(22)
+        # Set pump to the wall
+        self.send_command(20)
+        # Set pump to the ground
+        self.send_command(19)
+        # Start pump
+        self.send_command(17)
+        return True
+
+
+    def finish_collect_small(self):
+        # # Release grabber
+        # self.send_command(22)
+        # # Set pump to the wall
+        # self.send_command(20)
+        # # Set pump to the ground
+        # self.send_coand(19)
+        # # Start pump
+        # self.send_command(17)
+        # Set pump to the platform
+        self.send_command(21)
+        # Prop pack
+        self.send_command(23)
+        # Stop pump
+        self.send_command(18)
+        # Set pump to the wall
+        self.send_command(20)
+        # Grab pack
+        self.send_command(24)
+        # Release grabber
+        self.send_command(22)
+        self.send_command(50)
+        return True
+
+    def release_small(self):
+        self.send_command(25)
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+        return True
+
 
     def release_big(self):
         self.send_command(33)
@@ -129,11 +208,3 @@ class Manipulator():
         self.send_command(35)
         return True
 
-    def release_small(self):
-        self.send_command(51)
-        self.send_command(25)
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(32)
-        self.send_command(51)
-        return True
