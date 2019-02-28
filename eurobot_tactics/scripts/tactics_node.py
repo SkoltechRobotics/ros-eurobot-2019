@@ -67,7 +67,7 @@ class TacticsNode:
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
         self.robot_name = "secondary_robot"
-        self.red_zone_coords = np.array([0.4, 0.4, 3.14])
+        self.red_zone_coords = np.array([0.3, 0.6, -np.pi/6])
         self.critical_angle = np.pi * 2/3
         
         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
