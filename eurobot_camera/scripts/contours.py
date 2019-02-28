@@ -53,9 +53,13 @@ class Contour():
     def filter(self, area_epsilon, perimeter_epsilon, radius_epsilon):
         for cnt in self.all_contours:
             perimeter = cv2.arcLength(cnt, True)
+            # radius = perimeter/(2*np.pi)
+            # area = np.pi*radius*radius
+
             area = np.fabs(cv2.contourArea(cnt))
-            if area <= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y +area_epsilon and \
-                    area >= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y -area_epsilon and \
+
+            if area <= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y + area_epsilon/2.0 and \
+                    area >= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y - area_epsilon and \
                     perimeter <= 2* np.pi * PUCK_RADIUS_pixel_x + perimeter_epsilon and \
                     perimeter >= 2 * np.pi * PUCK_RADIUS_pixel_x - perimeter_epsilon and \
                     self.is_contour_circle(cnt, radius_epsilon) and \
@@ -64,11 +68,28 @@ class Contour():
         return self.filtered_contours
 
     def draw(self, image, contours):
+        # hull = []
+        # for i in range(len(contours)):
+        #     # creating convex hull object for each contour
+        #     hull.append(cv2.convexHull(contours[i], False))
+        # cv2.drawContours(image, contours, -1, color_contours, 1, 8, hierarchy)
+        # # draw ith convex hull object
+        # cv2.drawContours(image, hull, i, color, 1, 8)
         return cv2.drawContours(image, contours, -1, (255, 0, 0), 3)
 
     def draw_ellipse(self, image, contours, coordinates, colors):
+        print (image.shape)
         for cnt, coord, color in zip(contours, coordinates, colors):
-            ellipse = cv2.fitEllipse(cnt)
+            # (x, y), radius = cv2.minEnclosingCircle(cnt)
+            # center = (int(x), int(y))
+            # radius = int(radius)
+            # cv2.circle(image, center, radius, (0, 255, 0), 2)
+
+            print ("------------", cnt)
+            print ("------------")
+            ellipse  = cv2.fitEllipse(cnt)
+            print ("ELLIPSE=",ellipse)
+            # area = cv2.contourArea(ellipse)
             image = cv2.ellipse(image,ellipse,(0,255,0),2)
 
             cx = coord[0]
@@ -85,6 +106,23 @@ class Contour():
                                 color=(255,255,255),
                                 thickness=5,
                                 lineType=5)
+
+            # hull = cv2.convexHull(cnt)
+            # area = np.fabs(cv2.contourArea(hull))
+
+            perimeter = cv2.arcLength(cnt, True)
+            radius = perimeter/(2*np.pi)
+            area = np.pi*radius*radius
+            print ("PUCK_RADIUS_pixel_x=", PUCK_RADIUS_pixel_x)
+            print ("PUCK_RADIUS_pixel_y=", PUCK_RADIUS_pixel_y)
+            print ("SQUARE MIGHT BE=",np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y)
+            # area = np.pi*radius*radius
+            print ("SQUARE=", area)
+
+
+            M = cv2.moments(cnt)
+            print np.fabs(cv2.contourArea(cnt))
+            print (np.fabs(M['m10']/M['m00']))
         return image
 
     def find_pucks_coordinates(self):
@@ -100,7 +138,7 @@ class Contour():
 
     def is_contour_circle(self, contour, epsilon):
         M = cv2.moments(contour)
-        if np.abs(M["mu20"]/M["m00"]-M["mu02"]/M["m00"]) <= epsilon:
+        if (np.abs(M["mu20"]/M["m00"]-M["mu02"]/M["m00"]) <= epsilon) and (M["m01"]/M["m00"] > 600):
             return True
         else:
             return False

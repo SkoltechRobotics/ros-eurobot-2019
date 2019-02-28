@@ -61,17 +61,23 @@ class Camera():
 
         return K_new
 
-    # FIXME:: ADD horizontal proj
-    # def horizontal_proj(self):
-    #     rotation_matrix = self.find_rotation_matrix((3 * np.pi / 4 - 0.1, 0, 0))
-    #     camera_position = np.array([[1.5, 0.0, 1.0]]).T
-    #     t = -rotation_matrix.dot(camera_position)
-    #     print t
-    #     M = np.concatenate((rotation_matrix, t), axis=1)
-    #     L = np.array([[lx/hx, 0, 0], [0, 0, ly], [0, -lz/hy, lz], [0, 0, 1.0]])
-    #     K_new = np.linalg.inv(M.dot(L))
-    #
-    #     return K_new
+    def find_horizontal_projection(self):
+        rotation_matrix = find_rotation_matrix(CAMERA_ANGLE)
+        camera_position = np.array([ [CAMERA_X],
+                                     [CAMERA_Y],
+                                     [CAMERA_Z] ])
+        t = -rotation_matrix.dot(camera_position)
+        print t
+        M = np.concatenate((rotation_matrix, t), axis=1)
+        L = np.array([[TABLE_LENGTH_X/CAMERA_WIDTH, 0, 0],
+                      [0, 0, TABLE_LENGTH_Y-0.3],
+                      [0, -TABLE_LENGTH_Z/CAMERA_HEIGHT, TABLE_LENGTH_Z],
+                      [0, 0, 1.0]])
+        K_new = np.linalg.inv(M.dot(L))
+
+        self.K_projection = K_new
+
+        return K_new
 
     def align_image(self, undistorted_image, templ_path):
         if not self.is_aligned:

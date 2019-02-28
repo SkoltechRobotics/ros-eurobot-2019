@@ -52,8 +52,9 @@ def read_config(conf_file):
 
 
 class CameraUndistortNode():
-    def __init__(self, DIM, K, D, template):
+    def __init__(self, DIM, K, D, template, mode="vertical"):
         self.templ_path = template
+        self.mode = mode
 
         self.node = rospy.init_node('camera_node', anonymous=True)
         self.publisher_undistorted = rospy.Publisher("/undistorted_image", Image, queue_size=1)
@@ -68,9 +69,12 @@ class CameraUndistortNode():
         self.camera = Camera(DIM, K, D)
         self.contour = Contour()
 
-        self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
-                                           self.__callback, queue_size=1)
-
+        if self.mode == "vertical":
+            self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
+                                               self.__callback_vertical, queue_size=1)
+        elif self.mode == "horizontal":
+            self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
+                                               self.__callback_horizontal, queue_size=1)
     def publish_pucks(self, coordinates, colors):
         markers = []
         for i in range(len(coordinates)):
@@ -105,7 +109,10 @@ class CameraUndistortNode():
             markers.append(marker)
         self.publisher_pucks.publish(markers)
 
-    def __callback(self, data):
+    def __callback_horizontal(self, data):
+        pass
+
+    def __callback_vertical(self, data):
         start_time = time.time()
         image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         rospy.loginfo(rospy.get_caller_id())
@@ -129,7 +136,7 @@ class CameraUndistortNode():
             image_contours = self.contour.draw(image_contours, self.contour.all_contours)
 
             # Filter contours
-            contours_filtered = self.contour.filter(800, 150, 200)
+            contours_filtered = self.contour.filter(700, 150, 200)
             image_filter_contours = copy.copy(image)
             image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
@@ -155,7 +162,6 @@ class CameraUndistortNode():
             res_time = time.time() - start_time
             rospy.loginfo("RESULT TIME = " + str(res_time))
 
-
 if __name__ == '__main__':
     sys.argv = rospy.myargv()
     parser = argparse.ArgumentParser()
@@ -175,8 +181,8 @@ if __name__ == '__main__':
 
     DIM, K, D = read_config(conf_file)
 
-    time.sleep(1)
+    rospy.sleep(1)
     undistort_node = CameraUndistortNode(DIM, K, D, args.template)
     undistort_node.camera.find_vertical_projection()
 
-rospy.spin()
+    rospy.spin()
