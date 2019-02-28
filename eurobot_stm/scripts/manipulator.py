@@ -119,7 +119,6 @@ class Manipulator():
         self.send_command(22)
         return True
 
-
     def release_big(self):
         self.send_command(33)
         self.send_command(34)
@@ -129,9 +128,8 @@ class Manipulator():
         self.send_command(35)
         return True
 
-
     def release_small(self):
-	    self.send_command(51)
+        self.send_command(51)
         self.send_command(25)
         self.send_command(50)
         self.send_command(50)

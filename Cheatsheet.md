@@ -19,9 +19,9 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 
 8 - vels
 14 - pos
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0 0 0'" 
 
-# to ride by odometry
+# to ride by odometry in X dir with 0.2 speed
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
@@ -73,6 +73,8 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_l
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 rosrun eurobot_tactics imitate_cam.py -n 4
+roslaunch eurobot_tactics visualization_remote.launch
+
 
 rosrun rqt_graph rqt_graph
 
