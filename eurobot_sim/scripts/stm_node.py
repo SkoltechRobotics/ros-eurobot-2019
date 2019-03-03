@@ -109,9 +109,10 @@ class SimMoveNode(object):
         vels = self.get_wheel_speeds()
         robot_vel = vels
         dpoint = robot_vel * dt
-
+        dpoint[2] = wrap_angle(dpoint[2])
         # integrate
         self.odom_point = cvt_local2global(dpoint, self.odom_point)
+        self.odom_point[2] = wrap_angle(self.odom_point[2])
         self.publish_odom(self.odom_point, robot_vel)
 
     def integrate(self):

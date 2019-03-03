@@ -51,7 +51,7 @@ class MotionPlannerNode:
 
         # self.v_constraint = np.array([max_speed*np.pi*diameter_wheel, max_speed*np.pi*diameter_wheel, np.sqrt(self.acceleration_vector[-1])])
         self.v_constraint = np.array([0.73, 0.84, 2.5])
-        self.acceleration_vector = self.v_constraint
+        self.acceleration_vector = self.v_constraint/2
         # self.acceleration_vector[2] = 0.8
         # self.acceleration_vector = np.array([np.abs(np.sum(self.kinematic_matrix[0,:], axis=1), np.abs(np.sum(self.kinematic_matrix[0,:]), np.abs(np.sum(self.kinematic_matrix[0,:]))])
         self.tfBuffer = tf2_ros.Buffer()
@@ -138,14 +138,14 @@ class MotionPlannerNode:
             return target_vel
         else:
             rospy.loginfo("return acc")
-            constraint_v = prev_vel + (target_vel - prev_vel)/(np.linalg.norm((target_vel-prev_vel)/(self.acceleration_vector*dt)))
+            constraint_v = prev_vel + (target_vel - prev_vel)/(np.linalg.norm(target_vel-prev_vel)/(self.acceleration_vector*dt))
             rospy.loginfo(str(constraint_v))
             rospy.loginfo(prev_vel)
             # constraint_v[2] = wrap_angle(constraint_v[2])
             # constraint_v = cvt_global2local(np.array([constraint_v[0], constraint_v[1], 0]), np.array([0.,0., constraint_v[2]]))
-            # k = max(np.abs(target_vel / self.v_constraint))
-            # if k > 1:
-                # constraint_v /= k
+            k = max(np.abs(target_vel / self.v_constraint))
+            if k > 1:
+                constraint_v /= k
             return constraint_v
 
     def cmd_callback(self, data):
@@ -300,7 +300,6 @@ class MotionPlannerNode:
             w /= k
         return np.array([vx, vy, w])
 
-
     def path_position_arg(self, path, point, r=0):
         path = path.copy()
         path[:, 2] = wrap_angle(path[:, 2])
@@ -358,7 +357,7 @@ class MotionPlannerNode:
         # self.result_vel = self.constraint_a(self.result_vel, self.prev_vel, dt) * deceleration_coefficient
         rospy.loginfo("COEFF")
         rospy.loginfo(str(deceleration_coefficient))
-        # self.result_vel *= deceleration_coefficient
+        self.result_vel *= deceleration_coefficient
         # self.re
         self.prev_vel = self.result_vel
         rospy.loginfo("AFTER CONSTRAINT")
