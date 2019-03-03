@@ -581,7 +581,6 @@ class TacticsNode:
 
             distances_from_robot_to_landings = []
             for coordinate in coords:
-                # print("landing is", landing)
                 dist, _ = calculate_distance(self.robot_coords, coordinate)  # return deltaX and deltaY coords
                 dist_norm = np.linalg.norm(dist)
                 distances_from_robot_to_landings.append(dist_norm)
