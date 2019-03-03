@@ -41,7 +41,7 @@ class Manipulator():
     def calibrate_small(self):
         self.send_command(48)
         self.send_command(20)
-        self.send_command(32)
+        self.send_command(25)
         return True
 
     def calibrate_big(self):
@@ -144,10 +144,45 @@ class Manipulator():
         return True
 
     def release_small(self):
-        self.send_command(51)
         self.send_command(25)
         self.send_command(50)
         self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
         self.send_command(32)
+        rospy.sleep(0.1)
         self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
         return True

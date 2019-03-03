@@ -40,6 +40,8 @@ class Manipulator():
 
     def calibrate_small(self):
         self.send_command(48)
+        self.send_command(20)
+        self.send_command(25)
         return True
 
     def calibrate_big(self):
@@ -96,7 +98,7 @@ class Manipulator():
         self.send_command(22)
         return True
 
-    def collect_small(self):
+    def grab_and_suck_small(self):
         # Release grabber
         self.send_command(22)
         # Set pump to the wall
@@ -105,6 +107,17 @@ class Manipulator():
         self.send_command(19)
         # Start pump
         self.send_command(17)
+        return True
+
+    def finish_collect_small(self):
+        # # Release grabber
+        # self.send_command(22)
+        # # Set pump to the wall
+        # self.send_command(20)
+        # # Set pump to the ground
+        # self.send_coand(19)
+        # # Start pump
+        # self.send_command(17)
         # Set pump to the platform
         self.send_command(21)
         # Prop pack
@@ -117,6 +130,7 @@ class Manipulator():
         self.send_command(24)
         # Release grabber
         self.send_command(22)
+        self.send_command(50)
         return True
 
     def release_big(self):
@@ -129,10 +143,46 @@ class Manipulator():
         return True
 
     def release_small(self):
-        self.send_command(51)
         self.send_command(25)
         self.send_command(50)
         self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
         self.send_command(32)
+        rospy.sleep(0.1)
         self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
+
+        self.send_command(50)
+        self.send_command(50)
+        self.send_command(52)
+        self.send_command(32)
+        rospy.sleep(0.1)
+        self.send_command(51)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(25)
         return True
