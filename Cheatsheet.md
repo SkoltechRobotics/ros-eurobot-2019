@@ -82,6 +82,7 @@ to puck near red field SMALL
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.6 0.45 3.14'"
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x30'"
 
+rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc unload_in_red'"
 
 
 
@@ -158,7 +159,7 @@ git config --global http.sslverify false
 
 in case of problems with sertificates use this command
 git config --global http.sslverify false
-
+echo ref: refs/heads/collect_chaos_pucks >.git/HEAD
 
 
 ## Team

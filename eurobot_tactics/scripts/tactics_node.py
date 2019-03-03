@@ -66,39 +66,35 @@ class TacticsNode:
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
-        self.robot_name = "secondary_robot"
-        self.red_zone_coords = np.array([0.3, 0.6, -np.pi/6])
-        self.critical_angle = np.pi * 2/3
-        
-        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
-        # self.approach_dist = 0.153  # meters, distance from robot to puck where robot will try to grab it
+        self.robot_name = rospy.get_param("tactics_node/robot_name")  # "secondary_robot"
+        self.red_zone_coords = np.array([0.3, 0.6, -np.pi/3])
 
-        self.approach_vec = np.array([-0.11, 0, 0])
-        # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+        self.critical_angle = rospy.get_param("tactics_node/critical_angle")
+        self.approach_dist = rospy.get_param("tactics_node/approach_dist")  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
 
-        self.drive_back_dist = np.array([-0.04, 0, 0])
-        self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
-        self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
-        self.RATE = 10
-        self.pucks_unloaded = 0
+        self.drive_back_dist = rospy.get_param("tactics_node/drive_back_dist")  # 0.04
+        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
+
+        self.coords_threshold = rospy.get_param("tactics_node/coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
+        self.scale_factor = rospy.get_param("tactics_node/scale_factor")  # used in calculating outer bissectrisa for hull's angles
+        self.RATE = rospy.get_param("tactics_node/RATE")
 
         self.robot_coords = np.zeros(3)
         self.active_goal = None
         self.goal_landing = None
-        self.atoms_inside = 0  # to preliminary calculate our score
+        self.atoms_collected = 0  # to preliminary calculate our score
+        self.pucks_unloaded = 0
 
         self.sorted_chaos_landings = np.array([])
-        self.known_chaos_pucks = np.array([])  # (id, x, y)
-        self.known_wall6_pucks = np.array([])
-        self.wall_six_landing = np.array([])
+        self.known_chaos_pucks = np.array([])  # (x, y, id, r, g, b)  FIXME
 
         self.operating_state = 'waiting for command'
         self.is_finished = False
-        self.is_puck_collected_and_arm_ready = False
         self.is_robot_moving = False
         self.is_robot_collecting_puck = False
-        self.is_puck_collected = False
         self.is_puck_sucked = False
+        self.is_puck_collected = False
 
         self.cmd_id = None
         self.cmd_type = None
@@ -112,29 +108,102 @@ class TacticsNode:
 
         self.timer = None
 
-        print("here is ok should be")
         self.manipulator = Manipulator()
-        print("here is ok? init = Manip")
-        
-        # ON SECONDARY
-        if not self.manipulator.calibrate_small():
-            print("here shouldn't be")
-            return
-        rospy.sleep(2)
-        print("here must be")
 
-        # ON MAIN
-        # if not self.manipulator.calibrate_big():
-        #     print("here shouldn't be")
-        #     return
+        if self.robot_name == "main_robot":
+            if not self.manipulator.calibrate_big():
+                print("here shouldn't be")
+                return
+
+        if self.robot_name == "secondary_robot":
+            if not self.manipulator.calibrate_small():
+                return
+            rospy.sleep(2)
+            print("here must be")
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        # FIXME
-        #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
-
         rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
+
+
+# class TacticsNode:
+#     def __init__(self):
+#         rospy.init_node('TacticsNode', anonymous=True)
+#
+#         # TF
+#         self.tfBuffer = tf2_ros.Buffer()
+#         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+#         self.mutex = Lock()
+#         self.robot_name = "secondary_robot"
+#         self.red_zone_coords = np.array([0.3, 0.6, -np.pi/6])
+#         self.critical_angle = np.pi * 2/3
+#
+#         self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
+#         # self.approach_dist = 0.153  # meters, distance from robot to puck where robot will try to grab it
+#
+#         self.approach_vec = np.array([-0.11, 0, 0])
+#         # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+#
+#         self.drive_back_dist = np.array([-0.04, 0, 0])
+#         self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
+#         self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
+#         self.RATE = 10
+#         self.pucks_unloaded = 0
+#
+#         self.robot_coords = np.zeros(3)
+#         self.active_goal = None
+#         self.goal_landing = None
+#         self.atoms_inside = 0  # to preliminary calculate our score
+#
+#         self.sorted_chaos_landings = np.array([])
+#         self.known_chaos_pucks = np.array([])  # (id, x, y)
+#         self.known_wall6_pucks = np.array([])
+#         self.wall_six_landing = np.array([])
+#
+#         self.operating_state = 'waiting for command'
+#         self.is_finished = False
+#         self.is_puck_collected_and_arm_ready = False
+#         self.is_robot_moving = False
+#         self.is_robot_collecting_puck = False
+#         self.is_puck_collected = False
+#         self.is_puck_sucked = False
+#
+#         self.cmd_id = None
+#         self.cmd_type = None
+#
+#         # publishers
+#         self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
+#         self.stm_command_publisher = rospy.Publisher('stm_command', String, queue_size=1)
+#         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
+#
+#         rospy.sleep(2)
+#
+#         self.timer = None
+#
+#         print("here is ok should be")
+#         self.manipulator = Manipulator()
+#         print("here is ok? init = Manip")
+#
+#         # ON SECONDARY
+#         if not self.manipulator.calibrate_small():
+#             print("here shouldn't be")
+#             return
+#         rospy.sleep(2)
+#         print("here must be")
+#
+#         # ON MAIN
+#         # if not self.manipulator.calibrate_big():
+#         #     print("here shouldn't be")
+#         #     return
+#
+#         # coords are published as markers in one list according to 91-92 undistort.py
+#         # FIXME
+#         #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
+#
+#         rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
+#         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
+#         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
     def pucks_coords_callback(self, data):  # FIXME this is for chaos zone and landings for CHAOS zone are sorted !!!!!
         """
