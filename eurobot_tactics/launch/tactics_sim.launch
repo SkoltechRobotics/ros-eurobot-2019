@@ -5,7 +5,7 @@
 
     <group ns = "secondary_robot">
         <node pkg="eurobot_nav" name="motion_planner_node" type="motion_planner_node.py" respawn="true" output="log"/>
-        <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node.py" respawn="true" output="screen"/>
+        <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node_with_blue.py" respawn="true" output="screen"/>
         <node pkg="eurobot_sim" name="simulation" type="stm_node.py" respawn="true" output="log"/>
         <!-- Robot model -->
         <param name="description" command="cat $(find eurobot_loc)/models/secondary_robot.urdf" />
