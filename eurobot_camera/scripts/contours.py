@@ -38,32 +38,38 @@ class Contour():
         self.filtered_contours = []
 
     def find(self, image_gray):
-        ret, th = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        th1 = skimage.morphology.closing(th)
-        cleared = skimage.segmentation.clear_border(th1)
-        image, contours, hierarchy = cv2.findContours(th, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        # th = cv2.adaptiveThreshold(image_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY, 25, 0)
+        ret, th = cv2.threshold(image_gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+
+        # kernel = np.ones((3,3), np.uint8)
+        # res = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel)
+
+        # th1 = skimage.morphology.closing(th)
+        # cleared = skimage.segmentation.clear_border(th1)
+        image, contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # contours = skimage.morphology.convex_hull_image(contours)
         self.hierarchy = hierarchy
         self.all_contours = contours
         self.filtered_contours = []
-        return cleared
-    #def
+        return image
 
     def filter(self, area_epsilon, perimeter_epsilon, radius_epsilon):
         for cnt in self.all_contours:
             perimeter = cv2.arcLength(cnt, True)
+
             # radius = perimeter/(2*np.pi)
             # area = np.pi*radius*radius
 
-            area = np.fabs(cv2.contourArea(cnt))
+            area = cv2.contourArea(cnt) + perimeter
 
-            if area <= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y + area_epsilon/2.0 and \
-                    area >= np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y - area_epsilon and \
-                    perimeter <= 2* np.pi * PUCK_RADIUS_pixel_x + perimeter_epsilon and \
-                    perimeter >= 2 * np.pi * PUCK_RADIUS_pixel_x - perimeter_epsilon and \
+            if area <= (np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y + area_epsilon) and \
+                    area >= (np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y - area_epsilon) and \
+                    perimeter <= (2* np.pi * PUCK_RADIUS_pixel_x + perimeter_epsilon) and \
+                    perimeter >= (2 * np.pi * PUCK_RADIUS_pixel_x - perimeter_epsilon) and \
                     self.is_contour_circle(cnt, radius_epsilon) and \
-                    len(cnt) > 15:
+                    self.is_contour_puck(cnt):
                 self.filtered_contours.append(cnt)
         return self.filtered_contours
 
@@ -85,10 +91,7 @@ class Contour():
             # radius = int(radius)
             # cv2.circle(image, center, radius, (0, 255, 0), 2)
 
-            print ("------------", cnt)
-            print ("------------")
             ellipse  = cv2.fitEllipse(cnt)
-            print ("ELLIPSE=",ellipse)
             # area = cv2.contourArea(ellipse)
             image = cv2.ellipse(image,ellipse,(0,255,0),2)
 
@@ -108,11 +111,11 @@ class Contour():
                                 lineType=5)
 
             # hull = cv2.convexHull(cnt)
-            # area = np.fabs(cv2.contourArea(hull))
-
+            area = np.fabs(cv2.contourArea(cnt))
+            print ("cnt",cnt)
             perimeter = cv2.arcLength(cnt, True)
             radius = perimeter/(2*np.pi)
-            area = np.pi*radius*radius
+            # area = np.pi*radius*radius
             print ("PUCK_RADIUS_pixel_x=", PUCK_RADIUS_pixel_x)
             print ("PUCK_RADIUS_pixel_y=", PUCK_RADIUS_pixel_y)
             print ("SQUARE MIGHT BE=",np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y)
@@ -121,7 +124,7 @@ class Contour():
 
 
             M = cv2.moments(cnt)
-            print np.fabs(cv2.contourArea(cnt))
+            print ("MOMENTS SQUARE=", np.fabs(M['m00']))
             print (np.fabs(M['m10']/M['m00']))
         return image
 
@@ -138,7 +141,18 @@ class Contour():
 
     def is_contour_circle(self, contour, epsilon):
         M = cv2.moments(contour)
-        if (np.abs(M["mu20"]/M["m00"]-M["mu02"]/M["m00"]) <= epsilon) and (M["m01"]/M["m00"] > 600):
+        if (np.abs(M["mu20"]/M["m00"]-M["mu02"]/M["m00"]) <= epsilon):
+            return True
+        else:
+            return False
+
+    def is_contour_puck(self, contour):
+        M = cv2.moments(contour)
+        cx = M['m10'] / M['m00']
+        cy = M['m01'] / M['m00']
+        Cx = cx / pixel_scale_x
+        Cy = 2 - cy / pixel_scale_y
+        if Cx >= 0.5 and Cx <= 2.5 and Cy >= 0.5 and Cy <= 1.5:
             return True
         else:
             return False

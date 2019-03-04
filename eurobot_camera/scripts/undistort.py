@@ -119,14 +119,14 @@ class CameraUndistortNode():
 
         # Process image
         # TODO:: ADD cropping the image to
-        image = image_processing.equalize_histogram(image, 1.0, (21,21))
+        # image = image_processing.equalize_histogram(image, 1.0, (21,21))
         undistorted_image = self.camera.undistort(image)
         image = undistorted_image
 
         # Align image using field template
         if self.camera.align_image(image, self.templ_path):
             image = image_processing.decrease_noise(image, 5, 100, 100)
-            # image = image_processing.equalize_histogram(image)
+            image = image_processing.equalize_histogram(image)
 
 
             # Find all contours on the image
@@ -136,7 +136,7 @@ class CameraUndistortNode():
             image_contours = self.contour.draw(image_contours, self.contour.all_contours)
 
             # Filter contours
-            contours_filtered = self.contour.filter(700, 150, 200)
+            contours_filtered = self.contour.filter(1200, 200, 200)
             image_filter_contours = copy.copy(image)
             image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
