@@ -53,7 +53,7 @@ Inside:
 
 class TacticsNode:
     def __init__(self):
-        rospy.init_node('TacticsNode', anonymous=True)
+        rospy.init_node('tactics_node', anonymous=True)
 
         # TF
         self.tfBuffer = tf2_ros.Buffer()
@@ -72,17 +72,25 @@ class TacticsNode:
         # self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
         # self.RATE = 10
 
+        self.robot_name = rospy.get_param("robot_name")  # "secondary_robot"
+
         self.critical_angle = np.pi * 2/3
-        self.robot_name = rospy.get_param("tactics_node/robot_name")  # "secondary_robot"
         self.red_zone_coords = np.array([0.3, 0.6, -np.pi/3])
-        # self.critical_angle = rospy.get_param("tactics_node/critical_angle")
-        self.approach_dist = rospy.get_param("tactics_node/approach_dist")  # meters, distance from robot to puck where robot will try to grab it
+        # self.critical_angle = rospy.get_param("critical_angle")
+        self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = np.array(self.approach_dist)
+        
+        self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
+        self.drive_back_dist = np.array(self.drive_back_dist)
+
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
-        self.drive_back_dist = rospy.get_param("tactics_node/drive_back_dist")  # 0.04
         self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
-        self.coords_threshold = rospy.get_param("tactics_node/coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
-        self.scale_factor = rospy.get_param("tactics_node/scale_factor")  # used in calculating outer bissectrisa for hull's angles
-        self.RATE = rospy.get_param("tactics_node/RATE")
+
+        self.coords_threshold = rospy.get_param("coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
+
+        self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
+        self.scale_factor = np.array(self.scale_factor)
+        self.RATE = rospy.get_param("RATE")
 
         self.robot_coords = np.zeros(3)
         self.active_goal = None
@@ -121,8 +129,9 @@ class TacticsNode:
                 return
             rospy.sleep(2)
 
+        # FIXME !!!!!!!!!!!!
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/pucks", MarkerArray, self.chaos_pucks_coords_callback, queue_size=1)
+        rospy.Subscriber("/pucks", MarkerArray, self.chaos_pucks_coords_callback, queue_size=1)  # FIXME !!!!!!!!!!!!!!!!!!!!!!!!
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
@@ -196,23 +205,28 @@ class TacticsNode:
         - skip
         :return:
         """
+
+        # print ("is_finished=",self.is_finished)
+        
         if self.cmd_type == "collect_chaos":
             if len(self.known_chaos_pucks) > 0:
+                # print("inside timer: collect chaos and pucks > 0")
                 self.collect_chaos()
             else:
                 print("NO VISIBLE PUCKS ON THE FIELD")
                 self.completely_stop()
 
-        if self.cmd_type == "collect_chaos_and_unload":
+        elif self.cmd_type == "collect_chaos_and_unload":
             if len(self.known_chaos_pucks) > 0:
                 self.collect_chaos()
-            elif len(self.known_chaos_pucks) == 0 and self.pucks_inside > 0:
+            elif self.pucks_inside == 4:
                 self.unload_pucks()
-            elif len(self.known_chaos_pucks) == 0 and self.pucks_unloaded == 4:
+            elif self.pucks_inside == 0 and self.pucks_unloaded == 4:
                 print("pucks unloaded")
                 self.completely_stop()
 
         else:
+            # print("cmd_type is ", self.cmd_type)
             print("nothing was commanded")
             self.completely_stop()
 
@@ -227,7 +241,6 @@ class TacticsNode:
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
-
         if self.operating_state == 'waiting for command':
             rospy.loginfo(self.operating_state)
             self.operating_state = 'approaching nearest PRElanding'
@@ -239,10 +252,11 @@ class TacticsNode:
             self.known_chaos_pucks = calculate_pucks_configuration(self.robot_coords, self.known_chaos_pucks, self.critical_angle)  # now [(0.95, 1.1, 3, 0, 0, 1), ...]
             self.sorted_chaos_landings = calculate_landings(self.robot_coords, self.known_chaos_pucks, self.approach_vec, self.scale_factor, self.approach_dist)
             self.goal_landing = self.sorted_chaos_landings[0]
-            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+
+            prelanding = cvt_local2global(self.drive_back_vec, self.goal_landing)
             self.active_goal = prelanding
             self.is_finished = False
-            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_line')
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'approaching nearest PRElanding' and self.is_finished:
@@ -271,7 +285,7 @@ class TacticsNode:
             rospy.sleep(0.5)  # FIXME
             self.operating_state = 'driving back for safety'
             rospy.loginfo(self.operating_state)
-            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
+            prelanding = cvt_local2global(self.drive_back_vec, self.goal_landing)
             self.active_goal = prelanding
             cmd = self.compose_command(self.active_goal, cmd_id='driving_back_for_safety', move_type='move_line')
             self.move_command_publisher.publish(cmd)

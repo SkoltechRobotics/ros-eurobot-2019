@@ -70,6 +70,7 @@ def cvt_local2global(local_point, src_point):
     :param src_point: Point from which robot starts moving
     :return: coordinates [x, y, theta] where we want robot to be in global frame
     """
+
     size = local_point.shape[-1]
     x, y, a = 0, 0, 0
     if size == 3:

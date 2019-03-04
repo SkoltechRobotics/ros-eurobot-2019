@@ -5,7 +5,6 @@
 
     <rosparam file="$(find eurobot_loc)/config/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
     <rosparam file="$(find eurobot_stm)/configs/stm.yaml" command="load" ns="secondary_robot"/>
-    <rosparam file="$(find eurobot_tactics)/configs/tactics_secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
     <param name = "field/color" value = "orange"/>
 
     <group ns = "secondary_robot">
@@ -16,5 +15,6 @@
         <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
         <node pkg="eurobot_nav" name="motion_planner_node" type="motion_planner_node.py" respawn="true" output="log"/>
         <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node.py" respawn="true" output="screen"/>
+            <rosparam file="$(find eurobot_tactics)/config/tactics_secondary_robot_params.yaml" command="load"/>
     </group>
 </launch>
