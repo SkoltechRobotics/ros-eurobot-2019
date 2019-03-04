@@ -208,7 +208,7 @@ class TacticsNode:
                 self.collect_chaos()
             elif len(self.known_chaos_pucks) == 0 and self.pucks_inside > 0:
                 self.unload_pucks()
-            else:
+            elif len(self.known_chaos_pucks) == 0 and self.pucks_unloaded == 4:
                 print("pucks unloaded")
                 self.completely_stop()
 
