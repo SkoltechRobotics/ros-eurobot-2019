@@ -5,8 +5,8 @@ from geometry_msgs.msg import TransformStamped, PoseArray, Pose, Quaternion
 from sensor_msgs.msg import LaserScan
 import numpy as np
 from core_functions import cvt_global2local, cvt_local2global, find_src, wrap_angle
-from np_Particle import ParticleFilter
-from npTriangulation import find_position_triangulation
+from np_particle import ParticleFilter
+from np_triangulation import find_position_triangulation
 import tf2_ros
 import tf_conversions
 import matplotlib as mpl
@@ -29,22 +29,6 @@ YELLOW_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y - BEAC_L / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
 
-<<<<<<< HEAD
-PF_PARAMS = {"k_bad": 5,
-             "particles_num": 1000,
-             "sense_noise": 0.00075,
-             "distance_noise": 0.002,
-             "angle_noise": 0.0035,
-             "min_intens": 3000,
-             "max_dist": 3.700,
-             "k_angle": 0,
-             "beac_dist_thresh": 0.95,
-             "num_is_near_thresh": 0.1,
-             "distance_noise_1_beacon": 0.0133,
-             "angle_noise_1_beacon": 0.002}
-
-=======
->>>>>>> 8f9871b... add configs for pf
 
 class PFNode(object):
     # noinspection PyTypeChecker
@@ -77,10 +61,6 @@ class PFNode(object):
         f, robot_odom_point = self.get_odom()
         while not f and not rospy.is_shutdown():
             f, robot_odom_point = self.get_odom()
-<<<<<<< HEAD
-            rospy.sleep(0.2)
-=======
->>>>>>> 8f9871b... add configs for pf
         lidar_odom_point = cvt_local2global(self.lidar_point, robot_odom_point)
         self.prev_lidar_odom_point = lidar_odom_point.copy()
         self.lidar_odom_point_odom = robot_odom_point.copy()
@@ -89,33 +69,17 @@ class PFNode(object):
         self.prev_lidar_odom_time = rospy.Time.now()
         self.laser_time = rospy.Time.now()
         self.cost_function = []
-<<<<<<< HEAD
-        # x, y, a = lidar_odom_point
-        # init_start = lidar_odom_point
-        init_start = np.array([1, 1, 0])
-        buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2], **PF_PARAMS)
-=======
         if self.color == "purple":
             init_start = rospy.get_param("start_purple")
         else:
             init_start = rospy.get_param("start_yellow")
         buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
->>>>>>> 8f9871b... add configs for pf
         angles, distances = buf_pf.get_landmarks(self.scan)
         x = distances * np.cos(angles)
         y = distances * np.sin(angles)
         landmarks = (np.array([x, y])).T
         start_coords = find_position_triangulation(beacons, landmarks, np.array([1.5, 1, 0]))
-<<<<<<< HEAD
-        # if self.robot_name == "secondary_robot":
-        #     k_bad = 0
-        # else:
-        #     k_bad = 2
-        self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2], **PF_PARAMS)
-
-=======
         self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
->>>>>>> 8f9871b... add configs for pf
         self.last_odom = np.zeros(3)
         self.alpha = rospy.get_param("alpha")
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)

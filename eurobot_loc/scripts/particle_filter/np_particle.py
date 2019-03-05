@@ -80,28 +80,17 @@ class ParticleFilter:
         y_beac = d * np.sin(a)
         return x_beac, y_beac
 
-<<<<<<< HEAD
-    def localisation(self, delta_coords, lidar_data, beacons):
-        self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]])
-        self.particles = self.particle_sense(self.particles, beacons)
-=======
+
     def localization(self, delta_coords,  beacons):
         self.motion_model([delta_coords[0], delta_coords[1], delta_coords[2]])
         self.particles = self.measurement_model(self.particles, beacons)
->>>>>>> 8f9871b... add configs for pf
         main_robot = self.calculate_main()
         return main_robot
 
     def measurement_model(self, particles, beacons):
         self.landmarks = beacons
-
-<<<<<<< HEAD
         particles_measurement_model = self.get_particle_measurement_model(beacons)
         particles = np.concatenate((particles[:990], particles_measurement_model), axis=0)
-=======
-        # particles_measurement_model = self.get_particle_measurement_model(beacons)
-        # particles = np.concatenate((particles[:995], particles_measurement_model), axis=0)
->>>>>>> 8f9871b... add configs for pf
         weights = self.weights(beacons, particles)
         inds = self.resample(weights, self.particles_num)
         # self.min_cost_function = np.mean(self.cost_function)
@@ -230,10 +219,5 @@ class ParticleFilter:
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
         return angles, distances
-<<<<<<< HEAD
-=======
 
 
-
-
->>>>>>> 8f9871b... add configs for pf
