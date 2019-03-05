@@ -12,7 +12,6 @@ import tf_conversions
 import matplotlib as mpl
 import scipy.optimize
 import tf2_geometry_msgs
-import time
 PF_RATE = rospy.get_param("rate")
 BEAC_R = rospy.get_param("beacons_radius")
 WORLD_X = rospy.get_param("world_x")
@@ -28,6 +27,7 @@ PURPLE_BEACONS = np.array([[WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., 
 YELLOW_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y - BEAC_L / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
+
 
 
 class PFNode(object):
@@ -108,7 +108,6 @@ class PFNode(object):
         points_number = points.shape[0]
         marked_points = [False] * points_number
         beacons = []
-        self.cost_function = []
         for i in range(points_number):
             if not marked_points[i]:
                 nearest_points = np.linalg.norm(points - points[i], axis=1) < self.beacon_range
@@ -119,13 +118,24 @@ class PFNode(object):
                     rospy.logdebug("find beacon at point (%.3f, %.3f)" % (beacons[-1][0], beacons[-1][1]))
         beacons = np.array(beacons)
         color = np.array([1, 0, 0])
-        if len(beacons) == 0:
-            return np.zeros((0, 2)),  color
         return np.array(beacons), color
 
     def publish_landmarks(self, beacons, header):
         markers = []
         self.beacons = beacons
+        # color = np.array([1, 0, 0])
+        if (beacons.shape[0] == 2):
+            dist_beacon = np.sqrt((beacons[0][0] - beacons[1][0])**2 + (beacons[0][1] - beacons[1][1])**2)
+            if dist_beacon > 2:
+                color = np.array([0, 1, 0])
+            else:
+                color = np.array([0, 0, 1])
+        else:
+            color = np.array([1, 1, 0])
+        return np.array(beacons), color
+
+    def pub_landmarks(self, beacons, header):
+        markers = []
         for i, beacon in enumerate(beacons):
             marker = Marker()
             marker.header = header
