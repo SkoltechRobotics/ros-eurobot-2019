@@ -29,7 +29,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eurobot_sim/models/table.STL" />
+          filename="package://eurobot_loc/models/tableold.STL" />
       </geometry>
       <material
         name="grey">

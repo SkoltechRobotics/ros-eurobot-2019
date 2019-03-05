@@ -51,8 +51,13 @@ class MotionPlannerNode:
 
         # self.v_constraint = np.array([max_speed*np.pi*diameter_wheel, max_speed*np.pi*diameter_wheel, np.sqrt(self.acceleration_vector[-1])])
         self.v_constraint = np.array([0.73, 0.84, 2.5])
-        self.acceleration_vector = self.v_constraint/2
+        self.acceleration_vector = self.v_constraint * 2 * self.v_constraint[2]
+        self.acceleration_vector[:2] *= 5
+        # self.acceleration_vector[0] *= 2
+        # self.acceleration_vector[1] *= 2
         # self.acceleration_vector[2] = 0.8
+        # self.v_constraint = np.array([0.73, 0.73, 0.3])
+        # self.acceleration_vector = np.array([0.73, 0.73, 0.3])
         # self.acceleration_vector = np.array([np.abs(np.sum(self.kinematic_matrix[0,:], axis=1), np.abs(np.sum(self.kinematic_matrix[0,:]), np.abs(np.sum(self.kinematic_matrix[0,:]))])
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -138,14 +143,17 @@ class MotionPlannerNode:
             return target_vel
         else:
             rospy.loginfo("return acc")
-            constraint_v = prev_vel + (target_vel - prev_vel)/(np.linalg.norm(target_vel-prev_vel)/(self.acceleration_vector*dt))
+            max_acc = self.acceleration_vector*dt
+            t_acc = np.linalg.norm(target_vel-prev_vel) / max_acc
+            constraint_v = prev_vel + (target_vel - prev_vel)/t_acc
             rospy.loginfo(str(constraint_v))
             rospy.loginfo(prev_vel)
             # constraint_v[2] = wrap_angle(constraint_v[2])
-            # constraint_v = cvt_global2local(np.array([constraint_v[0], constraint_v[1], 0]), np.array([0.,0., constraint_v[2]]))
             k = max(np.abs(target_vel / self.v_constraint))
-            if k > 1:
-                constraint_v /= k
+            # if np.linalg.norm(k) > 1:
+            constraint_v /= k
+            rospy.loginfo("target/c")
+            rospy.loginfo(str(target_vel/constraint_v))
             return constraint_v
 
     def cmd_callback(self, data):
@@ -155,7 +163,6 @@ class MotionPlannerNode:
         should check if current command is finished - why?
         parse new command and write to self parsed args
         stop publishing in stm_command
-
         :param data: type of action and args. For move_arc args are goal's X, Y, THETA orientation
         :return:
         """
@@ -330,7 +337,7 @@ class MotionPlannerNode:
         rospy.loginfo(str(np.round(ref_vel, 3)))
         rospy.loginfo("delta_path_point")
         rospy.loginfo(str(delta_path_point))
-        omega_vel = 3*self.K_linear_p * delta_path_point[2]
+        omega_vel = 5*self.K_linear_p * delta_path_point[2]
         delta_path_point_dist = delta_path_point
         delta_dist = np.linalg.norm(delta_path_point_dist[:2], axis=0)
         vel = 3*self.K_linear_p * delta_dist
@@ -353,12 +360,9 @@ class MotionPlannerNode:
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         self.result_vel = self.constraint(self.prev_vel, self.result_vel, dt)
-        # self.result_vel = self.constraint_v(self.result_vel)
-        # self.result_vel = self.constraint_a(self.result_vel, self.prev_vel, dt) * deceleration_coefficient
         rospy.loginfo("COEFF")
         rospy.loginfo(str(deceleration_coefficient))
         self.result_vel *= deceleration_coefficient
-        # self.re
         self.prev_vel = self.result_vel
         rospy.loginfo("AFTER CONSTRAINT")
         rospy.loginfo(str(self.result_vel))
@@ -416,7 +420,6 @@ class MotionPlannerNode:
     def move_arc(self):
         """
         go to goal in one movement by arc path
-
         :return:
         """
 

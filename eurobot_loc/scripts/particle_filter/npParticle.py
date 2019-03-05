@@ -204,4 +204,3 @@ class ParticleFilter:
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
         return angles, distances
-

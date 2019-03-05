@@ -29,6 +29,22 @@ YELLOW_BEACONS = np.array([[-(WORLD_BORDER + BEAC_BORDER + BEAC_L / 2.), WORLD_Y
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., WORLD_Y - BEAC_L / 2.],
                           [WORLD_X + WORLD_BORDER + BEAC_BORDER + BEAC_L / 2., BEAC_L / 2.]])
 
+<<<<<<< Updated upstream
+=======
+PF_PARAMS = {"k_bad": 5,
+             "particles_num": 1000,
+             "sense_noise": 0.00075,
+             "distance_noise": 0.002,
+             "angle_noise": 0.0035,
+             "min_intens": 3000,
+             "max_dist": 3.700,
+             "k_angle": 0,
+             "beac_dist_thresh": 0.95,
+             "num_is_near_thresh": 0.1,
+             "distance_noise_1_beacon": 0.0133,
+             "angle_noise_1_beacon": 0.002}
+
+>>>>>>> Stashed changes
 
 class PFNode(object):
     # noinspection PyTypeChecker
@@ -50,7 +66,13 @@ class PFNode(object):
         self.min_range = rospy.get_param("min_range")
         self.min_points_per_beacon = rospy.get_param("min_point_per_beacon")
         self.listener_tf = tf2_ros.TransformListener(self.tf_buffer)
+<<<<<<< Updated upstream
         self.lidar_point = np.array([rospy.get_param("lidar_x"), rospy.get_param("lidar_y"), rospy.get_param("lidar_a")])
+=======
+        self.color = rospy.get_param("/field/color")
+        self.robot_name = rospy.get_param("robot_name")
+        self.lidar_point = np.array([0., 0., 0.])
+>>>>>>> Stashed changes
         self.particle_pub = rospy.Publisher("particles", PoseArray, queue_size=1)
         self.scan = None
         self.buffer = tf2_ros.Buffer()
@@ -207,10 +229,22 @@ class PFNode(object):
     def point_extrapolation(self, point1, point2, stamp1, stamp2, stamp3):
         dt21 = stamp2.to_sec() - stamp1.to_sec()
         dt31 = stamp3.to_sec() - stamp1.to_sec()
+<<<<<<< Updated upstream
+=======
+        print ("start extrop")
+        # rospy.loginfo("delta time odom %.4f" % dt21)
+        # rospy.loginfo("delta time laser %.4f" % dt31)
+        # dpoint = point2 - point1
+        # dpoint[2] = wrap_angle(dpoint[2])
+>>>>>>> Stashed changes
         if np.abs(dt21) > 1E-6:
             dp = cvt_global2local(point2, point1) * dt31 / dt21
         else:
             dp = np.array([0, 0, 0])
+<<<<<<< Updated upstream
+=======
+        rospy.loginfo(str(cvt_local2global(dp, point1)))
+>>>>>>> Stashed changes
         return cvt_local2global(dp, point1)
 
     # noinspection PyUnusedLocal

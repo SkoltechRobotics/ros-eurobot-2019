@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /TF1/Frames1
         - /TF1/Tree1
-        - /SecondaryLaserScan1
         - /PoseArray1
       Splitter Ratio: 0.592190862
     Tree Height: 590
@@ -370,7 +369,7 @@ Visualization Manager:
     - Attached Body Color: 150; 50; 150
       Class: moveit_rviz_plugin/RobotState
       Collision Enabled: false
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
@@ -388,7 +387,7 @@ Visualization Manager:
       Robot State Topic: display_robot_state
       Show All Links: true
       Show Highlights: true
-      Value: true
+      Value: false
       Visual Enabled: true
     - Alpha: 1
       Arrow Length: 0.0500000007
@@ -519,6 +518,29 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: /navigation/path
+      Unreliable: false
+      Value: true
     - Alpha: 0.699999988
       Class: rviz/Map
       Color Scheme: map
@@ -577,16 +599,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 4.714118
+      Distance: 3.97891092
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.2054472
-        Y: 0.885692656
-        Z: -0.606724441
+        X: 1.49311721
+        Y: 0.986453831
+        Z: -0.606632411
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
@@ -595,7 +617,7 @@ Visualization Manager:
       Pitch: 1.56979632
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.73448849
+      Yaw: 4.71948624
     Saved: ~
 Window Geometry:
   Displays:

@@ -45,6 +45,7 @@ class SimMoveNode(object):
         rospy.Timer(rospy.Duration(1. / ODOMETRY_RATE), self.pub_odom_coords_timer_callback)
 
     def set_twist(self, twist):
+        rospy.loginfo("RECWIVE SPEED")
         vx = twist.linear.x
         vy = twist.linear.y
         w = twist.angular.z
@@ -87,6 +88,7 @@ class SimMoveNode(object):
         self.br.sendTransform(t)
 
     def publish_odom(self, point, vel):
+        rospy.loginfo("PUB TF")
         self.publish_tf(point, self.base_frame, self.odom_frame)
         odom = Odometry()
         odom.header.frame_id = "secondary_robot_odom"

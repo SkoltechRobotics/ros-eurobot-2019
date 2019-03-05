@@ -48,6 +48,7 @@ class ParticleFilter:
         self.min_intens = pf_params["min_intens"]
         self.max_dist = pf_params["max_dist"]
         self.last = (start_x, start_y, start_angle)
+<<<<<<< Updated upstream
         self.beac_dist_thresh = pf_params["beac_dist_thresh"]
         self.k_angle = pf_params["k_angle"]
         self.k_bad = pf_params["k_bad"]
@@ -56,6 +57,16 @@ class ParticleFilter:
         self.angle_noise_1_beacon = pf_params["angle_noise_1_beacon"]
         self.sigma_r = pf_params["sigma_r"]
         self.num_seeing_beacons = pf_params["num_seeing_beacons"]
+=======
+        self.beac_dist_thresh = beac_dist_thresh
+        self.k_angle = k_angle
+        self.k_bad = k_bad
+        self.num_is_near_thresh = num_is_near_thresh
+        self.distance_noise_1_beacon = distance_noise_1_beacon
+        self.angle_noise_1_beacon = angle_noise_1_beacon
+        self.sigma_r = 0.045
+        self.num_seeing_beacons = 3
+>>>>>>> Stashed changes
         # Create Particles
         x = np.random.normal(start_x, self.distance_noise, self.particles_num)
         y = np.random.normal(start_y, self.distance_noise, self.particles_num)
@@ -80,9 +91,15 @@ class ParticleFilter:
         y_beac = d * np.sin(a)
         return x_beac, y_beac
 
+<<<<<<< Updated upstream
     def localization(self, delta_coords,  beacons):
         self.motion_model([delta_coords[0], delta_coords[1], delta_coords[2]])
         self.particles = self.measurement_model(self.particles, beacons)
+=======
+    def localisation(self, delta_coords, lidar_data, beacons):
+        self.move_particles([delta_coords[0], delta_coords[1], delta_coords[2]])
+        self.particles = self.particle_sense(self.particles, beacons)
+>>>>>>> Stashed changes
         main_robot = self.calculate_main()
         return main_robot
 
@@ -106,6 +123,7 @@ class ParticleFilter:
             r = (np.sqrt((landmarks[np.newaxis, :, 1]) ** 2 + (landmarks[np.newaxis, :, 0]) ** 2)).T
             phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0])
             phi = wrap_angle(phi).T
+<<<<<<< Updated upstream
             r_lid = r + np.random.normal(0, self.sigma_r, self.particles_num_from_measurement_model)
             phi_lid = phi + np.random.normal(0, self.sigma_phi, self.particles_num_from_measurement_model)
             phi_lid = wrap_angle(phi_lid)
@@ -115,6 +133,17 @@ class ParticleFilter:
                 y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :5] * np.sin(y_lid)
                 theta = wrap_angle(y_lid - np.pi - phi_lid[0, :self.particles_num_from_measurement_model])
                 index = (x < 3) & (x > 0) & (y < 2) & (y > 0)
+=======
+            r_lid = r + np.random.normal(0, self.sigma_r, 5)
+            phi_lid = phi + np.random.normal(0, self.sigma_phi, 5)
+            phi_lid = wrap_angle(phi_lid)
+            if (len(self.beacon_ind) > 0 ):
+                y_lid = np.random.uniform(0, 2 * np.pi, 5)
+                x = self.beacons[self.beacon_ind[0],  0] + r_lid[0, :5] * np.cos(y_lid)
+                y = self.beacons[self.beacon_ind[0],  1] + r_lid[0, :5] * np.sin(y_lid)
+                theta = wrap_angle(y_lid - np.pi - phi_lid[0, :5])
+                index = (x < 3) & (x > 0) & ( y < 2) & ( y >  0)
+>>>>>>> Stashed changes
                 return np.array([x, y, theta]).T[index]
             else:
                 x = np.zeros(10)
