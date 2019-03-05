@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg = "eurobot_nav" name="motion_planner" type = "motion_planner_node.py"/>
-    <node pkg="eurobot_sim" name="stm_node" type="stm_node.py"/>
     <!--<include file="$(find eurobot_loc)/launch/visualization.launch" />-->
     <node pkg="eurobot_nav" name="MapPublisher" type="MapPublisher.py"/>
     <!--<group ns="navigation">-->

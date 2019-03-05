@@ -93,7 +93,7 @@ class MoveToPoint(ActionClientNode):
 
 class TakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "take wall puck"
+        cmd = "collect_wall"
         super(TakeWallPuck, self).__init__(cmd, action_client_id)
 
 

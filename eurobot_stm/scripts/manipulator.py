@@ -6,16 +6,16 @@ from std_msgs.msg import String
 
 
 class Manipulator(object):
-    def __init__(self, stm_protocol):
-        # rospy.init_node("manipulator_node", anonymous=True)
+    def __init__(self):
+        rospy.init_node("manipulator_node", anonymous=True)
 
         self.robot_name = rospy.get_param("robot_name")
 
-        self.response_publisher = rospy.Publisher("manipulator/response")
-        rospy.Subscriber("manipulator/command", self.command_callback)
+        self.response_publisher = rospy.Publisher("manipulator/response", String, queue_size=10)
+        rospy.Subscriber("manipulator/command", String, self.command_callback)
 
-        self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
-        rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
+        self.publisher = rospy.Publisher("stm_command", String, queue_size=10)
+        rospy.Subscriber("stm_response", String, self.response_callback)
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
@@ -24,9 +24,9 @@ class Manipulator(object):
     def command_callback(self, data):
         command = data.data.split()
         cmd_id = command[0]
+        print ("CMD_ID=", cmd_id)
         cmd = command[1]
-
-
+        print ("CMD=", cmd)
         if cmd == "calibrate":
             self.calibrate()
         elif cmd == "take_ground":
@@ -34,9 +34,11 @@ class Manipulator(object):
         elif cmd == "complete_ground_collect":
             self.complete_ground_collect()
         elif cmd == "collect_wall":
-            self.collect_small()
+            self.collect_wall()
         elif cmd == "collect_ground":
             self.collect_small()
+
+        self.response_publisher.publish(cmd_id + " success")
 
     def response_callback(self, data):
         response = data.data.split()
@@ -275,3 +277,10 @@ class Manipulator(object):
         self.send_command(52, 1)
         self.send_command(35)
         return True
+
+if __name__ == '__main__':
+    try:
+        manipulator = Manipulator()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
