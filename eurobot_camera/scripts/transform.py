@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-
-import numpy as np
 import cv2
-from cv_bridge import CvBridge, CvBridgeError
-import rospy
-import sensor_msgs
-from sensor_msgs.msg import Image
+import numpy as np
 
 import time
 
-def find_transform_ecc(img,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
+def find_transform_ecc(img,rx,ry,templ_path):
     start_time = time.time()
     print ('Start homogeneous')
     
@@ -49,7 +44,7 @@ def find_transform_ecc(img,rx,ry,templ_path='/home/alexey/Desktop/field.png'):
     return warp_matrix
     
 
-def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path='/home/alexey/Desktop/field.png'):
+def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path):
     start_time = time.time()
     print ('Start homogeneous by features')
 
