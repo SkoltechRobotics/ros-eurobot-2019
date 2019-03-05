@@ -65,6 +65,57 @@ class ActionClientNode(bt.SequenceNode):
         bt.BTNode.log(self, level)
 
 
+class MoveToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveToPoint, self).__init__(cmd, action_client_id)
+
+# class MoveToPoint(bt.FallbackNode):
+#     def __init__(self, point, action_client_id):
+#         self.point = bt.BTVariable(point)
+#
+#         self.move_to_point_node = bt.Latch(ActionClientNode("move " + point[0] + " " + point[1] + " " + point[2],
+#                                                             action_client_id, name="move_to_point"))
+#         super(MoveToPoint, self).__init__([
+#             bt.ConditionNode(self.is_reached),
+#             bt.ActionNode(self.move_to_point)
+#         ])
+#
+#     def is_reached(self):
+#         if self.move_to_point_node.action_status() == bt.Status.SUCCESS:
+#             return True
+#         else:
+#             return False
+#
+#     def move_to_point(self):
+#         self.move_to_point_node.children[0].start_action()
+
+
+class TakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "take wall puck"
+        super(TakeWallPuck, self).__init__(cmd, action_client_id)
+
+
+# class TakeWallPuck(bt.FallbackNode):
+#     def __init__(self, action_client_id):
+#         self.take_wall_puck_node = ActionClientNode("take wall puck", action_client_id,
+#                                                     name="take_wall_puck")
+#         super(TakeWallPuck, self).__init__([
+#             bt.ConditionNode(self.is_taken),
+#             bt.ActionNode(self.take_puck)
+#         ])
+#
+#     def is_taken(self):
+#         if self.take_wall_puck_node.action_status() == bt.Status.SUCCESS:
+#             return True
+#         else:
+#             return False
+#
+#     def take_puck(self):
+#         self.take_wall_puck_node.start_action()
+
+
 class MoveWaypoints(bt.FallbackNode):
     def __init__(self, waypoints, action_client_id):
         # Init parameters

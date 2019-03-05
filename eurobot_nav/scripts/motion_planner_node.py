@@ -92,10 +92,10 @@ class MotionPlannerNode:
 
         # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.pub_cmd = rospy.Publisher("/navigation/stm_command", String, queue_size=1)
-        self.pub_response = rospy.Publisher("response", String, queue_size=10)
+        self.pub_response = rospy.Publisher("navigation/response", String, queue_size=10)
 
         self.timer = None
-        rospy.Subscriber("/navigation/move_command", String, self.cmd_callback, queue_size=1)
+        rospy.Subscriber("/navigation/command", String, self.cmd_callback, queue_size=1)
 
     # noinspection PyTypeChecker
     def pub_path(self):
