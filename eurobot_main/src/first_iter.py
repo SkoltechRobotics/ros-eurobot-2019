@@ -24,10 +24,11 @@ class FirstIterBT():
         rospy.sleep(2)
 
         move = bt.Latch(bt_ros.MoveToPoint([0.5, 1.34, 1.57], "move_client"))
+        calibrate = bt.Latch(bt_ros.Calibrate("manipulator_client"))
         take_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
         move1 = bt.Latch(bt_ros.MoveToPoint([0.6, 1.34, 1.57], "move_client"))
 
-        self.bt = bt.Root(bt.SequenceNode([move, take_puck, move1]),
+        self.bt = bt.Root(bt.SequenceNode([calibrate, move, take_puck, move1]),
                           action_clients={"move_client": self.move_client,
                                           "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)

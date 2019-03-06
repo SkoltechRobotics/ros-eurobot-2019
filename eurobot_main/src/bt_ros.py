@@ -96,6 +96,10 @@ class TakeWallPuck(ActionClientNode):
         cmd = "collect_wall"
         super(TakeWallPuck, self).__init__(cmd, action_client_id)
 
+class Calibrate(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "calibrate"
+        super(TakeWallPuck, self).__init__(cmd, action_client_id)
 
 # class TakeWallPuck(bt.FallbackNode):
 #     def __init__(self, action_client_id):
