@@ -70,6 +70,11 @@ class MoveToPoint(ActionClientNode):
         cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveToPoint, self).__init__(cmd, action_client_id)
 
+class MoveToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveToPoint, self).__init__(cmd, action_client_id)
+
 # class MoveToPoint(bt.FallbackNode):
 #     def __init__(self, point, action_client_id):
 #         self.point = bt.BTVariable(point)

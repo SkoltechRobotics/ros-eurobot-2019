@@ -23,7 +23,8 @@ class FirstIterBT():
 
         rospy.sleep(2)
 
-        # move = bt.Latch(bt_ros.MoveToPoint([0.5, 1.34, 1.57], "move_client"))
+
+        move = bt.Latch(bt_ros.MoveToPoint([0.5, 1.34, 1.57], "move_client"))
         calibrate = bt.Latch(bt_ros.Calibrate("manipulator_client"))
         take_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
         # move1 = bt.Latch(bt_ros.MoveToPoint([0.55, 1.3, 1.57], "move_client"))
