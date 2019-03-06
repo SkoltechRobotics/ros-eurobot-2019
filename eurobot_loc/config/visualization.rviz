@@ -8,7 +8,7 @@ Panels:
         - /TF1/Tree1
         - /PoseArray1
       Splitter Ratio: 0.592190862
-    Tree Height: 590
+    Tree Height: 286
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -376,11 +376,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        secondary_robot:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: SecondaryRobot
       Robot Alpha: 1
       Robot Description: secondary_robot/description
@@ -599,16 +594,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.97891092
+      Distance: 6.11487436
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.49311721
-        Y: 0.986453831
-        Z: -0.606632411
+        X: 0.0802865326
+        Y: 0.89323169
+        Z: -0.60671556
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
