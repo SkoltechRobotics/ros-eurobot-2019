@@ -201,6 +201,7 @@ class Manipulator(object):
             # Release grabber
             self.send_command(22)
             self.send_command(50)
+            
             return True
 
     def collect_wall(self):
@@ -211,6 +212,7 @@ class Manipulator(object):
             self.send_command(22)
             # Set pump to the wall
             self.send_command(20)
+            rospy.sleep(0.5)
             # Start pump
             self.send_command(17)
             # Set pump to the platform
@@ -221,10 +223,16 @@ class Manipulator(object):
             self.send_command(18)
             # Set pump to the wall
             self.send_command(20)
-            # Grab pack
+            
+            # grab pack
             self.send_command(24)
+
             # Release grabber
             self.send_command(22)
+            # Set pump to the platform
+            # self.send_command(21)
+
+            self.send_command(50)
             return True
 
 

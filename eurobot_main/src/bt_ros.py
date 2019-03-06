@@ -90,6 +90,10 @@ class MoveToPoint(ActionClientNode):
 #     def move_to_point(self):
 #         self.move_to_point_node.children[0].start_action()
 
+class Calibrate(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "calibrate"
+        super(Calibrate, self).__init__(cmd, action_client_id)
 
 class TakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
