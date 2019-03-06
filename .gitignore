@@ -2,3 +2,7 @@
 *.idea
 *.swp
 *.swo
+<<<<<<< HEAD
+=======
+*.vscode
+>>>>>>> origin/loc
