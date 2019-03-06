@@ -52,7 +52,7 @@ class MotionPlannerNode:
         # self.v_constraint = np.array([max_speed*np.pi*diameter_wheel, max_speed*np.pi*diameter_wheel, np.sqrt(self.acceleration_vector[-1])])
         self.v_constraint = np.array([0.73, 0.84, 2.5])
         self.acceleration_vector = self.v_constraint * 2 * self.v_constraint[2]
-        self.acceleration_vector[:2] *= 5
+        self.acceleration_vector[:2] *= 1
         # self.acceleration_vector[0] *= 2
         # self.acceleration_vector[1] *= 2
         # self.acceleration_vector[2] = 0.8
@@ -114,11 +114,11 @@ class MotionPlannerNode:
         self.e_const = 0.3
 
         # self.pub_twist = rospy.Publisher("cmd_vel", Twist, queue_size=1)
-        self.pub_cmd = rospy.Publisher("/navigation/stm_command", String, queue_size=1)
+        self.pub_cmd = rospy.Publisher("stm_command", String, queue_size=1)
         self.pub_response = rospy.Publisher("response", String, queue_size=10)
 
         self.timer = None
-        rospy.Subscriber("/navigation/move_command", String, self.cmd_callback, queue_size=1)
+        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
 
     # noinspection PyTypeChecker
     def pub_path(self):
@@ -135,10 +135,18 @@ class MotionPlannerNode:
             self.path_publisher.publish(path)
 
     def constraint(self, prev_vel, target_vel, dt):
-        k = np.linalg.norm((target_vel - prev_vel)/(self.acceleration_vector*dt))
+        k_ = np.linalg.norm((target_vel - prev_vel)/(self.acceleration_vector*dt))
+        k = np.linalg.norm(target_vel / self.v_constraint)
+        rospy.loginfo("TARGET_VEL")
+        rospy.loginfo(str(target_vel))
+        rospy.loginfo("PREV_VEL")
+        rospy.loginfo(str(prev_vel))
+        if k > 1:
+            target_vel /= k
         rospy.loginfo(str(target_vel-prev_vel))
         rospy.loginfo(str(k))
-        if k < 1:
+
+        if k_ < 1:
             rospy.loginfo("return target")
             return target_vel
         else:
@@ -146,14 +154,7 @@ class MotionPlannerNode:
             max_acc = self.acceleration_vector*dt
             t_acc = np.linalg.norm(target_vel-prev_vel) / max_acc
             constraint_v = prev_vel + (target_vel - prev_vel)/t_acc
-            rospy.loginfo(str(constraint_v))
-            rospy.loginfo(prev_vel)
             # constraint_v[2] = wrap_angle(constraint_v[2])
-            k = max(np.abs(target_vel / self.v_constraint))
-            # if np.linalg.norm(k) > 1:
-            constraint_v /= k
-            rospy.loginfo("target/c")
-            rospy.loginfo(str(target_vel/constraint_v))
             return constraint_v
 
     def cmd_callback(self, data):
@@ -169,7 +170,6 @@ class MotionPlannerNode:
 
         self.mutex.acquire()
         self.prev_vel = np.array([0., 0., 0.])
-        self.prev_time = rospy.Time.now().to_sec()
         rospy.loginfo("")
         rospy.loginfo("=====================================")
         rospy.loginfo("NEW CMD:\t" + str(data.data))
@@ -257,8 +257,9 @@ class MotionPlannerNode:
         self.set_speed_simulation(0, 0, 0)
         rospy.loginfo("Robot has stopped.")
         rospy.sleep(1.0 / 40)
+        answer = str(self.cmd_id) + " success"
         #self.current_state = 'start'
-        self.pub_response.publish("finished")
+        self.pub_response.publish(answer)
 
     def create_linear_path(self):
         x = np.linspace(self.coords[0], self.goal[0], self.num_points_in_path)
@@ -266,46 +267,6 @@ class MotionPlannerNode:
         theta = np.linspace(0, wrap_angle(self.goal[2] - self.coords[2]), self.num_points_in_path)
         theta += self.coords[2]
         self.path = np.array([x, y, theta]).T
-
-    def constraint_v(self, velocity):
-        k = max(np.abs(velocity[0] / self.V_MAX), np.abs(velocity[1] / self.V_MAX), np.abs(velocity[2] / self.W_MAX))
-        if k > 1:
-            velocity /= k
-        return velocity
-
-    def constraint_a(self, vel_cur, prev_vel, dt=0.08):
-        vx, vy, w = vel_cur
-        if np.abs(vel_cur[2] - prev_vel[2]) > self.max_diff_w * dt:
-            w_new = prev_vel[2] + self.max_diff_w * dt * np.sign(w - prev_vel[2])
-            if abs(w) > 5 * self.max_diff_w * dt:
-                vx *= w_new / w
-                vy *= w_new / w
-            w = w_new
-
-        if np.abs(vx - prev_vel[0]) > self.max_diff_v * dt:
-            vx = prev_vel[0] + self.max_diff_v * dt * np.sign(vx - prev_vel[0])
-
-        if np.abs(vy - prev_vel[1]) > self.max_diff_v * dt:
-            vy = prev_vel[1] + self.max_diff_v * dt * np.sign(vy - prev_vel[1])
-
-        if abs(vx) > self.V_MAX:
-            k = abs(vx) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(vy) > self.V_MAX:
-            k = abs(vy) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(w) > self.W_MAX:
-            k = abs(w) / self.W_MAX
-            vx /= k
-            vy /= k
-            w /= k
-        return np.array([vx, vy, w])
 
     def path_position_arg(self, path, point, r=0):
         path = path.copy()
@@ -348,7 +309,7 @@ class MotionPlannerNode:
         rospy.loginfo('DELTA VEL')
         rospy.loginfo(str(self.result_vel))
         self.result_vel += ref_vel
-        self.result_vel = cvt_global2local(np.array([self.result_vel[0], self.result_vel[1], 0]),
+        self.result_vel = cvt_global2local(np.array([self.result_vel.copy()[0], self.result_vel.copy()[1], 0]),
                                            np.array([0., 0., point[2]]))
         self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
         rospy.loginfo("BEFORE CONSTRAINT")
@@ -359,11 +320,11 @@ class MotionPlannerNode:
         rospy.loginfo(str(dt))
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
-        self.result_vel = self.constraint(self.prev_vel, self.result_vel, dt)
+        self.result_vel = self.constraint(self.prev_vel.copy(), self.result_vel.copy(), dt)
         rospy.loginfo("COEFF")
         rospy.loginfo(str(deceleration_coefficient))
         self.result_vel *= deceleration_coefficient
-        self.prev_vel = self.result_vel
+        self.prev_vel = self.result_vel.copy()
         rospy.loginfo("AFTER CONSTRAINT")
         rospy.loginfo(str(self.result_vel))
         self.prev_time = curr_time
@@ -464,18 +425,20 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.terminate_moving()
         elif self.current_state == 'start':
+            rospy.loginfo("START!!!!!!!!!!!!!!!!!!!!!!")
             self.update_coords()
             self.create_linear_path()
             self.pub_path()
-            #self.path = self.buf_path
+            # self.path = self.buf_path
+            self.prev_time = rospy.Time.now().to_sec()
+            self.prev_vel = np.array([0., 0., 0.])
             self.follow_path()
-            # self.prev_time = rospy.Time.now().to_sec()
-            # self.prev_vel = np.array([0., 0., 0.])
             delta_coords = self.coords - self.path[-1, :1]
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
             #self.current_state = "trajectory_following"
             self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+
             rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
 
             self.current_state = 'following'
@@ -483,8 +446,6 @@ class MotionPlannerNode:
             self.update_coords()
             self.path = self.buf_path.copy()
             self.pub_path()
-            self.prev_time = rospy.Time.now().to_sec()
-            self.prev_vel =  np.array([0., 0., 0.])
             self.follow_path()
             rospy.loginfo("START_TRAJECTORY_FOLLOWING")
             delta_coords = self.coords - self.path[-1, :]
@@ -496,6 +457,8 @@ class MotionPlannerNode:
         elif self.current_state == 'following' and self.delta_dist > 0.2:
             self.update_coords()
             self.follow_path()
+            rospy.loginfo("PREV_VELF")
+            rospy.loginfo(str(self.prev_vel))
             delta_coords = self.coords - self.path[-1, :]
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
@@ -621,7 +584,7 @@ class MotionPlannerNode:
         rospy.loginfo("ANGLES!!!!!")
         rospy.loginfo(str(self.buf_path[:, 2]))
         #self.buf_path[:, 2] = theta
-        self.pub_response.publish("received")
+        # self.pub_response.publish("received")
 
 
 

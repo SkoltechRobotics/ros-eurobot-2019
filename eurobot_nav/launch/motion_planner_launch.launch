@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+        <node pkg = "eurobot_nav" name="motion_planner" type = "motion_planner_node.py" output="screen" >
+                <remap from="/navigation/command" to="command"/>
+                <remap from="response" to="/navigation/response" />
+        </node>
+</launch>
