@@ -27,7 +27,7 @@ class Manipulator(object):
         print ("CMD_ID=", cmd_id)
         cmd = command[1]
         print ("CMD=", cmd)
-        if cmd == "calibrate":
+        if cmd == "default":
             self.calibrate()
         elif cmd == "take_ground":
             self.take_ground()
@@ -81,7 +81,7 @@ class Manipulator(object):
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
-            self.send_command(20)
+            self.send_command(21)
             self.send_command(25)
             return True
 
