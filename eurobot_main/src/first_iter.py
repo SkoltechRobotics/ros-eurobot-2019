@@ -28,31 +28,31 @@ class SecondaryRobotBT():
 
 
 
-        default_state = bt.Latch(bt_ros.DefaultState("manipulator_client"))
+        default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
         # first
         move_1_puck = bt.Latch(bt_ros.MoveLineToPoint([0.14, 1.8, 1.57], "move_client"))
         start_take_1_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         complete_take_1_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
         move_1_back = bt.Latch(bt_ros.MoveArcToPoint([0.18, 1.75, 1.57], "move_client"))
-        parallel = bt.ParallelNode([complete_take_1_puck,move_1_back], threshold=2)
+        parallel = bt.ParallelNode([complete_take_1_puck,move_1_back], threshold=1)
 
         # second
         move_2_puck = bt.Latch(bt_ros.MoveArcToPoint([0.2, 1.8, 1.57], "move_client"))
-        take_2_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
+        take_2_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         move_2_back = bt.Latch(bt_ros.MoveLineToPoint([0.3, 0.5, 1.57], "move_client"))
 
         # third
         move_3_puck = bt.Latch(bt_ros.MoveLineToPoint([0.6, 1.34, 1.57], "move_client"))
-        take_3_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
+        take_3_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         move_3_back = bt.Latch(bt_ros.MoveArcToPoint([0.7, 1.3, 1.57], "move_client"))
         # forth
         move_4_puck = bt.Latch(bt_ros.MoveArcToPoint([0.8, 1.34, 1.57], "move_client"))
-        take_4_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
+        take_4_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         move_4_back = bt.Latch(bt_ros.MoveArcToPoint([0.9, 1.3, 1.57], "move_client"))
         # fivth
         move_5_puck = bt.Latch(bt_ros.MoveArcToPoint([1, 1.34, 1.57], "move_client"))
-        take_5_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
+        take_5_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
 
         
 

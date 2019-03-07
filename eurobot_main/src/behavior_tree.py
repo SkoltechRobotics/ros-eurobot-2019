@@ -113,8 +113,8 @@ class FallbackNode(ControlNode):
 
 
 class ParallelNode(ControlNode):
-    def __init__(self, threshold):
-        super(ParallelNode,self)
+    def __init__(self, children, threshold, **kwargs):
+        super(ParallelNode,self).__init__(children, **kwargs)
         self.threshold = threshold
 
     def tick(self):
@@ -129,10 +129,10 @@ class ParallelNode(ControlNode):
 
         if success_summ >= self.threshold:
             self.status = Status.SUCCESS
-            break
+            return self.status
         elif failed_summ >= len(self.children) - self.threshold:
             self.status = Status.FAILED
-            break
+            return self.status
 
         if self.status == Status.FAILED or self.status == Status.SUCCESS:
             self.reset()
