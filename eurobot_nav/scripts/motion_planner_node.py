@@ -36,7 +36,7 @@ class MotionPlannerNode:
         rospy.init_node("motion_planner", anonymous=True)
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("/navigation/path", Path, self.callback_path)
-        self.command_publisher = rospy.Publisher("stm_command", String, queue_size=1)
+        self.command_publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
@@ -273,6 +273,7 @@ class MotionPlannerNode:
         self.result_vel = self.constraint(self.prev_vel.copy(), self.result_vel.copy(), dt)
         self.result_vel *= deceleration_coefficient
         self.prev_vel = self.result_vel.copy()
+        self.vx_prev, self.vy_prev, self.w_prev = self.result_vel.copy()
         self.prev_time = curr_time
         return self.result_vel
 
@@ -306,7 +307,8 @@ class MotionPlannerNode:
         # TODO
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
 
-        cmd = " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+        cmd = str(self.cmd_id ) + " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+          
         rospy.loginfo("Sending cmd: " + cmd)
         self.command_publisher.publish(cmd)
 
@@ -458,7 +460,7 @@ class MotionPlannerNode:
 
     def update_coords(self):
         try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
                  trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
@@ -467,6 +469,7 @@ class MotionPlannerNode:
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
+            rospy.logwarn("SMT WROND QQ")
             return False
 
     def callback_path(self, data):
