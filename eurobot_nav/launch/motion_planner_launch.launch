@@ -2,7 +2,7 @@
 <launch>
         <rosparam file="$(find eurobot_nav)/config/motion_planner_secondary_robot_params.yaml" command="load" ns="navigation"/>
         <group ns="navigation">
-        <node pkg = "eurobot_nav" name="motion_planner" type = "motion_planner_node.py" output="screen" >
+        <node pkg = "eurobot_nav" name="motion_planner" type = "motion_planner_node.py" >
         </node>
         </group>
 </launch>

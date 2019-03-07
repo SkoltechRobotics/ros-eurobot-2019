@@ -12,7 +12,7 @@ start_side: "purple"
 
 beacons_radius: 0.048
 beacon_range: 0.2
-min_range: 0.1
+min_range: 0.05
 alpha: 1
 min_point_per_beacon: 3
 

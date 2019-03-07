@@ -1,5 +1,5 @@
 robot_name: "secondary_robot"
-velocity_vector: [0.5, 0.6, 1]
+velocity_vector: [0.6, 0.7, 1.5]
 num_points_in_path: 200
 robot_radius: 0.1
 k_linear_wp: 2.5
@@ -20,8 +20,8 @@ AW_MAX: 1.5
 ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.15
-R_DECELERATION: 1
-exp_const: 0.3
+R_DECELERATION: 2
+exp_const: 0.6
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps

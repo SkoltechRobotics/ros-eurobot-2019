@@ -228,7 +228,7 @@ class PFNode(object):
     def localization(self, event):
         header = self.scan.header
         points = self.point_cloud_from_scan()
-        self.publish_landmarks(points, header)
+        #self.publish_landmarks(points, header)
         beacons, color = self.beacons_detection(points)
         self.publish_beacons(beacons, header, color)
         f, robot_odom_point = self.get_odom()

@@ -187,7 +187,8 @@ class ParticleFilter:
             weights = self.gaus(r - self.r_lid, mu=0, sigma=self.sigma_r) * self.gaus(wrap_angle(phi - self.phi_lid), mu=0, sigma=self.sigma_phi)
             weights = (np.product(weights, axis=0))
             if np.sum(weights) > 0:
-                weights = weights**(1./landmarks.shape[0])
+                if landmarks.shape[0] != 0:
+                    weights = weights**(1./landmarks.shape[0])
                 weights /= np.sum(weights)
             else:
                 weights = np.ones(particles.shape[0], dtype=np.float) / particles.shape[0]
