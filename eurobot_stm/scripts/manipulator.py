@@ -33,8 +33,10 @@ class Manipulator(object):
             self.take_ground()
         elif cmd == "complete_ground_collect":
             self.complete_ground_collect()
-        elif cmd == "collect_wall":
-            self.collect_wall()
+        elif cmd == "start_collect_wall":
+            self.start_collect_wall()
+        elif cmd == "complete_collect_wall":
+            self.complete_collect_wall()
         elif cmd == "collect_ground":
             self.collect_small()
 
@@ -204,7 +206,37 @@ class Manipulator(object):
             
             return True
 
-    def collect_wall(self):
+    # def collect_wall(self):
+    #     if self.robot_name == "main_robot":
+    #         pass
+    #     if self.robot_name == "secondary_robot":
+    #         # Release grabber
+    #         self.send_command(22)
+    #         # Set pump to the wall
+    #         self.send_command(20)
+    #         rospy.sleep(0.5)
+    #         # Start pump
+    #         self.send_command(17)
+    #         # Set pump to the platform
+    #         self.send_command(21)
+    #         # Prop pack
+    #         self.send_command(23)
+    #         # Stop pump
+    #         self.send_command(18)
+    #         # Set pump to the wall
+    #         self.send_command(20)
+    #         # grab pack
+    #         self.send_command(24)
+    #
+    #         # Release grabber
+    #         self.send_command(22)
+    #         # Set pump to the platform
+    #         # self.send_command(21)
+    #
+    #         self.send_command(50)
+    #         return True
+
+    def start_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
@@ -215,6 +247,12 @@ class Manipulator(object):
             rospy.sleep(0.5)
             # Start pump
             self.send_command(17)
+            return True
+
+    def complete_collect_wall(self):
+        if self.robot_name == "main_robot":
+            pass
+        if self.robot_name == "secondary_robot":
             # Set pump to the platform
             self.send_command(21)
             # Prop pack
@@ -223,7 +261,6 @@ class Manipulator(object):
             self.send_command(18)
             # Set pump to the wall
             self.send_command(20)
-            
             # grab pack
             self.send_command(24)
 

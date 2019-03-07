@@ -27,12 +27,15 @@ class SecondaryRobotBT():
         rospy.sleep(2)
 
 
+
         default_state = bt.Latch(bt_ros.DefaultState("manipulator_client"))
 
         # first
         move_1_puck = bt.Latch(bt_ros.MoveLineToPoint([0.14, 1.8, 1.57], "move_client"))
-        take_1_puck = bt.Latch(bt_ros.TakeWallPuck("manipulator_client"))
+        start_take_1_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_1_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
         move_1_back = bt.Latch(bt_ros.MoveArcToPoint([0.18, 1.75, 1.57], "move_client"))
+        parallel = bt.ParallelNode([complete_take_1_puck,move_1_back], threshold=2)
 
         # second
         move_2_puck = bt.Latch(bt_ros.MoveArcToPoint([0.2, 1.8, 1.57], "move_client"))
@@ -53,7 +56,7 @@ class SecondaryRobotBT():
 
         
 
-        first_puck = bt.SequenceNode([move_1_puck, take_1_puck, move_1_back])
+        first_puck = bt.SequenceNode([move_1_puck, start_take_1_puck, parallel])
 
         second_puck = bt.SequenceNode([move_2_puck, take_2_puck, move_2_back])
 

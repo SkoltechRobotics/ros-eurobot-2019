@@ -112,6 +112,35 @@ class FallbackNode(ControlNode):
         pass
 
 
+class ParallelNode(ControlNode):
+    def __init__(self, threshold):
+        super(ParallelNode,self)
+        self.threshold = threshold
+
+    def tick(self):
+        success_summ = 0
+        failed_summ = 0
+        for child in self.children:
+            status = child.tick()
+            if status == Status.SUCCESS:
+                success_summ += 1
+            elif status == Status.FAILED:
+                failed_summ += 1
+
+        if success_summ >= self.threshold:
+            self.status = Status.SUCCESS
+            break
+        elif failed_summ >= len(self.children) - self.threshold:
+            self.status = Status.FAILED
+            break
+
+        if self.status == Status.FAILED or self.status == Status.SUCCESS:
+            self.reset()
+        return self.status
+
+    def reset(self):
+        pass
+
 class Latch(ControlNode):
     def __init__(self, child, **kwargs):
         super(Latch, self).__init__([child], **kwargs)

@@ -64,15 +64,20 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level):
         bt.BTNode.log(self, level)
 
-class DefaultState(ActionClientNode):
+class SetToDefaultState(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "default"
-        super(DefaultState, self).__init__(cmd, action_client_id)
+        super(SetToDefaultState, self).__init__(cmd, action_client_id)
 
-class TakeWallPuck(ActionClientNode):
+class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "collect_wall"
-        super(TakeWallPuck, self).__init__(cmd, action_client_id)
+        cmd = "start_collect_wall"
+        super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
 
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
