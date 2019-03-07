@@ -81,7 +81,7 @@ class Manipulator(object):
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
-            self.send_command(21)
+            self.send_command(20)
             self.send_command(25)
             return True
 

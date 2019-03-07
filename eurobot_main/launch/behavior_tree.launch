@@ -5,6 +5,7 @@
 
     <rosparam file="$(find eurobot_loc)/config/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
     <rosparam file="$(find eurobot_stm)/configs/stm.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_main)/config/bt_params.yaml" command="load" ns="secondary_robot"/>
     <param name = "field/color" value = "orange"/>
 
     <group ns = "secondary_robot">
