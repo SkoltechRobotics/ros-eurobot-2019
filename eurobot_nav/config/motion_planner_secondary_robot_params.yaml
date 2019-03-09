@@ -12,10 +12,10 @@ RATE: 20
 XY_GOAL_TOLERANCE: 0.02
 YAW_GOAL_TOLERANCE: 0.007
 # maximum speed
-V_MAX: 0.6
-W_MAX: 1.5
-AV_MAX: 0.6
-AW_MAX: 1.5
+V_MAX: 0.73
+W_MAX: 2.5
+AV_MAX: 3.65
+AW_MAX: 12.5
 # acceleration at beginning of movements
 ACCELERATION: 1.0
 # goal distance for deceleration

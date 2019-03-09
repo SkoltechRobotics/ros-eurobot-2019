@@ -275,6 +275,7 @@ class MotionPlannerNode:
         self.prev_vel = self.result_vel.copy()
         self.vx_prev, self.vy_prev, self.w_prev = self.result_vel.copy()
         self.prev_time = curr_time
+        self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
         return self.result_vel
 
     def follow_path(self):
@@ -353,14 +354,17 @@ class MotionPlannerNode:
         # Deceleration when we are near the goal point
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
-        v *= deceleration_coefficient
-        w *= deceleration_coefficient
-
+        rospy.loginfo("DEC COEFF + %.4f", deceleration_coefficient)
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
-        v_cmd = self.acceleration_constraint(v_cmd)
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        v_cmd = self.constraint(self.prev_vel, v_cmd, dt) * deceleration_coefficient
+        self.prev_time = curr_time
+        self.prev_vel = v_cmd
+        #v_cmd = self.acceleration_constraint(v_cmd)
         self.set_speed(v_cmd)
         self.set_speed_simulation(v_cmd[0], v_cmd[1], v_cmd[2])
         if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
@@ -408,6 +412,9 @@ class MotionPlannerNode:
             rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
         elif self.current_state == 'following' and self.delta_dist < self.min_dist_to_goal_point:
             self.current_state = 'move_arc'
+            self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
+            self.t_prev = self.prev_time
+            self.move_arc()
         elif self.current_state == 'move_arc':
             self.move_arc()
 
