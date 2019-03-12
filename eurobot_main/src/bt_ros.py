@@ -69,6 +69,18 @@ class SetToDefaultState(ActionClientNode):
         cmd = "default"
         super(SetToDefaultState, self).__init__(cmd, action_client_id)
 
+class SetManipulatortoWall(ActionClientNode):
+    def __init__(self, action_client_id):
+        rospy.sleep(0.5)
+        cmd = "manipulator_wall"
+        super(SetManipulatortoWall, self).__init__(cmd, action_client_id)
+
+class SetManipulatortoUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "manipulator_up"
+        rospy.sleep(0.5)
+        super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
+
 class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall"

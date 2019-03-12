@@ -29,6 +29,10 @@ class Manipulator(object):
         print ("CMD=", cmd)
         if cmd == "default":
             self.calibrate()
+        elif cmd == "manipulator_wall":
+            self.set_manipulator_wall()
+        elif cmd == "manipulator_up":
+            self.set_manipulator_up()
         elif cmd == "take_ground":
             self.take_ground()
         elif cmd == "complete_ground_collect":
@@ -83,7 +87,7 @@ class Manipulator(object):
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
-            self.send_command(20)
+            self.send_command(21)
             self.send_command(25)
             return True
 
@@ -186,6 +190,14 @@ class Manipulator(object):
             self.send_command(17)
             return True
 
+    def set_manipulator_wall(self):
+        self.send_command(20)
+
+    def set_manipulator_up(self):
+        self.send_command(24)
+        self.send_command(21)
+        
+
     def complete_ground_collect(self):
         if self.robot_name == "main_robot":
             pass
@@ -244,7 +256,7 @@ class Manipulator(object):
             self.send_command(22)
             # Set pump to the wall
             self.send_command(20)
-            rospy.sleep(0.5)
+            # rospy.sleep(0.5)
             # Start pump
             self.send_command(17)
             return True
@@ -253,6 +265,8 @@ class Manipulator(object):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
+            rospy.sleep(0.3)
+
             # Set pump to the platform
             self.send_command(21)
             # Prop pack

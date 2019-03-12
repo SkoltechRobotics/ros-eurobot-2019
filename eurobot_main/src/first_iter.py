@@ -30,51 +30,65 @@ class SecondaryRobotBT():
 
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
-        # # first
-        # move_1_puck = bt.Latch(bt_ros.MoveLineToPoint([0.14, 1.8, 1.57], "move_client"))
-        # start_take_1_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
-        # complete_take_1_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
-        # move_1_back = bt.Latch(bt_ros.MoveArcToPoint([0.18, 1.75, 1.57], "move_client"))
-        # parallel1 = bt.ParallelNode([complete_take_1_puck,move_1_back], threshold=1)
-
-        # # second
-        # move_2_puck = bt.Latch(bt_ros.MoveArcToPoint([0.2, 1.8, 1.57], "move_client"))
-        # start_take_2_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
-        # complete_take_2_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
-        # move_2_back = bt.Latch(bt_ros.MoveLineToPoint([0.3, 0.5, 1.57], "move_client"))
-        # parallel2 = bt.ParallelNode([complete_take_1_puck,move_1_back], threshold=1)
-
-        # third
-        move_3_puck = bt.Latch(bt_ros.MoveLineToPoint([0.6, 1.34, 1.57], "move_client"))
-        start_take_3_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
-        complete_take_3_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
-        move_3_back = bt.Latch(bt_ros.MoveArcToPoint([0.65, 1.3, 1.57], "move_client"))
-        parallel3 = bt.ParallelNode([complete_take_3_puck,move_3_back], threshold=1)
-        # # forth
-        move_4_puck = bt.Latch(bt_ros.MoveArcToPoint([0.7, 1.34, 1.57], "move_client"))
-        start_take_4_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
-        complete_take_4_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
-        move_4_back = bt.Latch(bt_ros.MoveArcToPoint([0.75, 1.3, 1.57], "move_client"))
-        parallel4 = bt.ParallelNode([complete_take_4_puck,move_4_back], threshold=1)
-        # # fivth
-        # move_5_puck = bt.Latch(bt_ros.MoveArcToPoint([1, 1.34, 1.57], "move_client"))
-        # start_take_5_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
-        # complete_take_5_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
-
+        # first
+        move_1_puck = bt.Latch(bt_ros.MoveLineToPoint([0.12, 1.82, 1.57], "move_client"))
+        set_man_wall = bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))
+        parallel0 = bt.ParallelNode([move_1_puck, set_man_wall], threshold=2)
+        
+        start_take_1_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_1_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+        move_1_back = bt.Latch(bt_ros.MoveLineToPoint([0.12, 1.75, 1.57], "move_client"))
+        move_1_back1 = bt.Latch(bt_ros.MoveLineToPoint([0.22, 1.75, 1.57], "move_client"))
+        
+        parallel1 = bt.ParallelNode([bt.SequenceNode([move_1_back, move_1_back1]), complete_take_1_puck], threshold=2)
         
 
-        # first_puck = bt.SequenceNode([move_1_puck, start_take_1_puck, parallel1])
+        # second
+        move_2_puck = bt.Latch(bt_ros.MoveLineToPoint([0.21, 1.82, 1.57], "move_client"))
+        start_take_2_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_2_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+        move_2_back = bt.Latch(bt_ros.MoveLineToPoint([0.21, 1.3, 1.57], "move_client"))
+        move_2_back2 = bt.Latch(bt_ros.MoveLineToPoint([0.6, 1.3, 1.57], "move_client"))
+        parallel2 = bt.ParallelNode([bt.SequenceNode([move_2_back,move_2_back2]), complete_take_2_puck], threshold=2)
+        # third
+        move_3_puck = bt.Latch(bt_ros.MoveLineToPoint([0.59, 1.34, 1.57], "move_client"))
+        start_take_3_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_3_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+        move_3_back = bt.Latch(bt_ros.MoveLineToPoint([0.59, 1.3, 1.57], "move_client"))
+        move_3_back3 = bt.Latch(bt_ros.MoveLineToPoint([0.79, 1.3, 1.57], "move_client"))
+        parallel3 = bt.ParallelNode([bt.SequenceNode([move_3_back,move_3_back3]), complete_take_3_puck], threshold=2)
+        # forth
+        move_4_puck = bt.Latch(bt_ros.MoveLineToPoint([0.79, 1.34, 1.57], "move_client"))
+        start_take_4_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_4_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+        move_4_back = bt.Latch(bt_ros.MoveLineToPoint([0.79, 1.3, 1.57], "move_client"))
+        move_4_back4 = bt.Latch(bt_ros.MoveLineToPoint([1, 1.3, 1.57], "move_client"))
+        parallel4 = bt.ParallelNode([bt.SequenceNode([move_4_back,move_4_back4]),complete_take_4_puck], threshold=2)
+        # fivth
+        move_5_puck = bt.Latch(bt_ros.MoveLineToPoint([0.99, 1.34, 1.57], "move_client"))
+        start_take_5_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
+        complete_take_5_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+        move_5_back = bt.Latch(bt_ros.MoveLineToPoint([0.23, 0.44, 0], "move_client"))
+        set_man_up = bt.Latch(bt_ros.SetManipulatortoUp("manipulator_client"))
+        # parallel5 = bt.ParallelNode([move_5_back, set_man_up], threshold=2)
+        # Scales
+        move_scales1 = bt.Latch(bt_ros.MoveLineToPoint([1.34, 1.34, 1.57], "move_client"))
+        move_scales2 = bt.Latch(bt_ros.MoveLineToPoint([1.34, 1.44, 1.57], "move_client"))
+        move_back = bt.Latch(bt_ros.MoveLineToPoint([0.23, 0.44, 0], "move_client"))  
 
-        # second_puck = bt.SequenceNode([move_2_puck, start_take_2_puck, parallel2])
+        first_puck = bt.SequenceNode([parallel0, start_take_1_puck, parallel1])
+
+        second_puck = bt.SequenceNode([move_2_puck, start_take_2_puck, parallel2])
 
         third_puck = bt.SequenceNode([move_3_puck, start_take_3_puck, parallel3])
 
         forth_puck = bt.SequenceNode([move_4_puck, start_take_4_puck, parallel4])
 
-        # fivth_puck = bt.SequenceNode([move_5_puck, start_take_3_puck, complete_take_5_puck])
+        fivth_puck = bt.SequenceNode([move_5_puck, start_take_5_puck, complete_take_5_puck, set_man_up])
 
-        # pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck])
-        pucks = bt.SequenceNode([third_puck, forth_puck])
+        scales = bt.SequenceNode([move_scales1, move_scales2, move_back])
+
+        pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck, scales])
 
         leaf = bt.SequenceNode([default_state, pucks])
 

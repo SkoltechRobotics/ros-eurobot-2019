@@ -40,6 +40,8 @@ class Manipulator():
 
     def calibrate_small(self):
         self.send_command(48)
+        self.send_command(20)
+        self.send_command(25)
 
     def calibrate_big(self):
         # 1) collector move left

@@ -118,6 +118,7 @@ class ParallelNode(ControlNode):
         self.threshold = threshold
 
     def tick(self):
+        self.status = Status.RUNNING
         success_summ = 0
         failed_summ = 0
         for child in self.children:
@@ -130,7 +131,7 @@ class ParallelNode(ControlNode):
         if success_summ >= self.threshold:
             self.status = Status.SUCCESS
             return self.status
-        elif failed_summ >= len(self.children) - self.threshold:
+        elif failed_summ > len(self.children) - self.threshold:
             self.status = Status.FAILED
             return self.status
 
