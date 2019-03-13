@@ -44,7 +44,7 @@ class BTNode(object):
     def tick(self):
         return self.status
 
-    def log(self, level):
+    def log(self, level, prefix=""):
         colors = {Status.SUCCESS: "green",
                   Status.FAILED: "red",
                   Status.RUNNING: "blue",
@@ -53,7 +53,7 @@ class BTNode(object):
             name = self.__class__.__name__
         else:
             name = self.name
-        print level * "    " + name + " ---> " + colored(str(self.status), colors[self.status])
+        print prefix + level * "    " + name + " ---> " + colored(str(self.status), colors[self.status])
 
 
 class ControlNode(BTNode):
@@ -68,8 +68,8 @@ class ControlNode(BTNode):
         for child in self.children:
             child.set_parent(self)
 
-    def log(self, level):
-        super(ControlNode, self).log(level)
+    def log(self, level, prefix=""):
+        super(ControlNode, self).log(level, prefix)
         for child in self.children:
             child.log(level + 1)
 
@@ -127,6 +127,13 @@ class Latch(ControlNode):
     def reset(self):
         self.is_init.set(False)
 
+    def log(self, level, prefix=""):
+        colors = {True: "green",
+                  False: "red",
+                  }
+        prefix = colored("*", colors[self.is_init.get()])
+        self.children[0].log(level, prefix)
+
 
 class ActionNode(BTNode):
     def __init__(self, function, **kwargs):
@@ -165,5 +172,5 @@ class Root(BTNode):
         self.status = self.children[0].tick()
         return self.status
 
-    def log(self, level):
+    def log(self, level, prefix=""):
         self.children[0].log(0)
