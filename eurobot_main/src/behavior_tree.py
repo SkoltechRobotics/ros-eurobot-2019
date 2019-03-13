@@ -103,16 +103,6 @@ class SequenceWithMemoryNode(SequenceNode):
             child.reset()
 
 
-class FallbackWithMemoryNode(SequenceNode):
-    def __init__(self, children, **kwargs):
-        children_with_latch = [Latch(child) for child in children]
-        super(FallbackWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
-
-    def reset(self):
-        for child in self.children:
-            child.reset()
-
-
 class FallbackNode(ControlNode):
     def tick(self):
         self.status = Status.FAILED
@@ -130,6 +120,16 @@ class FallbackNode(ControlNode):
 
     def reset(self):
         pass
+
+
+class FallbackWithMemoryNode(FallbackNode):
+    def __init__(self, children, **kwargs):
+        children_with_latch = [Latch(child) for child in children]
+        super(FallbackWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
+
+    def reset(self):
+        for child in self.children:
+            child.reset()
 
 
 class ParallelNode(ControlNode):
