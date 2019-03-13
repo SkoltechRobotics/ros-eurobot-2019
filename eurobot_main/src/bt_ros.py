@@ -64,6 +64,44 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level):
         bt.BTNode.log(self, level)
 
+class SetToDefaultState(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "default"
+        super(SetToDefaultState, self).__init__(cmd, action_client_id)
+
+class SetManipulatortoWall(ActionClientNode):
+    def __init__(self, action_client_id):
+        rospy.sleep(0.5)
+        cmd = "manipulator_wall"
+        super(SetManipulatortoWall, self).__init__(cmd, action_client_id)
+
+class SetManipulatortoUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "manipulator_up"
+        rospy.sleep(0.5)
+        super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
+
+class StartTakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "start_collect_wall"
+        super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+class MoveLineToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveLineToPoint, self).__init__(cmd, action_client_id)
+
+class MoveArcToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveArcToPoint, self).__init__(cmd, action_client_id)
+
+
 
 class MoveWaypoints(bt.FallbackNode):
     def __init__(self, waypoints, action_client_id):
