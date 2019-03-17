@@ -1,6 +1,5 @@
 import serial
 import struct
-import time
 import datetime
 import rospy
 
@@ -27,13 +26,23 @@ class STMprotocol(object):
 	        0x15: "=",
 	        0x16: "=",
 	        0x17: "=",
-	        0x18: "="
+	        0x18: "=",
+            0x19: "=",
+            0x20: "=",
+            0x21: "=B",
+            0x22: "=",
+            0x23: "=",
+            0x30: "=B",
+            0x31: "=",
+            0x32: "=B",
+            0x33: "=B",
+	        0x34: "=B"
         }
 
         self.unpack_format = {
             0x01: "=cccc",
             0x07: "=fff",
-            0x08: "=ccc",
+            0x08: "=cc",
             0x09: "=fff",
             0x0e: "=cc",
             0x0f: "=fff",
@@ -42,12 +51,22 @@ class STMprotocol(object):
             0x12: "=cc",
             0x13: "=cc",
             0x14: "=cc",
-	        0x15: "=cc",
-	        0x16: "=cc",
-	        0x17: "=cc",
-	        0x18: "=cc"
+            0x15: "=cc",
+            0x16: "=cc",
+            0x17: "=cc",
+            0x18: "=cc",
+            0x19: "=cc",
+            0x20: "=cc",
+            0x21: "=cc",
+            0x22: "=cc",
+            0x23: "=cc",
+            0x30: "=cc",
+            0x31: "=cc",
+            0x32: "=cc",
+            0x33: "=cc",
+	        0x34: "=cc"
         }
-        
+
         self.response_bytes = {
             0x01: 4,
             0x07: 12,
@@ -60,12 +79,22 @@ class STMprotocol(object):
             0x12: 2,
             0x13: 2,
             0x14: 2,
-	        0x15: 2,
-	        0x16: 2,
-	        0x17: 2,
-	        0x18: 2
+            0x15: 2,
+            0x16: 2,
+            0x17: 2,
+            0x18: 2,
+            0x19: 2,
+            0x20: 2,
+            0x21: 2,
+            0x22: 2,
+            0x23: 2,
+            0x30: 2,
+            0x31: 2,
+            0x32: 2,
+            0x33: 2,
+	        0x34: 2
         }
-            
+
     def send(self, cmd, args):
         self.mutex.acquire()
         successfully, values = self.send_command(cmd, args)
@@ -84,14 +113,14 @@ class STMprotocol(object):
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
             msg += parameters
         self.ser.write(msg)
-        response = self.ser.read(self.response_bytes[cmd]+1)
-        print response
+        response = self.ser.read(self.response_bytes[cmd])
+        print (response)
         if len(response) == 0:
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
         return True, values
-        
-        
+
+
     def send_command(self, cmd, args, n_repeats=5):
         for i in range(n_repeats):
             try:

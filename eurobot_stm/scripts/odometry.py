@@ -3,7 +3,6 @@ import rospy
 import geometry_msgs.msg
 import tf_conversions
 import tf2_ros
-import STM_protocol
 
 
 class Odometry():
@@ -41,10 +40,10 @@ class Odometry():
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = "secondary_robot"
         t.child_frame_id = "secondary_robot_laser"
-        t.transform.translation.x = 0#self.laser_coords[0]
-        t.transform.translation.y = 0#self.laser_coords[1]
+        t.transform.translation.x = 0
+        t.transform.translation.y = 0
         t.transform.translation.z = .4
-        q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)#self.laser_angle)
+        q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]
