@@ -94,6 +94,9 @@ class SequenceNode(ControlNode):
 
 
 class SequenceWithMemoryNode(SequenceNode):
+    """
+
+    """
     def __init__(self, children, **kwargs):
         children_with_latch = [Latch(child) for child in children]
         super(SequenceWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
@@ -150,10 +153,8 @@ class ParallelNode(ControlNode):
 
         if success_summ >= self.threshold:
             self.status = Status.SUCCESS
-            return self.status
         elif failed_summ > len(self.children) - self.threshold:
             self.status = Status.FAILED
-            return self.status
 
         if self.status == Status.FAILED or self.status == Status.SUCCESS:
             self.reset()
