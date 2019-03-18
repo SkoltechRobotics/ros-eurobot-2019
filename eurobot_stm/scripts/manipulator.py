@@ -14,8 +14,8 @@ class Manipulator(object):
         self.response_publisher = rospy.Publisher("manipulator/response", String, queue_size=10)
         rospy.Subscriber("manipulator/command", String, self.command_callback)
 
-        self.publisher = rospy.Publisher("stm_command", String, queue_size=10)
-        rospy.Subscriber("stm_response", String, self.response_callback)
+        self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
+        rospy.Subscriber("stm/response", String, self.response_callback)
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1

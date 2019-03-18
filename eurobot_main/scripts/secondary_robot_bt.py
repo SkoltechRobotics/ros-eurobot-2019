@@ -31,6 +31,9 @@ class SecondaryRobotBT():
         rospy.sleep(2)
 
 
+        start_status = bt_ros.isStartStatus("stm_client")
+
+
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
         # first
@@ -93,7 +96,7 @@ class SecondaryRobotBT():
 
         pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck, scales])
 
-        leaf = bt.SequenceNode([default_state, pucks])
+        leaf = bt.SequenceNode([start_status, default_state, pucks])
 
         self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 

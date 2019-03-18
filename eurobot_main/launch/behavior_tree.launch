@@ -4,7 +4,8 @@
     <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen"/>
 
     <rosparam file="$(find eurobot_loc)/config/main_robot_params.yaml" command="load" ns="main_robot"/>
-    <rosparam file="$(find eurobot_stm)/configs/stm.yaml" command="load" ns="main_robot"/>
+    <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="main_robot"/>
+    <rosparam file="$(find eurobot_main)/config/main_robot.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_main)/config/bt_params.yaml" command="load" ns="main_robot"/>
     <param name = "field/color" value = "orange"/>
 
@@ -16,6 +17,6 @@
         </node>
         <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
         <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="screen"/>
-        <!--node pkg="eurobot_main" name="behavior_tree" type="first_iter.py" respawn="true" output="screen"/-->
+        <node pkg="eurobot_main" name="behavior_tree" type="secondary_robot_bt.py" respawn="true" output="screen"/>
     </group>
 </launch>
