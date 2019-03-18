@@ -30,50 +30,63 @@ class CollectChaosPucks(bt.FallbackNode):
 
 
     def __init__(self, move_client, manipulator_client):
-
         super(CollectChaosPucks, self).__init__([
             bt.ConditionNode(self.is_chaos_collected_completely),
             bt.SequenceNode([
                 bt.SequenceWithMemoryNode([
                     bt.FallbackNode([
                         bt.ConditionNode(self.is_chaos_observed),
-                        self.get_chaos_observation_from_camera()  # FIXME
+                        bt.ActionNode(self.get_chaos_observation_from_camera())  # FIXME
                     ]),
-                    bt.SequenceNode([
-                        self.calculate_pucks_configuration(),
-                        self.calculate_landings()
+
+                    bt.FallbackNode([
+                        bt.ConditionNode(self.is_first_puck),
+                        bt.SequenceNodeWithMemory([
+                            bt.ActionNode(self.calculate_pucks_configuration()),
+                            bt.ActionNode(self.calculate_landings()),
+                            bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
+                            bt_ros.MoveLineToPoint(landings[0], "move_client"),
                     ]),
+
                     bt.FallbackNode([
                         bt.ConditionNode(self.is_puck_sucked),
-                        bt.SequenceNode([
+                        bt.ConditionNode(self.is_first_puck)
+                        bt.SequenceNodeWithMemory([
                             bt.FallbackNode([
                                 bt.ConditionNode(self.is_landing_approached),
                                 bt.SequenceNode([
-                                    bt.ConditionNode(self.is_trajectory_collision_free),
-                                    bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
-                                    bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
+                                    # bt.ConditionNode(self.is_trajectory_collision_free),
+  # approach_nearest_landing
                                 ])
                             ]),
                             bt_ros.StartCollectGround("manipulator_client")  # self.start_suck()
                         ])
                     ]),
                     bt.FallbackNode([
-                        bt.ConditionNode(self.is_safe_away_from_other_pucks),
+                        bt.ConditionNode(self.is_safe_away_from_other_pucks_to_suck),
                         bt.SequenceNode([
-                            bt.ConditionNode(self.is_trajectory_collision_free),
+                            # bt.ConditionNode(self.is_trajectory_collision_free),
                             bt_ros.MoveLineToPoint(drive_back_point, "move_client")  # self.drive_back()
                         ])
                     ]),
+
                     bt.ParallelNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.SequenceNode([
-                            self.calculate_pucks_configuration(),
-                            self.calculate_landings()
-                        ]),
-                        bt.SequenceNode([
-                            bt.ConditionNode(self.is_trajectory_collision_free),
-                            bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
-                            bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
+
+                        bt.FallbackNodeWithMemory([
+                            bt.ConditionNode(self.is_last_puck),
+
+                            bt.SequenceNode([
+
+                                # bt.ConditionNode(self.is_trajectory_collision_free),
+
+                                bt.SequenceNode([
+                                    bt.ActionNode(self.calculate_pucks_configuration()),
+                                    bt.ActionNode(self.calculate_landings())
+                                ]),
+                                bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
+                                bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
+                            ])
                         ])
                     ], threshold=3),  # FIXME
                 ]),

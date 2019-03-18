@@ -42,8 +42,8 @@ class ActionClientNode(bt.SequenceNode):
         self.cmd = bt.BTVariable(cmd)
         self.cmd_id = bt.BTVariable()
 
-        self.start_move_node = bt.Latch(bt.ActionNode(self.start_action))
-        bt.SequenceNode.__init__(self, [self.start_move_node, bt.ConditionNode(self.action_status)], **kwargs)
+        self.start_node = bt.Latch(bt.ActionNode(self.start_action))
+        bt.SequenceNode.__init__(self, [self.start_node, bt.ConditionNode(self.action_status)], **kwargs)
 
     def start_action(self): 
         """
@@ -64,14 +64,39 @@ class ActionClientNode(bt.SequenceNode):
             return bt.Status.FAILED
 
     def reset(self):
-        self.start_move_node.reset()
+        self.start_node.reset()
 
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
-class isStartStatus(ActionClientNode):
+class STMClientNode(bt.SequenceNode):
     def __init__(self, action_client_id):
-        cmd = ""
+        self.action_client_id = action_client_id
+        self.cmd = bt.BTVariable(cmd)
+        self.cmd_id = bt.BTVariable()
+
+
+        self.start_node = bt.ActionNode(self.send_command)
+        bt.FallbackNode.__init__(self, [bt.ConditionNode(self.action_status), self.start_node], **kwargs)
+
+    def send_command(self): 
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+    def action_status(self):
+        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
+        if status == "0":
+            return bt.Status.RUNNING
+        elif status == "1":
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.FAILED
+
+    def reset(self):
+        self.start_node.reset()
+
+    def log(self, level, prefix=""):
+        bt.BTNode.log(self, level, prefix)
+
 
 class SetToDefaultState(ActionClientNode):
     def __init__(self, action_client_id):

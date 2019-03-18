@@ -90,7 +90,9 @@ class SequenceNode(ControlNode):
         return self.status
 
     def reset(self):
-        pass
+        for child in self.children:
+            # if isinstance(child, Latch):
+            child.reset()
 
 
 class SequenceWithMemoryNode(SequenceNode):
@@ -122,7 +124,9 @@ class FallbackNode(ControlNode):
         return self.status
 
     def reset(self):
-        pass
+        for child in self.children:
+            # if isinstance(child, Latch):
+            child.reset()
 
 
 class FallbackWithMemoryNode(FallbackNode):

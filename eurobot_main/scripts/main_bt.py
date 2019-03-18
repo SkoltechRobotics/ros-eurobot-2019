@@ -36,7 +36,7 @@ class MainRobotBT:
         """
         cmd = 0x03
         message = 'is_cord_removed' + str(self.id_command) + str(cmd)
-        self.stm_command_publisher.publish()  # FIXME
+        self.stm_command_publisher.publish(message)  # FIXME
         rospy.sleep(0.1)
         if self.last_response_id == ("is_cord_removed-" + str(self.id_command)):
             if self.last_response_args == 1:
