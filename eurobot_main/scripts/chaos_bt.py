@@ -2,8 +2,16 @@
 import rospy
 import behavior_tree as bt
 import bt_ros
-import numpy as np
 from std_msgs.msg import String
+from visualization_msgs.msg import MarkerArray
+
+import tf2_ros
+import numpy as np
+from tf.transformations import euler_from_quaternion
+from threading import Lock
+from manipulator import Manipulator
+from tactics_math import *
+from core_functions import cvt_local2global
 
 # FIXME change to if zone == "orange" then
 red_cell_puck = rospy.get_param("red_cell_puck")
@@ -18,6 +26,8 @@ class CollectChaosPucks(bt.FallbackNode):
         self.pucks = bt.BTVariable([])
         self.is_observed = bt.BTVariable(False)
 
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+
         # Init useful child nodes
         self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", move_client, name="move_to_waypoint")
         self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", manipulator_client, name="move_to_waypoint")
@@ -29,14 +39,13 @@ class CollectChaosPucks(bt.FallbackNode):
             bt.SequenceNode([
                 bt.SequenceWithMemoryNode([
                     bt.FallbackNode([
-                        ,
                         bt.ActionNode(self.get_chaos_observation_from_camera)  # FIXME
                     ]),
                     bt.ConditionNode(self.is_chaos_observed), # return RUNNING when not observed
 
-                    bt.FallbackNodeWithMemory([
+                    bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_not_first_puck),
-                        bt.SequenceNodeWithMemory([
+                        bt.SequenceWithMemoryNode([
                             bt.ActionNode(self.calculate_pucks_configuration),
                             bt.ActionNode(self.calculate_landings),
                             bt_ros.MoveLineToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
@@ -46,7 +55,7 @@ class CollectChaosPucks(bt.FallbackNode):
 
                     bt_ros.StartCollectGround("manipulator_client"),  # self.start_suck()
 
-                    bt.FallbackNodeWithMemory([
+                    bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_safe_away_from_other_pucks_to_suck),
                         bt.SequenceNode([
                             bt_ros.MoveLineToPoint(drive_back_point, "move_client")  # self.drive_back()
@@ -56,10 +65,10 @@ class CollectChaosPucks(bt.FallbackNode):
                     bt.ParallelNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
 
-                        bt.FallbackNodeWithMemory([
+                        bt.FallbackWithMemoryNode([
                             bt.ConditionNode(self.is_last_puck),
 
-                            bt.SequenceNodeWithMemory([
+                            bt.SequenceWithMemoryNode([
                                 bt.ActionNode(self.calculate_pucks_configuration),
                                 bt.ActionNode(self.calculate_landings)
                                 bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
@@ -73,10 +82,10 @@ class CollectChaosPucks(bt.FallbackNode):
         ])
 
     def pucks_callback(self, data):
-        self.pucks.set(data)
+        self.pucks.set(data)  # Action
         self.is_observed.set(True)
 
-    def is_chaos_observed(self):
+    def is_chaos_observed(self):  # Condition
         if self.is_observed.get():
             return bt.Status.SUCCESS
         else:
