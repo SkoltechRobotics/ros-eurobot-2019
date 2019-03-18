@@ -198,7 +198,8 @@ class ActionNode(BTNode):
         super(ActionNode, self).__init__(**kwargs)
 
     def tick(self):
-        self.function()
+        ret = self.function()
+        assert ret is None
         return Status.SUCCESS
 
 
@@ -210,6 +211,7 @@ class ConditionNode(BTNode):
 
     def tick(self):
         self.status = self.function()
+        assert isinstance(self.status, Status)
         return self.status
 
 
