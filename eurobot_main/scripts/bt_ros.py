@@ -4,9 +4,10 @@ import behavior_tree as bt
 
 
 class ActionClient(object):
-    cmd_id = 0
+    
 
     def __init__(self, cmd_publisher):
+        self.cmd_id = 0
         self.cmd_publisher = cmd_publisher
         self.cmd_statuses = {}
         self.mutex = threading.Lock()
@@ -16,8 +17,13 @@ class ActionClient(object):
         data_splitted = data.data.split()
         cmd_id = data_splitted[0]
         status = data_splitted[1]
+        print ("ID", cmd_id)
+        print ("STATUS FROM RESPONSE CALLBACK=", status)
+        print ("keys",self.cmd_statuses.keys())
         if cmd_id in self.cmd_statuses.keys():
+            print ("AS_GFAS_GLAS+_GLASG_A+_SGLAS+_GLA+_SGLASGASGAS+_GLAS+_GAS+_G_+")
             self.cmd_statuses[cmd_id] = status
+        print ("self.cmd_statuses.keys()",self.cmd_statuses.keys())
         self.mutex.release()
 
     def set_cmd(self, cmd, cmd_id=None):
@@ -75,7 +81,6 @@ class STMClientNode(bt.SequenceNode):
         self.cmd = bt.BTVariable(cmd)
         self.cmd_id = bt.BTVariable()
 
-
         self.start_node = bt.ActionNode(self.send_command)
         bt.SequenceNode.__init__(self, [self.start_node, bt.ConditionNode(self.action_status)], **kwargs)
 
@@ -98,15 +103,19 @@ class isStartStatus(STMClientNode):
         super(isStartStatus, self).__init__(cmd, action_client_id)
 
     def action_status(self):
-        if self.counter == 5:
-            return bt.Status.SUCCESS
-        else :
-            return bt.Status.RUNNING
         status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
+        print ("STATUS=", status)
         if status == "0":
             self.counter = 0
         elif status == "1":
             self.counter += 1
+
+        if self.counter == 5:
+            return bt.Status.SUCCESS
+        else :
+            return bt.Status.RUNNING
+
+        
 
 
 

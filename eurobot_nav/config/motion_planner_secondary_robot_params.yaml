@@ -1,4 +1,4 @@
-robot_name: "secondary_robot"
+robot_name: "main_robot"
 velocity_vector: [0.6, 0.6, 1.7]
 num_points_in_path: 100
 robot_radius: 0.1
