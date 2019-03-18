@@ -69,8 +69,8 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
-class STMClientNode(bt.SequenceNode):
-    def __init__(self, action_client_id):
+class STMClientNode(bt.FallbackNode):
+    def __init__(self, cmd, action_client_id, **kwargs):
         self.action_client_id = action_client_id
         self.cmd = bt.BTVariable(cmd)
         self.cmd_id = bt.BTVariable()
@@ -83,19 +83,31 @@ class STMClientNode(bt.SequenceNode):
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
 
     def action_status(self):
-        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
-        if status == "0":
-            return bt.Status.RUNNING
-        elif status == "1":
-            return bt.Status.SUCCESS
-        else:
-            return bt.Status.FAILED
+        pass
 
     def reset(self):
         self.start_node.reset()
 
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
+
+class isStartStatus(STMClientNode):
+    def __init__(self, action_client_id):
+        self.counter = 0
+        cmd = "3"
+        super(isStartStatus, self).__init__(cmd, action_client_id)
+
+    def action_status(self):
+        if self.counter == 5:
+            return bt.Status.SUCCESS
+        else :
+            return bt.Status.RUNNING
+        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
+        if status == "0":
+            self.counter = 0
+        elif status == "1":
+            self.counter += 1
+
 
 
 class SetToDefaultState(ActionClientNode):

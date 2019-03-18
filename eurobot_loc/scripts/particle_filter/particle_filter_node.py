@@ -34,9 +34,9 @@ class PFNode(object):
     # noinspection PyTypeChecker
     def __init__(self):
         # Init params
-        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
         self.beacons = []
         self.robot_name = rospy.get_param("robot_name")
+        rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         self.color = rospy.get_param("start_side")
         if self.color == "purple":
             beacons = PURPLE_BEACONS
@@ -191,10 +191,10 @@ class PFNode(object):
 
     def callback_frame(self, data):
         try:
-            if data.transforms[0].header.frame_id == "secondary_robot_odom":
+            if data.transforms[0].header.frame_id == "%s_odom"%self.robot_name:
                 self.prev_lidar_odom_time = self.lidar_odom_time
                 self.lidar_odom_time = data.transforms[0].header.stamp
-                odom = self.tf_buffer.lookup_transform("secondary_robot_odom", "secondary_robot", self.lidar_odom_time)
+                odom = self.tf_buffer.lookup_transform("%s_odom"%self.robot_name, self.robot_name, self.lidar_odom_time)
                 robot_odom_point = self.tf_to_coords(odom)
                 self.prev_lidar_odom_point_odom = self.lidar_odom_point_odom.copy()
                 self.lidar_odom_point_odom = robot_odom_point

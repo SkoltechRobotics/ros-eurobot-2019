@@ -6,7 +6,7 @@ start_yellow: [2.880, 0.525, 3.14]
 lidar_x: -0.04
 lidar_y: -0.06
 lidar_a: 0
-
+robot_name: "main_robot"
 start_side: "yellow"
 
 beacons_radius: 0.048
