@@ -14,8 +14,8 @@ ODOM_RATE = rospy.get_param("ODOM_RATE")
 class STM():
     def __init__(self, serial_port, baudrate=115200):
         rospy.init_node('stm_node', anonymous=True)
-        rospy.Subscriber("stm_command", String, self.stm_command_callback)
-        self.response = rospy.Publisher("stm_response", String, queue_size=50)
+        rospy.Subscriber("stm/command", String, self.stm_command_callback)
+        self.response = rospy.Publisher("stm/response", String, queue_size=50)
 
         self.stm_protocol = STMprotocol(serial_port, baudrate)
         self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
@@ -23,7 +23,7 @@ class STM():
     def stm_command_callback(self, data):
         id, cmd, args = self.parse_data(data)
         successfully, values = self.stm_protocol.send(cmd, args)
-        st = "".join(values)
+        st = "".join(str(values))
         response = str(id) + " " + st
         print ("RESPONSE=", values)
         self.response.publish(response)

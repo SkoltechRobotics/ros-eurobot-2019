@@ -24,8 +24,11 @@ class SecondaryRobotBT():
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
-        rospy.sleep(2)
+        self.stm_publisher = rospy.Publisher("stm/command", String, queue_size=100)
+        self.stm_client = bt_ros.ActionClient(self.manipulator_publisher)
+        rospy.Subscriber("stm/response", String, self.manipulator_client.response_callback)
 
+        rospy.sleep(2)
 
 
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))

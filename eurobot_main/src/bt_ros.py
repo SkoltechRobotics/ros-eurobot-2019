@@ -46,6 +46,11 @@ class ActionClientNode(bt.SequenceNode):
         bt.SequenceNode.__init__(self, [self.start_move_node, bt.ConditionNode(self.action_status)], **kwargs)
 
     def start_action(self):
+        """
+        action_clients: {}
+
+        :return:
+        """
         print("Start BT Action: " + self.cmd.get())
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
 
@@ -61,46 +66,97 @@ class ActionClientNode(bt.SequenceNode):
     def reset(self):
         self.start_move_node.reset()
 
-    def log(self, level):
-        bt.BTNode.log(self, level)
+    def log(self, level, prefix=""):
+        bt.BTNode.log(self, level, prefix)
+
 
 class SetToDefaultState(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "default"
         super(SetToDefaultState, self).__init__(cmd, action_client_id)
 
+
 class SetManipulatortoWall(ActionClientNode):
     def __init__(self, action_client_id):
-        rospy.sleep(0.5)
         cmd = "manipulator_wall"
         super(SetManipulatortoWall, self).__init__(cmd, action_client_id)
+
 
 class SetManipulatortoUp(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "manipulator_up"
-        rospy.sleep(0.5)
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
+
 
 class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+
 class CompleteTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_wall"
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
 
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
         cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveLineToPoint, self).__init__(cmd, action_client_id)
 
+
 class MoveArcToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
         cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
+
+# ===========================================================
+
+
+# Commands for collecting ground pucks
+class StartCollectGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "take_ground"  # FIXME
+        super(StartCollectGround, self).__init__(cmd, action_client_id)
+
+
+class CompleteCollectGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_ground_collect"  # FIXME
+        super(CompleteCollectGround, self).__init__(cmd, action_client_id)
+
+
+# ===========================================================
+
+# TODO
+# Command to push Blunium in Accelerator
+class PushBlunium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "push_blunium"
+        super(PushBlunium, self).__init__(cmd, action_client_id)
+
+
+# Command to unload in Accelerator
+class UnloadAccelerator(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_accelerator"
+        super(UnloadAccelerator, self).__init__(cmd, action_client_id)
+
+
+# Command to grab Goldenium
+class GrabGoldenium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "grab_goldenium"
+        super(GrabGoldenium, self).__init__(cmd, action_client_id)
+
+
+# Command to unload Goldenium on Scales
+class UnloadGoldenium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_goldenium_on_scales"
+        super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
 
 class MoveWaypoints(bt.FallbackNode):

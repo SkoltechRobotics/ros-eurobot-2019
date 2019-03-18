@@ -20,13 +20,16 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 8 - vels
 14 - pos
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 14 0 0 0'" 
+
+# to ride by odometry
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
+
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
 
 
 ssh odroid@192.168.88.239
-ssh odroid@192.168.88.242
 
 roscd eurobot_nav
 
@@ -66,20 +69,46 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 0.45 3.1
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57'"
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
-
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
+rosrun eurobot_tactics imitate_cam.py -n 4
 
 rosrun rqt_graph rqt_graph
 
+to puck near red field SMALL
+rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.6 0.45 3.14'"
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x30'"
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x14'"
 
-WIRELESS PART SETUP
+roslaunch eurobot_stm STM_node.launch
+
+rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_accelerator'"
+
+
+# WIRELESS PART SETUP
 ---------------
 ifconfig
 
+in /etc/network$ vim interfaces
+
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto lo
+iface lo inet loopback
+auto wlan0
+auto eth0
+#allow-hotplug eth0
+iface eth0 inet static
+        address 192.168.0.15
+        netmask 255.255.255.0
 
 
 
-GIT
+
+
+
+
+# GIT
 ---------------
 http://rogerdudler.github.io/git-guide/
 http://365git.tumblr.com/post/504140728/fast-forward-merge
@@ -132,6 +161,7 @@ git config --global http.sslverify false
 
 copy file or folder from other branch
 git checkout branchname path/to/file/file.py
+git checkout collect_chaos_pucks eurobot_tactics
 
 
 ## Team
@@ -139,7 +169,7 @@ git checkout branchname path/to/file/file.py
 
 
 
-FILESYSTEM
+# FILESYSTEM
 --------------
 transfer a file using sftp in UNIX
 
@@ -152,6 +182,12 @@ cd catkin_ws/src/ros-eurobot-2018/
 rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and files
 
 chmod +x "filename"
+
+sudo pip install --target=/usr/local/lib/python2.7/dist-packages sympy
+sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages sympy
+
+
+
 
 
 # make backup
@@ -185,7 +221,7 @@ myuser ALL=(ALL) NOPASSWD:ALL
 
 
 
-ROS WORKSPACE:
+# ROS WORKSPACE:
 --------------
 
 catkin workspace
@@ -194,6 +230,7 @@ http://wiki.ros.org/catkin/workspaces
 Creating a ROS Package
 http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
+http://wiki.ros.org/ROS/NetworkSetup
 
 
 # create new node
@@ -207,6 +244,13 @@ cd ros-eurobot-2019
 mkdir scripts
 
 vim /etc/hosts 
+export PYTHONPATH="${PYTHONPATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs"
+export PATH="${PATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/scripts"
+
+export PYTHONPATH="${PYTHONPATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/libs"
+export PATH="${PATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/scripts"
+/home/odroid/catkin_ws/src/ros-eurobot-2019/libs
+
 
 # Create new workspace
 http://wiki.ros.org/catkin/Tutorials/create_a_workspace
@@ -225,6 +269,9 @@ In the header of each file we need to state which env to use:
 #!/usr/bin/env python
 
 
+
+# Usefull shortcuts
+Ctrl Alt 9 / 3 / 6 / 7 for sticking windows to different screen corners
 
 
 
@@ -268,8 +315,4 @@ GOALS
 # Подпереть атом граблей
 # Выключить насос
 
-
-Alexander Sokolovskiy (MS1), Sёma Lykhin (MS1), Batyrzhan Alikhanov (MS1), Nikita Gorbadey (MS1), Juan Heredia (MS1), Edgar Kaziakhmedov (MS1), Anton Egorov (MS1), Egor Pristanskiy (BS1), Alexey Kashapov (MS1), Nikolay Zherdev (MS1)
-
-Александр Соколовский, Семен Лыхин, Батыржан Алиханов, Никита Горбадей, Хуан Хередиа, Эдгар Казиахмедов, Антон Егоров, Егор Пристанский, Алексей Кашапов, Николай Жердев
 
