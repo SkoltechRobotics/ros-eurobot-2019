@@ -69,7 +69,7 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
-class STMClientNode(bt.FallbackNode):
+class STMClientNode(bt.SequenceNode):
     def __init__(self, cmd, action_client_id, **kwargs):
         self.action_client_id = action_client_id
         self.cmd = bt.BTVariable(cmd)
@@ -77,7 +77,7 @@ class STMClientNode(bt.FallbackNode):
 
 
         self.start_node = bt.ActionNode(self.send_command)
-        bt.FallbackNode.__init__(self, [bt.ConditionNode(self.action_status), self.start_node], **kwargs)
+        bt.SequenceNode.__init__(self, [self.start_node, bt.ConditionNode(self.action_status)], **kwargs)
 
     def send_command(self): 
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))

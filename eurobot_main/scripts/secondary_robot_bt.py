@@ -98,7 +98,7 @@ class SecondaryRobotBT():
 
         leaf = bt.SequenceNode([start_status, default_state, pucks])
 
-        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client, "stm_client": self.stm_client})
 
         # self.collect_1_puck = bt.SequenceNode([])
 
