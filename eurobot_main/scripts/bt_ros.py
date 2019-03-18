@@ -45,7 +45,7 @@ class ActionClientNode(bt.SequenceNode):
         self.start_move_node = bt.Latch(bt.ActionNode(self.start_action))
         bt.SequenceNode.__init__(self, [self.start_move_node, bt.ConditionNode(self.action_status)], **kwargs)
 
-    def start_action(self):
+    def start_action(self): 
         """
         action_clients: {}
 
@@ -69,6 +69,9 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
+class isStartStatus(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = ""
 
 class SetToDefaultState(ActionClientNode):
     def __init__(self, action_client_id):
