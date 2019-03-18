@@ -161,6 +161,7 @@ git config --global http.sslverify false
 
 copy file or folder from other branch
 git checkout branchname path/to/file/file.py
+git checkout collect_chaos_pucks eurobot_tactics
 
 
 ## Team

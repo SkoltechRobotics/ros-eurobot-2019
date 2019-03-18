@@ -37,7 +37,7 @@ class CollectChaosPucks(bt.FallbackNode):
                 bt.SequenceWithMemoryNode([
                     bt.FallbackNode([
                         bt.ConditionNode(self.is_chaos_observed),
-                        self.get_chaos_observation_from_camera()
+                        self.get_chaos_observation_from_camera()  # FIXME
                     ]),
                     bt.SequenceNode([
                         self.calculate_pucks_configuration(),
@@ -50,30 +50,30 @@ class CollectChaosPucks(bt.FallbackNode):
                                 bt.ConditionNode(self.is_landing_approached),
                                 bt.SequenceNode([
                                     bt.ConditionNode(self.is_trajectory_collision_free),
-                                    self.approach_nearest_prelanding(),
-                                    self.approach_nearest_landing(),
+                                    bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
+                                    bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
                                 ])
                             ]),
-                            self.start_suck()
+                            bt_ros.StartCollectGround("manipulator_client")  # self.start_suck()
                         ])
                     ]),
                     bt.FallbackNode([
                         bt.ConditionNode(self.is_safe_away_from_other_pucks),
                         bt.SequenceNode([
                             bt.ConditionNode(self.is_trajectory_collision_free),
-                            self.drive_back()
+                            bt_ros.MoveLineToPoint(drive_back_point, "move_client")  # self.drive_back()
                         ])
                     ]),
                     bt.ParallelNode([
-                        self.finish_suck(),
+                        bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.SequenceNode([
                             self.calculate_pucks_configuration(),
                             self.calculate_landings()
                         ]),
                         bt.SequenceNode([
                             bt.ConditionNode(self.is_trajectory_collision_free),
-                            self.approach_nearest_prelanding(),
-                            self.approach_nearest_landing(),
+                            bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
+                            bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
                         ])
                     ], threshold=3),  # FIXME
                 ]),
@@ -85,7 +85,8 @@ class CollectChaosPucks(bt.FallbackNode):
 
 # CollectChaos = CollectChaosPucks(move_client, manipulator_client)
 
-
+bt_ros.MoveArcToPoint([0.99, 1.34, 1.57], "move_client")  # FIXME
+bt_ros.MoveLineToPoint([0.23, 0.44, 0], "move_client")  # FIXME
 
 class MainRobotBT:
     def __init__(self):
@@ -144,11 +145,6 @@ class MainRobotBT:
         print("============== BT LOG ================")
         self.bt.log(0)
 
-    def is_1_puck_close(self):
-        pass
-
-    def go_to_1st_puck(self):
-        pass
 
 
 if __name__ == '__main__':

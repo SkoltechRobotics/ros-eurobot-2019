@@ -3,17 +3,18 @@
     <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
     <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen"/>
 
-    <rosparam file="$(find eurobot_loc)/config/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_loc)/config/main_robot_params.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_stm)/configs/stm.yaml" command="load" ns="secondary_robot"/>
+    <rosparam file="$(find eurobot_tactics)/config/tactics_main_robot_params.yaml" command="load" ns="main_robot"/>
 
     <param name = "field/color" value = "orange"/>
 
-    <group ns = "secondary_robot">
+    <group ns = "main_robot">
         <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="log" respawn="true"/>
-        <node pkg="urg_node" name="lidar_node" type="urg_node" args="_ip_address:=192.168.0.13" respawn="true" output="screen">
-            <param name="frame_id" value="/secondary_robot_laser"/>
+        <node pkg="urg_node" name="lidar_node" type="urg_node" args="_ip_address:=192.168.0.10" respawn="true" output="screen">
+            <param name="frame_id" value="/main_robot_laser"/>
         </node>
-        <node pkg="eurobot_loc" name="particle_f1ilter_node" type="particle_filter_node.py" respawn="true" output="log"/>
+        <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
         <node pkg="eurobot_nav" name="motion_planner_node" type="motion_planner_node.py" respawn="true" output="log"/>
         <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node.py" respawn="true" output="screen"/>
     </group>

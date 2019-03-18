@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 import rospy
-import numpy as np
 import tf2_ros
 from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray
 from std_msgs.msg import String
 from threading import Lock
-from manipulator import Manipulator
 from tactics_math import *
+
 from core_functions import cvt_local2global
 
-# from geometry_msgs.msg import Twist
-# from std_msgs.msg import Int32MultiArray
-
-
 """
-
-THIS VERSION CORRECTLY PASSES ALL TESTS USING and COLLECTs ONE BLUE PUCK LAST
+THIS VERSION ACCOUNTS BLUE PUCK AND CALCULATES ANGLES WITH MY ALGORITHM   BUT   there are PROBLEMS WITH SOME TESTS
 
 
 This algorithm knows nothing about obstacles and etc, it just generates sorted list of options.
@@ -30,7 +24,7 @@ TODO:
     - Alexey need to parse particular local zones
     - add check if there are more than 4 pucks in zone
     - add approach_immidiately flag
-    - if BT interrupts procedure of collecting pucks, will it calculate landings again?
+
 4 in chaos zone
 3 periodic table
 6 wall
@@ -53,46 +47,36 @@ Inside:
 
 class TacticsNode:
     def __init__(self):
-        rospy.init_node('tactics_node', anonymous=True)
+        rospy.init_node('TacticsNode', anonymous=True)
 
         # TF
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
-
-        self.robot_name = rospy.get_param("robot_name")  # "secondary_robot"
+        self.robot_name = "secondary_robot"
 
         self.critical_angle = np.pi * 2/3
-        # self.critical_angle = rospy.get_param("critical_angle")
+        self.approach_dist = 0.11  # meters, distance from robot to puck where robot will try to grab it
+        self.approach_vec = np.array([-0.11, 0, 0])
+        # self.approach_vec = np.array([-0.153, 0, 0])  # big robot
+        self.drive_back_dist = np.array([-0.07, 0, 0])
 
-        self.red_zone_coords = np.array([0.3, 0.6, -np.pi/3])
-        self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_dist = np.array(self.approach_dist)
-        
-        self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
-        self.drive_back_dist = np.array(self.drive_back_dist)
-
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
-        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
-
-        self.coords_threshold = rospy.get_param("coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
-
-        self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
-        self.scale_factor = np.array(self.scale_factor)
-        self.RATE = rospy.get_param("RATE")
+        # self.coords_threshold = 0.01  # meters, this is variance of detecting pucks coords using camera, used in update
+        self.scale_factor = 10  # used in calculating outer bissectrisa for hull's angles
+        self.RATE = 10
 
         self.robot_coords = np.zeros(3)
         self.active_goal = None
         self.goal_landing = None
-        self.pucks_inside = 0  # to preliminary calculate our score
-        self.pucks_unloaded = 0
+        self.atoms_collected = 0  # to preliminary calculate our score
 
         self.sorted_chaos_landings = np.array([])
-        self.known_chaos_pucks = np.array([])  # (x, y, id, r, g, b)
+        self.known_chaos_pucks = np.array([])  # (id, x, y)
+        self.known_wall6_pucks = np.array([])
+        self.wall_six_landing = np.array([])
 
         self.operating_state = 'waiting for command'
         self.is_finished = False
-        self.is_puck_sucked = False
         self.is_puck_collected = False
 
         self.cmd_id = None
@@ -107,23 +91,15 @@ class TacticsNode:
 
         self.timer = None
 
-        self.manipulator = Manipulator()
-
-        if self.robot_name == "main_robot":
-            if not self.manipulator.calibrate_big():
-                return
-
-        if self.robot_name == "secondary_robot":
-            if not self.manipulator.calibrate_small():
-                return
-            rospy.sleep(2)
-
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/pucks", MarkerArray, self.chaos_pucks_coords_callback, queue_size=1)
+        # FIXME
+        #  add /secondary_robot when in simulator, remove when on robot!!!!!!!!!!!
+
+        rospy.Subscriber("/pucks", MarkerArray, self.pucks_coords_callback, queue_size=1)
         rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
         rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
-    def chaos_pucks_coords_callback(self, data):
+    def pucks_coords_callback(self, data):  # FIXME this is for chaos zone and landings for CHAOS zone are sorted !!!!!
         """
         implement comparing with threshold,
         if newly received coord differs from old known one less than threshold level,
@@ -140,17 +116,21 @@ class TacticsNode:
         self.mutex.acquire()
 
         if len(self.known_chaos_pucks) == 0:
+
+            # FIXME IDs are not guaranteed to be the same from frame to frame, add id of zone
             new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
-            # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+            # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3
+            new_observation_pucks = np.array(new_observation_pucks)
+
             print('TN -- new_observation_pucks')
             print(new_observation_pucks)
-
             try:
-                self.known_chaos_pucks = np.array(new_observation_pucks)
+                self.known_chaos_pucks = new_observation_pucks
                 print("known")
                 print(self.known_chaos_pucks)
-            except Exception:  # FIXME
+            except Exception:
                 print("list index out of range - no visible pucks on the field ")
+
         # else:
         #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
 
@@ -182,6 +162,7 @@ class TacticsNode:
 
     # noinspection PyUnusedLocal
     def timer_callback(self, event):
+
         """
         When BT publishes command something like "collect atoms in Chaos Zone", we start calculating and updating configuration of pucks
         :param event: cmd_type can be one of these:
@@ -194,27 +175,11 @@ class TacticsNode:
         :return:
         """
 
-        if self.cmd_type == "collect_chaos":
-            if len(self.known_chaos_pucks) > 0:
-                # print("inside timer: collect chaos and pucks > 0")
-                self.collect_chaos()
-            else:
-                print("NO VISIBLE PUCKS ON THE FIELD")
-                self.completely_stop()
-
-        elif self.cmd_type == "collect_chaos_and_unload":
-            if len(self.known_chaos_pucks) > 0:
-                self.collect_chaos()
-            elif self.pucks_inside == 4:
-                self.unload_pucks_in_red()
-            elif self.pucks_inside == 0 and self.pucks_unloaded == 4:
-                print("pucks unloaded")
-                self.completely_stop()
+        if self.cmd_type == "collect_chaos" and len(self.known_chaos_pucks) > 0:
+            self.collect_chaos()
 
         else:
-            # print("cmd_type is ", self.cmd_type)
-            print("nothing was commanded")
-            self.completely_stop()
+            self.stop_collecting()
 
     def collect_chaos(self):
         """
@@ -227,22 +192,20 @@ class TacticsNode:
         we append id of that puck to list of collected pucks and remove it from list of pucks to be collected.
         :return:
         """
+
         if self.operating_state == 'waiting for command':
             rospy.loginfo(self.operating_state)
             self.operating_state = 'approaching nearest PRElanding'
             rospy.loginfo(self.operating_state)
 
-            while not self.update_coords():
-                rospy.sleep(0.05)
+            self.known_chaos_pucks = self.calculate_pucks_configuration()  # now [[x1, y1], ...]. Should be [(0.95, 1.1, 3, 0, 0, 1), ...]
+            self.sorted_chaos_landings = self.calculate_landings(self.known_chaos_pucks)
 
-            self.known_chaos_pucks = calculate_pucks_configuration(self.robot_coords, self.known_chaos_pucks, self.critical_angle)  # now [(0.95, 1.1, 3, 0, 0, 1), ...]
-            self.sorted_chaos_landings = calculate_landings(self.robot_coords, self.known_chaos_pucks, self.approach_vec, self.scale_factor, self.approach_dist)
             self.goal_landing = self.sorted_chaos_landings[0]
-
-            prelanding = cvt_local2global(self.drive_back_vec, self.goal_landing)
+            prelanding = cvt_local2global(self.drive_back_dist, self.goal_landing)
             self.active_goal = prelanding
             self.is_finished = False
-            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_line')
+            cmd = self.compose_command(self.active_goal, cmd_id='approach_nearest_PRElanding', move_type='move_arc')
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'approaching nearest PRElanding' and self.is_finished:
@@ -259,75 +222,36 @@ class TacticsNode:
             self.move_command_publisher.publish(cmd)
 
         if self.operating_state == 'approaching nearest LANDING' and self.is_finished:
-            self.operating_state = 'sucking puck'
+            self.operating_state = 'nearest LANDING approached'
             rospy.loginfo(self.operating_state)
-            # if self.robot_name == "main_robot":
-            #    self.is_puck_sucked = self.manipulator.grab_and_suck_big()
-            if self.robot_name == "secondary_robot":
-                self.is_puck_sucked = self.manipulator.grab_and_suck_small()
-            self.is_finished = False
 
-        if self.operating_state == 'sucking puck' and self.is_puck_sucked:
-            rospy.sleep(0.5)  # FIXME
-            self.operating_state = 'driving back for safety'
-            rospy.loginfo(self.operating_state)
-            prelanding = cvt_local2global(self.drive_back_vec, self.goal_landing)
-            self.active_goal = prelanding
-            cmd = self.compose_command(self.active_goal, cmd_id='driving_back_for_safety', move_type='move_line')
-            self.move_command_publisher.publish(cmd)
-
-        if self.operating_state == 'driving back for safety' and self.is_finished:
-            self.operating_state = 'finishing collecting puck'
+        if self.operating_state == 'nearest LANDING approached':
+            self.operating_state = 'collecting puck'
             rospy.loginfo(self.operating_state)
             self.goal_landing = None
-            self.is_finished = False
-            # self.imitate_manipulator()
-            # if self.robot_name == "main_robot":
-            #     self.is_puck_collected = self.manipulator.finish_collect_big()
-            if self.robot_name == "secondary_robot":
-                self.is_puck_collected = self.manipulator.finish_collect_small()
+            self.imitate_manipulator()
 
-        if self.operating_state == 'finishing collecting puck' and self.is_puck_collected:
+        if self.operating_state == 'collecting puck' and self.is_puck_collected:
             self.operating_state = 'puck successfully collected'
             rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
-            self.pucks_inside += 1
-            # self.predicted_points += how_much_for_this_puck(self.known_chaos_pucks[0])
+            self.atoms_collected += 1
             print(" ")
             print("now delete puck", self.known_chaos_pucks[0])
             print(" ")
             self.known_chaos_pucks = np.delete(self.known_chaos_pucks, 0, axis=0)
             rospy.loginfo('TN: pucks left: ' + str(len(self.known_chaos_pucks)))
-            rospy.loginfo('TN: pucks Inside: ' + str(self.pucks_inside))
 
         if self.operating_state == 'puck successfully collected':
+            self.operating_state = 'waiting for command'
+            rospy.loginfo(self.operating_state)
             self.is_puck_collected = False
             self.active_goal = None
             self.sorted_chaos_landings = None
-            self.is_puck_sucked = False
-            self.operating_state = 'waiting for command'
-            rospy.loginfo(self.operating_state)
-
-    def unload_pucks_in_red(self):
-        if self.operating_state == "waiting for command":
-            self.operating_state = "moving to red zone"
-            rospy.loginfo(self.operating_state)
-            self.is_finished = False
-            self.active_goal = self.red_zone_coords
-            cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
-            self.move_command_publisher.publish(cmd)
-
-        if self.operating_state == "moving to red zone" and self.is_finished:
-            self.operating_state = "start unloading"
-            rospy.loginfo(self.operating_state)
-            self.is_finished = False
-            self.manipulator.release_small()
-            self.pucks_unloaded = 4
-            self.pucks_inside = 0
 
     def response_callback(self, data):
         """
         here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
-        callback_response will fire and change self.is_finished to True
+        callback_response will fire and change self.robot_reached_goal_flag to True
         :param data:
         :return:
         """
@@ -353,18 +277,57 @@ class TacticsNode:
         return command
 
     def imitate_manipulator(self):
+        # TODO read responce from step motor and when puck is inside - only than update number of collected pucks
         rospy.loginfo('TN: puck collected by imitator!!')
         self.is_puck_collected = True
 
-    def completely_stop(self):
+    def stop_collecting(self):
         self.timer.shutdown()
-        rospy.loginfo("TN -- Robot has completely stopped")
+        rospy.loginfo("TN -- Robot has stopped collecting pucks.")
         rospy.sleep(1.0 / 40)
+        print(" ")
+        print(" ")
+
+        self.active_goal = None
+        self.is_finished = True
+        self.is_puck_collected = False
+        self.sorted_chaos_landings = None  # FIXME if BT interrupts procedure of collecting pucks, will it calculate landings again?
         self.operating_state = 'waiting for command'
-        rospy.loginfo(self.operating_state)
+
+        print(self.operating_state)
         print(" ")
         print(" ")
         self.response_publisher.publish(self.cmd_id + " finished")
+
+    def calculate_pucks_configuration(self):
+        while not self.update_coords():
+            rospy.sleep(0.05)
+
+        self.known_chaos_pucks = sort_wrt_robot(self.robot_coords, self.known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
+
+        if len(self.known_chaos_pucks) >= 3:
+            is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.robot_coords, self.known_chaos_pucks, self.critical_angle)
+
+            if is_hull_safe_to_approach:  # only sharp angles
+                print("hull is SAFE to approach, sorted wrt robot")
+
+            if not is_hull_safe_to_approach:
+                self.known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
+                print("hull is not safe to approach, sorted by angle")
+
+        # when we finally sorted them, chec if one of them is blue. If so, roll it
+        if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):
+            self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
+            print("blue rolled")
+        return self.known_chaos_pucks
+
+    def calculate_landings(self, coordinates):
+        coords = coordinates[:, :2]
+        if len(coords) == 1:
+            landings = calculate_closest_landing_to_point(self.robot_coords, coords, self.approach_vec)  # Should be [(x, y, theta), ...]
+        else:
+            landings = unleash_power_of_geometry(coords, self.scale_factor, self.approach_dist)
+        return landings
 
     def update_coords(self):
         try:
