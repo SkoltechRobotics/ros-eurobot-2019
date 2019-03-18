@@ -13,6 +13,9 @@ class STMprotocol(object):
         self.ser = serial.Serial(serial_port,baudrate=baudrate, timeout = 0.01)
         self.pack_format = {
             0x01: "=cccc",
+            0x02: "=",
+            0x03: "=",
+            0x04: "=",
             0x07: "=",
             0x08: "=fff",
             0x09: "=",
@@ -36,11 +39,14 @@ class STMprotocol(object):
             0x31: "=",
             0x32: "=B",
             0x33: "=B",
-	        0x34: "=B"
+	    0x34: "=B"
         }
 
         self.unpack_format = {
             0x01: "=cccc",
+            0x02: "=cc",
+            0x03: "=B",
+            0x04: "=B",
             0x07: "=fff",
             0x08: "=cc",
             0x09: "=fff",
@@ -69,6 +75,9 @@ class STMprotocol(object):
 
         self.response_bytes = {
             0x01: 4,
+            0x02: 2,
+            0x03: 1,
+            0x04: 1,
             0x07: 12,
             0x08: 2,
             0x09: 12,
@@ -92,7 +101,7 @@ class STMprotocol(object):
             0x31: 2,
             0x32: 2,
             0x33: 2,
-	        0x34: 2
+	    0x34: 2
         }
 
     def send(self, cmd, args):

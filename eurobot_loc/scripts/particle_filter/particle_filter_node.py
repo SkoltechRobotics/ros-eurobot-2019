@@ -70,15 +70,15 @@ class PFNode(object):
         self.laser_time = rospy.Time.now()
         self.cost_function = []
         if self.color == "purple":
-            init_start = rospy.get_param("start_purple")
+            init_start = np.array(rospy.get_param("start_purple"))
         else:
-            init_start = rospy.get_param("start_yellow")
+            init_start = np.array(rospy.get_param("start_yellow"))
         buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
         angles, distances = buf_pf.get_landmarks(self.scan)
         x = distances * np.cos(angles)
         y = distances * np.sin(angles)
         landmarks = (np.array([x, y])).T
-        start_coords = find_position_triangulation(beacons, landmarks, np.array([1.5, 1, 0]))
+        start_coords = find_position_triangulation(beacons, landmarks, init_start)
         self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
         self.last_odom = np.zeros(3)
         self.alpha = rospy.get_param("alpha")

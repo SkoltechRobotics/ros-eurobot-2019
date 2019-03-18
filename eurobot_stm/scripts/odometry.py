@@ -9,7 +9,6 @@ class Odometry():
     def __init__(self, stm_protocol, rate):
         self.tf2_broad = tf2_ros.TransformBroadcaster()
         self.stm_protocol = stm_protocol
-        
         rospy.Timer(rospy.Duration(1. / rate), self.odom_callback)
         
     
@@ -33,15 +32,14 @@ class Odometry():
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]
         t.transform.rotation.w = q[3]
-
+        
         self.tf2_broad.sendTransform(t)
-
         t = geometry_msgs.msg.TransformStamped()
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = "secondary_robot"
         t.child_frame_id = "secondary_robot_laser"
-        t.transform.translation.x = 0
-        t.transform.translation.y = 0
+        t.transform.translation.x = -0.04
+        t.transform.translation.y = -0.06
         t.transform.translation.z = .4
         q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)
         t.transform.rotation.x = q[0]
