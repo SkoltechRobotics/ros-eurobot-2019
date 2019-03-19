@@ -34,9 +34,10 @@ def wrap_angle(angle):
 class MotionPlannerNode:
     def __init__(self):
         rospy.init_node("motion_planner", anonymous=True)
+        #self.robot_name = rospy.get_param("robot_name")
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("/navigation/path", Path, self.callback_path)
-        self.command_publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=1)
+        self.command_publisher = rospy.Publisher("/stm/command", String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
@@ -55,7 +56,6 @@ class MotionPlannerNode:
         self.prev_time = rospy.Time.now().to_sec()
         self.XY_GOAL_TOLERANCE = rospy.get_param("XY_GOAL_TOLERANCE")
         self.YAW_GOAL_TOLERANCE = rospy.get_param("YAW_GOAL_TOLERANCE")
-        self.robot_name = rospy.get_param("robot_name")
         self.r = rospy.get_param("robot_radius")
         self.num_points_in_path = rospy.get_param("num_points_in_path")
         self.acceleration_vector = self.velocity_vector * 2 * self.velocity_vector[2]

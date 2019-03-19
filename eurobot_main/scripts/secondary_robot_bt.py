@@ -24,8 +24,14 @@ class SecondaryRobotBT():
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
+        self.stm_publisher = rospy.Publisher("stm/command", String, queue_size=100)
+        self.stm_client = bt_ros.ActionClient(self.stm_publisher)
+        rospy.Subscriber("stm/response", String, self.manipulator_client.response_callback)
+
         rospy.sleep(2)
 
+
+        start_status = bt_ros.isStartStatus("stm_client")
 
 
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
@@ -90,9 +96,9 @@ class SecondaryRobotBT():
 
         pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck, scales])
 
-        leaf = bt.SequenceNode([default_state, pucks])
+        leaf = bt.SequenceNode([start_status, default_state, pucks])
 
-        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client, "stm_client": self.stm_client})
 
         # self.collect_1_puck = bt.SequenceNode([])
 

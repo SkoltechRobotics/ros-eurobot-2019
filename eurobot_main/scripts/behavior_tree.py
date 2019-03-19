@@ -44,7 +44,7 @@ class BTNode(object):
     def tick(self):
         return self.status
 
-    def log(self, level):
+    def log(self, level, prefix=""):
         colors = {Status.SUCCESS: "green",
                   Status.FAILED: "red",
                   Status.RUNNING: "blue",
@@ -53,7 +53,7 @@ class BTNode(object):
             name = self.__class__.__name__
         else:
             name = self.name
-        print level * "    " + name + " ---> " + colored(str(self.status), colors[self.status])
+        print prefix + level * "    " + name + " ---> " + colored(str(self.status), colors[self.status])
 
 
 class ControlNode(BTNode):
@@ -68,8 +68,8 @@ class ControlNode(BTNode):
         for child in self.children:
             child.set_parent(self)
 
-    def log(self, level):
-        super(ControlNode, self).log(level)
+    def log(self, level, prefix=""):
+        super(ControlNode, self).log(level, prefix)
         for child in self.children:
             child.log(level + 1)
 
@@ -90,7 +90,22 @@ class SequenceNode(ControlNode):
         return self.status
 
     def reset(self):
-        pass
+        for child in self.children:
+            # if isinstance(child, Latch):
+            child.reset()
+
+
+class SequenceWithMemoryNode(SequenceNode):
+    """
+
+    """
+    def __init__(self, children, **kwargs):
+        children_with_latch = [Latch(child) for child in children]
+        super(SequenceWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
+
+    def reset(self):
+        for child in self.children:
+            child.reset()
 
 
 class FallbackNode(ControlNode):
@@ -109,7 +124,19 @@ class FallbackNode(ControlNode):
         return self.status
 
     def reset(self):
-        pass
+        for child in self.children:
+            # if isinstance(child, Latch):
+            child.reset()
+
+
+class FallbackWithMemoryNode(FallbackNode):
+    def __init__(self, children, **kwargs):
+        children_with_latch = [Latch(child) for child in children]
+        super(FallbackWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
+
+    def reset(self):
+        for child in self.children:
+            child.reset()
 
 
 class ParallelNode(ControlNode):
@@ -130,10 +157,8 @@ class ParallelNode(ControlNode):
 
         if success_summ >= self.threshold:
             self.status = Status.SUCCESS
-            return self.status
         elif failed_summ > len(self.children) - self.threshold:
             self.status = Status.FAILED
-            return self.status
 
         if self.status == Status.FAILED or self.status == Status.SUCCESS:
             self.reset()
@@ -141,6 +166,7 @@ class ParallelNode(ControlNode):
 
     def reset(self):
         pass
+
 
 class Latch(ControlNode):
     def __init__(self, child, **kwargs):
@@ -157,6 +183,13 @@ class Latch(ControlNode):
     def reset(self):
         self.is_init.set(False)
 
+    def log(self, level, prefix=""):
+        colors = {True: "green",
+                  False: "red",
+                  }
+        prefix = colored("*", colors[self.is_init.get()])
+        self.children[0].log(level, prefix)
+
 
 class ActionNode(BTNode):
     def __init__(self, function, **kwargs):
@@ -165,7 +198,8 @@ class ActionNode(BTNode):
         super(ActionNode, self).__init__(**kwargs)
 
     def tick(self):
-        self.function()
+        ret = self.function()
+        assert ret is None
         return Status.SUCCESS
 
 
@@ -177,6 +211,7 @@ class ConditionNode(BTNode):
 
     def tick(self):
         self.status = self.function()
+        assert isinstance(self.status, Status)
         return self.status
 
 
@@ -195,5 +230,5 @@ class Root(BTNode):
         self.status = self.children[0].tick()
         return self.status
 
-    def log(self, level):
+    def log(self, level, prefix=""):
         self.children[0].log(0)

@@ -3,10 +3,9 @@ start_purple: [0.3, 0.6, 0]
 start_yellow: [2.880, 0.525, 3.14]
 
 # LIDAR scanner coordinates in robot frame
-lidar_x: -0.04
-lidar_y: -0.06
+lidar_x: 0
+lidar_y: 0
 lidar_a: 0
-
 beacons_radius: 0.048
 beacon_range: 0.2
 min_range: 0.05

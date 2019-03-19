@@ -14,8 +14,8 @@ class Manipulator(object):
         self.response_publisher = rospy.Publisher("manipulator/response", String, queue_size=10)
         rospy.Subscriber("manipulator/command", String, self.command_callback)
 
-        self.publisher = rospy.Publisher("stm_command", String, queue_size=10)
-        rospy.Subscriber("stm_response", String, self.response_callback)
+        self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
+        rospy.Subscriber("stm/response", String, self.response_callback)
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
@@ -24,9 +24,9 @@ class Manipulator(object):
     def command_callback(self, data):
         command = data.data.split()
         cmd_id = command[0]
-        print ("CMD_ID=", cmd_id)
+        print("CMD_ID=", cmd_id)
         cmd = command[1]
-        print ("CMD=", cmd)
+        print("CMD=", cmd)
         if cmd == "default":
             self.calibrate()
         elif cmd == "manipulator_wall":
@@ -43,12 +43,14 @@ class Manipulator(object):
             self.complete_collect_wall()
         elif cmd == "collect_ground":
             self.collect_small()
+        elif cmd == "release_accelerator":
+            self.release_accelerator()
 
         self.response_publisher.publish(cmd_id + " success")
 
     def response_callback(self, data):
         response = data.data.split()
-        print ("RESPONSE=", response)
+        print("RESPONSE=", response)
         if re.match(r"manipulator-\d", response[0]):
             self.last_response_id = response[0]
             self.last_response_args = response[1]
@@ -90,7 +92,6 @@ class Manipulator(object):
             self.send_command(21)
             self.send_command(25)
             return True
-
 
     # def calibrate_small(self):
     #     self.send_command(48)
@@ -196,7 +197,7 @@ class Manipulator(object):
     def set_manipulator_up(self):
         self.send_command(24)
         self.send_command(21)
-        
+
 
     def complete_ground_collect(self):
         if self.robot_name == "main_robot":
@@ -215,7 +216,6 @@ class Manipulator(object):
             # Release grabber
             self.send_command(22)
             self.send_command(50)
-            
             return True
 
     # def collect_wall(self):
@@ -285,7 +285,80 @@ class Manipulator(object):
 
             self.send_command(50)
             return True
+	    '''
+=======
 
+            return True
+
+    # def collect_wall(self):
+    #     if self.robot_name == "main_robot":
+    #         pass
+    #     if self.robot_name == "secondary_robot":
+    #         # Release grabber
+    #         self.send_command(22)
+    #         # Set pump to the wall
+    #         self.send_command(20)
+    #         rospy.sleep(0.5)
+    #         # Start pump
+    #         self.send_command(17)
+    #         # Set pump to the platform
+    #         self.send_command(21)
+    #         # Prop pack
+    #         self.send_command(23)
+    #         # Stop pump
+    #         self.send_command(18)
+    #         # Set pump to the wall
+    #         self.send_command(20)
+    #         # grab pack
+    #         self.send_command(24)
+    #
+    #         # Release grabber
+    #         self.send_command(22)
+    #         # Set pump to the platform
+    #         # self.send_command(21)
+    #
+    #         self.send_command(50)
+    #         return True
+
+    def start_collect_wall(self):
+        if self.robot_name == "main_robot":
+            pass
+        if self.robot_name == "secondary_robot":
+            # Release grabber
+            self.send_command(22)
+            # Set pump to the wall
+            self.send_command(20)
+            # rospy.sleep(0.5)
+            # Start pump
+            self.send_command(17)
+            return True
+
+    def complete_collect_wall(self):
+        if self.robot_name == "main_robot":
+            pass
+        if self.robot_name == "secondary_robot":
+            rospy.sleep(0.3)
+
+            # Set pump to the platform
+            self.send_command(21)
+            # Prop pack
+            self.send_command(23)
+            # Stop pump
+            self.send_command(18)
+            # Set pump to the wall
+            self.send_command(20)
+            # grab pack
+            self.send_command(24)
+
+            # Release grabber
+            self.send_command(22)
+            # Set pump to the platform
+            # self.send_command(21)
+
+            self.send_command(50)
+            return True
+>>>>>>> 064cdc9... add new commands
+	    '''
 
     def release_small(self):
         self.send_command(25)
@@ -327,7 +400,6 @@ class Manipulator(object):
         self.send_command(25)
         return True
 
-
     def release_big(self):
         self.send_command(33)
         self.send_command(34)
@@ -336,6 +408,18 @@ class Manipulator(object):
         self.send_command(52, 1)
         self.send_command(35)
         return True
+
+    def release_accelerator(self):
+        # assume that we need to move pucks 1 level up to start throwing them
+
+        # release grabber
+        self.send_command(22)
+        # make step up
+        self.send_command(51)
+        # grabber throw (up)
+        self.send_command(19)
+
+
 
 if __name__ == '__main__':
     try:
