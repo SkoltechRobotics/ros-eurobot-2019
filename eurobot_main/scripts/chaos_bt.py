@@ -107,23 +107,33 @@ class MainRobotBT(object):
     def __init__(self):
         rospy.init_node("CHAOS_BT")
 
+        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
+        rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
+
+        self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
+        self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
+
+        self.move_client = bt_ros.ActionClient(self.move_publisher)
+        self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
+
         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
         self.approach_dist = np.array(self.approach_dist)
-
-        self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
-        self.drive_back_dist = np.array(self.drive_back_dist)
-
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
-        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
+
+        # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
+        # self.drive_back_dist = np.array(self.drive_back_dist)
+        # self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
 
         # FIXME change to if zone == "orange" then
-        self.red_cell_puck = rospy.get_param("red_cell_puck")
-        self.green_cell_puck = rospy.get_param("green_cell_puck")
-        self.blue_cell_puck = rospy.get_param("blue_cell_puck")
-        self.start_zone = "purple"
 
+        self.start_zone = "purple"
         # bt.BTVariable()
         if self.start_zone == "purple":
+
+            self.red_cell_puck = rospy.get_param("red_cell_puck")
+            self.green_cell_puck = rospy.get_param("green_cell_puck")
+            self.blue_cell_puck = rospy.get_param("blue_cell_puck")
+
             self.first_puck_landing = np.array([self.red_cell_puck[0]-self.approach_dist,
                                                self.red_cell_puck[1],
                                                0])
@@ -141,15 +151,6 @@ class MainRobotBT(object):
             self.accelerator_unloading_pos = rospy.get_param("accelerator_unloading_pos")
             self.goldenium_grab_pos = rospy.get_param("goldenium_grab_pos")
             self.scales_unloading_pos = rospy.get_param("scales_unloading_pos")
-
-        self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
-        self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
-
-        self.move_client = bt_ros.ActionClient(self.move_publisher)
-        self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
-
-        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
-        rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
         rospy.sleep(2)
 
