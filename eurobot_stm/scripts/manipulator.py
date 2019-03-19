@@ -16,6 +16,7 @@ class Manipulator(object):
 
         self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
         rospy.Subscriber("stm/response", String, self.response_callback)
+
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
@@ -72,20 +73,9 @@ class Manipulator(object):
 
     def calibrate(self):
         if self.robot_name == "main_robot":
-            self.send_command(33)
-            self.send_command(48, 1)
-
-            self.send_command(50, 1)
-            self.send_command(52, 1)
-            # rospy.sleep(3)
-            self.send_command(32)
-
-            self.send_command(48, 0)
-            self.send_command(50, 0)
-
-            self.send_command(50, 0)
-            self.send_command(52, 0)
-            self.send_command(25)
+            self.send_command(48)
+            self.send_command(21)
+            self.send_command(24)
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
@@ -93,66 +83,6 @@ class Manipulator(object):
             self.send_command(25)
             return True
 
-    # def calibrate_small(self):
-    #     self.send_command(48)
-    #     self.send_command(20)
-    #     self.send_command(25)
-    #     return True
-    #
-    #
-    # def calibrate_big(self):
-    #     # 1) collector move left
-    #     # 2) start calibration right stepper
-    #     # 3) make step down by right stepper
-    #     # 4) collector move right
-    #     # 5) start calibration left stepper
-    #     # 6) make step down by left stepper
-    #     # 7) make step down by left stepper
-    #     # 9) collector move default
-    #     self.send_command(33)
-    #     self.send_command(48, 1)
-    #
-    #     self.send_command(50, 1)
-    #     self.send_command(52, 1)
-    #     # rospy.sleep(3)
-    #     self.send_command(32)
-    #
-    #     self.send_command(48, 0)
-    #     self.send_command(50, 0)
-    #
-    #     self.send_command(50, 0)
-    #     self.send_command(52, 0)
-    #     self.send_command(25)
-    #     return True
-
-    def collect_big(self, num):
-        # Release grabber
-        self.send_command(22)
-        # Collector move default
-        self.send_command(25)
-        # Set pump to the wall
-        self.send_command(20)
-        # Set pump to the ground
-        self.send_command(19)
-        # Start pump
-        self.send_command(17)
-        # Set pump to the platform
-        self.send_command(21)
-        # Prop pack
-        self.send_command(23)
-        # Stop pump
-        self.send_command(18)
-        # Set pump to the wall
-        self.send_command(20)
-        # Grab pack
-        self.send_command(24)
-        # Collector move right/left
-        self.send_command(32)
-        # Make step down left / right collector
-        self.send_command(50, 1)
-        # Release grabber
-        self.send_command(22)
-        return True
 
     # def collect_ground_secondary(self):
     #     # Release grabber
