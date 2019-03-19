@@ -34,7 +34,7 @@ def wrap_angle(angle):
 class MotionPlannerNode:
     def __init__(self):
         rospy.init_node("motion_planner", anonymous=True)
-        self.robot_name = rospy.get_param("robot_name")
+        #self.robot_name = rospy.get_param("robot_name")
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("/navigation/path", Path, self.callback_path)
         self.command_publisher = rospy.Publisher("/main_robot/stm/command", String, queue_size=1)
