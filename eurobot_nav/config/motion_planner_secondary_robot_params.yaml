@@ -1,5 +1,5 @@
 robot_name: "secondary_robot"
-velocity_vector: [0.6, 0.6, 1.7]
+velocity_vector: [0.6, 0.6, 1.2]
 num_points_in_path: 100
 robot_radius: 0.1
 k_linear_wp: 2.5
@@ -13,7 +13,7 @@ XY_GOAL_TOLERANCE: 0.01
 YAW_GOAL_TOLERANCE: 0.007
 # maximum speed
 V_MAX: 0.5
-W_MAX: 1.7
+W_MAX: 1.5
 AV_MAX: 1
 AW_MAX: 0.8
 # acceleration at beginning of movements
