@@ -45,13 +45,13 @@ class STM():
 
 class STMstatus(object):
     def __init__(self, stm_protocol):
-        self.start_status_publisher = rospy.Publisher("stm/start_status", String, queue_size=50)
-        self.side_status_publisher = rospy.Publisher("stm/side_status", String, queue_size=50)
+        self.stm_protocol = stm_protocol
+        self.start_status_publisher = rospy.Publisher("stm/start_status", String, queue_size=1)
+        self.side_status_publisher = rospy.Publisher("stm/side_status", String, queue_size=1)
 
     def update_status(self, event):
         successfully, values = self.stm_protocol.send(0x3, args=None)
         if successfully:
-            
             self.start_status_publisher.publish(values)
 
         successfully, values = self.stm_protocol.send(0x4, args=None)

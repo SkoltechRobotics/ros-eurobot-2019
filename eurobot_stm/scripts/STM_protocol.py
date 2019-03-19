@@ -39,7 +39,7 @@ class STMprotocol(object):
             0x31: "=",
             0x32: "=B",
             0x33: "=B",
-	    0x34: "=B"
+            0x34: "=B"
         }
 
         self.unpack_format = {
@@ -70,7 +70,7 @@ class STMprotocol(object):
             0x31: "=cc",
             0x32: "=cc",
             0x33: "=cc",
-	        0x34: "=cc"
+            0x34: "=cc"
         }
 
         self.response_bytes = {
@@ -101,7 +101,7 @@ class STMprotocol(object):
             0x31: 2,
             0x32: 2,
             0x33: 2,
-	    0x34: 2
+            0x34: 2
         }
 
     def send(self, cmd, args):
@@ -116,14 +116,13 @@ class STMprotocol(object):
         self.ser.reset_output_buffer()
         self.ser.reset_input_buffer()
         # Sending command
-        print ('msg=', cmd , args)
+        print ('Sending the msg=', cmd , args)
         msg = bytearray([cmd])
         if args :
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
             msg += parameters
         self.ser.write(msg)
         response = self.ser.read(self.response_bytes[cmd])
-        print (response)
         if len(response) == 0:
             raise Exception("No data received")
         values = struct.unpack(self.unpack_format[cmd], response)
