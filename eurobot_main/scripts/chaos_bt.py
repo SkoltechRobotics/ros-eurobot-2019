@@ -43,12 +43,7 @@ class CollectChaosPucks(bt.FallbackNode):
                     ]),
                     bt.ConditionNode(self.is_chaos_observed), # return RUNNING when not observed
 
-<<<<<<< HEAD
-
-                    bt.FallbackNodeWithMemory([
-=======
                     bt.FallbackWithMemoryNode([
->>>>>>> 04a20f3fd1d58f87e1230a517715e1a48bb8f7ab
                         bt.ConditionNode(self.is_not_first_puck),
                         bt.SequenceWithMemoryNode([
                             bt.ActionNode(self.calculate_pucks_configuration),
@@ -73,12 +68,7 @@ class CollectChaosPucks(bt.FallbackNode):
 
                         bt.FallbackWithMemoryNode([
                             bt.ConditionNode(self.is_last_puck),
-<<<<<<< HEAD
-                            bt.SequenceNodeWithMemory([
-=======
-
                             bt.SequenceWithMemoryNode([
->>>>>>> 04a20f3fd1d58f87e1230a517715e1a48bb8f7ab
                                 bt.ActionNode(self.calculate_pucks_configuration),
                                 bt.ActionNode(self.calculate_landings)
                                 bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
