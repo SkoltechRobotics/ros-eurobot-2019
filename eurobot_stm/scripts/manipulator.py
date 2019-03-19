@@ -41,10 +41,16 @@ class Manipulator(object):
             self.start_collect_wall()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
-        elif cmd == "collect_ground":
-            self.collect_small()
         elif cmd == "release_accelerator":
             self.release_accelerator()
+        elif cmd == "manipulator_up_and_keep_holding":
+            self.manipulator_up_and_keep_holding()
+        elif cmd == "set_angle_to_push_blunium":
+            self.set_angle_to_push_blunium()
+        elif cmd == "grab_goldenium_and_hold_up":
+            self.goldenium_up_and_hold()
+        elif cmd == "release_goldenium_on_scales":
+            self.release_goldenium_on_scales()
 
         self.response_publisher.publish(cmd_id + " success")
 
@@ -72,19 +78,8 @@ class Manipulator(object):
 
     def calibrate(self):
         if self.robot_name == "main_robot":
-            self.send_command(33)
-            self.send_command(48, 1)
-
-            self.send_command(50, 1)
-            self.send_command(52, 1)
-            # rospy.sleep(3)
-            self.send_command(32)
-
-            self.send_command(48, 0)
-            self.send_command(50, 0)
-
-            self.send_command(50, 0)
-            self.send_command(52, 0)
+            self.send_command(48)
+            self.send_command(21)
             self.send_command(25)
             return True
         elif self.robot_name == "secondary_robot":
@@ -92,38 +87,6 @@ class Manipulator(object):
             self.send_command(21)
             self.send_command(25)
             return True
-
-    # def calibrate_small(self):
-    #     self.send_command(48)
-    #     self.send_command(20)
-    #     self.send_command(25)
-    #     return True
-    #
-    #
-    # def calibrate_big(self):
-    #     # 1) collector move left
-    #     # 2) start calibration right stepper
-    #     # 3) make step down by right stepper
-    #     # 4) collector move right
-    #     # 5) start calibration left stepper
-    #     # 6) make step down by left stepper
-    #     # 7) make step down by left stepper
-    #     # 9) collector move default
-    #     self.send_command(33)
-    #     self.send_command(48, 1)
-    #
-    #     self.send_command(50, 1)
-    #     self.send_command(52, 1)
-    #     # rospy.sleep(3)
-    #     self.send_command(32)
-    #
-    #     self.send_command(48, 0)
-    #     self.send_command(50, 0)
-    #
-    #     self.send_command(50, 0)
-    #     self.send_command(52, 0)
-    #     self.send_command(25)
-    #     return True
 
     def collect_big(self, num):
         # Release grabber
@@ -154,29 +117,6 @@ class Manipulator(object):
         self.send_command(22)
         return True
 
-    # def collect_ground_secondary(self):
-    #     # Release grabber
-    #     self.send_command(22)
-    #     # Set pump to the wall
-    #     self.send_command(20)
-    #     # Set pump to the ground
-    #     self.send_command(19)
-    #     # Start pump
-    #     self.send_command(17)
-    #     # Set pump to the platform
-    #     self.send_command(21)
-    #     # Prop pack
-    #     self.send_command(23)
-    #     # Stop pump
-    #     self.send_command(18)
-    #     # Set pump to the wall
-    #     self.send_command(20)
-    #     # Grab pack
-    #     self.send_command(24)
-    #     # Release grabber
-    #     self.send_command(22)
-    #     return True
-
     def take_ground(self):
         if self.robot_name == "main_robot":
             pass
@@ -198,7 +138,6 @@ class Manipulator(object):
         self.send_command(24)
         self.send_command(21)
 
-
     def complete_ground_collect(self):
         if self.robot_name == "main_robot":
             pass
@@ -218,36 +157,6 @@ class Manipulator(object):
             self.send_command(50)
             return True
 
-    # def collect_wall(self):
-    #     if self.robot_name == "main_robot":
-    #         pass
-    #     if self.robot_name == "secondary_robot":
-    #         # Release grabber
-    #         self.send_command(22)
-    #         # Set pump to the wall
-    #         self.send_command(20)
-    #         rospy.sleep(0.5)
-    #         # Start pump
-    #         self.send_command(17)
-    #         # Set pump to the platform
-    #         self.send_command(21)
-    #         # Prop pack
-    #         self.send_command(23)
-    #         # Stop pump
-    #         self.send_command(18)
-    #         # Set pump to the wall
-    #         self.send_command(20)
-    #         # grab pack
-    #         self.send_command(24)
-    #
-    #         # Release grabber
-    #         self.send_command(22)
-    #         # Set pump to the platform
-    #         # self.send_command(21)
-    #
-    #         self.send_command(50)
-    #         return True
-
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
@@ -285,80 +194,6 @@ class Manipulator(object):
 
             self.send_command(50)
             return True
-	    '''
-=======
-
-            return True
-
-    # def collect_wall(self):
-    #     if self.robot_name == "main_robot":
-    #         pass
-    #     if self.robot_name == "secondary_robot":
-    #         # Release grabber
-    #         self.send_command(22)
-    #         # Set pump to the wall
-    #         self.send_command(20)
-    #         rospy.sleep(0.5)
-    #         # Start pump
-    #         self.send_command(17)
-    #         # Set pump to the platform
-    #         self.send_command(21)
-    #         # Prop pack
-    #         self.send_command(23)
-    #         # Stop pump
-    #         self.send_command(18)
-    #         # Set pump to the wall
-    #         self.send_command(20)
-    #         # grab pack
-    #         self.send_command(24)
-    #
-    #         # Release grabber
-    #         self.send_command(22)
-    #         # Set pump to the platform
-    #         # self.send_command(21)
-    #
-    #         self.send_command(50)
-    #         return True
-
-    def start_collect_wall(self):
-        if self.robot_name == "main_robot":
-            pass
-        if self.robot_name == "secondary_robot":
-            # Release grabber
-            self.send_command(22)
-            # Set pump to the wall
-            self.send_command(20)
-            # rospy.sleep(0.5)
-            # Start pump
-            self.send_command(17)
-            return True
-
-    def complete_collect_wall(self):
-        if self.robot_name == "main_robot":
-            pass
-        if self.robot_name == "secondary_robot":
-            rospy.sleep(0.3)
-
-            # Set pump to the platform
-            self.send_command(21)
-            # Prop pack
-            self.send_command(23)
-            # Stop pump
-            self.send_command(18)
-            # Set pump to the wall
-            self.send_command(20)
-            # grab pack
-            self.send_command(24)
-
-            # Release grabber
-            self.send_command(22)
-            # Set pump to the platform
-            # self.send_command(21)
-
-            self.send_command(50)
-            return True
->>>>>>> 064cdc9... add new commands
-	    '''
 
     def release_small(self):
         self.send_command(25)
@@ -418,7 +253,39 @@ class Manipulator(object):
         self.send_command(51)
         # grabber throw (up)
         self.send_command(19)
+        return True
 
+    def manipulator_up_and_keep_holding(self):
+        # release grabber
+        self.send_command(22)
+        # Set pump to the platform
+        self.send_command(21)
+        return True
+
+    def set_angle_to_push_blunium(self):
+        # push blunium
+        self.send_command(34)
+        return True
+
+    def goldenium_up_and_hold(self):
+        # release grabber
+        self.send_command(22)
+        # set angle to grab goldenium
+        self.send_command(35)
+        # start pump
+        self.send_command(17)
+        # lift up goldenium
+        self.send_command(36)
+        return True
+
+    def release_goldenium_on_scales(self):
+        # set pump to the wall
+        self.send_command(20)
+        # stop pump
+        self.send_command(20)
+        # set pump to the platform
+        self.send_command(21)
+        return True
 
 
 if __name__ == '__main__':

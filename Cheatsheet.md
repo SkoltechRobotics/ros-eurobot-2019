@@ -79,11 +79,14 @@ rosrun rqt_graph rqt_graph
 to puck near red field SMALL
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.6 0.45 3.14'"
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x30'"
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x14'"
+rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x11'"
 
 roslaunch eurobot_stm STM_node.launch
 
 rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_accelerator'"
+
+WE CHANGED TOPIC
+stm 1 0x11
 
 
 # WIRELESS PART SETUP
@@ -133,7 +136,7 @@ git push -u upstream collect_chaos_pucks - in order for branch to watch origin
 
 git add filename
 git commit -m “Add chocolate.jpeg.”
-git push origin master (or git push upstream navnew)
+git push origin master (or git push upstream bt_chaos)
 
 git remote add origin (upstream) 
 git remote add upstream https://github.com/SkoltechRobotics/ros-eurobot-2019.git

@@ -202,18 +202,11 @@ class UnloadAccelerator(ActionClientNode):
         super(UnloadAccelerator, self).__init__(cmd, action_client_id)
 
 
-# Command to grab Goldenium
-class SetAngleToGrabGoldenium(ActionClientNode):
+# Command to grab Goldenium, push up and hold it there
+class GrabGoldeniumAndHoldUp(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "grab_goldenium"
-        super(SetAngleToGrabGoldenium, self).__init__(cmd, action_client_id)
-
-
-# Command to push goldenium up and hold it there
-class GoldeniumUpAndHold(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "goldenium_up_and_hold"
-        super(GoldeniumUpAndHold, self).__init__(cmd, action_client_id)
+        cmd = "grab_goldenium_and_hold_up"
+        super(GrabGoldeniumAndHoldUp, self).__init__(cmd, action_client_id)
 
 
 # Command to unload Goldenium on Scales

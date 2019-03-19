@@ -195,8 +195,7 @@ class MainRobotBT(object):
                 bt_ros.UnloadAccelerator("manipulator_client"),
 
                 bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
-                bt_ros.SetAngleToGrabGoldenium("manipulator_client"),
-                bt_ros.GoldeniumUpAndHold("manipulator_client"),
+                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.scales_unloading_pos, "move_client"),
                 bt_ros.UnloadGoldenium("manipulator_client")
             ]),
