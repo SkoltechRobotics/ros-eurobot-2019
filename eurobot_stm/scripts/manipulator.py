@@ -16,6 +16,7 @@ class Manipulator(object):
 
         self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
         rospy.Subscriber("stm/response", String, self.response_callback)
+
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
@@ -80,42 +81,13 @@ class Manipulator(object):
         if self.robot_name == "main_robot":
             self.send_command(48)
             self.send_command(21)
-            self.send_command(25)
+            self.send_command(25)  # FIXME
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
             self.send_command(21)
             self.send_command(25)
             return True
-
-    def collect_big(self, num):
-        # Release grabber
-        self.send_command(22)
-        # Collector move default
-        self.send_command(25)
-        # Set pump to the wall
-        self.send_command(20)
-        # Set pump to the ground
-        self.send_command(19)
-        # Start pump
-        self.send_command(17)
-        # Set pump to the platform
-        self.send_command(21)
-        # Prop pack
-        self.send_command(23)
-        # Stop pump
-        self.send_command(18)
-        # Set pump to the wall
-        self.send_command(20)
-        # Grab pack
-        self.send_command(24)
-        # Collector move right/left
-        self.send_command(32)
-        # Make step down left / right collector
-        self.send_command(50, 1)
-        # Release grabber
-        self.send_command(22)
-        return True
 
     def take_ground(self):
         if self.robot_name == "main_robot":

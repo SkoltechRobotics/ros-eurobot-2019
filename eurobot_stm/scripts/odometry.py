@@ -53,4 +53,3 @@ class Odometry():
         t.transform.rotation.w = q[3]
  
         self.tf2_broad.sendTransform(t)
-            

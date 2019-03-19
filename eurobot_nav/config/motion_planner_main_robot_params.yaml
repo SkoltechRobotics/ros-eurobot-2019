@@ -1,5 +1,5 @@
 velocity_vector: [0.6, 0.6, 1.2]
-robot_name: "secondary_robot"
+robot_name: "main_robot"
 num_points_in_path: 100
 robot_radius: 0.1
 k_linear_wp: 2.5

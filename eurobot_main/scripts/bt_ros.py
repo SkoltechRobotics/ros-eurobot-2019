@@ -16,13 +16,8 @@ class ActionClient(object):
         data_splitted = data.data.split()
         cmd_id = data_splitted[0]
         status = data_splitted[1]
-        print ("ID", cmd_id)
-        print ("STATUS FROM RESPONSE CALLBACK=", status)
-        print ("keys",self.cmd_statuses.keys())
         if cmd_id in self.cmd_statuses.keys():
-            print ("AS_GFAS_GLAS+_GLASG_A+_SGLAS+_GLA+_SGLASGASGAS+_GLAS+_GAS+_G_+")
             self.cmd_statuses[cmd_id] = status
-        print ("self.cmd_statuses.keys()",self.cmd_statuses.keys())
         self.mutex.release()
 
     def set_cmd(self, cmd, cmd_id=None):
@@ -115,9 +110,6 @@ class isStartStatus(STMClientNode):
             return bt.Status.SUCCESS
         else :
             return bt.Status.RUNNING
-
-        
-
 
 
 class SetToDefaultState(ActionClientNode):
