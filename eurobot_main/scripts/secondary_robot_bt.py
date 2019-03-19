@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import enum
 import rospy
 import behavior_tree as bt
 import bt_ros
@@ -9,11 +10,35 @@ first_puck_zone = rospy.get_param("first_puck_zone")
 second_puck_zone = rospy.get_param("second_puck_zone")
 third_puck_zone = rospy.get_param("third_puck_zone")
 
+side_statuses = {"yellow", "purple"}
+
+class SideStatus(enum.Enum):
+    RIGHT = 0
+    LEFT = 1
+
+class BTController():
+    def __init__(self):
+        rospy.Subscriber("stm/side_status", String, self.side_status_callback)
+
+        self.bt = None
+        self.side_status = None
+
+    def side_status_callback(self, data):
+        if self.side_status is None and data.data == "0":
+            self.side_status = SideStatus.RIGHT
+        if self.side_status is None and data.data == "1":
+            self.side_status = SideStatus.LEFT
+
+        if data.data == "0" and self.side_status == SideStatus.LEFT:
+            self.side_status = SideStatus.RIGHT
+            bt = SecondaryRobotBT(self.side_status)
+        if data.data == "1" and self.side_status == SideStatus.RIGHT:
+            self.side_status = SideStatus.LEFT
+            bt = SecondaryRobotBT(self.side_status)
+
 
 class SecondaryRobotBT():
-    def __init__(self):
-        rospy.init_node("test_first_iter")
-
+    def __init__(self, side_status):
         self.robot_name = rospy.get_param("robot_name")
 
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
@@ -24,16 +49,18 @@ class SecondaryRobotBT():
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
-        self.stm_publisher = rospy.Publisher("stm/command", String, queue_size=100)
-        self.stm_client = bt_ros.ActionClient(self.stm_publisher)
-        rospy.Subscriber("stm/response", String, self.manipulator_client.response_callback)
+        rospy.Subscriber("stm/start_status", String, self.start_status_callback)
+
+
+        self.start_status = False
+        self.start_counter = 0
+        self.side_status = side_status
+
+        print ("SIDE=", side_status)
 
         rospy.sleep(2)
 
-
-        start_status = bt_ros.isStartStatus("stm_client")
-
-
+        start_node = bt.ConditionNode(self.is_start)
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
         # first
@@ -96,9 +123,9 @@ class SecondaryRobotBT():
 
         pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck, scales])
 
-        leaf = bt.SequenceNode([start_status, default_state, pucks])
+        leaf = bt.SequenceNode([default_state, start_node, pucks])
 
-        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client, "stm_client": self.stm_client})
+        self.bt = bt.Root(leaf, action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
         # self.collect_1_puck = bt.SequenceNode([])
 
@@ -121,16 +148,25 @@ class SecondaryRobotBT():
         print("============== BT LOG ================")
         self.bt.log(0)
 
-    def is_1_puck_close(self):
-        pass
+    # FIXME::HOW TO TURN OFF THE CALLBACK?        
+    def start_status_callback(self, data):
+        if data.data == "1":
+            self.start_counter += 1
+        if self.start_counter == 5:
+            self.start_status = True
 
-    def go_to_1st_puck(self):
-        pass
+    def is_start(self):
+        if self.start_status==True:
+            return bt.Status.SUCCESS
+        elif self.start_status==False:
+            return bt.Status.RUNNING
+
 
 
 if __name__ == '__main__':
     try:
-        tree = SecondaryRobotBT()
+        rospy.init_node("secondary_robot_BT_controller")
+        bt_controller = BTController()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

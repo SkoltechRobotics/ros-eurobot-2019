@@ -39,7 +39,11 @@ class STMprotocol(object):
             0x31: "=",
             0x32: "=B",
             0x33: "=B",
+<<<<<<< HEAD
+	        0x34: "=B"
+=======
             0x34: "=B"
+>>>>>>> 0894d705ae7d645b9206a17b5ca04f48cc6ea9e7
         }
 
         self.unpack_format = {
@@ -108,7 +112,7 @@ class STMprotocol(object):
         self.mutex.acquire()
         successfully, values = self.send_command(cmd, args)
         self.mutex.release()
-        rospy.loginfo('Got response args: '+ str(values))
+        rospy.loginfo('Got response: '+ str(values))
         return successfully, values
 
     def pure_send_command(self, cmd, args):
@@ -116,7 +120,10 @@ class STMprotocol(object):
         self.ser.reset_output_buffer()
         self.ser.reset_input_buffer()
         # Sending command
-        print ('Sending the msg=', cmd , args)
+        if args != None:
+            rospy.loginfo('Send the msg:' + str(cmd) + ' ' + str(args))
+        else:
+            rospy.loginfo('Send the msg:' + str(cmd))
         msg = bytearray([cmd])
         if args :
             parameters = bytearray(struct.pack(self.pack_format[cmd], *args))
@@ -138,6 +145,5 @@ class STMprotocol(object):
                     rospy.loginfo('Exception:\t' + str(exc))
                     rospy.loginfo('At time:\t' + str(datetime.datetime.now()))
                     rospy.loginfo('cmd:' + str(cmd) + 'args:' + str(args))
-                    #rospy.loginfo()
                     rospy.loginfo('--------------------------')
         return False, None
