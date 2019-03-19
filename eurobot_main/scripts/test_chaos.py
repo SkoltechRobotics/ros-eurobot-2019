@@ -11,7 +11,7 @@ class MoveWaypoints(bt.FallbackNode):
         self.waypoints = bt.BTVariable(waypoints)
 
         # Init useful child nodes
-        self.move_to_waypoint_node = ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
+        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
         self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
 
         # Make BT
@@ -25,6 +25,20 @@ class MoveWaypoints(bt.FallbackNode):
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
             ]),
         ])
+
+    def is_waypoints_empty(self):
+        if len(self.waypoints.get()) > 0:
+            return bt.Status.FAILED
+        else:
+            return bt.Status.SUCCESS
+
+    def choose_new_waypoint(self):
+        current_waypoint = self.waypoints.get()[0]
+        print(self.waypoints.get())
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))
+
+    def remove_waypoint(self):
+        self.waypoints.set(self.waypoints.get()[1:])
 
 
 class TestBT(object):

@@ -13,10 +13,39 @@ from manipulator import Manipulator
 from tactics_math import *
 from core_functions import cvt_local2global
 
+
+# ====================================
+
+# parallel2 = bt.ParallelNode([bt.SequenceNode([move_2_back,move_2_back2]), complete_take_2_puck], threshold=2)
+
+                # calibrate
+                # move to first puck on the field and collect it
+                # move to second puck on the field and collect it
+                # move to third puck on the field and KEEP IT UP, NOT COLLECT!
+                # move to blunium on acc, prepare manipulator with puck to push it
+                # push blunium and and finish collect puck in manip
+                # FIXME move side and unload pucks in acc
+                # approach goldenium, grab it and push up
+                # move to scales and unload Goldenium
+
+# ====================================
+
+
 # FIXME change to if zone == "orange" then
 red_cell_puck = rospy.get_param("red_cell_puck")
 green_cell_puck = rospy.get_param("green_cell_puck")
 blue_cell_puck = rospy.get_param("blue_cell_puck")
+
+
+# first puck coords + rot, landing!
+first_puck_landing = np.array([])
+second_puck_landing
+third_puck_landing
+blunium_start_push_pos
+blunium_finish_push_pos
+accelerator_unloading_pos
+goldenium_grab_pos
+scales_unloading_pos
 
 
 class CollectChaosPucks(bt.FallbackNode):
@@ -93,7 +122,6 @@ class CollectChaosPucks(bt.FallbackNode):
             return bt.Status.RUNNING
 
 
-
 class MainRobotBT(object):
     # noinspection PyTypeChecker
     def __init__(self):
@@ -110,8 +138,53 @@ class MainRobotBT(object):
 
         rospy.sleep(2)
 
-        self.bt = bt.Root(CollectChaosPucks("move_client", "manipulator_client"),
-                          action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+        # self.bt = bt.Root(CollectChaosPucks("move_client", "manipulator_client"),
+        #                   action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+
+        self.bt = bt.Root(
+            bt.SequenceWithMemoryNode([
+                bt_ros.SetToDefaultState("manipulator_client"),
+
+                bt_ros.MoveLineToPoint(first_puck_landing, "move_client"),
+                bt_ros.StartCollectGround("manipulator_client"),
+                bt.ParallelNode([
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    bt_ros.MoveLineToPoint(second_puck_landing, "move_client"),
+                ], threshold=2),
+
+                bt_ros.StartCollectGround("manipulator_client"),
+                bt.ParallelNode([
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    bt_ros.MoveLineToPoint(third_puck_landing, "move_client"),
+                ], threshold=2),
+
+                bt_ros.StartCollectGround("manipulator_client"),
+                bt.ParallelNode([
+                    bt_ros.PuckUpAndHold("manipulator_client"),
+                    bt_ros.MoveLineToPoint(blunium_start_push_pos, "move_client"),
+                ], threshold=2),
+
+                bt_ros.SetAngleToPushBlunium("manipulator_client"),
+                bt_ros.MoveLineToPoint(blunium_finish_push_pos, "move_client"),
+
+                bt.ParallelNode([
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    # FIXME Sasha have to fix height of unloading mechanism
+                    bt_ros.MoveLineToPoint(accelerator_unloading_pos, "move_client"),
+                ], threshold=2),
+
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+
+                bt_ros.MoveLineToPoint(goldenium_grab_pos, "move_client"),
+                bt_ros.GrabGoldenium("manipulator_client"),
+                bt_ros.GoldeniumUpAndHold("manipulator_client"),
+                bt_ros.MoveLineToPoint(scales_unloading_pos, "move_client"),
+                bt_ros.UnloadGoldenium("manipulator_client")
+            ]),
+            action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 

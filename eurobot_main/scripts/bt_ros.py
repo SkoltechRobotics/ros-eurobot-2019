@@ -4,7 +4,6 @@ import behavior_tree as bt
 
 
 class ActionClient(object):
-    
 
     def __init__(self, cmd_publisher):
         self.cmd_id = 0
@@ -75,6 +74,7 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
+
 class STMClientNode(bt.SequenceNode):
     def __init__(self, cmd, action_client_id, **kwargs):
         self.action_client_id = action_client_id
@@ -95,6 +95,7 @@ class STMClientNode(bt.SequenceNode):
 
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
+
 
 class isStartStatus(STMClientNode):
     def __init__(self, action_client_id):
@@ -177,14 +178,21 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
+# to set manipulator up and keep holding there a puck
+class PuckUpAndHold(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "manipulator_up_and_keep_holding"  # FIXME
+        super(PuckUpAndHold, self).__init__(cmd, action_client_id)
+
 # ===========================================================
+
 
 # TODO
 # Command to push Blunium in Accelerator
-class PushBlunium(ActionClientNode):
+class SetAngleToPushBlunium(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "push_blunium"
-        super(PushBlunium, self).__init__(cmd, action_client_id)
+        cmd = "set_angle_to_push_blunium"
+        super(SetAngleToPushBlunium, self).__init__(cmd, action_client_id)
 
 
 # Command to unload in Accelerator
@@ -199,6 +207,13 @@ class GrabGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "grab_goldenium"
         super(GrabGoldenium, self).__init__(cmd, action_client_id)
+
+
+# Command to push goldenium up and hold it there
+class GoldeniumUpAndHold(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "goldenium_up_and_hold"
+        super(GoldeniumUpAndHold, self).__init__(cmd, action_client_id)
 
 
 # Command to unload Goldenium on Scales
