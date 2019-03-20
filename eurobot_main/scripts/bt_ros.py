@@ -153,7 +153,10 @@ class MoveArcToPoint(ActionClientNode):
         cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
-
+class ReleaseFivePucks(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_5"
+        super(ReleaseFivePucks, self).__init__(cmd, action_client_id)
 # ===========================================================
 
 
