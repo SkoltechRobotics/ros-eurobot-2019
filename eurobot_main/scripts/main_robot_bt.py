@@ -252,8 +252,8 @@ class MainRobotBT(object):
 
         # can be reached using rospy.get_param("purple_zone/red_cell_puck"
 
-        self.start_zone = "purple"
-        # bt.BTVariable()
+        self.start_zone = "yellow"
+
         if self.start_zone == "purple":
 
             self.red_cell_puck = rospy.get_param("purple_zone/red_cell_puck")
@@ -278,6 +278,31 @@ class MainRobotBT(object):
             self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
             self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
             self.scales_unloading_pos = rospy.get_param("purple_zone/scales_unloading_pos")
+
+        elif self.start_zone == "yellow":
+
+            self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
+            self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
+            self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
+
+            # use find origin
+            self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
+                                               self.red_cell_puck[1],
+                                               0])
+
+            self.second_puck_landing = np.array([self.green_cell_puck[0],
+                                                self.green_cell_puck[1]-self.approach_dist,
+                                                1.57])
+
+            self.third_puck_landing = np.array([self.blue_cell_puck[0],
+                                               self.blue_cell_puck[1]-self.approach_dist,
+                                               1.57])
+
+            self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
+            self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
+            self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
+            self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
+            self.scales_unloading_pos = rospy.get_param("yellow_zone/scales_unloading_pos")
 
         # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
         # self.drive_back_dist = np.array(self.drive_back_dist)
