@@ -191,17 +191,18 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
-
+                # bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                # bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
                 bt_ros.MoveLineToPoint(self.goldenium_PREgrab_pos, "move_client"),  
-                bt_ros.SetManipulatortoWall("manipulator_client"),
+                bt_ros.SetManipulatortoGoldenium("manipulator_client"),
 
                 bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  
                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
-                bt_ros.UnloadGoldenium("manipulator_client")
-                
+                bt_ros.UnloadGoldenium("manipulator_client"),
+
                 bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
 
             ]),
