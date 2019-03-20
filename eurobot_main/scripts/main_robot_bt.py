@@ -116,7 +116,7 @@ class MainRobotBT(object):
         self.move_client = bt_ros.ActionClient(self.move_publisher)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
-        self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = rospy.get_param("purple_zone/approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
         self.approach_dist = np.array(self.approach_dist)
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
 
@@ -134,6 +134,7 @@ class MainRobotBT(object):
             self.green_cell_puck = rospy.get_param("green_cell_puck")
             self.blue_cell_puck = rospy.get_param("blue_cell_puck")
 
+            # use find origin
             self.first_puck_landing = np.array([self.red_cell_puck[0]-self.approach_dist,
                                                self.red_cell_puck[1],
                                                0])
