@@ -169,7 +169,7 @@ class MainRobotBT(object):
                 bt_ros.SetAngleToPushBlunium("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
                 bt_ros.CompleteCollectGround("manipulator_client"),
-                bt_ros.PumpUp("manipulator_client")
+                bt_ros.PumpUp("manipulator_client"),
                 # FIXME Sasha have to fix height of unloading mechanism
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
 
