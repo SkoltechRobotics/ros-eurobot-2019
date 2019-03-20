@@ -138,12 +138,13 @@ class MainRobotBT(object):
 
         self.accelerator_PREunloading_pos = None
         self.accelerator_unloading_pos = None
+        self.accelerator_unloading_pos_far = None
 
         self.goldenium_PREgrab_pos = None
         self.goldenium_grab_pos = None
 
         self.scales_unloading_PREpos = None
-        
+        self.scales_goldenium_pos = None
         self.initiate_params()
 
         rospy.sleep(2)
@@ -177,16 +178,26 @@ class MainRobotBT(object):
                 bt_ros.PumpUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  
                 # FIXME Sasha have to fix height of unloading mechanism
+
+
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client")
+                bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
 
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client")
                 bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client")
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+
 
                 bt_ros.MoveLineToPoint(self.goldenium_PREgrab_pos, "move_client"),  
                 bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  
                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
+                bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
                 bt_ros.UnloadGoldenium("manipulator_client")
             ]),
             action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
@@ -229,9 +240,11 @@ class MainRobotBT(object):
             self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
+            self.accelerator_unloading_pos_far = rospy.get_param("purple_zone/accelerator_unloading_pos_far")
             self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
             self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
+            self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
 
         elif self.start_zone == "yellow":
 
@@ -256,9 +269,11 @@ class MainRobotBT(object):
             self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
+            self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
             self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
             self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
+            self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
 
         # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
         # self.drive_back_dist = np.array(self.drive_back_dist)
