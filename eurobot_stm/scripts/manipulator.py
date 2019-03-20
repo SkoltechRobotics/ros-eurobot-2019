@@ -97,7 +97,16 @@ class Manipulator(object):
 
     def take_ground(self):
         if self.robot_name == "main_robot":
-            pass
+            # Release grabber
+            self.send_command(22)
+            # Set pump to the wall
+            self.send_command(20)
+            # Set pump to the ground
+            self.send_command(19)
+            # Start pump
+            self.send_command(17)
+            return True
+
         if self.robot_name == "secondary_robot":
             # Release grabber
             self.send_command(22)
@@ -118,7 +127,21 @@ class Manipulator(object):
 
     def complete_ground_collect(self):
         if self.robot_name == "main_robot":
-            pass
+            # Set pump to the platform
+            self.send_command(21)
+            # Prop pack
+            self.send_command(23)
+            # Stop pump
+            self.send_command(18)
+            # Set pump to the wall
+            self.send_command(20)
+            # Grab pack
+            self.send_command(24)
+            # Release grabber
+            self.send_command(22)
+            self.send_command(50)
+            return True
+            
         if self.robot_name == "secondary_robot":
             # Set pump to the platform
             self.send_command(21)

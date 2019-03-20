@@ -3,7 +3,7 @@
     <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
     <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen"/>
 
-    <rosparam file="$(find eurobot_loc)/config/main_robot_params.yaml" command="load" ns="main_robot"/>
+    <rosparam file="$(find eurobot_loc)/config/main_robot_localization_params.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_main)/config/main_robot.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_main)/config/bt_params.yaml" command="load" ns="main_robot"/>

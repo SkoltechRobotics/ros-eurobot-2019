@@ -17,7 +17,7 @@ scales_zone_right: [1.65, 1.34, 3.65]
 start_zone_right: [2.53, 0.44, 3.14]
 
 
-orange_zone:
+yellow_zone:
   red_cell_puck: [2.5, 0.45]
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
