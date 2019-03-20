@@ -325,7 +325,7 @@ class MotionPlannerNode:
         :param distance: Euclidean distance from robot's location to goal location
         :return:
         """
-        return np.e ** (-1 / (self.k * distance + self.e_const))
+        return np.exp(-self.k / (distance + self.e_const))
 
     # noinspection PyPep8Naming
     def move_arc(self):
