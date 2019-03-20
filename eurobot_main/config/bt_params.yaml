@@ -23,7 +23,7 @@ yellow_zone:
   blue_cell_puck: [2.5, 1.05]
   blunium_start_push_pos: [1.24, 0.26, -1.57]  # for main
   blunium_finish_push_pos: [1.32, 0.26, -1.57]  # for main
-  accelerator_unloading_pos: [1.15, 0.17, 0.8]  # for main
+  accelerator_unloading_pos: [1.15, 0.17, 0.75]  # for main
   goldenium_grab_pos: [0.775, 0.26, 4.71]  # for main
   scales_unloading_pos: [1.65, 1.48, 3.65]  # for secondary robot
   scales_goldenium_pos: [1.65, 1.4, 1.4]  # for main
@@ -35,7 +35,7 @@ purple_zone:
   blue_cell_puck: [0.5, 1.05]
   blunium_start_push_pos: [1.8, 0.26, -1.57]  # for main
   blunium_finish_push_pos: [1.72, 0.26, -1.57]  # for main
-  accelerator_unloading_pos: [1.85, 0.17, 0.8]  # for main   # FIXME
+  accelerator_unloading_pos: [1.85, 0.17, 0.75]  # for main   # FIXME
   goldenium_grab_pos: [2.25, 0.26, 4.71]  # for main
   scales_unloading_pos: [1.34, 1.48, 3.65]  # for secondary robot
   scales_goldenium_pos: [1.34, 1.4, 1.4]  # for main

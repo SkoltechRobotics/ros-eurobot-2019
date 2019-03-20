@@ -279,8 +279,8 @@ class Manipulator(object):
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
 
-        # release grabber
-        self.send_command(22)
+        # grabber throw (up)
+        self.send_command(25)
         # make step up
         self.send_command(51)
         # grabber throw (up)
