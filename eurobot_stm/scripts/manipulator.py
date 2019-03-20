@@ -103,23 +103,24 @@ class Manipulator(object):
         if self.robot_name == "main_robot":
             # Release grabber
             self.send_command(22)
-            # Set pump to the wall
-            self.send_command(20)
             # Set pump to the ground
             self.send_command(19)
             # Start pump
             self.send_command(17)
+            # Set pump to the wall
+            self.send_command(20)
             return True
 
         if self.robot_name == "secondary_robot":
             # Release grabber
             self.send_command(22)
-            # Set pump to the wall
-            self.send_command(20)
+
             # Set pump to the ground
             self.send_command(19)
             # Start pump
             self.send_command(17)
+            # Set pump to the wall
+            self.send_command(20)
             return True
 
     def set_manipulator_wall(self):
@@ -137,12 +138,16 @@ class Manipulator(object):
             self.send_command(23)
             # Stop pump
             self.send_command(18)
-            # Set pump to the wall
-            self.send_command(20)
+            # Grab pack
+            self.send_command(24)
+            # Prop pack
+            self.send_command(23)
             # Grab pack
             self.send_command(24)
             # Release grabber
             self.send_command(22)
+            # Set pump to the wall
+            self.send_command(20)
             self.send_command(50)
             return True
             

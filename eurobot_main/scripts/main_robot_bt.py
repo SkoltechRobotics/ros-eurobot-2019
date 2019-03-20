@@ -178,7 +178,7 @@ class MainRobotBT(object):
                 bt_ros.PumpUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  
                 # FIXME Sasha have to fix height of unloading mechanism
-
+                bt_ros.SetManipulatortoGoldenium("manipulator_client"),
                 
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
@@ -206,7 +206,8 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
                 bt_ros.UnloadGoldenium("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
+                
+                bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
                 bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
 
             ]),
