@@ -283,7 +283,6 @@ class Manipulator(object):
 
         # release grabber
         self.send_command(22)
-
         # make step up
         self.send_command(51)
         #get step motor status

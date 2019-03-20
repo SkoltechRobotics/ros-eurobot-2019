@@ -7,6 +7,7 @@ import numpy as np
 from core_functions import cvt_global2local, cvt_local2global, find_src, wrap_angle
 from np_particle import ParticleFilter
 from np_triangulation import find_position_triangulation
+from std_msgs.msg import String
 import tf2_ros
 import tf_conversions
 import matplotlib as mpl
@@ -35,9 +36,11 @@ class PFNode(object):
     def __init__(self):
         # Init params
         self.beacons = []
+        self.prev_side_status = None
         self.robot_name = rospy.get_param("robot_name")
+        rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
         rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
-        self.color = rospy.get_param("start_side")
+        self.color = "purple"
         if self.color == "purple":
             beacons = PURPLE_BEACONS
         else:
@@ -84,6 +87,27 @@ class PFNode(object):
         self.alpha = rospy.get_param("alpha")
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)
         rospy.Timer(rospy.Duration(1. / PF_RATE), self.localization)
+
+    def callback_side(self, side):
+        if self.prev_side_status != side.data:
+            if side.data == "1":
+                self.color = "yellow"
+                init_start = np.array(rospy.get_param("start_yellow"))
+                beacons = YELLOW_BEACONS
+            else:
+                self.color = "purple"
+                init_start = np.array(rospy.get_param("start_purple"))
+                beacons = PURPLE_BEACONS
+            self.prev_side_status = side.data
+            buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
+            angles, distances = buf_pf.get_landmarks(self.scan)
+            x = distances * np.cos(angles)
+            y = distances * np.sin(angles)
+            landmarks = (np.array([x, y])).T
+            start_coords = find_position_triangulation(beacons, landmarks, init_start)
+            self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
+        
+
 
     def scan_callback(self, scan):
         self.scan = scan
