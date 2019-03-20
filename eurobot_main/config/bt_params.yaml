@@ -17,6 +17,7 @@ start_zone_right: [2.77, 0.84, 3.14]
 
 
 yellow_zone:
+  start_zone: [2.82, 0.45, 3.14]
   red_cell_puck: [2.5, 0.45]
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
@@ -32,6 +33,7 @@ yellow_zone:
 
 # can be reached using rospy.get_param("purple_zone/red_cell_puck"
 purple_zone:
+  start_zone: [0.28, 0.45, 0]
   red_cell_puck: [0.5, 0.45]
   green_cell_puck: [0.5, 0.75]
   blue_cell_puck: [0.5, 1.05]

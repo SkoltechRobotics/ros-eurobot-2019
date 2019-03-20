@@ -183,16 +183,20 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
-
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-                bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
-                # bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-                # bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
                 bt_ros.MoveLineToPoint(self.goldenium_PREgrab_pos, "move_client"),  
                 bt_ros.SetManipulatortoGoldenium("manipulator_client"),
@@ -202,8 +206,8 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
                 bt_ros.UnloadGoldenium("manipulator_client"),
-
-                bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
+                bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
+                bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
 
             ]),
             action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
@@ -242,6 +246,7 @@ class MainRobotBT(object):
                                                self.blue_cell_puck[1]-self.approach_dist,
                                                1.57])
 
+            self.start_zone = rospy.get_param("purple_zone/start_zone")
             self.blunium_start_push_pos = rospy.get_param("purple_zone/blunium_start_push_pos")
             self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
@@ -271,6 +276,7 @@ class MainRobotBT(object):
                                                self.blue_cell_puck[1]-self.approach_dist,
                                                1.57])
 
+            self.start_zone = rospy.get_param("yellow_zone/start_zone")
             self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
             self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
