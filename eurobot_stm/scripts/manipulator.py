@@ -56,6 +56,8 @@ class Manipulator(object):
             self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
             self.release_goldenium_on_scales()
+        elif cmd == "only_pump_up":
+            self.only_pump_up()
 
         self.response_publisher.publish(cmd_id + " success")
 
@@ -279,12 +281,17 @@ class Manipulator(object):
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
 
-        # grabber throw (up)
-        self.send_command(25)
+        # release grabber
+        self.send_command(22)
+
         # make step up
         self.send_command(51)
+        #get step motor status
+        self.send_command(52)
         # grabber throw (up)
-        self.send_command(19)
+        self.send_command(25)
+        # release grabber
+        self.send_command(22)
         return True
 
     def manipulator_up_and_keep_holding(self):
@@ -314,11 +321,14 @@ class Manipulator(object):
         # set pump to the wall
         self.send_command(20)
         # stop pump
-        self.send_command(20)
+        self.send_command(18)
         # set pump to the platform
         self.send_command(21)
         return True
 
+    def only_pump_up(self):
+        # set pump to the platform
+        self.send_command(21)
 
 if __name__ == '__main__':
     try:

@@ -210,6 +210,18 @@ class UnloadGoldenium(ActionClientNode):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
+# Command to unload Goldenium on Scales
+class UnloadGoldenium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_goldenium_on_scales"
+        super(UnloadGoldenium, self).__init__(cmd, action_client_id)
+
+# Command to unload Goldenium on Scales
+class PumpUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "only_pump_up"
+        super(PumpUp, self).__init__(cmd, action_client_id)
+
 
 class MoveWaypoints(bt.FallbackNode):
     def __init__(self, waypoints, action_client_id):

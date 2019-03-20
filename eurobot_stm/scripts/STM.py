@@ -91,7 +91,7 @@ class STMstatus(object):
 
 if __name__ == '__main__':
     # TODO::search for ports
-
-    serial_port = "/dev/ttyUSB0"
+    serial_port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
+    # serial_port = "/dev/ttyUSB1"  # FIXME
     stm = STM(serial_port)
     rospy.spin()
