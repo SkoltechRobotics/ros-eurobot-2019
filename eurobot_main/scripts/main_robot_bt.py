@@ -133,6 +133,7 @@ class MainRobotBT(object):
         self.third_puck_landing = None
 
         # hard-coded poses (x, y, theta)
+        self.blunium_start_push_PREpos = None
         self.blunium_start_push_pos = None
         self.blunium_finish_push_pos = None
 
@@ -169,8 +170,10 @@ class MainRobotBT(object):
 
                 bt.ParallelWithMemoryNode([
                     bt_ros.PuckUpAndHold("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
+                    bt_ros.MoveLineToPoint(self.blunium_start_push_PREpos, "move_client"),
                 ], threshold=2),
+
+                bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
 
                 bt_ros.SetAngleToPushBlunium("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
@@ -248,6 +251,7 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("purple_zone/start_zone")
+            # FIXME self.blunium_start_push_PREpos
             self.blunium_start_push_pos = rospy.get_param("purple_zone/blunium_start_push_pos")
             self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
@@ -278,6 +282,7 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("yellow_zone/start_zone")
+            self.blunium_start_push_PREpos = rospy.get_param("yellow_zone/blunium_start_push_PREpos")
             self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
             self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
             self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
