@@ -10,7 +10,7 @@
 
     <group ns = "main_robot">
         <include file="$(find eurobot_nav)/launch/motion_planner_main_robot.launch"/>
-        <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="screen" respawn="true"/>
+        <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="log" respawn="true"/>
         <node pkg="urg_node" name="lidar_node" type="urg_node" args="_ip_address:=192.168.0.10" respawn="true" output="log">
             <param name="frame_id" value="/main_robot_laser"/>
         </node>
