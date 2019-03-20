@@ -90,9 +90,7 @@ class SequenceNode(ControlNode):
         return self.status
 
     def reset(self):
-        for child in self.children:
-            # if isinstance(child, Latch):
-            child.reset()
+        pass
 
 
 class SequenceWithMemoryNode(SequenceNode):
@@ -104,8 +102,7 @@ class SequenceWithMemoryNode(SequenceNode):
         super(SequenceWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
 
     def reset(self):
-        for child in self.children:
-            child.reset()
+        pass
 
 
 class FallbackNode(ControlNode):
@@ -124,9 +121,7 @@ class FallbackNode(ControlNode):
         return self.status
 
     def reset(self):
-        for child in self.children:
-            # if isinstance(child, Latch):
-            child.reset()
+        pass
 
 
 class FallbackWithMemoryNode(FallbackNode):
@@ -135,8 +130,7 @@ class FallbackWithMemoryNode(FallbackNode):
         super(FallbackWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
 
     def reset(self):
-        for child in self.children:
-            child.reset()
+        pass
 
 
 class ParallelNode(ControlNode):

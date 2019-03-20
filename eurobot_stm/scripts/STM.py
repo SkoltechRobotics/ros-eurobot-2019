@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import String
 
 import itertools
+import datetime
 
 from STM_protocol import STMprotocol
 from odometry import Odometry
@@ -26,8 +27,9 @@ class STM():
         id, cmd, args = self.parse_data(data)
         successfully, values = self.stm_protocol.send(cmd, args)
         st = ""
-        for val in values:
-            st += val
+        if values is not None:
+            for val in values:
+                st += str(val)
         response = str(id) + " " + st
         print ("RESPONSE=", values)
         self.response.publish(response)
@@ -52,25 +54,32 @@ class STMstatus(object):
         self.start_status_publisher = rospy.Publisher("stm/start_status", String, queue_size=1)
         self.side_status_publisher = rospy.Publisher("stm/side_status", String, queue_size=1)
 
+        self.end_flag = False
+
         rospy.Timer(rospy.Duration(1. / rate), self.update_status)
 
     def update_status(self, event):
         try:
+            print ("1")
+            if self.end_flag == False:
+                successfully, values = self.stm_protocol.send(0x3, args=None)
             
-            successfully, values = self.stm_protocol.send(0x3, args=None)
-            
-            message = ""
-            for val in values:
-                message += str(val)
-            if successfully:
-                self.start_status_publisher.publish(message)
 
+                if values == "1":
+                    self.end_flag = True
+                message = ""
+                for val in values:
+                    message += str(val)
+                if successfully:
+                    self.start_status_publisher.publish(message)
+
+            print ("2")
             successfully, values = self.stm_protocol.send(0x4, args=None)
 
             message = ""
             for val in values:
                 message += str(val)
-
+            print ("3")
             if successfully:
                 self.side_status_publisher.publish(message)
 

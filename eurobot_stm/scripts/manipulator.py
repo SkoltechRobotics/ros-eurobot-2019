@@ -42,6 +42,8 @@ class Manipulator(object):
             self.start_collect_wall()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
+        elif cmd == "release_5":
+            self.release(5)
         elif cmd == "collect_ground":
             self.collect_small()
         elif cmd == "release_accelerator":
@@ -79,6 +81,8 @@ class Manipulator(object):
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
+            self.send_command(50)
+            self.send_command(23)
             self.send_command(21)
             self.send_command(25)
             return True
@@ -289,6 +293,37 @@ class Manipulator(object):
             return True
 >>>>>>> 064cdc9... add new commands
 	    '''
+
+    def release(self, pucks_number):
+        self.send_command(25)
+
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(25)
+        
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(25)
+
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(25)
+
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(25)
+
+        self.send_command(51)
+        self.send_command(52)
+        self.send_command(32)
+        self.send_command(25)
+
 
     def release_small(self):
         self.send_command(25)
