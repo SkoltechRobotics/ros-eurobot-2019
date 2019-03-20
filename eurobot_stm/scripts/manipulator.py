@@ -58,6 +58,8 @@ class Manipulator(object):
             self.release_goldenium_on_scales()
         elif cmd == "only_pump_up":
             self.only_pump_up()
+        elif cmd == "set_angle_to_grab_goldenium":
+            self.set_angle_to_grab_goldenium()
 
         self.response_publisher.publish(cmd_id + " success")
 
@@ -312,9 +314,14 @@ class Manipulator(object):
         self.send_command(35)
         # start pump
         self.send_command(17)
+        rospy.sleep(1)
         # lift up goldenium
         self.send_command(36)
         return True
+
+    def set_angle_to_grab_goldenium(self):
+        # set angle to grab goldenium
+        self.send_command(35)
 
     def release_goldenium_on_scales(self):
         # set pump to the wall
