@@ -79,6 +79,7 @@ class Tactics(object):
         move_1_puck = bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client"))
         set_man_wall = bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))
         parallel0 = bt.ParallelNode([move_1_puck, set_man_wall], threshold=2)
+       
 
         start_take_1_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         complete_take_1_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
@@ -86,10 +87,10 @@ class Tactics(object):
         self.first_puck[1] = x
         move_1_back = bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client"))
         if self.side_status == SideStatus.PURPLE:
-            x = self.first_puck[0] + 0.1
+            x = self.first_puck[0] - 0.1
             self.first_puck[0] = x
         elif self.side_status == SideStatus.YELLOW:
-            x = self.first_puck[0] - 0.1
+            x = self.first_puck[0] + 0.1
             self.first_puck[0] = x
         move_1_back1 = bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client"))
     
@@ -99,16 +100,18 @@ class Tactics(object):
     
         # second
         move_2_puck = bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client"))
+
+
         start_take_2_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         complete_take_2_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
         x = self.second_puck[1] -0.5
         self.second_puck[1] = x
         move_2_back = bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client"))
         if self.side_status == SideStatus.PURPLE:
-            x = self.second_puck[0] + 0.39
+            x = self.second_puck[0] + 0.49
             self.second_puck[0] = x
         elif self.side_status == SideStatus.YELLOW:  
-            x = self.second_puck[0] - 0.39
+            x = self.second_puck[0] - 0.49
             self.second_puck[0] = x
         move_2_back2 = bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client"))
         parallel2 = bt.ParallelNode([bt.SequenceNode([move_2_back,move_2_back2]), complete_take_2_puck], threshold=2)
@@ -160,6 +163,7 @@ class Tactics(object):
         first_puck = bt.SequenceNode([parallel0, start_take_1_puck, parallel1])
 
         second_puck = bt.SequenceNode([move_2_puck, start_take_2_puck, parallel2])
+
 
         third_puck = bt.SequenceNode([move_3_puck, start_take_3_puck, parallel3])
 
