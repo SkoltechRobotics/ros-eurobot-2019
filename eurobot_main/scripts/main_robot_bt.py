@@ -143,19 +143,43 @@ class MainRobotBT(object):
 
         rospy.sleep(2)
 
+        # self.bt = bt.Root(
+        #     bt.SequenceWithMemoryNode([
+        #         bt_ros.SetToDefaultState("manipulator_client"),
+
+        #         bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
+        #         bt_ros.StartCollectGround("manipulator_client"),
+        #         bt_ros.CompleteCollectGround("manipulator_client"),
+
+        #         bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
+        #         bt_ros.StartCollectGround("manipulator_client"),
+        #         bt_ros.CompleteCollectGround("manipulator_client"),
+
+        #         bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
+        #         bt_ros.StartCollectGround("manipulator_client"),
+        #         bt_ros.CompleteCollectGround("manipulator_client"),
+
+        #         bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+        #         bt_ros.UnloadAccelerator("manipulator_client"),
+        #         bt_ros.UnloadAccelerator("manipulator_client"),
+        #         bt_ros.UnloadAccelerator("manipulator_client"),
+        #     ]),
+        #     action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+
+
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
                 bt_ros.SetToDefaultState("manipulator_client"),
 
                 bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
                 bt_ros.StartCollectGround("manipulator_client"),
-                bt.ParallelNode([
+                bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
                 ], threshold=2),
 
                 bt_ros.StartCollectGround("manipulator_client"),
-                bt.ParallelNode([
+                bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
                 ], threshold=2),
@@ -177,19 +201,19 @@ class MainRobotBT(object):
 
         #         bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
         #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelNode([
+        #         bt.ParallelWithMemoryNode([
         #             bt_ros.CompleteCollectGround("manipulator_client"),
         #             bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
         #         ], threshold=2),
 
         #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelNode([
+        #         bt.ParallelWithMemoryNode([
         #             bt_ros.CompleteCollectGround("manipulator_client"),
         #             bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
         #         ], threshold=2),
 
         #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelNode([
+        #         bt.ParallelWithMemoryNode([
         #             # bt_ros.PuckUpAndHold("manipulator_client"),
         #             bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
         #         ], threshold=2),
@@ -197,7 +221,7 @@ class MainRobotBT(object):
         #         # bt_ros.SetAngleToPushBlunium("manipulator_client"),
         #         bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
 
-        #         bt.ParallelNode([
+        #         bt.ParallelWithMemoryNode([
         #             bt_ros.CompleteCollectGround("manipulator_client"),
         #             # FIXME Sasha have to fix height of unloading mechanism
         #             bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
