@@ -137,35 +137,11 @@ class MainRobotBT(object):
         self.blunium_finish_push_pos = None
         self.accelerator_unloading_pos = None
         self.goldenium_grab_pos = None
-        self.scales_unloading_pos = None
+        self.scales_unloading_PREpos = None
         
         self.initiate_params()
 
         rospy.sleep(2)
-
-        # self.bt = bt.Root(
-        #     bt.SequenceWithMemoryNode([
-        #         bt_ros.SetToDefaultState("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #     ]),
-        #     action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
-
 
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
@@ -177,67 +153,36 @@ class MainRobotBT(object):
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
                 ], threshold=2),
-
                 bt_ros.StartCollectGround("manipulator_client"),
+
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
                 ], threshold=2),
-
                 bt_ros.StartCollectGround("manipulator_client"),
+
+                bt.ParallelWithMemoryNode([
+                    bt_ros.PuckUpAndHold("manipulator_client"),
+                    bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
+                ], threshold=2),
+
+                bt_ros.SetAngleToPushBlunium("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
                 bt_ros.CompleteCollectGround("manipulator_client"),
+                bt_ros.PumpUp("manipulator_client")
+                # FIXME Sasha have to fix height of unloading mechanism
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
 
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
+
+                bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  
+                bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
+                bt_ros.UnloadGoldenium("manipulator_client")
             ]),
             action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
-
-
-        # self.bt = bt.Root(
-        #     bt.SequenceWithMemoryNode([
-        #         bt_ros.SetToDefaultState("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
-        #         ], threshold=2),
-
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
-        #         ], threshold=2),
-
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #         bt.ParallelWithMemoryNode([
-        #             # bt_ros.PuckUpAndHold("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
-        #         ], threshold=2),
-
-        #         # bt_ros.SetAngleToPushBlunium("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
-
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             # FIXME Sasha have to fix height of unloading mechanism
-        #             bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-        #         ], threshold=2),
-
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-
-        #         bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
-        #         # bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.scales_unloading_pos, "move_client"),
-        #         # bt_ros.UnloadGoldenium("manipulator_client")
-        #     ]),
-        #     action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
@@ -277,7 +222,7 @@ class MainRobotBT(object):
             self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
             self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
             self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
-            self.scales_unloading_pos = rospy.get_param("purple_zone/scales_unloading_pos")
+            self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
 
         elif self.start_zone == "yellow":
 
@@ -288,7 +233,7 @@ class MainRobotBT(object):
             # use find origin
             self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
                                                self.red_cell_puck[1],
-                                               0])
+                                               3.14])
 
             self.second_puck_landing = np.array([self.green_cell_puck[0],
                                                 self.green_cell_puck[1]-self.approach_dist,
@@ -302,7 +247,7 @@ class MainRobotBT(object):
             self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
             self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
             self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
-            self.scales_unloading_pos = rospy.get_param("yellow_zone/scales_unloading_pos")
+            self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
 
         # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
         # self.drive_back_dist = np.array(self.drive_back_dist)
