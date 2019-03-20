@@ -97,7 +97,16 @@ class Manipulator(object):
 
     def take_ground(self):
         if self.robot_name == "main_robot":
-            pass
+            # Release grabber
+            self.send_command(22)
+            # Set pump to the wall
+            self.send_command(20)
+            # Set pump to the ground
+            self.send_command(19)
+            # Start pump
+            self.send_command(17)
+            return True
+
         if self.robot_name == "secondary_robot":
             # Release grabber
             self.send_command(22)
@@ -118,7 +127,21 @@ class Manipulator(object):
 
     def complete_ground_collect(self):
         if self.robot_name == "main_robot":
-            pass
+            # Set pump to the platform
+            self.send_command(21)
+            # Prop pack
+            self.send_command(23)
+            # Stop pump
+            self.send_command(18)
+            # Set pump to the wall
+            self.send_command(20)
+            # Grab pack
+            self.send_command(24)
+            # Release grabber
+            self.send_command(22)
+            self.send_command(50)
+            return True
+            
         if self.robot_name == "secondary_robot":
             # Set pump to the platform
             self.send_command(21)
@@ -255,12 +278,15 @@ class Manipulator(object):
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
+        
         # release grabber
         self.send_command(22)
         # make step up
         self.send_command(51)
         # grabber throw (up)
-        self.send_command(19)
+        self.send_command(25)
+        # release grabber
+        self.send_command(22)
         return True
 
     def manipulator_up_and_keep_holding(self):

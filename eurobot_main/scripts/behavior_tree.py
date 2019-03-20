@@ -102,7 +102,8 @@ class SequenceWithMemoryNode(SequenceNode):
         super(SequenceWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
 
     def reset(self):
-        pass
+        for child in self.children:
+            child.reset()
 
 
 class FallbackNode(ControlNode):
@@ -130,7 +131,8 @@ class FallbackWithMemoryNode(FallbackNode):
         super(FallbackWithMemoryNode, self).__init__(children_with_latch,  **kwargs)
 
     def reset(self):
-        pass
+        for child in self.children:
+            child.reset()
 
 
 class ParallelNode(ControlNode):
@@ -162,26 +164,36 @@ class ParallelNode(ControlNode):
         pass
 
 
+class ParallelWithMemoryNode(ParallelNode):
+    def __init__(self, children, threshold, **kwargs):
+        children_with_latch = [Latch(child) for child in children]
+        super(ParallelWithMemoryNode, self).__init__(children_with_latch,  threshold, **kwargs)
+
+    def reset(self):
+        for child in self.children:
+            child.reset()
+
+        
 class Latch(ControlNode):
     def __init__(self, child, **kwargs):
         super(Latch, self).__init__([child], **kwargs)
-        self.is_init = BTVariable(False)
+        self.is_closed = BTVariable(False)
 
     def tick(self):
-        if not self.is_init.get():
+        if not self.is_closed.get():
             self.status = self.children[0].tick()
         if self.status == Status.FAILED or self.status == Status.SUCCESS:
-            self.is_init.set(True)
+            self.is_closed.set(True)
         return self.status
 
     def reset(self):
-        self.is_init.set(False)
+        self.is_closed.set(False)
 
     def log(self, level, prefix=""):
-        colors = {True: "green",
-                  False: "red",
+        colors = {True: "red",
+                  False: "green",
                   }
-        prefix = colored("*", colors[self.is_init.get()])
+        prefix = colored("*", colors[self.is_closed.get()])
         self.children[0].log(level, prefix)
 
 
