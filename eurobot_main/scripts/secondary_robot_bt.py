@@ -6,6 +6,7 @@ import bt_ros
 import numpy as np
 from std_msgs.msg import String
 
+from termcolor import colored, cprint
 
 class SideStatus(enum.Enum):
     YELLOW = 1 # RIGHT
@@ -27,11 +28,11 @@ class BTController():
        
             if data.data == "1" and self.side_status == SideStatus.PURPLE:
                 self.side_status = SideStatus.YELLOW
-                print ("UPDATE SIDE TO YELLOW")
+                cprint ("UPDATE SIDE TO " + colored("YELLOW", "yellow", attrs=['bold', 'blink']))
                 self.bt.update_side(SideStatus.YELLOW)
             if data.data == "0" and self.side_status == SideStatus.YELLOW: 
                 self.side_status = SideStatus.PURPLE
-                print ("UPDATE SIDE TO PURPLE")
+                cprint ("UPDATE SIDE TO " + colored("PURPLE", "magenta", attrs=['bold', 'blink']))
                 self.bt.update_side(SideStatus.PURPLE)  
         # if data.data == "0" and self.side_status == SideStatus.LEFT:
         #     if bt is None:
@@ -52,21 +53,21 @@ class BTController():
 class Tactics(object):
     def update_pucks_zone(self, side):
         if side == SideStatus.YELLOW:
-            self.first_puck = rospy.get_param("first_puck_zone_right")
-            self.second_puck = rospy.get_param("second_puck_zone_right")
-            self.third_puck = rospy.get_param("third_puck_zone_right")
-            self.forth_puck = rospy.get_param("forth_puck_zone_right")
-            self.fifth_puck = rospy.get_param("fifth_puck_zone_right")
-            self.scales_zone = rospy.get_param("scales_zone_right")
-            self.start_zone = rospy.get_param("start_zone_right")
+            self.first_puck = rospy.get_param("yellow_side/first_puck_zone")
+            self.second_puck = rospy.get_param("yellow_side/second_puck_zone")
+            self.third_puck = rospy.get_param("yellow_side/third_puck_zone")
+            self.forth_puck = rospy.get_param("yellow_side/forth_puck_zone")
+            self.fifth_puck = rospy.get_param("yellow_side/fifth_puck_zone")
+            self.scales_zone = rospy.get_param("yellow_side/scales_zone")
+            self.start_zone = rospy.get_param("yellow_side/start_zone")
         if side == SideStatus.PURPLE:
-            self.first_puck = rospy.get_param("first_puck_zone_left")
-            self.second_puck = rospy.get_param("second_puck_zone_left")
-            self.third_puck = rospy.get_param("third_puck_zone_left")
-            self.forth_puck = rospy.get_param("forth_puck_zone_left")
-            self.fifth_puck = rospy.get_param("fifth_puck_zone_left")
-            self.scales_zone = rospy.get_param("scales_zone_left")
-            self.start_zone = rospy.get_param("start_zone_left")
+            self.first_puck = rospy.get_param("purple_side/first_puck_zone")
+            self.second_puck = rospy.get_param("purple_side/second_puck_zone")
+            self.third_puck = rospy.get_param("purple_side/third_puck_zone")
+            self.forth_puck = rospy.get_param("purple_side/forth_puck_zone")
+            self.fifth_puck = rospy.get_param("purple_side/fifth_puck_zone")
+            self.scales_zone = rospy.get_param("purple_side/scales_zone")
+            self.start_zone = rospy.get_param("purple_side/start_zone")
 
     def __init__(self, side_status):
         self.side_status = side_status
@@ -150,14 +151,18 @@ class Tactics(object):
         start_take_5_puck = bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client"))
         complete_take_5_puck = bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
         set_man_up = bt.Latch(bt_ros.SetManipulatortoUp("manipulator_client"))
-        # parallel5 = bt.ParallelNode([move_5_back, set_man_up], threshold=2)
+        
         # Scales
         move_scales1 = bt.Latch(bt_ros.MoveLineToPoint(self.scales_zone, "move_client"))
+        parallel5 = bt.ParallelNode([move_scales1, complete_take_5_puck], threshold=2)
+
         x = self.scales_zone[1] + 0.14
         self.scales_zone[1] = x
         move_scales2 = bt.Latch(bt_ros.MoveLineToPoint(self.scales_zone, "move_client"))
         move_back = bt.Latch(bt_ros.MoveLineToPoint(self.start_zone, "move_client"))  
         
+        parallel6 = bt.ParallelNode([set_man_up, move_scales2], threshold=2)
+
         release = bt.Latch(bt_ros.ReleaseFivePucks("manipulator_client"))
 
         first_puck = bt.SequenceNode([parallel0, start_take_1_puck, parallel1])
@@ -169,9 +174,9 @@ class Tactics(object):
 
         forth_puck = bt.SequenceNode([move_4_puck, start_take_4_puck, parallel4])
 
-        fivth_puck = bt.SequenceNode([move_5_puck, start_take_5_puck, complete_take_5_puck, set_man_up])
+        fivth_puck = bt.SequenceNode([move_5_puck, start_take_5_puck, parallel5, parallel6])
 
-        scales = bt.SequenceNode([move_scales1, move_scales2, release, move_back])
+        scales = bt.SequenceNode([release, move_back])
 
         pucks = bt.SequenceNode([first_puck, second_puck, third_puck, forth_puck, fivth_puck, scales])
 
@@ -229,9 +234,6 @@ class SecondaryRobotBT():
             self.bt_timer.shutdown()
         print("============== BT LOG ================")
         self.bt.log(0)
-
-
-
 
 
 if __name__ == '__main__':

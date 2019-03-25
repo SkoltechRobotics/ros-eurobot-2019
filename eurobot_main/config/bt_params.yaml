@@ -1,21 +1,32 @@
-first_puck_zone_left: [0.22, 1.82, 1.57]
-second_puck_zone_left: [0.12, 1.82, 1.57]
-third_puck_zone_left: [0.585, 1.34, 1.57]
-forth_puck_zone_left: [0.785, 1.34, 1.57]
-fifth_puck_zone_left: [0.985, 1.34, 1.57]
-scales_zone_left: [1.34, 1.36, 3.65]
-start_zone_left: [0.23, 0.84, 0]
+
+purple_side:
+  first_puck_zone: [0.22, 1.82, 1.57]
+  second_puck_zone: [0.12, 1.82, 1.57]
+  third_puck_zone: [0.585, 1.35, 1.57]
+  forth_puck_zone: [0.785, 1.35, 1.57]
+  fifth_puck_zone: [0.985, 1.35, 1.57]
+  scales_zone: [1.34, 1.36, 3.65]
+  six_puck_zone: [0.885, 1.35, 1.57]
+  seven_puck_zone: [0.685, 1.35, 1.57]
+  eight_puck_zone: [0.485, 1.35, 1.57]
+  nine_puck_zone: [0.32, 1.82, 1.57]
+  start_zone: [0.23, 0.84, 0]
 
 
-first_puck_zone_right: [2.78, 1.82, 1.57]
-second_puck_zone_right: [2.88, 1.82, 1.57]
-third_puck_zone_right: [2.415, 1.34, 1.57]
-forth_puck_zone_right: [2.215, 1.34, 1.57]
-fifth_puck_zone_right: [2.015, 1.34, 1.57]
-scales_zone_right: [1.65, 1.36, 3.65]
-start_zone_right: [2.77, 0.84, 3.14]
+yellow_side:
+  first_puck_zone: [2.78, 1.82, 1.57]
+  second_puck_zone: [2.88, 1.82, 1.57]
+  third_puck_zone: [2.415, 1.35, 1.57]
+  forth_puck_zone: [2.215, 1.35, 1.57]
+  fifth_puck_zone: [2.015, 1.35, 1.57]
+  scales_zone: [1.65, 1.36, 3.65]
+  six_puck_zone: [2.115, 1.35, 1.57]
+  seven_puck_zone: [2.315, 1.35, 1.57]
+  eight_puck_zone: [2.15, 1.35, 1.57]
+  nine_puck_zone: [2.68, 1.82, 1.57]
+  start_zone: [2.77, 0.84, 3.14]
 
-
+#FIXME::CHANGE ZONE TO SIDE
 yellow_zone:
   red_cell_puck: [2.5, 0.45]
   green_cell_puck: [2.5, 0.75]
@@ -27,6 +38,7 @@ yellow_zone:
   scales_goldenium_PREpos: [1.8, 1.05, 1.4]  # for main
   scales_goldenium_pos: [1.8, 1.4, 1.4]  # for main
 
+#FIXME::CHANGE ZONE TO SIDE
 # can be reached using rospy.get_param("purple_zone/red_cell_puck"
 purple_zone:
   red_cell_puck: [0.5, 0.45]
