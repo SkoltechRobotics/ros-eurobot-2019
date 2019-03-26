@@ -183,7 +183,6 @@ class PuckUpAndHold(ActionClientNode):
 
 
 # TODO
-# Command to push Blunium in Accelerator
 class StartCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_blunium"

@@ -176,12 +176,14 @@ class MainRobotBT(object):
                 ], threshold=2),
                 bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
                 bt_ros.StartCollectBlunium("manipulator_client"),
-                bt_ros.CompleteCollectGround("manipulator_client")  # FIXME change function name
+                bt_ros.CompleteCollectGround("manipulator_client"),  # FIXME change function name
 
                 bt_ros.PumpUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  
                 # FIXME Sasha have to fix height of unloading mechanism
                 
+                # make step up
+                bt_ros.UnloadAccelerator("manipulator_client"),
                 # unload first in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
@@ -193,6 +195,11 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
                 # unload third in acc
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+
+                # unload forth in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
@@ -252,7 +259,7 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("purple_zone/start_zone")
-            
+
             self.blunium_collect_PREpos = rospy.get_param("purple_zone/blunium_collect_PREpos")
             self.blunium_collect_pos = rospy.get_param("purple_zone/blunium_collect_pos")
 
