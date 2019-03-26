@@ -20,8 +20,8 @@ class STM():
 
 
         self.stm_protocol = STMprotocol(serial_port, baudrate)
-        self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
-        self.stm_status = STMstatus(self.stm_protocol, STATUS_RATE)
+        # self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
+        # self.stm_status = STMstatus(self.stm_protocol, STATUS_RATE)
 
     def stm_command_callback(self, data):
         id, cmd, args = self.parse_data(data)

@@ -9,8 +9,8 @@ class Manipulator():
     def __init__(self):
         rospy.init_node("manuipulator_node", anonymous=True)
 
-        self.publisher = rospy.Publisher("/secondary_robot/stm_command", String, queue_size=10)
-        rospy.Subscriber("/secondary_robot/stm_response", String, self.response_callback)
+        self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
+        rospy.Subscriber("stm/response", String, self.response_callback)
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
@@ -37,6 +37,39 @@ class Manipulator():
                     self.id_command += 1
                     return self.last_response_args
                 # if don't get response a lot of time
+
+    def take_ground(self):
+        # Release grabber
+        self.send_command(22)
+        # Set pump to the ground
+        self.send_command(19)
+        # Start pump
+        self.send_command(17)
+        # Set pump to the wall
+        self.send_command(20)
+        return True
+
+    def complete_ground_collect(self):
+        # Set pump to the platform
+        self.send_command(21)
+        # Prop pack
+        self.send_command(23)
+        # Stop pump
+        self.send_command(18)
+        # Grab pack
+        self.send_command(24)
+        # Prop pack
+        self.send_command(24)
+        # Grab pack
+        self.send_command(24)
+        
+        # Release grabber
+        self.send_command(22)
+        # Set pump to the wall
+        self.send_command(20)
+        self.send_command(50)
+        return True
+
 
     def calibrate_small(self):
         self.send_command(48)
@@ -128,4 +161,19 @@ class Manipulator():
 
     def release_small(self):
         pass
+
+    def release_accelerator(self):
+        # assume that we need to move pucks 1 level up to start throwing them
+
+        # release grabber
+        self.send_command(22)
+        # make step up
+        self.send_command(51)
+        #get step motor status
+        self.send_command(52)
+        # grabber throw (up)
+        self.send_command(25)
+        # release grabber
+        self.send_command(22)
+        return True
 

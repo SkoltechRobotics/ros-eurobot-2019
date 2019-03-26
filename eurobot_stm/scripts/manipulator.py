@@ -50,8 +50,8 @@ class Manipulator(object):
             self.release_accelerator()
         elif cmd == "manipulator_up_and_keep_holding":
             self.manipulator_up_and_keep_holding()
-        elif cmd == "set_angle_to_push_blunium":
-            self.set_angle_to_push_blunium()
+        elif cmd == "start_collect_blunium":
+            self.start_collect_blunium()
         elif cmd == "grab_goldenium_and_hold_up":
             self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
@@ -126,6 +126,8 @@ class Manipulator(object):
     def set_manipulator_wall(self):
         self.send_command(20)
 
+    # FIXME  why 24 cmd?
+
     def set_manipulator_up(self):
         self.send_command(24)
         self.send_command(21)
@@ -139,15 +141,13 @@ class Manipulator(object):
         self.send_command(18)
         # Grab pack
         self.send_command(24)
-        # Prop pack
-        self.send_command(24)
-        # Grab pack
-        self.send_command(24)
-        
         # Release grabber
         self.send_command(22)
+
         # Set pump to the wall
-        self.send_command(20)
+        # self.send_command(20)
+
+        # make step down
         self.send_command(50)
         return True
 
@@ -285,16 +285,21 @@ class Manipulator(object):
         self.send_command(22)
         return True
 
-    def manipulator_up_and_keep_holding(self):
-        # release grabber
-        self.send_command(22)
-        # Set pump to the platform
-        self.send_command(21)
-        return True
+    # def manipulator_up_and_keep_holding(self):
+    #     # release grabber
+    #     self.send_command(22)
+    #     # Set pump to the platform
+    #     self.send_command(21)
+    #     return True
 
-    def set_angle_to_push_blunium(self):
-        # push blunium
+    def start_collect_blunium(self):
+        # Release grabber
+        self.send_command(22)
+        # push blunium angle
         self.send_command(34)
+        # Start pump
+        self.send_command(17)
+        rospy.sleep(1)
         return True
 
     def goldenium_up_and_hold(self):

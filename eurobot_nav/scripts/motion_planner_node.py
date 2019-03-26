@@ -399,7 +399,7 @@ class MotionPlannerNode:
             delta_coords = self.coords - self.path[-1, :]
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
             self.goal = np.array([self.path[-1, 0], self.path[-1, 1], self.path[-1, 2]])
             self.current_state = 'following'
         elif self.current_state == 'following' and self.delta_dist >= self.min_dist_to_goal_point:
@@ -410,7 +410,7 @@ class MotionPlannerNode:
             delta_coords = self.coords - self.path[-1, :]
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
             rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
         elif self.current_state == 'following' and self.delta_dist < self.min_dist_to_goal_point:
             self.current_state = 'move_arc'

@@ -32,7 +32,7 @@ yellow_zone:
   red_cell_puck: [2.5, 0.45]
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
-  blunium_start_push_PREpos: [1.4, 0.4, -1.57]
+  blunium_start_push_PREpos: [1.4, 0.5, -1.57]
   blunium_start_push_pos: [1.4, 0.25, -1.57]  # for main  # FIXME
   blunium_finish_push_pos: [1.29, 0.25, -1.57]  # for main
   accelerator_PREunloading_pos: [1.14, 0.2, 0.525]
