@@ -252,14 +252,17 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("purple_zone/start_zone")
-            # FIXME self.blunium_start_push_PREpos
+            
             self.blunium_collect_PREpos = rospy.get_param("purple_zone/blunium_collect_PREpos")
             self.blunium_collect_pos = rospy.get_param("purple_zone/blunium_collect_pos")
+
             self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
             self.accelerator_unloading_pos_far = rospy.get_param("purple_zone/accelerator_unloading_pos_far")
+
             self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
+
             self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
             self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
 
@@ -283,14 +286,17 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("yellow_zone/start_zone")
-            self.blunium_start_push_PREpos = rospy.get_param("yellow_zone/blunium_start_push_PREpos")
-            self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
-            self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
+
+            self.blunium_collect_PREpos = rospy.get_param("yellow_zone/blunium_collect_PREpos")
+            self.blunium_collect_pos = rospy.get_param("yellow_zone/blunium_collect_pos")
+
             self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
             self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
+
             self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
+
             self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
             self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
 
