@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
-    <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen"/>
+    <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="log"/>
+    <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="log"/>
 
     <rosparam file="$(find eurobot_loc)/config/secondary_robot_localization_params.yaml" command="load" ns="secondary_robot"/>
     <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="secondary_robot"/>

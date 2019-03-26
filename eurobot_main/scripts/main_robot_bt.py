@@ -133,12 +133,19 @@ class MainRobotBT(object):
         self.third_puck_landing = None
 
         # hard-coded poses (x, y, theta)
+        self.blunium_start_push_PREpos = None
         self.blunium_start_push_pos = None
         self.blunium_finish_push_pos = None
+
+        self.accelerator_PREunloading_pos = None
         self.accelerator_unloading_pos = None
+        self.accelerator_unloading_pos_far = None
+
+        self.goldenium_PREgrab_pos = None
         self.goldenium_grab_pos = None
-        self.scales_unloading_pos = None
-        
+
+        self.scales_unloading_PREpos = None
+        self.scales_goldenium_pos = None
         self.initiate_params()
 
         rospy.sleep(2)
@@ -149,41 +156,63 @@ class MainRobotBT(object):
 
                 bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
                 bt_ros.StartCollectGround("manipulator_client"),
-                bt.ParallelNode([
+                bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
                 ], threshold=2),
-
                 bt_ros.StartCollectGround("manipulator_client"),
-                bt.ParallelNode([
+
+                bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
                 ], threshold=2),
-
                 bt_ros.StartCollectGround("manipulator_client"),
-                bt.ParallelNode([
+
+                bt.ParallelWithMemoryNode([
                     bt_ros.PuckUpAndHold("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
+                    bt_ros.MoveLineToPoint(self.blunium_start_push_PREpos, "move_client"),
                 ], threshold=2),
+
+                bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
 
                 bt_ros.SetAngleToPushBlunium("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),
+                bt_ros.PumpUp("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  
+                # FIXME Sasha have to fix height of unloading mechanism
+                bt_ros.SetManipulatortoGoldenium("manipulator_client"),
+                
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
-                bt.ParallelNode([
-                    bt_ros.CompleteCollectGround("manipulator_client"),
-                    # FIXME Sasha have to fix height of unloading mechanism
-                    bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-                ], threshold=2),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt_ros.UnloadAccelerator("manipulator_client"),
-                bt_ros.UnloadAccelerator("manipulator_client"),
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
-                bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),
+                bt_ros.MoveLineToPoint(self.goldenium_PREgrab_pos, "move_client"),  
+                bt_ros.SetManipulatortoGoldenium("manipulator_client"),
+
+                bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  
                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.scales_unloading_pos, "move_client"),
-                bt_ros.UnloadGoldenium("manipulator_client")
+                bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
+                bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
+                bt_ros.UnloadGoldenium("manipulator_client"),
+                
+                bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
+                bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
+
             ]),
             action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
@@ -200,13 +229,13 @@ class MainRobotBT(object):
 
         # can be reached using rospy.get_param("purple_zone/red_cell_puck"
 
-        self.start_zone = "purple"
-        # bt.BTVariable()
+        self.start_zone = "yellow"
+
         if self.start_zone == "purple":
 
-            self.red_cell_puck = rospy.get_param("red_cell_puck")
-            self.green_cell_puck = rospy.get_param("green_cell_puck")
-            self.blue_cell_puck = rospy.get_param("blue_cell_puck")
+            self.red_cell_puck = rospy.get_param("purple_zone/red_cell_puck")
+            self.green_cell_puck = rospy.get_param("purple_zone/green_cell_puck")
+            self.blue_cell_puck = rospy.get_param("purple_zone/blue_cell_puck")
 
             # use find origin
             self.first_puck_landing = np.array([self.red_cell_puck[0]-self.approach_dist,
@@ -221,11 +250,48 @@ class MainRobotBT(object):
                                                self.blue_cell_puck[1]-self.approach_dist,
                                                1.57])
 
-            self.blunium_start_push_pos = rospy.get_param("blunium_start_push_pos")
-            self.blunium_finish_push_pos = rospy.get_param("blunium_finish_push_pos")
-            self.accelerator_unloading_pos = rospy.get_param("accelerator_unloading_pos")
-            self.goldenium_grab_pos = rospy.get_param("goldenium_grab_pos")
-            self.scales_unloading_pos = rospy.get_param("scales_unloading_pos")
+            self.start_zone = rospy.get_param("purple_zone/start_zone")
+            # FIXME self.blunium_start_push_PREpos
+            self.blunium_start_push_pos = rospy.get_param("purple_zone/blunium_start_push_pos")
+            self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
+            self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
+            self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
+            self.accelerator_unloading_pos_far = rospy.get_param("purple_zone/accelerator_unloading_pos_far")
+            self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
+            self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
+            self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
+            self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
+
+        elif self.start_zone == "yellow":
+
+            self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
+            self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
+            self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
+
+            # use find origin
+            self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
+                                               self.red_cell_puck[1],
+                                               3.14])
+
+            self.second_puck_landing = np.array([self.green_cell_puck[0],
+                                                self.green_cell_puck[1]-self.approach_dist,
+                                                1.57])
+
+            self.third_puck_landing = np.array([self.blue_cell_puck[0],
+                                               self.blue_cell_puck[1]-self.approach_dist,
+                                               1.57])
+
+            self.start_zone = rospy.get_param("yellow_zone/start_zone")
+            self.blunium_start_push_PREpos = rospy.get_param("yellow_zone/blunium_start_push_PREpos")
+            self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
+            self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
+            self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
+            self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
+            self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
+            self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
+            self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
+            self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
+            self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
 
         # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
         # self.drive_back_dist = np.array(self.drive_back_dist)

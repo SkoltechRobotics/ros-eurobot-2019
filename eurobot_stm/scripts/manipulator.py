@@ -56,6 +56,10 @@ class Manipulator(object):
             self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
             self.release_goldenium_on_scales()
+        elif cmd == "only_pump_up":
+            self.only_pump_up()
+        elif cmd == "set_angle_to_grab_goldenium":
+            self.set_angle_to_grab_goldenium()
 
         self.response_publisher.publish(cmd_id + " success")
 
@@ -97,16 +101,26 @@ class Manipulator(object):
 
     def take_ground(self):
         if self.robot_name == "main_robot":
-            pass
-        if self.robot_name == "secondary_robot":
             # Release grabber
             self.send_command(22)
-            # Set pump to the wall
-            self.send_command(20)
             # Set pump to the ground
             self.send_command(19)
             # Start pump
             self.send_command(17)
+            # Set pump to the wall
+            self.send_command(20)
+            return True
+
+        if self.robot_name == "secondary_robot":
+            # Release grabber
+            self.send_command(22)
+
+            # Set pump to the ground
+            self.send_command(19)
+            # Start pump
+            self.send_command(17)
+            # Set pump to the wall
+            self.send_command(20)
             return True
 
     def set_manipulator_wall(self):
@@ -117,23 +131,26 @@ class Manipulator(object):
         self.send_command(21)
 
     def complete_ground_collect(self):
-        if self.robot_name == "main_robot":
-            pass
-        if self.robot_name == "secondary_robot":
-            # Set pump to the platform
-            self.send_command(21)
-            # Prop pack
-            self.send_command(23)
-            # Stop pump
-            self.send_command(18)
-            # Set pump to the wall
-            self.send_command(20)
-            # Grab pack
-            self.send_command(24)
-            # Release grabber
-            self.send_command(22)
-            self.send_command(50)
-            return True
+        # Set pump to the platform
+        self.send_command(21)
+        # Prop pack
+        self.send_command(23)
+        # Stop pump
+        self.send_command(18)
+        # Grab pack
+        self.send_command(24)
+        # Prop pack
+        self.send_command(24)
+        # Grab pack
+        self.send_command(24)
+        
+        # Release grabber
+        self.send_command(22)
+        # Set pump to the wall
+        self.send_command(20)
+        self.send_command(50)
+        return True
+
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -260,8 +277,12 @@ class Manipulator(object):
         self.send_command(22)
         # make step up
         self.send_command(51)
+        #get step motor status
+        self.send_command(52)
         # grabber throw (up)
-        self.send_command(19)
+        self.send_command(25)
+        # release grabber
+        self.send_command(22)
         return True
 
     def manipulator_up_and_keep_holding(self):
@@ -283,19 +304,27 @@ class Manipulator(object):
         self.send_command(35)
         # start pump
         self.send_command(17)
+        rospy.sleep(1)
         # lift up goldenium
         self.send_command(36)
         return True
+
+    def set_angle_to_grab_goldenium(self):
+        # set angle to grab goldenium
+        self.send_command(35)
 
     def release_goldenium_on_scales(self):
         # set pump to the wall
         self.send_command(20)
         # stop pump
-        self.send_command(20)
+        self.send_command(18)
         # set pump to the platform
         self.send_command(21)
         return True
 
+    def only_pump_up(self):
+        # set pump to the platform
+        self.send_command(21)
 
 if __name__ == '__main__':
     try:
