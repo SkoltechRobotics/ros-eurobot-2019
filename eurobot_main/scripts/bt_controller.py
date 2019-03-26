@@ -27,7 +27,7 @@ class BTController():
     def start_status_callback(self, data):
         if data.data == "1":
             self.start_counter += 1
-        elif:
+        else:
             self.start_counter = 0
         if self.start_counter == 5:
             # TRY TO SHUTDOWN THE SUBSCRIBER
