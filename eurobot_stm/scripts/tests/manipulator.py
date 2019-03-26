@@ -135,7 +135,7 @@ class Manipulator():
         self.send_command(20)
         # Set pump to the ground
         self.send_command(19)
-        # Start pump
+        # Start pump 
         self.send_command(17)
         # Set pump to the platform
         self.send_command(21)

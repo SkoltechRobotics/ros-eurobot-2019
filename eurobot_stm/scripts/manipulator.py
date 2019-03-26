@@ -87,9 +87,14 @@ class Manipulator(object):
 
     def calibrate(self):
         if self.robot_name == "main_robot":
+            # start calibration
             self.send_command(48)
+            # set pump to the platform
             self.send_command(21)
+            # grabber throw (up)
             self.send_command(25)  # FIXME
+            # make step down
+            self.send_command(50)
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(48)
