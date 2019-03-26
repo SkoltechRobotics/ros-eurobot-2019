@@ -12,6 +12,11 @@
 10) 
 
 
+# General info
+- Subscribers to the end of init
+- no namespaces in init, all in launch
+
+
 # ROBOT COMMUNICATION
 ------------------
 rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
@@ -21,7 +26,7 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 14 - pos
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
 
-# to ride by odometry
+## to ride by odometry
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
@@ -87,6 +92,9 @@ rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_acceler
 
 WE CHANGED TOPIC
 stm 1 0x11
+
+roslaunch eurobot_main main_robot_bt.launch 
+
 
 
 # WIRELESS PART SETUP
@@ -171,6 +179,8 @@ git checkout branchname path/to/file/file.py
 git checkout collect_chaos_pucks eurobot_tactics/notebooks
 
 
+To revert the previous commit (our merge commit), we do:
+git revert HEAD
 
 ## Team
 
@@ -194,6 +204,8 @@ chmod +x "filename"
 sudo pip install --target=/usr/local/lib/python2.7/dist-packages sympy
 sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages sympy
 
+on odroid to show 
+ls -l /dev/tty*
 
 
 
@@ -311,6 +323,14 @@ GOALS
 
 
 
+# BT
+- Action sets params - SET
+- Condition node checks their status if callback activated - GET
+
+- Three main parts: 
+-- Dictionary
+-- Callbacks
+-- Nodes
 
 # Проверить, что робот остановился.
 # Информация о том, что робот отсановился, публикуется в топик response
