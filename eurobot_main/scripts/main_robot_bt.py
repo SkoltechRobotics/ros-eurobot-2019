@@ -156,6 +156,7 @@ class MainRobotBT(object):
 
                 bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
                 bt_ros.StartCollectGround("manipulator_client"),
+
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
@@ -168,44 +169,51 @@ class MainRobotBT(object):
                 ], threshold=2),
                 bt_ros.StartCollectGround("manipulator_client"),
 
+                # move to blunium and collect it
                 bt.ParallelWithMemoryNode([
-                    bt_ros.PuckUpAndHold("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.blunium_start_push_PREpos, "move_client"),
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
                 ], threshold=2),
+                bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
+                bt_ros.StartCollectBlunium("manipulator_client"),
+                bt_ros.CompleteCollectGround("manipulator_client"),  # FIXME change function name
 
-                bt_ros.MoveLineToPoint(self.blunium_start_push_pos, "move_client"),
-
-                bt_ros.SetAngleToPushBlunium("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.blunium_finish_push_pos, "move_client"),
-                bt_ros.CompleteCollectGround("manipulator_client"),
                 bt_ros.PumpUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  
                 # FIXME Sasha have to fix height of unloading mechanism
-                bt_ros.SetManipulatortoGoldenium("manipulator_client"),
                 
+                # make step up
+                bt_ros.UnloadAccelerator("manipulator_client"),
+                # unload first in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
-                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
+                # unload second in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
-                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
-                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
+                # unload third in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
+
+                # unload forth in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos_far, "move_client"),
 
+                # to make sure that the LAST puck is unloaded
+                bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
+
+                # collect Goldenium
                 bt_ros.MoveLineToPoint(self.goldenium_PREgrab_pos, "move_client"),  
                 bt_ros.SetManipulatortoGoldenium("manipulator_client"),
-
                 bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  
                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+
+                # move to scales and unload
                 bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client"), # FIXME
                 bt_ros.MoveLineToPoint(self.scales_goldenium_pos, "move_client"), # FIXME
                 bt_ros.UnloadGoldenium("manipulator_client"),
@@ -251,14 +259,17 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("purple_zone/start_zone")
-            # FIXME self.blunium_start_push_PREpos
-            self.blunium_start_push_pos = rospy.get_param("purple_zone/blunium_start_push_pos")
-            self.blunium_finish_push_pos = rospy.get_param("purple_zone/blunium_finish_push_pos")
+
+            self.blunium_collect_PREpos = rospy.get_param("purple_zone/blunium_collect_PREpos")
+            self.blunium_collect_pos = rospy.get_param("purple_zone/blunium_collect_pos")
+
             self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
             self.accelerator_unloading_pos_far = rospy.get_param("purple_zone/accelerator_unloading_pos_far")
+
             self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
+
             self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
             self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
 
@@ -282,14 +293,17 @@ class MainRobotBT(object):
                                                1.57])
 
             self.start_zone = rospy.get_param("yellow_zone/start_zone")
-            self.blunium_start_push_PREpos = rospy.get_param("yellow_zone/blunium_start_push_PREpos")
-            self.blunium_start_push_pos = rospy.get_param("yellow_zone/blunium_start_push_pos")
-            self.blunium_finish_push_pos = rospy.get_param("yellow_zone/blunium_finish_push_pos")
+
+            self.blunium_collect_PREpos = rospy.get_param("yellow_zone/blunium_collect_PREpos")
+            self.blunium_collect_pos = rospy.get_param("yellow_zone/blunium_collect_pos")
+
             self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
             self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
             self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
+
             self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
             self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
+
             self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
             self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
 

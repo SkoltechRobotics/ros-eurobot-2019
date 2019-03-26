@@ -1,4 +1,5 @@
 from manipulator import Manipulator
 
 man = Manipulator()
-man.collect_small()
+man.take_ground()
+man.complete_ground_collect()
