@@ -172,10 +172,6 @@ def get_transform(buffer_, child_frame, parent_frame, stamp):
     return cvt_ros_transform2point(t.transform)
 
 
-def wrap_angle(angle):
-    return (angle + np.pi) % (2 * np.pi) - np.pi
-
-
 def euler_angles_to_rotation_matrix(theta):
     r_x = np.array([[1, 0, 0], [0, np.cos(theta[0]), -np.sin(theta[0])],
                     [0, np.sin(theta[0]),
@@ -249,21 +245,3 @@ def find_src3(global_pose, local_pose):
 def cvt_point2pose3(point):
     return make_pose3(euler_angles_to_rotation_matrix([0, 0, point[2]]), np.array([point[0], point[1], 0]))
 
-
-# if __name__ == "__main__":
-#     point1 = np.array([2, 3, 3.2])
-#     point2 = np.array([3, 4, 5.2])
-#     pose1 = cvt_point2pose3(point1)
-#     pose2 = cvt_point2pose3(point2)
-#
-#     print(cvt_point2pose3(cvt_global2local2(point1, point2)))
-#     print(cvt_global2local3(pose1, pose2))
-#     print(cvt_point2pose3(cvt_global2local2(point1, point2)) - cvt_global2local3(pose1, pose2))
-#
-#     print(cvt_point2pose3(cvt_local2global2(point1, point2)))
-#     print(cvt_local2global3(pose1, pose2))
-#     print(cvt_point2pose3(cvt_local2global2(point1, point2)) - cvt_local2global3(pose1, pose2))
-#
-#     print(cvt_point2pose3(find_src2(point1, point2)))
-#     print(find_src3(pose1, pose2))
-#     print(cvt_point2pose3(find_src2(point1, point2)) - find_src3(pose1, pose2))

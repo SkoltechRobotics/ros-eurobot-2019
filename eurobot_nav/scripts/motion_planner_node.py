@@ -6,30 +6,15 @@
 import rospy
 import numpy as np
 import tf2_ros
-import time
 from tf.transformations import euler_from_quaternion
 from visualization_msgs.msg import MarkerArray, Marker
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
 from geometry_msgs.msg import Twist
-from core_functions import *
+from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
-
-
-# from std_msgs.msg import Int32MultiArray
-# from core_functions import cvt_local2global
-# from core_functions import wrap_angle
-
-
-def wrap_angle(angle):
-    """
-    Wraps the given angle to the range [-pi, +pi].
-    :param angle: The angle (in rad) to wrap (can be unbounded).
-    :return: The wrapped angle (guaranteed to in [-pi, +pi]).
-    """
-    return (angle + np.pi) % (np.pi * 2) - np.pi
 
 
 class MotionPlannerNode:
@@ -78,7 +63,6 @@ class MotionPlannerNode:
         self.goal = None
         self.current_cmd = None
         self.current_state = 'start'
-        # in future current state is for example, follow path and stopping by rangefinders, stopping by localization
         self.delta_dist = 0
         self.vel = np.zeros(3)
         self.theta_diff = None
@@ -89,13 +73,8 @@ class MotionPlannerNode:
         self.point = np.array([0., 0., 0.])
         self.path_left = 9999  # big initial value
         self.distance_map_frame = None
-        self.cmd_stop_robot_id = None
-        self.vx_prev = 0
-        self.vy_prev = 0
-        self.w_prev = 0
-        self.t_prev = time.time()
         self.stop_id = 0
-        self.obstacle_pointss = np.array([100, 100])
+        self.obstacle_points = np.array([100, 100])
         self.dist_to_obstacle = 100
         self.timer = None
         self.sensors_coords_vector = np.array([[np.sin(np.pi/6), np.cos(np.pi/6)], [np.sin(np.pi/6), (-1)*np.cos(np.pi/6)], [-1, 0]])
@@ -130,7 +109,7 @@ class MotionPlannerNode:
         self.update_coords()
         point_local = self.sensors_coords_vector * (self.distances + self.r).T
         rospy.loginfo(str(self.coords[:2]))
-        self.obstacle_pointss = cvt_local2global(point_local, self.coords)
+        self.obstacle_points = cvt_local2global(point_local, self.coords)
         # self.set_collision_point(cvt_local2global(point_local, self.coords))
 
     def distance_callback(self, data):
@@ -253,7 +232,7 @@ class MotionPlannerNode:
         while not self.update_coords():
             rospy.sleep(0.05)
 
-        self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
+        self.distance_map_frame, self.theta_diff = calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
         rospy.loginfo("d_norm %.3f", self.d_norm)
@@ -347,7 +326,6 @@ class MotionPlannerNode:
         self.result_vel *= deceleration_coefficient
         self.prev_vel = self.result_vel.copy()
         self.prev_time = curr_time
-        self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
         return self.result_vel
 
     def follow_path(self):
@@ -495,8 +473,6 @@ class MotionPlannerNode:
             rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
         elif self.current_state == 'following' and self.delta_dist < self.min_dist_to_goal_point:
             self.current_state = 'move_arc'
-            self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
-            self.t_prev = self.prev_time
             self.move_arc()
         elif self.current_state == 'move_arc':
             self.move_arc()
@@ -533,46 +509,6 @@ class MotionPlannerNode:
             return True
         else:
             return False
-
-    def acceleration_constraint(self, vel_cmd):
-        vx, vy, w = vel_cmd
-        t = time.time()
-        if np.abs(w - self.w_prev) > self.AW_MAX * (t - self.t_prev):
-            w_new = self.w_prev + self.AW_MAX * (t - self.t_prev) * np.sign(w - self.w_prev)
-            if abs(w) > 5 * self.AW_MAX * (t - self.t_prev):
-                vx *= w_new / w
-                vy *= w_new / w
-            w = w_new
-
-        if np.abs(vx - self.vx_prev) > self.AV_MAX * (t - self.t_prev):
-            vx = self.vx_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vx - self.vx_prev)
-
-        if np.abs(vy - self.vy_prev) > self.AV_MAX * (t - self.t_prev):
-            vy = self.vy_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vy - self.vy_prev)
-
-        if abs(vx) > self.V_MAX:
-            k = abs(vx) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(vy) > self.V_MAX:
-            k = abs(vy) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(w) > self.W_MAX:
-            k = abs(w) / self.W_MAX
-            vx /= k
-            vy /= k
-            w /= k
-
-        self.vy_prev = vy
-        self.vx_prev = vx
-        self.w_prev = w
-        self.t_prev = t
-        return np.array([vx, vy, w])
 
     def set_speed_simulation(self, vx, vy, w):
         tw = Twist()

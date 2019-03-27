@@ -50,7 +50,6 @@ class ParticleFilter:
         self.last = (start_x, start_y, start_angle)
         self.beac_dist_thresh = pf_params["beac_dist_thresh"]
         self.k_angle = pf_params["k_angle"]
-        self.k_bad = pf_params["k_bad"]
         self.num_is_near_thresh = pf_params["num_is_near_thresh"]
         self.distance_noise_1_beacon = pf_params["distance_noise_1_beacon"]
         self.angle_noise_1_beacon = pf_params["angle_noise_1_beacon"]
@@ -64,7 +63,6 @@ class ParticleFilter:
         self.landmarks = np.zeros((2, 0))
         self.sigma_phi = pf_params["sigma_phi"]
         self.min_sin = pf_params["min_sin"]
-        self.min_cost_function = pf_params["min_cost_function"]
         self.r_lid = np.array([])
         self.phi_lid = np.array([])
         self.beacon_ind = np.array([])
