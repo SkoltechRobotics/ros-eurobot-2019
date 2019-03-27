@@ -12,6 +12,7 @@ class ResponseStatus(enum.Enum):
 
 
 class Protocol(enum.Enum):
+    # for both Main and Secondary robots
     SET_ANGLE = 0x10
     START_PUMP = 0x11
     STOP_PUMP = 0x12
@@ -21,13 +22,15 @@ class Protocol(enum.Enum):
     OPEN_GRABBER = 0x16
     PROP_PUCK_GRABBER = 0x17
     GRAB_PUCK_GRABBER = 0x18
-    # Secondary
+
+    # only for Secondary
     RELEASER_DEFAULT_SECONDARY = 0x19
     RELEASER_THROW_SECONDARY = 0x20
-    # Main
-    RELEASE_PUCK_TOP_MAIN = 0x21
-    RELEASER_DEFAULT_MAIN = 0x22
-    RELEASE_PUCK_BOT_MAIN = 0x23
+
+    # only for Main
+    UNLOAD_PUCK_TOP_MAIN = 0x21
+    UNLOAD_DEFAULT_MAIN = 0x22  # FIXME
+    UNLOAD_PUCK_BOTTOM_MAIN = 0x23
     SET_BLUNIUM_ANGLE_MAIN = 0x24
     SET_GRAB_GOLDENIUM_ANGLE_MAIN = 0x25
     SET_LIFT_GOLDENIUM_ANGLE_MAIN = 0x26
@@ -137,10 +140,9 @@ class Manipulator(object):
 
     def calibrate(self):
         if self.robot_name == "main_robot":
-            # start calibration
-            self.send_command(48)
-            # set pump to the platform
-            self.send_command(21)
+            self.send_command(Protocol.START_CALIBRATION)
+            self.send_command(Protocol.SET_PLATFORM)
+
             # grabber throw (up)
             self.send_command(25)  # FIXME
             # make step down
