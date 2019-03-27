@@ -4,11 +4,9 @@ from std_msgs.msg import String
 
 from termcolor import colored, cprint
 
-
 class SideStatus(enum.Enum):
-    YELLOW = 1
-    PURPLE = 0
-
+    YELLOW = 1 # RIGHT
+    PURPLE = 0 # LEFT
 
 class BTController():
     def __init__(self, behavior_tree):

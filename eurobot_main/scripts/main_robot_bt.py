@@ -146,7 +146,6 @@ class MainRobotBT(object):
 
         self.scales_unloading_PREpos = None
         self.scales_goldenium_pos = None
-
         self.initiate_params()
 
         rospy.sleep(2)
