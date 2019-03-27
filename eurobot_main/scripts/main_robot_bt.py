@@ -227,6 +227,9 @@ class MainRobotBT(object):
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
     def start(self):
+
+        # FIXME change structure to subtrees!
+        
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
                 bt_ros.SetToDefaultState("manipulator_client"),
