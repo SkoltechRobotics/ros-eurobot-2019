@@ -10,7 +10,7 @@ class SideStatus(enum.Enum):
     PURPLE = 0
 
 
-class BTController():
+class BTController(object):
     def __init__(self, behavior_tree):
         self.side_status_subscriber = rospy.Subscriber("stm/side_status", String, self.side_status_callback)
         self.start_status_subscriber = rospy.Subscriber("stm/start_status", String, self.start_status_callback)

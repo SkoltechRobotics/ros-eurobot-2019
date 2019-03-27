@@ -31,7 +31,7 @@ class Manipulator(object):
 
         if cmd == "default":
             self.calibrate()
-            
+
         elif cmd == "manipulator_wall":
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
