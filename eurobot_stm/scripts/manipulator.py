@@ -34,7 +34,8 @@ class Protocol(enum.Enum):
     SET_BLUNIUM_ANGLE_MAIN = 0x24
     SET_GRAB_GOLDENIUM_ANGLE_MAIN = 0x25
     SET_LIFT_GOLDENIUM_ANGLE_MAIN = 0x26
-    # ---
+
+    # for both Main and Secondary robots
     START_CALIBRATION = 0x30
     MAKE_STEP = 0x31
     MAKE_STEP_DOWN = 0x32
@@ -166,7 +167,7 @@ class Manipulator(object):
         self.send_command(Protocol.SET_WALL)
         return True
 
-    def set_manipulator_platfrom(self):
+    def set_manipulator_platform(self):
         self.send_command(Protocol.SET_PLATFORM)
         return True
 
@@ -249,6 +250,7 @@ class Manipulator(object):
 
     def set_angle_to_grab_goldenium(self):
         self.send_command(Protocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN)
+        return True
 
     def release_goldenium_on_scales(self):
         self.send_command(Protocol.SET_WALL)
@@ -258,6 +260,7 @@ class Manipulator(object):
 
     def stepper_step_up(self):
         self.send_command(Protocol.MAKE_STEP_UP)
+        return True
 
 
 if __name__ == '__main__':
