@@ -68,10 +68,9 @@ class Manipulator(object):
         cmd = data[1]
         return cmd_id, cmd
 
-    def make_command(self, cmd):
+    def do_command(self, cmd):
         if cmd == "default":
             self.calibrate()
-
         elif cmd == "manipulator_wall":
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
@@ -102,7 +101,7 @@ class Manipulator(object):
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
-        result = self.make_command(cmd)
+        result = self.do_command(cmd)
         if result:
             self.response_publisher.publish(cmd_id + " success")
         else:
@@ -165,9 +164,11 @@ class Manipulator(object):
 
     def set_manipulator_wall(self):
         self.send_command(Protocol.SET_WALL)
+        return True
 
     def set_manipulator_platfrom(self):
         self.send_command(Protocol.SET_PLATFORM)
+        return True
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -192,34 +193,36 @@ class Manipulator(object):
             return True
 
     def release(self, pucks_number):
-        self.send_command(25)
 
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(25)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
         
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(25)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
 
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(25)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
 
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(25)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
 
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(25)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
+        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        return True
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
