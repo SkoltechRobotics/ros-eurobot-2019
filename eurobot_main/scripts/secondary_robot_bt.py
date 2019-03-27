@@ -130,15 +130,25 @@ class PurpleTactics(Tactics):
 
 
 
-        first_puck = bt.SequenceNode([bt.ParallelNode([bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                                                       bt.FallbackNode([bt.ConditionNode(super(PurpleTactics, self).is_coordinates_reached(0.4, 1.2, 0)),
-                                                                        bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])], threshold=2),
-                                      bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-                                      bt.ParallelNode([bt.SequenceWithMemoryNode(
-                                          [bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
-                                           bt_ros.MoveLineToPoint(self.first_puck + (-0.1, -0.07, 0), "move_client")]),
-                                                       bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))],
-                                                      threshold=2)])
+        first_puck = bt.SequenceNode([
+            bt.ParallelNode([
+                bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
+                bt.FallbackNode([
+                    bt.ConditionNode(super(PurpleTactics, self).is_coordinates_reached(0.4, 1.2, 0)),
+                    bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))
+                ])
+            ], threshold=2),
+
+            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
+            bt.ParallelNode([
+                bt.SequenceWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.first_puck + (-0.1, -0.07, 0), "move_client")
+                ]),
+                bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+            ], threshold=2)
+        ])
+
 
         second_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client")),
                                        bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
