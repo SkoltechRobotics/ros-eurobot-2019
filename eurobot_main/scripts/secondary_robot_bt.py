@@ -17,6 +17,7 @@ class Tactics(object):
     def __init__(self):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        self.robot_name = rospy.get_param("robot_name")
         self.robot_coordinates = None
 
     def update_coordinates(self):
@@ -231,8 +232,6 @@ class PurpleTactics(Tactics):
 
 class SecondaryRobotBT(object):
     def __init__(self, side_status=SideStatus.PURPLE):
-        self.robot_name = rospy.get_param("robot_name")
-
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.move_client = bt_ros.ActionClient(self.move_publisher)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)

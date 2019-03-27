@@ -10,17 +10,8 @@ class ResponseStatus(enum.Enum):
     OK = "OK"
     ERROR = "ER"
 
-ManipulatorProtocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN
-self.send_command()
 
-class ManipulatorProtocol(enum.Enum):
-    # ECHO = 0x1
-    # DEBUG_SESSION = 0x2
-    # READ_START_STATUS = 0x3
-    # READ_SIDE_STATUS = 0x4
-    # GET_WHEELS_SPEED = 0x7
-    # SET_ROBOT_SPEED = 0x8
-    # GET_ROBOT_SPEED = 0x9
+class Protocol(enum.Enum):
     SET_ANGLE = 0x10
     START_PUMP = 0x11
     STOP_PUMP = 0x12
@@ -155,11 +146,11 @@ class Manipulator(object):
             self.send_command(50)
             return True
         elif self.robot_name == "secondary_robot":
-            self.send_command(48)
-            self.send_command(50)
-            self.send_command(23)
-            self.send_command(21)
-            self.send_command(25)
+            self.send_command(Protocol.START_CALIBRATION)
+            self.send_command(Protocol.MAKE_STEP_DOWN)
+            self.send_command(Protocol.PROP_PUCK_GRABBER)
+            self.send_command(Protocol.SET_PLATFORM)
+            self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
             return True
 
     def start_collect_ground(self):
