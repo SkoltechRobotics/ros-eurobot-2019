@@ -16,7 +16,7 @@ from core_functions import *
 class Tactics(object):
     def __init__(self):
         self.tfBuffer = tf2_ros.Buffer()
-        self.tfListener = tf2_ros.TransformListener()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.robot_coordinates = None
 
     def update_coordinates(self):
@@ -229,7 +229,7 @@ class PurpleTactics(Tactics):
                                      start_zone])
 
 
-class SecondaryRobotBT():
+class SecondaryRobotBT(object):
     def __init__(self, side_status=SideStatus.PURPLE):
         self.robot_name = rospy.get_param("robot_name")
 
@@ -245,12 +245,15 @@ class SecondaryRobotBT():
         self.yellow_tactics = YellowTactics()
 
         self.side_status = side_status
-        if self.side_status ==  SideStatus.PURPLE:
+        if self.side_status == SideStatus.PURPLE:
             self.tactics = self.purple_tactics
-        elif self.side_status ==  SideStatus.YELLOW:
+        elif self.side_status == SideStatus.YELLOW:
             self.tactics = self.yellow_tactics
         else:
             self.tactics = None
+
+        self.bt = None
+        self.bt_timer = None
 
     def start(self):
         self.bt = bt.Root(self.tactics.leaf,
@@ -259,9 +262,9 @@ class SecondaryRobotBT():
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def change_side(self, side):
-        if side ==  SideStatus.PURPLE:
+        if side == SideStatus.PURPLE:
             self.tactics = self.purple_tactics
-        elif side ==  SideStatus.YELLOW:
+        elif side == SideStatus.YELLOW:
             self.tactics = self.yellow_tactics
         else:
             self.tactics = None
