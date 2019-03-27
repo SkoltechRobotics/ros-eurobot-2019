@@ -82,7 +82,7 @@ class SetManipulatortoWall(ActionClientNode):
         super(SetManipulatortoWall, self).__init__(cmd, action_client_id)
 
 
-class SetManipulatortoUp(ActionClientNode):
+class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
     def __init__(self, action_client_id):
         cmd = "manipulator_up"
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
@@ -173,12 +173,6 @@ class StepUp(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stepper_step_up"
         super(StepUp, self).__init__(cmd, action_client_id)
-
-
-class PumpUp(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "only_pump_up"
-        super(PumpUp, self).__init__(cmd, action_client_id)
 
 
 class SetManipulatortoGoldenium(ActionClientNode):

@@ -75,7 +75,7 @@ class Manipulator(object):
         elif cmd == "manipulator_wall":
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
-            self.set_manipulator_up()
+            self.set_manipulator_platfrom()
         elif cmd == "start_collect_ground":
             self.start_collect_ground()
         elif cmd == "complete_collect_ground":
@@ -94,8 +94,6 @@ class Manipulator(object):
             self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
             self.release_goldenium_on_scales()
-        elif cmd == "only_pump_up":
-            self.only_pump_up()
         elif cmd == "set_angle_to_grab_goldenium":
             self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
@@ -135,14 +133,11 @@ class Manipulator(object):
                     rospy.loginfo("Error in send_command()->manipulator.py")
 
     def calibrate(self):
-        if self.robot_name == "main_robot":
+        if self.robot_name == "main_robot":  # FIXME
             self.send_command(Protocol.START_CALIBRATION)
             self.send_command(Protocol.SET_PLATFORM)
-
-            # grabber throw (up)
-            self.send_command(25)  # FIXME
-            # make step down
-            self.send_command(50)
+            self.send_command(Protocol.UNLOAD_PUCK_TOP_MAIN)
+            self.send_command(Protocol.MAKE_STEP_DOWN)
             return True
         elif self.robot_name == "secondary_robot":
             self.send_command(Protocol.START_CALIBRATION)
@@ -153,33 +148,19 @@ class Manipulator(object):
             return True
 
     def start_collect_ground(self):
-        # Release grabber
-        self.send_command(22)
-        # Set pump to the ground
-        self.send_command(19)
-        # Start pump
-        self.send_command(17)
-        # Set pump to the wall
-        self.send_command(20)
+        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(Protocol.SET_GROUND)
+        self.send_command(Protocol.START_PUMP)
+        self.send_command(Protocol.SET_WALL)  # FIXME remove this step?
         return True
 
     def complete_collect_ground(self):
-        # Set pump to the platform
-        self.send_command(21)
-        # Prop pack
-        self.send_command(23)
-        # Stop pump
-        self.send_command(18)
-        # Grab pack
-        self.send_command(24)
-        # Release grabber
-        self.send_command(22)
-
-        # Set pump to the wall
-        # self.send_command(20)
-
-        # make step down
-        self.send_command(50)
+        self.send_command(Protocol.SET_PLATFORM)
+        self.send_command(Protocol.PROP_PUCK_GRABBER)
+        self.send_command(Protocol.STOP_PUMP)
+        self.send_command(Protocol.GRAB_PUCK_GRABBER)
+        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(Protocol.MAKE_STEP_DOWN)
         return True
 
     def set_manipulator_wall(self):
@@ -240,63 +221,40 @@ class Manipulator(object):
         self.send_command(32)
         self.send_command(25)
 
-
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
-
-        # release grabber
-        self.send_command(22)
-        # make step up
-        self.send_command(51)
-        # get step motor status
-        self.send_command(52)
-        # grabber throw (up)
-        self.send_command(25)
-        # release grabber
-        self.send_command(22)
+        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
+        self.send_command(Protocol.UNLOAD_PUCK_TOP_MAIN)
+        self.send_command(Protocol.OPEN_GRABBER)
         return True
 
     def start_collect_blunium(self):
-        # Release grabber
-        self.send_command(22)
-        # push blunium angle
-        self.send_command(34)
-        # Start pump
-        self.send_command(17)
+        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(Protocol.SET_BLUNIUM_ANGLE_MAIN)
+        self.send_command(Protocol.START_PUMP)
         return True
 
     def goldenium_up_and_hold(self):
-        # release grabber
-        self.send_command(22)
-        # set angle to grab goldenium
-        self.send_command(35)
-        # start pump
-        self.send_command(17)
+        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(Protocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN)
+        self.send_command(Protocol.START_PUMP)
         rospy.sleep(1)
-        # lift up goldenium
-        self.send_command(36)
+        self.send_command(Protocol.SET_LIFT_GOLDENIUM_ANGLE_MAIN)
         return True
 
     def set_angle_to_grab_goldenium(self):
-        # set angle to grab goldenium
-        self.send_command(35)
+        self.send_command(Protocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN)
 
     def release_goldenium_on_scales(self):
-        # set pump to the wall
-        self.send_command(20)
-        # stop pump
-        self.send_command(18)
-        # set pump to the platform
-        self.send_command(21)
+        self.send_command(Protocol.SET_WALL)
+        self.send_command(Protocol.STOP_PUMP)
+        self.send_command(Protocol.SET_PLATFORM)
         return True
 
     def stepper_step_up(self):
-        # make step up
-        self.send_command(51)
-
-    def only_pump_up(self):
-        # set pump to the platform
-        self.send_command(21)
+        self.send_command(Protocol.MAKE_STEP_UP)
 
 
 if __name__ == '__main__':

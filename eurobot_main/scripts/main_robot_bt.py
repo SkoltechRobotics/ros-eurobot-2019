@@ -258,7 +258,7 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
                 bt_ros.CompleteCollectGround("manipulator_client"),
 
-                bt_ros.PumpUp("manipulator_client"),
+                bt_ros.SetManipulatortoUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
                 # FIXME Sasha have to fix height of unloading mechanism
 
