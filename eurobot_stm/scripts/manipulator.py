@@ -1,8 +1,52 @@
 #!/usr/bin/env python
 import re
+import enum
 
 import rospy
 from std_msgs.msg import String
+
+
+class ResponseStatus(enum.Enum):
+    OK = "OK"
+    ERROR = "ER"
+
+# ManipulatorProtocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN
+# self.send_command()
+
+class ManipulatorProtocol(enum.Enum):
+    # ECHO = 0x1
+    # DEBUG_SESSION = 0x2
+    # READ_START_STATUS = 0x3
+    # READ_SIDE_STATUS = 0x4
+    # GET_WHEELS_SPEED = 0x7
+    # SET_ROBOT_SPEED = 0x8
+    # GET_ROBOT_SPEED = 0x9
+    SET_ANGLE = 0x10
+    START_PUMP = 0x11
+    STOP_PUMP = 0x12
+    SET_GROUND = 0x13
+    SET_WALL = 0x14
+    SET_PLATFORM = 0x15
+    OPEN_GRABBER = 0x16
+    PROP_PUCK_GRABBER = 0x17
+    GRAB_PUCK_GRABBER = 0x18
+    # Secondary
+    RELEASER_DEFAULT_SECONDARY = 0x19
+    RELEASER_THROW_SECONDARY = 0x20
+    # Main
+    RELEASE_PUCK_TOP_MAIN = 0x21
+    RELEASER_DEFAULT_MAIN = 0x22
+    RELEASE_PUCK_BOT_MAIN = 0x23
+    SET_BLUNIUM_ANGLE_MAIN = 0x24
+    SET_GRAB_GOLDENIUM_ANGLE_MAIN = 0x25
+    SET_LIFT_GOLDENIUM_ANGLE_MAIN = 0x26
+    # ---
+    START_CALIBRATION = 0x30
+    MAKE_STEP = 0x31
+    MAKE_STEP_DOWN = 0x32
+    MAKE_STEP_UP = 0x33
+    GET_STEP_MOTOR_STATUS = 0x34
+    GET_PROXIMITY_STATUS = 0x40
 
 
 class Manipulator(object):
@@ -14,21 +58,23 @@ class Manipulator(object):
         self.response_publisher = rospy.Publisher("manipulator/response", String, queue_size=10)
         rospy.Subscriber("manipulator/command", String, self.command_callback)
 
-        self.publisher = rospy.Publisher("stm/command", String, queue_size=10)
+        self.stm_publisher = rospy.Publisher("stm/command", String, queue_size=10)
         rospy.Subscriber("stm/response", String, self.response_callback)
+
+        self.responses = {}
 
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
-        rospy.sleep(2)
+        # rospy.sleep(2)
 
-    def command_callback(self, data):
-        command = data.data.split()
-        cmd_id = command[0]
-        print("CMD_ID=", cmd_id)
-        cmd = command[1]
-        print("CMD=", cmd)
+    def parse_data(self, data):
+        data = data.data.split()
+        cmd_id = data[0]
+        cmd = data[1]
+        return cmd_id, cmd
 
+    def make_command(self, cmd):
         if cmd == "default":
             self.calibrate()
 
@@ -36,20 +82,16 @@ class Manipulator(object):
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
             self.set_manipulator_up()
-
         elif cmd == "start_collect_ground":
             self.start_collect_ground()
         elif cmd == "complete_collect_ground":
             self.complete_collect_ground()
-
         elif cmd == "start_collect_wall":
             self.start_collect_wall()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
-
         elif cmd == "release_5":
             self.release(5)
-
         elif cmd == "release_accelerator":
             self.release_accelerator()
         elif cmd == "start_collect_blunium":
@@ -64,15 +106,21 @@ class Manipulator(object):
             self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
             self.stepper_step_up()
+        return True
 
-        self.response_publisher.publish(cmd_id + " success")
+    def command_callback(self, data):
+        cmd_id, cmd = self.parse_data(data)
+        result = self.make_command(cmd)
+        if result:
+            self.response_publisher.publish(cmd_id + " success")
+        else:
+            self.response_publisher.publish(cmd_id + " failed")
 
     def response_callback(self, data):
         response = data.data.split()
         print("RESPONSE=", response)
         if re.match(r"manipulator-\d", response[0]):
-            self.last_response_id = response[0]
-            self.last_response_args = response[1]
+            self.responses[response[0]] = response[1]
 
     def send_command(self, cmd, args=None):
         if args is None:
@@ -80,14 +128,21 @@ class Manipulator(object):
         else:
             message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
         while True:
-            self.publisher.publish(String(message))
-
+            self.stm_publisher.publish(String(message))
+            # Wait answer
             rospy.sleep(0.1)
-            if self.last_response_id == ("manipulator-" + str(self.id_command)):
-                if self.last_response_args == "OK":
+            if ("manipulator-" + str(self.id_command)) in self.responses.keys():
+                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK:
                     self.id_command += 1
-                    return self.last_response_args
-                # if don't get response a lot of time
+                    return
+                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR:
+                    self.id_command += 1
+                else:
+                    rospy.loginfo("Error in send_command()->manipulator.py")
+
+
+
+
 
     def calibrate(self):
         if self.robot_name == "main_robot":
