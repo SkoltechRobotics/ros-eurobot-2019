@@ -13,7 +13,7 @@ ODOM_RATE = rospy.get_param("ODOM_RATE")
 STATUS_RATE = rospy.get_param("STATUS_RATE")
 
 
-class STM():
+class STM(object):
     def __init__(self, serial_port, baudrate=115200):
         rospy.init_node('stm_node', anonymous=True)
         rospy.Subscriber("stm/command", String, self.stm_command_callback)
@@ -53,6 +53,7 @@ class STMstatus(object):
         
         self.start_status_publisher = rospy.Publisher("stm/start_status", String, queue_size=1)
         self.side_status_publisher = rospy.Publisher("stm/side_status", String, queue_size=1)
+        self.proximity_status_publisher = rospy.Publisher("stm/proximity_status", String, queue_size=1)
 
         self.start_flag = False
         self.start_status_counter = 0
@@ -61,7 +62,7 @@ class STMstatus(object):
 
     def update_status(self, event):
         try:
-            print ("self.end_flag",self.start_flag)
+            print ("self.end_flag", self.start_flag)
             if self.start_flag is False:
                 successfully, values = self.stm_protocol.send(0x3, args=None)
             
@@ -77,12 +78,6 @@ class STMstatus(object):
                 elif successfully:
                     self.start_status_publisher.publish("0")
 
-                # message = ""
-                # for val in values:
-                #     message += str(val)
-                # if successfully:
-                #     self.start_status_publisher.publish(message)
-
                 successfully, values = self.stm_protocol.send(0x4, args=None)
 
                 message = ""
@@ -90,6 +85,15 @@ class STMstatus(object):
                     message += str(val)
                 if successfully:
                     self.side_status_publisher.publish(message)
+
+            else:
+                successfully, values = self.stm_protocol.send(0x40, args=None)
+
+                message = ""
+                for val in values:
+                    message += str(val)
+                if successfully:
+                    self.proximity_status_publisher.publish(message)
 
         except Exception as exc:
             rospy.loginfo('Exception:\t' + str(exc))
@@ -99,7 +103,6 @@ class STMstatus(object):
 
 
 if __name__ == '__main__':
-    # TODO::search for ports
     serial_port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
     stm = STM(serial_port)
     rospy.spin()

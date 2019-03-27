@@ -28,11 +28,16 @@ class BTController():
 
     def start_status_callback(self, data):
         if data.data == "1":
-            self.start_counter += 1
-        else:
-            self.start_counter = 0
-        if self.start_counter == 5:
-            # TRY TO SHUTDOWN THE SUBSCRIBER
             self.behavior_tree.start()
             self.start_status_subscriber.unregister()
             self.side_status_subscriber.unregister()
+
+        # if data.data == "1":
+        #     self.start_counter += 1
+        # else:
+        #     self.start_counter = 0
+        # if self.start_counter == 5:
+        #     # TRY TO SHUTDOWN THE SUBSCRIBER
+        #     self.behavior_tree.start()
+        #     self.start_status_subscriber.unregister()
+        #     self.side_status_subscriber.unregister()
