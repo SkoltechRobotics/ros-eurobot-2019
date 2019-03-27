@@ -66,7 +66,7 @@ class YellowTactics(Tactics):
         second_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client")),
                                        bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                        bt.ParallelNode(
-                                           [bt.SequenceNodeWithMemory([bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
+                                           [bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
                                                                        bt_ros.MoveLineToPoint(self.second_puck + (-0.49, -0.5, 0), "move_client")]),
                                             bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))],
                                            threshold=2)])
@@ -74,7 +74,7 @@ class YellowTactics(Tactics):
         third_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.third_puck, "move_client")),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode(
-                                          [bt.SequenceNodeWithMemory([bt_ros.MoveLineToPoint(self.third_puck + (0, -0.04, 0), "move_client"),
+                                          [bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.third_puck + (0, -0.04, 0), "move_client"),
                                                                       bt_ros.MoveLineToPoint(self.third_puck + (-0.2, -0.04, 0), "move_client")]),
                                            bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))],
                                           threshold=2)])
@@ -82,7 +82,7 @@ class YellowTactics(Tactics):
         forth_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck, "move_client")),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode(
-                                          [bt.SequenceNodeWithMemory([bt_ros.MoveLineToPoint(self.forth_puck + (0, -0.04, 0), "move_client"),
+                                          [bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.forth_puck + (0, -0.04, 0), "move_client"),
                                                                       bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck + (-0.2, -0.04, 0), "move_client"))]),
                                            bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))],
                                           threshold=2)])
@@ -93,7 +93,7 @@ class YellowTactics(Tactics):
                                                        bt.Latch(bt_ros.CompleteCollectLastPuck("manipulator_client"))], threshold=2)])
 
 
-        scales = bt.SequenceNodeWithMemory([bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
+        scales = bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
                                             bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client")])
 
         start_zone = bt.Latch(bt_ros.MoveLineToPoint(self.start_zone, "move_client"))
@@ -138,7 +138,7 @@ class PurpleTactics(Tactics):
         second_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client")),
                                        bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                        bt.ParallelNode(
-                                           [bt.SequenceNodeWithMemory(
+                                           [bt.SequenceWithMemoryNode(
                                                [bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
                                                 bt_ros.MoveLineToPoint(self.second_puck + (+0.49, -0.5, 0),
                                                                        "move_client")]),
@@ -148,7 +148,7 @@ class PurpleTactics(Tactics):
         third_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.third_puck, "move_client")),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode(
-                                          [bt.SequenceNodeWithMemory(
+                                          [bt.SequenceWithMemoryNode(
                                               [bt_ros.MoveLineToPoint(self.third_puck + (0, -0.04, 0), "move_client"),
                                                bt_ros.MoveLineToPoint(self.third_puck + (0.2, -0.04, 0),
                                                                       "move_client")]),
@@ -158,7 +158,7 @@ class PurpleTactics(Tactics):
         forth_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck, "move_client")),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode(
-                                          [bt.SequenceNodeWithMemory(
+                                          [bt.SequenceWithMemoryNode(
                                               [bt_ros.MoveLineToPoint(self.forth_puck + (0, -0.04, 0), "move_client"),
                                                bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck + (0.2, -0.04, 0),
                                                                                "move_client"))]),
@@ -172,7 +172,7 @@ class PurpleTactics(Tactics):
                                            bt.Latch(bt_ros.CompleteCollectLastPuck("manipulator_client"))],
                                           threshold=2)])
 
-        scales = bt.SequenceNodeWithMemory([bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
+        scales = bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
                                             bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client")])
 
         start_zone = bt.Latch(bt_ros.MoveLineToPoint(self.start_zone, "move_client"))
