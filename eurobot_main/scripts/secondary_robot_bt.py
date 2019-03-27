@@ -41,21 +41,21 @@ class Tactics(object):
 
 class YellowTactics(Tactics):
     def __init__(self):
-        super(PurpleTactics, self).__init__()
+        super(YellowTactics, self).__init__()
 
-        self.first_puck = np.array(rospy.get_param("yellow_side/first_puck_zone"))
-        self.second_puck = np.array(rospy.get_param("yellow_side/second_puck_zone"))
-        self.third_puck = np.array(rospy.get_param("yellow_side/third_puck_zone"))
-        self.forth_puck = np.array(rospy.get_param("yellow_side/forth_puck_zone"))
-        self.fifth_puck = np.array(rospy.get_param("yellow_side/fifth_puck_zone"))
-        self.scales_zone = np.array(rospy.get_param("yellow_side/scales_zone"))
-        self.start_zone = np.array(rospy.get_param("yellow_side/start_zone"))
+        self.first_puck = np.array(rospy.get_param("secondary_robot/yellow_side/first_puck_zone"))
+        self.second_puck = np.array(rospy.get_param("secondary_robot/yellow_side/second_puck_zone"))
+        self.third_puck = np.array(rospy.get_param("secondary_robot/yellow_side/third_puck_zone"))
+        self.forth_puck = np.array(rospy.get_param("secondary_robot/yellow_side/forth_puck_zone"))
+        self.fifth_puck = np.array(rospy.get_param("secondary_robot/yellow_side/fifth_puck_zone"))
+        self.scales_zone = np.array(rospy.get_param("secondary_robot/yellow_side/scales_zone"))
+        self.start_zone = np.array(rospy.get_param("secondary_robot/yellow_side/start_zone"))
 
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
         first_puck = bt.SequenceNode([bt.ParallelNode([bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
                                                        bt.FallbackNode([bt.ConditionNode(super(YellowTactics, self).is_coords_reached),
-                                                                        bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))]), threshold=2),
+                                                                        bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])], threshold=2),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode([bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
                                                                                   bt_ros.MoveLineToPoint(self.first_puck + (0.1, -0.07, 0),"move_client")]),
@@ -112,13 +112,13 @@ class PurpleTactics(Tactics):
     def __init__(self):
         super(PurpleTactics, self).__init__()
 
-        self.first_puck = np.array(rospy.get_param("purple_side/first_puck_zone"))
-        self.second_puck = np.array(rospy.get_param("purple_side/second_puck_zone"))
-        self.third_puck = np.array(rospy.get_param("purple_side/third_puck_zone"))
-        self.forth_puck = np.array(rospy.get_param("purple_side/forth_puck_zone"))
-        self.fifth_puck = np.array(rospy.get_param("purple_side/fifth_puck_zone"))
-        self.scales_zone = np.array(rospy.get_param("purple_side/scales_zone"))
-        self.start_zone = np.array(rospy.get_param("purple_side/start_zone"))
+        self.first_puck = np.array(rospy.get_param("secondary_robot/purple_side/first_puck_zone"))
+        self.second_puck = np.array(rospy.get_param("secondary_robot/purple_side/second_puck_zone"))
+        self.third_puck = np.array(rospy.get_param("secondary_robot/purple_side/third_puck_zone"))
+        self.forth_puck = np.array(rospy.get_param("secondary_robot/purple_side/forth_puck_zone"))
+        self.fifth_puck = np.array(rospy.get_param("secondary_robot/purple_side/fifth_puck_zone"))
+        self.scales_zone = np.array(rospy.get_param("secondary_robot/purple_side/scales_zone"))
+        self.start_zone = np.array(rospy.get_param("secondary_robot/purple_side/start_zone"))
 
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
