@@ -254,7 +254,7 @@ http://wiki.ros.org/ROS/NetworkSetup
 
 
 # create new node
-catkin_create_pkg eurobot_tactics std_msgs rospy roscpp
+catkin_create_pkg eurobot_gui std_msgs rospy roscpp
 
 # navigate to workspace/src to create a new package eurobot_core and eurobot_nav
 cd ~/catkin_ws/src
@@ -344,3 +344,32 @@ GOALS
 # Выключить насос
 
 
+
+# NO RVIZ IN LAUNCH FILE
+
+#! /bin/bash
+
+source /opt/ros/kinetic/setup.bash
+source ~/catkin_ws/devel/setup.bash
+
+roslaunch eurobot main_robot.launch 
+
+
+
+To run this on boot you can create a simple systemd service. 
+Create mavros.service file in /lib/systemd/system with the following contents:
+
+[Unit]
+Description=mavros 
+
+[Service]
+Type=forking
+ExecStart=/bin/bash -c "source /opt/ros/kinetic/setup.bash; /usr/bin/python /opt/ros/kinetic/bin/roslaunch mavros apm.launch"
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Then run:
+sudo systemctl daemon-reload
+And enable it on boot:
+sudo systemctl enable mavros.service
