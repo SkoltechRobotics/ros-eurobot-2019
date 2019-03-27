@@ -20,7 +20,7 @@ class BTController():
             if data.data == "1" and self.behavior_tree.side_status == SideStatus.PURPLE:
                 cprint ("UPDATE SIDE TO " + colored("YELLOW", "yellow", attrs=['bold', 'blink']))
                 self.behavior_tree.change_side(SideStatus.YELLOW)
-            if data.data == "0" and self.side_status == SideStatus.YELLOW:
+            if data.data == "0" and self.behavior_tree.side_status == SideStatus.YELLOW:
                 cprint ("UPDATE SIDE TO " + colored("PURPLE", "magenta", attrs=['bold', 'blink']))
                 self.behavior_tree.change_side(SideStatus.PURPLE)
 
@@ -32,5 +32,5 @@ class BTController():
         if self.start_counter == 5:
             # TRY TO SHUTDOWN THE SUBSCRIBER
             self.behavior_tree.start()
-            self.start_status_subscriber.shutdown()
-            self.side_status_subscriber.shutdown()
+            self.start_status_subscriber.unregister()
+            self.side_status_subscriber.unregister()

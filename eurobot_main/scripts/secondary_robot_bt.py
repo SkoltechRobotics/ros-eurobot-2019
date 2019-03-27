@@ -10,6 +10,7 @@ from std_msgs.msg import String
 
 import behavior_tree as bt
 from bt_controller import SideStatus, BTController
+from core_functions import *
 
 class Tactics(object):
     def __init__(self):
@@ -36,8 +37,14 @@ class Tactics(object):
             rospy.logwarn("SMT WROND QQ")
             return False
 
-    def is_coords_reached(self):
-        pass
+    def is_coordinates_reached(self, coordinates, threshold=0.01):
+        distance, _ = calculate_distance(self.robot_coordinates, coordinates)
+        norm_distance = np.linalg.norm(distance)
+        if norm_distance < threshold:
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.FAILED
+
 
 class YellowTactics(Tactics):
     def __init__(self):
@@ -54,14 +61,13 @@ class YellowTactics(Tactics):
         default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
 
         first_puck = bt.SequenceNode([bt.ParallelNode([bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                                                       bt.FallbackNode([bt.ConditionNode(super(YellowTactics, self).is_coords_reached),
+                                                       bt.FallbackNode([bt.ConditionNode(super(YellowTactics, self).is_coordinates_reached(2.8, 1.2, 0)),
                                                                         bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])], threshold=2),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode([bt.SequenceWithMemoryNode([bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
                                                                                   bt_ros.MoveLineToPoint(self.first_puck + (0.1, -0.07, 0),"move_client")]),
                                                        bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))], threshold=2)])
 
-        bt.ConditionNode(self.update_coordinates())
 
         second_puck = bt.SequenceNode([bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client")),
                                        bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
@@ -125,9 +131,8 @@ class PurpleTactics(Tactics):
 
 
         first_puck = bt.SequenceNode([bt.ParallelNode([bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                                                       bt.FallbackNode([bt.ConditionNode(self.is_coords_reached),
-                                                                        bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])                                                       ],
-                                                      threshold=2),
+                                                       bt.FallbackNode([bt.ConditionNode(super(PurpleTactics, self).is_coordinates_reached(0.4, 1.2, 0)),
+                                                                        bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])], threshold=2),
                                       bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
                                       bt.ParallelNode([bt.SequenceWithMemoryNode(
                                           [bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
