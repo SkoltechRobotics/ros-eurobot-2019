@@ -12,12 +12,12 @@ from manipulator import Manipulator
 ODOM_RATE = rospy.get_param("ODOM_RATE")
 STATUS_RATE = rospy.get_param("STATUS_RATE")
 
+
 class STM():
     def __init__(self, serial_port, baudrate=115200):
         rospy.init_node('stm_node', anonymous=True)
         rospy.Subscriber("stm/command", String, self.stm_command_callback)
         self.response = rospy.Publisher("stm/response", String, queue_size=50)
-
 
         self.stm_protocol = STMprotocol(serial_port, baudrate)
         self.odometry = Odometry(self.stm_protocol, ODOM_RATE)
@@ -62,7 +62,7 @@ class STMstatus(object):
     def update_status(self, event):
         try:
             print ("self.end_flag",self.start_flag)
-            if self.start_flag == False:
+            if self.start_flag is False:
                 successfully, values = self.stm_protocol.send(0x3, args=None)
             
                 message = ""
@@ -96,6 +96,7 @@ class STMstatus(object):
             rospy.loginfo('At time:\t' + str(datetime.datetime.now()))
             rospy.loginfo('Failed parse values from stm response')
             rospy.loginfo('--------------------------')
+
 
 if __name__ == '__main__':
     # TODO::search for ports
