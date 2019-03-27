@@ -134,10 +134,6 @@ class Manipulator(object):
                 else:
                     rospy.loginfo("Error in send_command()->manipulator.py")
 
-
-
-
-
     def calibrate(self):
         if self.robot_name == "main_robot":
             self.send_command(Protocol.START_CALIBRATION)
@@ -167,15 +163,6 @@ class Manipulator(object):
         self.send_command(20)
         return True
 
-    def set_manipulator_wall(self):
-        self.send_command(20)
-
-    # FIXME  why 24 cmd?
-
-    def set_manipulator_up(self):
-        self.send_command(24)
-        self.send_command(21)
-
     def complete_collect_ground(self):
         # Set pump to the platform
         self.send_command(21)
@@ -195,42 +182,32 @@ class Manipulator(object):
         self.send_command(50)
         return True
 
+    def set_manipulator_wall(self):
+        self.send_command(Protocol.SET_WALL)
+
+    def set_manipulator_platfrom(self):
+        self.send_command(Protocol.SET_PLATFORM)
+
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
-            # Release grabber
-            self.send_command(22)
-            # Set pump to the wall
-            self.send_command(20)
-            # rospy.sleep(0.5)
-            # Start pump
-            self.send_command(17)
+            self.send_command(Protocol.OPEN_GRABBER)
+            self.send_command(Protocol.SET_WALL)
+            self.send_command(Protocol.START_PUMP)
             return True
 
     def complete_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
-            rospy.sleep(0.3)
-
-            # Set pump to the platform
-            self.send_command(21)
-            # Prop pack
-            self.send_command(23)
-            # Stop pump
-            self.send_command(18)
-            # Set pump to the wall
-            self.send_command(20)
-            # grab pack
-            self.send_command(24)
-
-            # Release grabber
-            self.send_command(22)
-            # Set pump to the platform
-            # self.send_command(21)
-
-            self.send_command(50)
+            self.send_command(Protocol.SET_PLATFORM)
+            self.send_command(Protocol.PROP_PUCK_GRABBER)
+            self.send_command(Protocol.STOP_PUMP)
+            self.send_command(Protocol.SET_WALL)
+            self.send_command(Protocol.GRAB_PUCK_GRABBER)
+            self.send_command(Protocol.OPEN_GRABBER)
+            self.send_command(Protocol.MAKE_STEP_DOWN)
             return True
 
     def release(self, pucks_number):
@@ -263,55 +240,6 @@ class Manipulator(object):
         self.send_command(32)
         self.send_command(25)
 
-
-    def release_small(self):
-        self.send_command(25)
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(51)
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(25)
-
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(51)
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(25)
-
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(51)
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(25)
-
-        self.send_command(50)
-        self.send_command(50)
-        self.send_command(52)
-        self.send_command(32)
-        self.send_command(51)
-        self.send_command(51)
-        self.send_command(52)
-        self.send_command(25)
-        return True
-
-    def release_big(self):
-        self.send_command(33)
-        self.send_command(34)
-        self.send_command(51, 1)
-        self.send_command(51, 1)
-        self.send_command(52, 1)
-        self.send_command(35)
-        return True
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
