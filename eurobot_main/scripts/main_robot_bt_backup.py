@@ -133,9 +133,8 @@ class MainRobotBT(object):
         self.third_puck_landing = None
 
         # hard-coded poses (x, y, theta)
-        self.blunium_start_push_PREpos = None
-        self.blunium_start_push_pos = None
-        self.blunium_finish_push_pos = None
+        self.blunium_collect_PREpos = None
+        self.blunium_collect_pos = None
 
         self.accelerator_PREunloading_pos = None
         self.accelerator_unloading_pos = None
@@ -144,7 +143,7 @@ class MainRobotBT(object):
         self.goldenium_PREgrab_pos = None
         self.goldenium_grab_pos = None
 
-        self.scales_unloading_PREpos = None
+        self.scales_goldenium_PREpos = None
         self.scales_goldenium_pos = None
         self.initiate_params()
 
@@ -174,8 +173,8 @@ class MainRobotBT(object):
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.blunium_collect_PREpos, "move_client"),
                 ], threshold=2),
-                bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
                 bt_ros.StartCollectBlunium("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.blunium_collect_pos, "move_client"),
                 bt_ros.CompleteCollectGround("manipulator_client"),  # FIXME change function name
 
                 bt_ros.PumpUp("manipulator_client"),
@@ -183,7 +182,7 @@ class MainRobotBT(object):
                 # FIXME Sasha have to fix height of unloading mechanism
                 
                 # make step up
-                bt_ros.StepUp("manipulator_client"),
+                bt_ros.UnloadAccelerator("manipulator_client"),
                 # unload first in acc
                 bt_ros.MoveLineToPoint(self.accelerator_unloading_pos, "move_client"),
                 bt_ros.UnloadAccelerator("manipulator_client"),

@@ -28,28 +28,30 @@ class Manipulator(object):
         print("CMD_ID=", cmd_id)
         cmd = command[1]
         print("CMD=", cmd)
+
         if cmd == "default":
             self.calibrate()
+            
         elif cmd == "manipulator_wall":
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
             self.set_manipulator_up()
-        elif cmd == "take_ground":
-            self.take_ground()
-        elif cmd == "complete_ground_collect":
-            self.complete_ground_collect()
+
+        elif cmd == "start_collect_ground":
+            self.start_collect_ground()
+        elif cmd == "complete_collect_ground":
+            self.complete_collect_ground()
+
         elif cmd == "start_collect_wall":
             self.start_collect_wall()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
+
         elif cmd == "release_5":
             self.release(5)
-        elif cmd == "collect_ground":
-            self.collect_small()
+
         elif cmd == "release_accelerator":
             self.release_accelerator()
-        elif cmd == "manipulator_up_and_keep_holding":
-            self.manipulator_up_and_keep_holding()
         elif cmd == "start_collect_blunium":
             self.start_collect_blunium()
         elif cmd == "grab_goldenium_and_hold_up":
@@ -60,6 +62,8 @@ class Manipulator(object):
             self.only_pump_up()
         elif cmd == "set_angle_to_grab_goldenium":
             self.set_angle_to_grab_goldenium()
+        elif cmd == "stepper_step_up":
+            self.stepper_step_up()
 
         self.response_publisher.publish(cmd_id + " success")
 
@@ -71,11 +75,11 @@ class Manipulator(object):
             self.last_response_args = response[1]
 
     def send_command(self, cmd, args=None):
-        if args == None:
+        if args is None:
             message = "manipulator-" + str(self.id_command) + " " + str(cmd)
         else:
             message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
-        while (True):
+        while True:
             self.publisher.publish(String(message))
 
             rospy.sleep(0.1)
@@ -104,29 +108,16 @@ class Manipulator(object):
             self.send_command(25)
             return True
 
-    def take_ground(self):
-        if self.robot_name == "main_robot":
-            # Release grabber
-            self.send_command(22)
-            # Set pump to the ground
-            self.send_command(19)
-            # Start pump
-            self.send_command(17)
-            # Set pump to the wall
-            self.send_command(20)
-            return True
-
-        if self.robot_name == "secondary_robot":
-            # Release grabber
-            self.send_command(22)
-
-            # Set pump to the ground
-            self.send_command(19)
-            # Start pump
-            self.send_command(17)
-            # Set pump to the wall
-            self.send_command(20)
-            return True
+    def start_collect_ground(self):
+        # Release grabber
+        self.send_command(22)
+        # Set pump to the ground
+        self.send_command(19)
+        # Start pump
+        self.send_command(17)
+        # Set pump to the wall
+        self.send_command(20)
+        return True
 
     def set_manipulator_wall(self):
         self.send_command(20)
@@ -137,7 +128,7 @@ class Manipulator(object):
         self.send_command(24)
         self.send_command(21)
 
-    def complete_ground_collect(self):
+    def complete_collect_ground(self):
         # Set pump to the platform
         self.send_command(21)
         # Prop pack
@@ -155,7 +146,6 @@ class Manipulator(object):
         # make step down
         self.send_command(50)
         return True
-
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -282,20 +272,13 @@ class Manipulator(object):
         self.send_command(22)
         # make step up
         self.send_command(51)
-        #get step motor status
+        # get step motor status
         self.send_command(52)
         # grabber throw (up)
         self.send_command(25)
         # release grabber
         self.send_command(22)
         return True
-
-    # def manipulator_up_and_keep_holding(self):
-    #     # release grabber
-    #     self.send_command(22)
-    #     # Set pump to the platform
-    #     self.send_command(21)
-    #     return True
 
     def start_collect_blunium(self):
         # Release grabber
@@ -304,7 +287,6 @@ class Manipulator(object):
         self.send_command(34)
         # Start pump
         self.send_command(17)
-        rospy.sleep(1)
         return True
 
     def goldenium_up_and_hold(self):
@@ -332,9 +314,14 @@ class Manipulator(object):
         self.send_command(21)
         return True
 
+    def stepper_step_up(self):
+        # make step up
+        self.send_command(51)
+
     def only_pump_up(self):
         # set pump to the platform
         self.send_command(21)
+
 
 if __name__ == '__main__':
     try:

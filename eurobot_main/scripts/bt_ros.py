@@ -122,32 +122,26 @@ class ReleaseFivePucks(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_5"
         super(ReleaseFivePucks, self).__init__(cmd, action_client_id)
+
 # ===========================================================
 
 
 # Commands for collecting ground pucks
 class StartCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "take_ground"  # FIXME
+        cmd = "start_collect_ground"
         super(StartCollectGround, self).__init__(cmd, action_client_id)
 
 
 class CompleteCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "complete_ground_collect"  # FIXME
+        cmd = "complete_collect_ground"
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
-
-# to set manipulator up and keep holding there a puck
-class PuckUpAndHold(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "manipulator_up_and_keep_holding"  # FIXME
-        super(PuckUpAndHold, self).__init__(cmd, action_client_id)
 
 # ===========================================================
 
 
-# TODO
 class StartCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_blunium"
@@ -173,6 +167,12 @@ class UnloadGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
+
+
+class StepUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_step_up"
+        super(StepUp, self).__init__(cmd, action_client_id)
 
 
 class PumpUp(ActionClientNode):
