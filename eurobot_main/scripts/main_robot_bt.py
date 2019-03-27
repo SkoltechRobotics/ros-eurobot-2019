@@ -229,7 +229,7 @@ class MainRobotBT(object):
     def start(self):
 
         # FIXME change structure to subtrees!
-        
+
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
                 bt_ros.SetToDefaultState("manipulator_client"),
