@@ -19,12 +19,13 @@ from geometry_msgs.msg import PoseStamped
 
 class MotionPlannerNode:
     def __init__(self):
+        self.robot_name = rospy.get_param("robot_name")
         rospy.init_node("motion_planner", anonymous=True)
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("/navigation/path", Path, self.callback_path)
         rospy.Subscriber("/obstacle_point", MarkerArray, self.obstacle_callback, queue_size=1)
-        rospy.Subscriber("stm/proximity_status", String, self.distance_callback, queue_size=10)
-        self.command_publisher = rospy.Publisher("stm/command", String, queue_size=1)
+        rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.distance_callback, queue_size=10)
+        self.command_publisher = rospy.Publisher("/%s/stm/command"%self.robot_name, String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
@@ -45,7 +46,6 @@ class MotionPlannerNode:
         self.prev_time = rospy.Time.now().to_sec()
         self.XY_GOAL_TOLERANCE = rospy.get_param("XY_GOAL_TOLERANCE")
         self.YAW_GOAL_TOLERANCE = rospy.get_param("YAW_GOAL_TOLERANCE")
-        self.robot_name = rospy.get_param("robot_name")
         self.r = rospy.get_param("robot_radius")
         self.num_points_in_path = rospy.get_param("num_points_in_path")
         self.acceleration_vector = self.velocity_vector * 2 * self.velocity_vector[2]
