@@ -201,37 +201,22 @@ class ActionNode(BTNode):
     def __init__(self, function, **kwargs):
         assert callable(function)
         self.function = function
-        if "func_args" in kwargs.keys():
-            self.function_args = kwargs["func_args"]
-        else:
-            self.function_args = None
         super(ActionNode, self).__init__(**kwargs)
 
     def tick(self):
         ret = self.function()
-        if self.function_args is None:
-            ret = self.function()
-        else:
-            ret = self.function(self.function_args)
         assert ret is None
         return Status.SUCCESS
 
 
 class ConditionNode(BTNode):
-    def init(self, function, **kwargs):
+    def __init__(self, function, **kwargs):
         assert callable(function)
         self.function = function
-        if "func_args" in kwargs.keys():
-            self.function_args = kwargs["func_args"]
-        else:
-            self.function_args = None
-        super(ConditionNode, self).init(**kwargs)
+        super(ConditionNode, self).__init__(**kwargs)
 
     def tick(self):
-        if self.function_args is None:
-            self.status = self.function()
-        else:
-            self.status = self.function(self.function_args)
+        self.status = self.function()
         assert isinstance(self.status, Status)
         return self.status
 
