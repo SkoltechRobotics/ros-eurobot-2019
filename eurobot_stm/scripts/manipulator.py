@@ -29,7 +29,7 @@ class Manipulator(object):
         self.last_response_args = None
         self.id_command = 1
         
-        self.self.protocol = {
+        self.protocol = {
             "SET_ANGLE" : 0x10,
             "START_PUMP" : 0x11,
             "STOP_PUMP" : 0x12,
