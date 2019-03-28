@@ -66,9 +66,7 @@ class YellowTactics(Tactics):
         first_puck = bt.SequenceNode([
             bt.ParallelNode([
                 bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                bt.FallbackNode([
-                    bt.ConditionNode(super(YellowTactics, self).is_coordinates_reached(2.8, 1.2, 0)),
-                    bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))])
+                bt_ros.SetToWall_ifReachedGoal((2.8, 1.2, 0), "manipulator_client")
             ], threshold=2),
 
             bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
@@ -155,10 +153,7 @@ class PurpleTactics(Tactics):
         first_puck = bt.SequenceNode([
             bt.ParallelNode([
                 bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                bt.FallbackNode([
-                    bt.ConditionNode(super(PurpleTactics, self).is_coordinates_reached(0.4, 1.2, 0)),
-                    bt.Latch(bt_ros.SetManipulatortoWall("manipulator_client"))
-                ])
+                bt_ros.SetToWall_ifReachedGoal((0.4, 1.2, 0), "manipulator_client")
             ], threshold=2),
 
             bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
