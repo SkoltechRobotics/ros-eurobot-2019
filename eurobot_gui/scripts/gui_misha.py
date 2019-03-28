@@ -24,11 +24,13 @@ class App:
         frame3 = Frame(frame, bg="white", colormap="new")
         frame3.pack(side="top")
 
+        # POINTS
         Label(frame1, bg="white", height=1, width=8, font=("Helvetica", 32), text="POINTS").pack(side="top")
         self.points = StringVar()
         Label(frame1, bg="white", height=1, width=5, textvariable=self.points, font=("Helvetica", 128)).pack(side="top")
         self.points.set("0")
 
+        # SIDE and COLORS PLAN
         Label(frame2, bg="white", height=1, width=13, font=("Helvetica", 32), text="SIDE").pack(side="top")
         if side == "orange":
             Label(frame2, bg='#%02x%02x%02x' % tuple(COLORS[1]), height=1, width=13, font=("Helvetica", 32)).pack(side="top")
@@ -42,6 +44,7 @@ class App:
         self.rect3 = self.w.create_rectangle(200, 0, 300, 100, fill="red", outline='white')
         self.w.pack(side="top")
 
+        # Startup wire
         self.wire_label = Label(frame3, bg="red", height=1, width=13, font=("Helvetica", 16),
                                 text="Startup wire")
         self.wire_label.pack(side="left")

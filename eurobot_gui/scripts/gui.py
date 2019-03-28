@@ -5,96 +5,137 @@ import numpy as np
 from Tkinter import *
 from std_msgs.msg import Int32MultiArray
 
-COLORS = np.array([[0, 123, 176], [208, 90, 40], [28, 28, 32], [96, 153, 59], [247, 181, 0], [255, 0, 0]],
-                  dtype=np.uint8)
-COLORS_NAME = ["blue", "orange", "black", "green", "yellow", "red"]
+SIDE_COLORS = np.array([[255, 255, 0],  # yellow
+                        [128, 0, 128]])  # purple
+
+# PUCKS_COLORS = np.array([])
+
+COLORS_NAME = ["blunium", "greenium", "goldenium", "redium"]
+
+# self.side_status = Label(self.frame0, bg="yellow", height=1, width=13, font=("Helvetica", 32),
+#         textvariable=self.side_status)
+
+class Prediction:
+    def __init__(self):
+
+        self.puck_points = {
+            "REDIUM_ON_RED": 6,
+            "REDIUM_ON_OTHER": 1,
+
+            "GREENIUM_ON_GREEN": 6,
+            "GREENIUM_ON_OTHER": 1,
+
+            "BLUNIUM_ON_BLUE": 6,
+            "BLUNIUM_ON_OTHER": 1,
+
+            "REDIUM_IN_ACC": 10,
+            "GREENIUM_IN_ACC": 10,
+            "BLUNIUM_IN_ACC": 10,
+
+            # "BONUS_OPEN_GOLDENIUM": ,
+            # "GRAB_GOLDENIUM": ,
+
+            "GREENIUM_ON_SCALES": 8,
+            "BLUNIUM_ON_SCALES": 12,
+            "GOLDENIUM_ON_SCALES": 24,
+
+            "BONUS_FOR_NOT_DISQUALIFIED": 10,
+
+        }
+
 
 class App:
     def __init__(self, master):
         self.master = master
 
+        # self.start_status = StringVar()
+        # self.side_status = StringVar()
+
+        # self.start_status.set("Waiting")
+        # self.side_status.set("Yellow")
+
+        # Master page
         frame = Frame(master, bg="white", colormap="new")
         frame.pack()
-        frame0 = Frame(frame, bg="white", colormap="new")
-        frame0.pack(side="top")
-        frame1 = Frame(frame0, bg="white", colormap="new")
-        frame1.pack(side="left")
-        frame2 = Frame(frame0, bg="white", colormap="new")
-        frame2.pack(side="left")
-        frame3 = Frame(frame, bg="white", colormap="new")
-        frame3.pack(side="top")
 
-        Label(frame1, bg="white", height=1, width=8, font=("Helvetica", 32), text="POINTS").pack(side="top")
-        self.points = StringVar()
-        Label(frame1, bg="white", height=1, width=5, textvariable=self.points, font=("Helvetica", 128)).pack(side="top")
-        self.points.set("0")
+        # Side block
+        self.frame0 = Frame(frame, bg="white", colormap="new")
+        self.frame0.pack(side="top")
 
-        Label(frame2, bg="white", height=1, width=13, font=("Helvetica", 32), text="SIDE").pack(side="top")
-        if side == "orange":
-            Label(frame2, bg='#%02x%02x%02x' % tuple(COLORS[1]), height=1, width=13, font=("Helvetica", 32)).pack(side="top")
-        else:
-            Label(frame2, bg='#%02x%02x%02x' % tuple(COLORS[3]), height=1, width=13, font=("Helvetica", 32)).pack(
-                side="top")
-        Label(frame2, bg="white", height=1, width=13, font=("Helvetica", 32), text="COLORS PLAN").pack(side="top")
-        self.w = Canvas(frame2, bg="white", width=300, height=100)
-        self.rect1 = self.w.create_rectangle(0, 0, 100, 100, fill="red", outline='white')
-        self.rect2 = self.w.create_rectangle(100, 0, 200, 100, fill="red", outline='white')
-        self.rect3 = self.w.create_rectangle(200, 0, 300, 100, fill="red", outline='white')
-        self.w.pack(side="top")
+        # Start block
+        self.frame1 = Frame(frame, bg="white", colormap="new")
+        self.frame1.pack(side="top")
 
-        self.wire_label = Label(frame3, bg="red", height=1, width=13, font=("Helvetica", 16),
-                                text="Startup wire")
-        self.wire_label.pack(side="left")
+        # Points block
+        self.frame2 = Frame(frame, bg="white", colormap="new")
+        self.frame2.pack(side="top")
 
-        self.main_robot_label = Label(frame3, bg="red", height=1, width=12, font=("Helvetica", 16), text="Main robot")
-        self.main_robot_label.pack(side="left")
+        # self.btn = Button(text="Clicks 0", background="#555", foreground="#ccc",
+        #              padx="20", pady="8", font="16", command=self.change_color).pack()
 
-        self.small_robot_label = Label(frame3, bg="red", height=1, width=13, font=("Helvetica", 16), text="Small robot")
-        self.small_robot_label.pack(side="left")
+        # SIDE
+        self.side = Label(self.frame0, bg="yellow", height=1, width=13, font=("Helvetica", 32), text="Side: ")
+        self.side_status = Label(self.frame0, bg="yellow", height=1, width=13, font=("Helvetica", 32), text = "Yellow")
+        self.side.pack(side="left")
+        self.side_status.pack(side="right")
+
+        # POINTS
+        self.overall_points = IntVar()
+        self.overall_points.set(0)
+        Label(self.frame2, bg="white", height=1, width=8, font=("Helvetica", 32), text="POINTS").pack(side="left")
+        Label(self.frame2, bg="white", height=1, width=5, textvariable=self.overall_points, font=("Helvetica", 32)).pack(side="right")
+
+        # START STATUS
+        self.wire = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), text="Start Status: ")
+        self.wire_status = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), textvariable=self.start_status)
+
+        self.wire.pack(side="left")  # this is separate line, otherwise will get Attribute Error when applying config method
+        self.wire_status.pack(side="right")
+
+    def side_status_callback(self, data):
+        if data.data == "1":
+            # self.side_status.set("Yellow")
+            self.side.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[0]))
+            self.side_status.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[0]), text="Yellow!")
+
+        elif data.data == "0":
+            # self.side_status.set("Purple")
+            self.side.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
+            self.side_status.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]), text="Purple")
 
     def points_callback(self, data):
-        self.points.set(data.data)
+        self.overall_points.set(self.overall_points.get() + data.data)
 
-    def plan_callback(self, data):
-        self.set_plan(data.data)
-
-    def set_plan(self, plan):
-        splitted_plan = plan.split()
-        self.w.itemconfig(self.rect1, fill='#%02x%02x%02x' % tuple(COLORS[COLORS_NAME.index(splitted_plan[0])]))
-        self.w.itemconfig(self.rect2, fill='#%02x%02x%02x' % tuple(COLORS[COLORS_NAME.index(splitted_plan[1])]))
-        self.w.itemconfig(self.rect3, fill='#%02x%02x%02x' % tuple(COLORS[COLORS_NAME.index(splitted_plan[2])]))
-
-    def wire_status_callback(self, data):
+    def start_status_callback(self, data):
         if data.data == "0":
-            self.wire_label.configure(bg="yellow")
+            self.start_status.set("READY!")
         elif data.data == "1":
-            self.wire_label.configure(bg="green")
+            self.start_status.set("GO!")
 
-    def server_status(self):
-        self.master.after(100, self.server_status)
 
-    def main_robot_callback(self, data):
-        self.main_robot_label.configure(bg="green")
+    # def server_status(self):
+    #     self.master.after(100, self.server_status)
+    #
+    # def change_color(self):
+    #     self.start_test.config(bg='red')
 
-    def secondary_robot_callback(self, data):
-        self.small_robot_label.configure(bg="green")
+
+
 
 
 if __name__ == '__main__':
-    rospy.init_node("display_node")
+    # rospy.init_node("display_node")
     root = Tk()
-    root.title("Eurobot Reset")
-    # root.geometry("500x400")
-    side = rospy.get_param("/field/color")
+    root.title("Eurobot RESET")
+    root.geometry("700x450")
+
     app = App(root)
 
-    rospy.Subscriber("/server/point", String, app.points_callback)
-    rospy.Subscriber("/server/plan", String, app.plan_callback)
-    rospy.Subscriber("/server/wire_status", String, app.wire_status_callback)
-    rospy.Subscriber("/secondary_robot/barrier_rangefinders_data", Int32MultiArray, app.secondary_robot_callback)
-    rospy.Subscriber("/main_robot/barrier_rangefinders_data", Int32MultiArray, app.main_robot_callback)
-    rate = rospy.Rate(100)
-    rospy.loginfo("Start display")
+    # rospy.Subscriber("/server/points", String, app.points_callback)  # FIXME
+    # rospy.Subscriber("stm/start_status", String, app.start_status_callback)
+    # rospy.Subscriber("stm/side_status", String, app.side_status_callback)
+    # rate = rospy.Rate(100)
+    # rospy.loginfo("Start display")
 
 
     # def quit(event):
