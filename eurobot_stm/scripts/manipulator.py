@@ -11,39 +11,6 @@ class ResponseStatus(enum.Enum):
     ERROR = "ER"
 
 
-class Protocol(enum.Enum):
-    # for both Main and Secondary robots
-    SET_ANGLE = 0x10
-    START_PUMP = 0x11
-    STOP_PUMP = 0x12
-    SET_GROUND = 0x13
-    SET_WALL = 0x14
-    SET_PLATFORM = 0x15
-    OPEN_GRABBER = 0x16
-    PROP_PUCK_GRABBER = 0x17
-    GRAB_PUCK_GRABBER = 0x18
-
-    # only for Secondary
-    RELEASER_DEFAULT_SECONDARY = 0x19
-    RELEASER_THROW_SECONDARY = 0x20
-
-    # only for Main
-    UNLOAD_PUCK_TOP_MAIN = 0x21
-    UNLOAD_DEFAULT_MAIN = 0x22  # FIXME
-    UNLOAD_PUCK_BOTTOM_MAIN = 0x23
-    SET_BLUNIUM_ANGLE_MAIN = 0x24
-    SET_GRAB_GOLDENIUM_ANGLE_MAIN = 0x25
-    SET_LIFT_GOLDENIUM_ANGLE_MAIN = 0x26
-
-    # for both Main and Secondary robots
-    START_CALIBRATION = 0x30
-    MAKE_STEP = 0x31
-    MAKE_STEP_DOWN = 0x32
-    MAKE_STEP_UP = 0x33
-    GET_STEP_MOTOR_STATUS = 0x34
-    GET_PROXIMITY_STATUS = 0x40
-
-
 class Manipulator(object):
     def __init__(self):
         rospy.init_node("manipulator_node", anonymous=True)
@@ -61,6 +28,39 @@ class Manipulator(object):
         self.last_response_id = None
         self.last_response_args = None
         self.id_command = 1
+        
+        self.self.protocol = {
+            "SET_ANGLE" : 0x10,
+            "START_PUMP" : 0x11,
+            "STOP_PUMP" : 0x12,
+            "SET_GROUND" : 0x13,
+            "SET_WALL" : 0x14,
+            "SET_PLATFORM" : 0x15,
+            "OPEN_GRABBER" : 0x16,
+            "PROP_PUCK_GRABBER" : 0x17,
+            "GRAB_PUCK_GRABBER" : 0x18,
+    
+            # only for Secondary
+            "RELEASER_DEFAULT_SECONDARY" : 0x19,
+            "RELEASER_THROW_SECONDARY" : 0x20,
+    
+            # only for Main
+            "UNLOAD_PUCK_TOP_MAIN" : 0x21,
+            "UNLOAD_DEFAULT_MAIN" : 0x22,  # FIXME
+            "UNLOAD_PUCK_BOTTOM_MAIN" : 0x23,
+            "SET_BLUNIUM_ANGLE_MAIN" : 0x24,
+            "SET_GRAB_GOLDENIUM_ANGLE_MAIN" : 0x25,
+            "SET_LIFT_GOLDENIUM_ANGLE_MAIN" : 0x26,
+    
+            # for both Main and Secondary robots
+            "START_CALIBRATION" : 0x30,
+            "MAKE_STEP" : 0x31,
+            "MAKE_STEP_DOWN" : 0x32,
+            "MAKE_STEP_UP" : 0x33,
+            "GET_STEP_MOTOR_STATUS" : 0x34,
+            "GET_PROXIMITY_STATUS" : 0x40
+        }
+        
         # rospy.sleep(2)
 
     def parse_data(self, data):
@@ -134,132 +134,132 @@ class Manipulator(object):
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
-            self.send_command(Protocol.START_CALIBRATION)
-            self.send_command(Protocol.SET_PLATFORM)
-            self.send_command(Protocol.UNLOAD_PUCK_TOP_MAIN)
-            self.send_command(Protocol.MAKE_STEP_DOWN)
+            self.send_command(self.protocol["START_CALIBRATION"])
+            self.send_command(self.protocol["SET_PLATFORM"])
+            self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
+            self.send_command(self.protocol["MAKE_STEP_DOWN"])
             return True
         elif self.robot_name == "secondary_robot":
-            self.send_command(Protocol.START_CALIBRATION)
-            self.send_command(Protocol.MAKE_STEP_DOWN)
-            self.send_command(Protocol.PROP_PUCK_GRABBER)
-            self.send_command(Protocol.SET_PLATFORM)
-            self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+            self.send_command(self.protocol["START_CALIBRATION"])
+            self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+            self.send_command(self.protocol["SET_PLATFORM"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
             return True
 
     def start_collect_ground(self):
-        self.send_command(Protocol.OPEN_GRABBER)
-        self.send_command(Protocol.SET_GROUND)
-        self.send_command(Protocol.START_PUMP)
-        self.send_command(Protocol.SET_WALL)  # FIXME remove this step?
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        self.send_command(self.protocol["SET_WALL"])  # FIXME remove this step?
         return True
 
     def complete_collect_ground(self):
-        self.send_command(Protocol.SET_PLATFORM)
-        self.send_command(Protocol.PROP_PUCK_GRABBER)
-        self.send_command(Protocol.STOP_PUMP)
-        self.send_command(Protocol.GRAB_PUCK_GRABBER)
-        self.send_command(Protocol.OPEN_GRABBER)
-        self.send_command(Protocol.MAKE_STEP_DOWN)
+        self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
     def set_manipulator_wall(self):
-        self.send_command(Protocol.SET_WALL)
+        self.send_command(self.protocol["SET_WALL"])
         return True
 
     def set_manipulator_platform(self):
-        self.send_command(Protocol.SET_PLATFORM)
+        self.send_command(self.protocol["SET_PLATFORM"])
         return True
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
-            self.send_command(Protocol.OPEN_GRABBER)
-            self.send_command(Protocol.SET_WALL)
-            self.send_command(Protocol.START_PUMP)
+            self.send_command(self.protocol["OPEN_GRABBER"])
+            self.send_command(self.protocol["SET_WALL"])
+            self.send_command(self.protocol["START_PUMP"])
             return True
 
     def complete_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
         if self.robot_name == "secondary_robot":
-            self.send_command(Protocol.SET_PLATFORM)
-            self.send_command(Protocol.PROP_PUCK_GRABBER)
-            self.send_command(Protocol.STOP_PUMP)
-            self.send_command(Protocol.SET_WALL)
-            self.send_command(Protocol.GRAB_PUCK_GRABBER)
-            self.send_command(Protocol.OPEN_GRABBER)
-            self.send_command(Protocol.MAKE_STEP_DOWN)
+            self.send_command(self.protocol["SET_PLATFORM"])
+            self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+            self.send_command(self.protocol["STOP_PUMP"])
+            self.send_command(self.protocol["SET_WALL"])
+            self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+            self.send_command(self.protocol["OPEN_GRABBER"])
+            self.send_command(self.protocol["MAKE_STEP_DOWN"])
             return True
 
     def release(self, pucks_number):
 
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
         
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.RELEASER_THROW_SECONDARY)
-        self.send_command(Protocol.RELEASER_DEFAULT_SECONDARY)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
         return True
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
-        self.send_command(Protocol.OPEN_GRABBER)
-        self.send_command(Protocol.MAKE_STEP_UP)
-        self.send_command(Protocol.GET_STEP_MOTOR_STATUS)
-        self.send_command(Protocol.UNLOAD_PUCK_TOP_MAIN)
-        self.send_command(Protocol.OPEN_GRABBER)
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
         return True
 
     def start_collect_blunium(self):
-        self.send_command(Protocol.OPEN_GRABBER)
-        self.send_command(Protocol.SET_BLUNIUM_ANGLE_MAIN)
-        self.send_command(Protocol.START_PUMP)
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
+        self.send_command(self.protocol["START_PUMP"])
         return True
 
     def goldenium_up_and_hold(self):
-        self.send_command(Protocol.OPEN_GRABBER)
-        self.send_command(Protocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN)
-        self.send_command(Protocol.START_PUMP)
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
+        self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(1)
-        self.send_command(Protocol.SET_LIFT_GOLDENIUM_ANGLE_MAIN)
+        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
     def set_angle_to_grab_goldenium(self):
-        self.send_command(Protocol.SET_GRAB_GOLDENIUM_ANGLE_MAIN)
+        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         return True
 
     def release_goldenium_on_scales(self):
-        self.send_command(Protocol.SET_WALL)
-        self.send_command(Protocol.STOP_PUMP)
-        self.send_command(Protocol.SET_PLATFORM)
+        self.send_command(self.protocol["SET_WALL"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["SET_PLATFORM"])
         return True
 
     def stepper_step_up(self):
-        self.send_command(Protocol.MAKE_STEP_UP)
+        self.send_command(self.protocol["MAKE_STEP_UP"])
         return True
 
 
