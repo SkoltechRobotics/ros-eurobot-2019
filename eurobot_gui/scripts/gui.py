@@ -12,8 +12,8 @@ SIDE_COLORS = np.array([[255, 255, 0],  # yellow
 
 COLORS_NAME = ["blunium", "greenium", "goldenium", "redium"]
 
-# self.side_status = Label(self.frame0, bg="yellow", height=1, width=13, font=("Helvetica", 32),
-#         textvariable=self.side_status)
+# self.side_status = Label(self.frame0, bg="yellow", height=1, width=13, font=("Helvetica", 32), textvariable=self.side_status)
+# self.wire_status = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), textvariable=self.start_status)
 
 class Prediction:
     def __init__(self):
@@ -87,7 +87,7 @@ class App:
 
         # START STATUS
         self.wire = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), text="Start Status: ")
-        self.wire_status = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), textvariable=self.start_status)
+        self.wire_status = Label(self.frame1, bg="gray", height=1, width=13, font=("Helvetica", 32), text="Waiting")
 
         self.wire.pack(side="left")  # this is separate line, otherwise will get Attribute Error when applying config method
         self.wire_status.pack(side="right")
@@ -108,9 +108,11 @@ class App:
 
     def start_status_callback(self, data):
         if data.data == "0":
-            self.start_status.set("READY!")
+            self.wire.config(bg="red")
+            self.wire_status.config(bg="red", text="READY")
         elif data.data == "1":
-            self.start_status.set("GO!")
+            self.wire.config(bg="green")
+            self.wire_status.config(bg="green", text="GO!")
 
 
     # def server_status(self):
@@ -118,10 +120,6 @@ class App:
     #
     # def change_color(self):
     #     self.start_test.config(bg='red')
-
-
-
-
 
 if __name__ == '__main__':
     # rospy.init_node("display_node")

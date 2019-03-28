@@ -360,7 +360,7 @@ To run this on boot you can create a simple systemd service.
 Create mavros.service file in /lib/systemd/system with the following contents:
 
 [Unit]
-Description=mavros 
+Description=eurobot 
 
 [Service]
 Type=forking
