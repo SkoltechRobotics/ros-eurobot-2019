@@ -70,48 +70,6 @@ class ActionClientNode(bt.SequenceNode):
         bt.BTNode.log(self, level, prefix)
 
 
-class STMClientNode(bt.SequenceNode):
-    def __init__(self, cmd, action_client_id, **kwargs):
-        self.action_client_id = action_client_id
-        self.cmd = bt.BTVariable(cmd)
-        self.cmd_id = bt.BTVariable()
-
-        self.start_node = bt.ActionNode(self.send_command)
-        bt.SequenceNode.__init__(self, [self.start_node, bt.ConditionNode(self.action_status)], **kwargs)
-
-    def send_command(self): 
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-
-    def action_status(self):
-        pass
-
-    def reset(self):
-        self.start_node.reset()
-
-    def log(self, level, prefix=""):
-        bt.BTNode.log(self, level, prefix)
-
-
-class isStartStatus(STMClientNode):
-    def __init__(self, action_client_id):
-        self.counter = 0
-        cmd = "3"
-        super(isStartStatus, self).__init__(cmd, action_client_id)
-
-    def action_status(self):
-        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
-        print ("STATUS=", status)
-        if status == "0":
-            self.counter = 0
-        elif status == "1":
-            self.counter += 1
-
-        if self.counter == 5:
-            return bt.Status.SUCCESS
-        else :
-            return bt.Status.RUNNING
-
-
 class SetToDefaultState(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "default"
@@ -124,7 +82,7 @@ class SetManipulatortoWall(ActionClientNode):
         super(SetManipulatortoWall, self).__init__(cmd, action_client_id)
 
 
-class SetManipulatortoUp(ActionClientNode):
+class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
     def __init__(self, action_client_id):
         cmd = "manipulator_up"
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
@@ -142,6 +100,12 @@ class CompleteTakeWallPuck(ActionClientNode):
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
 
 
+class CompleteCollectLastPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_last_puck"
+        super(CompleteCollectLastPuck, self).__init__(cmd, action_client_id)
+
+
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
         cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
@@ -153,41 +117,35 @@ class MoveArcToPoint(ActionClientNode):
         cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
+
 class ReleaseFivePucks(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_5"
         super(ReleaseFivePucks, self).__init__(cmd, action_client_id)
+
 # ===========================================================
 
 
 # Commands for collecting ground pucks
 class StartCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "take_ground"  # FIXME
+        cmd = "start_collect_ground"
         super(StartCollectGround, self).__init__(cmd, action_client_id)
 
 
 class CompleteCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "complete_ground_collect"  # FIXME
+        cmd = "complete_collect_ground"
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
-
-# to set manipulator up and keep holding there a puck
-class PuckUpAndHold(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "manipulator_up_and_keep_holding"  # FIXME
-        super(PuckUpAndHold, self).__init__(cmd, action_client_id)
 
 # ===========================================================
 
 
-# TODO
-# Command to push Blunium in Accelerator
-class SetAngleToPushBlunium(ActionClientNode):
+class StartCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "set_angle_to_push_blunium"
-        super(SetAngleToPushBlunium, self).__init__(cmd, action_client_id)
+        cmd = "start_collect_blunium"
+        super(StartCollectBlunium, self).__init__(cmd, action_client_id)
 
 
 # Command to unload in Accelerator
@@ -210,22 +168,17 @@ class UnloadGoldenium(ActionClientNode):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
-# Command to unload Goldenium on Scales
-class UnloadGoldenium(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "release_goldenium_on_scales"
-        super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
-class PumpUp(ActionClientNode):
+class StepUp(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "only_pump_up"
-        super(PumpUp, self).__init__(cmd, action_client_id)
+        cmd = "stepper_step_up"
+        super(StepUp, self).__init__(cmd, action_client_id)
+
 
 class SetManipulatortoGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "set_angle_to_grab_goldenium"
         super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
-
 
 
 class MoveWaypoints(bt.FallbackNode):

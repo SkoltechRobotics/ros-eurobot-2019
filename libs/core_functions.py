@@ -172,10 +172,6 @@ def get_transform(buffer_, child_frame, parent_frame, stamp):
     return cvt_ros_transform2point(t.transform)
 
 
-def wrap_angle(angle):
-    return (angle + np.pi) % (2 * np.pi) - np.pi
-
-
 def euler_angles_to_rotation_matrix(theta):
     r_x = np.array([[1, 0, 0], [0, np.cos(theta[0]), -np.sin(theta[0])],
                     [0, np.sin(theta[0]),
