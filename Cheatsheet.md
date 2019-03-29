@@ -93,6 +93,7 @@ rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_acceler
 WE CHANGED TOPIC
 stm 1 0x11
 
+export DISPLAY=:0
 roslaunch eurobot_main main_robot_bt.launch 
 
 
