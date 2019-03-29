@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-roslaunch eurobot_tactics tactics_main_robot.launch
+export DISPLAY=:0
+roslaunch eurobot_main main_robot_bt.launch 

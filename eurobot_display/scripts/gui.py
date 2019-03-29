@@ -27,7 +27,7 @@ class App:
         self.frame1 = Frame(frame, bg="white", colormap="new")
         self.frame1.pack(side="top")
 
-        # Points block
+        # Score block
         self.frame2 = Frame(frame, bg="white", colormap="new")
         self.frame2.pack(side="top")
 
@@ -41,11 +41,11 @@ class App:
         self.side_status.set("Side: Yellow")
         self.side_frame.pack(side="left")
 
-        # POINTS config
-        self.overall_points = IntVar()
-        self.overall_points.set(0)
-        Label(self.frame2, bg="white", height=1, width=8, font=("Helvetica", 32), text="POINTS: ").pack(side="left")
-        Label(self.frame2, bg="white", height=1, width=5, textvariable=self.overall_points, font=("Helvetica", 32)).pack(side="right")
+        # Score config
+        self.score = IntVar()
+        self.score.set(0)
+        Label(self.frame2, bg="white", height=1, width=8, font=("Helvetica", 32), text="Score: ").pack(side="left")
+        Label(self.frame2, bg="white", height=1, width=5, textvariable=self.score, font=("Helvetica", 32)).pack(side="right")
 
         # WIRE config
         self.start_status = StringVar()
@@ -70,8 +70,8 @@ class App:
             self.side_status.set("Side: Purple")
             self.side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
-    def points_callback(self, data):
-        self.overall_points.set(self.overall_points.get() + data.data)
+    def score_callback(self, data):
+        self.score.set(self.score.get() + data.data)
 
     def wire_status_callback(self, data):
         if data.data == "0":
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     app = App(root)
 
-    rospy.Subscriber("/manipulator/points", String, app.points_callback)
+    rospy.Subscriber("/score", String, app.score_callback)
     rospy.Subscriber("stm/start_status", String, app.wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.side_status_callback)
     rate = rospy.Rate(100)

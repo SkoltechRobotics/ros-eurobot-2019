@@ -31,6 +31,9 @@ rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
+rostopic pub -1 /secondary_robot/manipulator/points std_msgs/String "data: '24'" 
+
+
 roslaunch eurobot_tactics tactics_sim_launch.launch
 
 
