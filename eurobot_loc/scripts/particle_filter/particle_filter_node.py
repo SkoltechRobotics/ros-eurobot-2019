@@ -40,7 +40,7 @@ class PFNode(object):
         self.robot_name = rospy.get_param("robot_name")
         rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
         rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
-        self.color = "yellow"
+        self.color = "purple"
         if self.color == "purple":
             beacons = PURPLE_BEACONS
         else:
