@@ -71,7 +71,8 @@ class App:
             self.side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
     def score_callback(self, data):
-        self.score.set(self.score.get() + data.data)
+        rospy.loginfo(data.data)
+        self.score.set(self.score.get() + int(data.data))
 
     def wire_status_callback(self, data):
         if data.data == "0":
@@ -90,11 +91,11 @@ if __name__ == '__main__':
     rospy.init_node("display_node")
     root = Tk()
     root.title("Eurobot RESET")
-    # root.geometry("700x450")
+    root.geometry("700x450")
 
     app = App(root)
 
-    rospy.Subscriber("/score", String, app.score_callback)
+    rospy.Subscriber("score", String, app.score_callback)
     rospy.Subscriber("stm/start_status", String, app.wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.side_status_callback)
     rate = rospy.Rate(100)

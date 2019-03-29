@@ -27,11 +27,11 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
 
 ## to ride by odometry
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
+rostopic pub -1 /main_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
-rostopic pub -1 /secondary_robot/manipulator/points std_msgs/String "data: '24'" 
+rostopic pub -1 /main_robot/score std_msgs/String "data: '24'" 
 
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
@@ -78,7 +78,7 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
+rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 rosrun eurobot_tactics imitate_cam.py -n 4
 
