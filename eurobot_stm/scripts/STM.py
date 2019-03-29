@@ -87,11 +87,11 @@ class STMstatus(object):
                     self.side_status_publisher.publish(message)
 
             else:
-                successfully, values = self.stm_protocol.send(0x40, args=None)
+                successfully, values = self.stm_protocol.send(64, args=None)
 
                 message = ""
                 for val in values:
-                    message += str(val)
+                    message += str(val) + " "
                 if successfully:
                     self.proximity_status_publisher.publish(message)
 
