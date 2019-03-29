@@ -29,7 +29,7 @@ class Manipulator(object):
         self.last_response_args = None
         self.id_command = 1
         
-        self.self.protocol = {
+        self.protocol = {
             "SET_ANGLE" : 0x10,
             "START_PUMP" : 0x11,
             "STOP_PUMP" : 0x12,
@@ -84,6 +84,8 @@ class Manipulator(object):
             self.start_collect_wall()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
+        elif cmd == "complete_collect_last_wall":
+            self.complete_collect_last_wall()
         elif cmd == "release_5":
             self.release(5)
         elif cmd == "release_accelerator":
@@ -110,27 +112,30 @@ class Manipulator(object):
 
     def response_callback(self, data):
         response = data.data.split()
-        print("RESPONSE=", response)
         if re.match(r"manipulator-\d", response[0]):
+            rospy.loginfo("manipulator RESPONSE=" + str(response))
             self.responses[response[0]] = response[1]
 
     def send_command(self, cmd, args=None):
-        if args is None:
-            message = "manipulator-" + str(self.id_command) + " " + str(cmd)
-        else:
-            message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
         while True:
+            if args is None:
+                message = "manipulator-" + str(self.id_command) + " " + str(cmd)
+            else:
+                message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
+            
             self.stm_publisher.publish(String(message))
+            
             # Wait answer
             rospy.sleep(0.1)
             if ("manipulator-" + str(self.id_command)) in self.responses.keys():
-                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK:
+                if self.responses[("manipulator-" + str(self.id_command))] == "OK":
                     self.id_command += 1
                     return
-                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR:
+                elif self.responses[("manipulator-" + str(self.id_command))] == "ER":
                     self.id_command += 1
                 else:
                     rospy.loginfo("Error in send_command()->manipulator.py")
+            self.id_command += 1
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
@@ -193,6 +198,23 @@ class Manipulator(object):
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
             return True
 
+    def complete_collect_last_wall(self):
+        if self.robot_name == "main_robot":
+            pass
+        if self.robot_name == "secondary_robot":
+            self.send_command(self.protocol["SET_PLATFORM"])
+            self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+            self.send_command(self.protocol["STOP_PUMP"])
+            self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+            self.send_command(self.protocol["OPEN_GRABBER"])
+            self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            return True
+
+    def release_from_manipulator(self):
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["SET_PLATFORM"])
+
     def release(self, pucks_number):
 
         self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
@@ -224,6 +246,8 @@ class Manipulator(object):
         self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
         self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
         return True
+
+    
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
