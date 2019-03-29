@@ -254,7 +254,7 @@ http://wiki.ros.org/ROS/NetworkSetup
 
 
 # create new node
-catkin_create_pkg eurobot_gui std_msgs rospy roscpp
+catkin_create_pkg eurobot_display std_msgs rospy roscpp
 
 # navigate to workspace/src to create a new package eurobot_core and eurobot_nav
 cd ~/catkin_ws/src
