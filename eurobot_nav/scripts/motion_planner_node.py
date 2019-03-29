@@ -90,31 +90,34 @@ class MotionPlannerNode:
             point.header.stamp = rospy.Time.now()
             point.header.frame_id = "map"
             point.id = i
-            point.type = 3
+            point.type = 1
             point.ns = "obstacle"
             point.pose.position.x = position[0]
             point.pose.position.y = position[1]
             point.pose.position.z = 0
             point.pose.orientation.w = 1
-            point.scale.x = 0.2
-            point.scale.y = 0.2
-            point.scale.z = 0.35
+            point.scale.x = 0.05
+            point.scale.y = 0.05
+            point.scale.z = 0.05
             point.color.a = 1
-            point.color.r = 1
+            if self.distances[i] < self.min_dist_to_obstacle:
+                point.color.r = 1
+            else:
+                point.color.g = 1
             #point.lifetime = rospy.Duration(0.7)
             marker.append(point)
         self.point_publisher.publish(marker)
 
     def cvt_distances2points(self):
         self.update_coords()
-        point_local = self.sensors_coords_vector * (self.distances + self.r).T
+        point_local = ((self.sensors_coords_vector.T) * (self.distances + self.r)).T
         rospy.loginfo(str(self.coords[:2]))
         self.obstacle_points = cvt_local2global(point_local, self.coords)
-        # self.set_collision_point(cvt_local2global(point_local, self.coords))
+        self.set_collision_point(cvt_local2global(point_local, self.coords))
 
     def distance_callback(self, data):
         self.distances = np.array(data.data.split()).astype(float)
-        # self.cvt_distances2points()
+        self.cvt_distances2points()
 
     def pub_path(self):
         path = Path()
