@@ -75,9 +75,11 @@ class Manipulator(object):
         elif cmd == "manipulator_wall":
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
-            self.set_manipulator_platfrom()
+            self.set_manipulator_platform()
         elif cmd == "start_collect_ground":
             self.start_collect_ground()
+        elif cmd == "StartTakeWallPuckPlatform":
+            self.release_from_manipulator()
         elif cmd == "complete_collect_ground":
             self.complete_collect_ground()
         elif cmd == "start_collect_wall":

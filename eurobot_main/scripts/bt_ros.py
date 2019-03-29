@@ -97,6 +97,10 @@ class StartTakeWallPuck(ActionClientNode):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+class StartTakeWallPuckPlatform(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "StartTakeWallPuckPlatform"
+        super(StartTakeWallPuckPlatform, self).__init__(cmd, action_client_id)
 
 class CompleteTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
