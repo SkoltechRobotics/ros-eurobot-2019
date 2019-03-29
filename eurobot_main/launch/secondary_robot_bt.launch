@@ -15,7 +15,7 @@
             <param name="frame_id" value="/secondary_robot_laser"/>
         </node>
         <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
-        <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="log"/>
+        <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="screen"/>
         <node pkg="eurobot_main" name="behavior_tree" type="secondary_robot_bt.py" respawn="true" output="screen"/>
     </group>
 </launch>
