@@ -97,11 +97,20 @@ class StartTakeWallPuck(ActionClientNode):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+class StartTakeWallPuckPlatform(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "StartTakeWallPuckPlatform"
+        super(StartTakeWallPuckPlatform, self).__init__(cmd, action_client_id)
 
 class CompleteTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_wall"
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+class CompleteCollectLastWall(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_last_wall"
+        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
 
 
 class CompleteCollectLastPuck(ActionClientNode):
@@ -185,10 +194,16 @@ class SetManipulatortoGoldenium(ActionClientNode):
         super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
 
 
-class SetToWall_ifReachedGoal(bt.FallbackNode):
-    def __init__(self, goal, action_client_id, threshold=0.01):
-        self.goal = bt.BTVariable(goal)
-        self.threshold = threshold
+class SetToWall_ifReachedGoal(bt.SequenceNode):
+    def __init__(self, goal, action_client_id, threshold=0.3):
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+
+        self.robot_name = rospy.get_param("robot_name")
+        self.robot_coordinates = None
+
+        self.goal = goal
+        self.threshold = bt.BTVariable(threshold)
 
         self.set_to_wall_node = ActionClientNode("manipulator_wall", action_client_id, name="manipulator_to_wall")
 
@@ -215,15 +230,16 @@ class SetToWall_ifReachedGoal(bt.FallbackNode):
             rospy.logwarn("SMT WROND QQ")
             return False
 
-    def is_coordinates_reached(self, threshold=0.01):
+    def is_coordinates_reached(self):
         # FIXME:: self.update_coordinates() replace???!!!
         self.update_coordinates()
-        distance, _ = calculate_distance(self.robot_coordinates, coordinates)
+        distance, _ = calculate_distance(self.robot_coordinates, self.goal)
         norm_distance = np.linalg.norm(distance)
-        if norm_distance < threshold:
+        print ("DISTANCE=",norm_distance)
+        if norm_distance < self.threshold:
             return bt.Status.SUCCESS
         else:
-            return bt.Status.FAILED
+            return bt.Status.RUNNING
 
 
 class MoveWaypoints(bt.FallbackNode):

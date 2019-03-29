@@ -121,7 +121,7 @@ class YellowTactics(Tactics):
         ])
 
         scales = bt.SequenceWithMemoryNode([
-            bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
+            bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
             bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client")])
 
         start_zone = bt.Latch(bt_ros.MoveLineToPoint(self.start_zone, "move_client"))
@@ -146,83 +146,104 @@ class PurpleTactics(Tactics):
         self.forth_puck = np.array(rospy.get_param("secondary_robot/purple_side/forth_puck_zone"))
         self.fifth_puck = np.array(rospy.get_param("secondary_robot/purple_side/fifth_puck_zone"))
         self.scales_zone = np.array(rospy.get_param("secondary_robot/purple_side/scales_zone"))
+        self.sixth_puck = np.array(rospy.get_param("secondary_robot/purple_side/sixth_puck_zone"))
+        self.seven_puck = np.array(rospy.get_param("secondary_robot/purple_side/seven_puck_zone"))
+        self.eight_puck = np.array(rospy.get_param("secondary_robot/purple_side/eight_puck_zone"))
+        self.nineth_puck = np.array(rospy.get_param("secondary_robot/purple_side/nine_puck_zone"))
         self.start_zone = np.array(rospy.get_param("secondary_robot/purple_side/start_zone"))
 
-        default_state = bt.Latch(bt_ros.SetToDefaultState("manipulator_client"))
+        default_state = bt_ros.SetToDefaultState("manipulator_client")
 
-        first_puck = bt.SequenceNode([
-            bt.ParallelNode([
-                bt.Latch(bt_ros.MoveLineToPoint(self.first_puck, "move_client")),
-                bt_ros.SetToWall_ifReachedGoal((0.4, 1.2, 0), "manipulator_client")
+        first_puck = bt.SequenceWithMemoryNode([
+            bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.first_puck, "move_client"),
+                bt_ros.SetManipulatortoWall("manipulator_client")
+                # bt_ros.SetToWall_ifReachedGoal((0.4, 1.2, 0), "manipulator_client")
             ], threshold=2),
-
-            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-            bt.ParallelNode([
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.first_puck + (0, -0.07, 0), "move_client"),
                     bt_ros.MoveLineToPoint(self.first_puck + (-0.1, -0.07, 0), "move_client")
                 ]),
-                bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+                bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
 
-        second_puck = bt.SequenceNode([
-            bt.Latch(bt_ros.MoveLineToPoint(self.second_puck, "move_client")),
-            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-            bt.ParallelNode([
+        second_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.second_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
                     bt_ros.MoveLineToPoint(self.second_puck + (+0.49, -0.5, 0), "move_client")]),
-                bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+                bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
 
-        third_puck = bt.SequenceNode([
-            bt.Latch(bt_ros.MoveLineToPoint(self.third_puck, "move_client")),
-            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-            bt.ParallelNode([
+        third_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.third_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.third_puck + (0, -0.04, 0), "move_client"),
                     bt_ros.MoveLineToPoint(self.third_puck + (0.2, -0.04, 0), "move_client")]),
-                bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+                bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
 
-        forth_puck = bt.SequenceNode([
-            bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck, "move_client")),
-            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-            bt.ParallelNode([
+        forth_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.forth_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.forth_puck + (0, -0.04, 0), "move_client"),
-                    bt.Latch(bt_ros.MoveLineToPoint(self.forth_puck + (0.2, -0.04, 0), "move_client"))]),
-                bt.Latch(bt_ros.CompleteTakeWallPuck("manipulator_client"))
+                    bt_ros.MoveLineToPoint(self.forth_puck + (0.2, -0.04, 0), "move_client")]),
+                bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
 
-        fifth_puck = bt.SequenceNode([
-            bt.Latch(bt_ros.MoveLineToPoint(self.fifth_puck, "move_client")),
-            bt.Latch(bt_ros.StartTakeWallPuck("manipulator_client")),
-            bt.ParallelNode([
-                bt.Latch(bt_ros.MoveLineToPoint(self.scales_zone, "move_client")),
-                bt.Latch(bt_ros.CompleteCollectLastPuck("manipulator_client"))
-            ], threshold=2)
+        fifth_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
         ])
 
         scales = bt.SequenceWithMemoryNode([
-            bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client"),
-            bt_ros.MoveLineToPoint(self.scales_zone + (0, 0.14, 0), "move_client")
+            bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client"),
+                bt_ros.CompleteCollectLastWall("manipulator_client")
+            ], threshold=2),
+            bt_ros.MoveLineToPoint(self.scales_zone, "move_client")
         ])
 
-        start_zone = bt.Latch(bt_ros.MoveLineToPoint(self.start_zone, "move_client"))
+        release_and_back = bt.SequenceWithMemoryNode([
+            bt_ros.ReleaseFivePucks("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.scales_zone + (0, 0, -2.08), "move_client")])
 
-        self.leaf = bt.SequenceNode([default_state,
-                                     first_puck,
-                                     second_puck,
-                                     third_puck,
-                                     forth_puck,
-                                     fifth_puck,
-                                     scales,
-                                     start_zone])
+        sixth_puck = bt.SequenceWithMemoryNode([
+            bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.04, 0), "move_client"),
+                bt_ros.SetManipulatortoWall("manipulator_client")
+            ], threshold=2),
+            bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
+            bt_ros.StartTakeWallPuckPlatform("manipulator_client")
+        ])
+
+        start_zone = bt_ros.MoveLineToPoint(self.start_zone, "move_client")
+
+        self.leaf = bt.SequenceWithMemoryNode([
+            default_state,
+            first_puck,
+            second_puck,
+            third_puck,
+            forth_puck,
+            fifth_puck,
+            scales,
+            release_and_back,
+            sixth_puck,
+            start_zone])
 
 
 class SecondaryRobotBT(object):
@@ -262,6 +283,7 @@ class SecondaryRobotBT(object):
             self.tactics = self.yellow_tactics
         else:
             self.tactics = None
+        self.side_status = side
 
     def timer_callback(self, event):
         status = self.bt.tick()
