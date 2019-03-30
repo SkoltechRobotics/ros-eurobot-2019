@@ -24,11 +24,8 @@ class Manipulator(object):
         rospy.Subscriber("stm/response", String, self.response_callback)
 
         self.responses = {}
-
-        self.last_response_id = None
-        self.last_response_args = None
         self.id_command = 1
-        
+
         self.protocol = {
             "SET_ANGLE" : 0x10,
             "START_PUMP" : 0x11,
@@ -60,8 +57,6 @@ class Manipulator(object):
             "GET_STEP_MOTOR_STATUS" : 0x34,
             "GET_PROXIMITY_STATUS" : 0x40
         }
-        
-        # rospy.sleep(2)
 
     def parse_data(self, data):
         data = data.data.split()
@@ -118,6 +113,18 @@ class Manipulator(object):
             rospy.loginfo("manipulator RESPONSE=" + str(response))
             self.responses[response[0]] = response[1]
 
+    def is_okay_answer(self):
+        while True:
+            if ("manipulator-" + str(self.id_command)) in self.responses.keys():
+                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK:
+                    self.id_command += 1
+                    return True
+                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR:
+                    self.id_command += 1
+                    return False
+                else:
+                    rospy.loginfo("Error in send_command()->manipulator.py")
+
     def send_command(self, cmd, args=None):
         while True:
             if args is None:
@@ -126,18 +133,8 @@ class Manipulator(object):
                 message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
             
             self.stm_publisher.publish(String(message))
-            
-            # Wait answer
-            rospy.sleep(0.1)
-            if ("manipulator-" + str(self.id_command)) in self.responses.keys():
-                if self.responses[("manipulator-" + str(self.id_command))] == "OK":
-                    self.id_command += 1
-                    return
-                elif self.responses[("manipulator-" + str(self.id_command))] == "ER":
-                    self.id_command += 1
-                else:
-                    rospy.loginfo("Error in send_command()->manipulator.py")
-            self.id_command += 1
+            if self.parse_answer(self.id_command):
+                return True
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
