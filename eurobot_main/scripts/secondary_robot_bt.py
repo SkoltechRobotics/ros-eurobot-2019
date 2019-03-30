@@ -147,10 +147,14 @@ class PurpleTactics(Tactics):
         self.fifth_puck = np.array(rospy.get_param("secondary_robot/purple_side/fifth_puck_zone"))
         self.scales_zone = np.array(rospy.get_param("secondary_robot/purple_side/scales_zone"))
         self.sixth_puck = np.array(rospy.get_param("secondary_robot/purple_side/sixth_puck_zone"))
-        self.seven_puck = np.array(rospy.get_param("secondary_robot/purple_side/seven_puck_zone"))
-        self.eight_puck = np.array(rospy.get_param("secondary_robot/purple_side/eight_puck_zone"))
-        self.nineth_puck = np.array(rospy.get_param("secondary_robot/purple_side/nine_puck_zone"))
+        self.seventh_puck = np.array(rospy.get_param("secondary_robot/purple_side/seventh_puck_zone"))
+        self.eighth_puck = np.array(rospy.get_param("secondary_robot/purple_side/eighth_puck_zone"))
+        self.nineth_puck = np.array(rospy.get_param("secondary_robot/purple_side/nineth_puck_zone"))
         self.start_zone = np.array(rospy.get_param("secondary_robot/purple_side/start_zone"))
+        self.redium_zone_first = np.array(rospy.get_param("secondary_robot/purple_side/redium_zone_first"))
+        self.redium_zone_second = np.array(rospy.get_param("secondary_robot/purple_side/redium_zone_second"))
+        self.redium_zone_third = np.array(rospy.get_param("secondary_robot/purple_side/redium_zone_third"))
+        self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/purple_side/redium_zone_forth"))
 
         default_state = bt_ros.SetToDefaultState("manipulator_client")
 
@@ -207,7 +211,6 @@ class PurpleTactics(Tactics):
             bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
             bt_ros.StartTakeWallPuck("manipulator_client"),
         ])
-
         scales = bt.SequenceWithMemoryNode([
             bt.ParallelWithMemoryNode([
                 bt_ros.MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client"),
@@ -218,7 +221,7 @@ class PurpleTactics(Tactics):
 
         release_and_back = bt.SequenceWithMemoryNode([
             bt_ros.ReleaseFivePucks("manipulator_client"),
-            bt_ros.MoveLineToPoint(self.scales_zone + (0, 0, -2.08), "move_client")])
+            bt_ros.MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client")])
 
         sixth_puck = bt.SequenceWithMemoryNode([
             bt.ParallelWithMemoryNode([
@@ -227,11 +230,43 @@ class PurpleTactics(Tactics):
             ], threshold=2),
             bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
             bt_ros.StartTakeWallPuck("manipulator_client"),
-            bt_ros.MoveLineToPoint(self.start_zone, "move_client"),
+            bt_ros.MoveLineToPoint(self.redium_zone_first, "move_client"),
             bt_ros.StartTakeWallPuckPlatform("manipulator_client")
         ])
 
-        start_zone = bt_ros.MoveLineToPoint(self.start_zone, "move_client")
+        seventh_puck = bt.SequenceWithMemoryNode([
+            bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.04, 0), "move_client"),
+                bt_ros.SetManipulatortoWall("manipulator_client")
+            ], threshold=2),
+            bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.redium_zone_second, "move_client"),
+            bt_ros.StartTakeWallPuckPlatform("manipulator_client")
+        ])
+
+        eighth_puck = bt.SequenceWithMemoryNode([
+            bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.04, 0), "move_client"),
+                bt_ros.SetManipulatortoWall("manipulator_client")
+            ], threshold=2),
+            bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
+            bt_ros.StartTakeWallPuckPlatform("manipulator_client")
+        ])
+
+        nineth_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.nineth_puck + (-0.1, -0.14, 0), "move_client"),
+            bt_ros.SetManipulatortoWall("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.04, 0), "move_client"),
+            bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
+            bt_ros.StartTakeWallPuck("manipulator_client"),
+            bt_ros.MoveLineToPoint(self.redium_zone_forth, "move_client"),
+            bt_ros.StartTakeWallPuckPlatform("manipulator_client")
+        ])
+
+        # start_zone = bt_ros.MoveLineToPoint(self.start_zone, "move_client")
 
         self.leaf = bt.SequenceWithMemoryNode([
             default_state,
@@ -243,7 +278,10 @@ class PurpleTactics(Tactics):
             scales,
             release_and_back,
             sixth_puck,
-            start_zone])
+            seventh_puck,
+            eighth_puck,
+            nineth_puck])
+            # start_zone])
 
 
 class SecondaryRobotBT(object):
