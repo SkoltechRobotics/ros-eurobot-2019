@@ -249,8 +249,6 @@ class Manipulator(object):
         self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
         return True
 
-    
-
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
         self.send_command(self.protocol["OPEN_GRABBER"])

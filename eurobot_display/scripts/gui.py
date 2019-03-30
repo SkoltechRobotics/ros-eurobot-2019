@@ -11,6 +11,35 @@ SIDE_COLORS = np.array([[255, 255, 0],  # yellow
 COLORS_NAME = ["blunium", "greenium", "goldenium", "redium"]
 
 
+class Prediction:
+    def __init__(self):
+
+        self.puck_points = {
+            "REDIUM_ON_RED": 6,
+            "REDIUM_ON_OTHER": 1,
+
+            "GREENIUM_ON_GREEN": 6,
+            "GREENIUM_ON_OTHER": 1,
+
+            "BLUNIUM_ON_BLUE": 6,
+            "BLUNIUM_ON_OTHER": 1,
+
+            "GOLDENIUM_ON_ANY": 7,
+
+            "REDIUM_IN_ACC": 10,
+            "GREENIUM_IN_ACC": 10,
+            "BLUNIUM_IN_ACC": 10,
+
+            "OPEN_GOLDENIUM_BONUS": 10,  # TODO ! add this bonus right after first puck in acc
+            "GRAB_GOLDENIUM_BONUS": 20,
+
+            "REDIUM_ON_SCALES": 4,
+            "GREENIUM_ON_SCALES": 8,
+            "BLUNIUM_ON_SCALES": 12,
+            "GOLDENIUM_ON_SCALES": 24,
+        }
+
+
 class App:
     def __init__(self, master):
         self.master = master
@@ -43,7 +72,7 @@ class App:
 
         # Score config
         self.score = IntVar()
-        self.score.set(0)
+        self.score.set(40)
         Label(self.frame2, bg="white", height=1, width=8, font=("Helvetica", 32), text="Score: ").pack(side="left")
         Label(self.frame2, bg="white", height=1, width=5, textvariable=self.score, font=("Helvetica", 32)).pack(side="right")
 

@@ -3,9 +3,11 @@ import threading
 import behavior_tree as bt
 from core_functions import *
 import numpy as np
+from std_msgs.msg import String
 
 import tf2_ros
 from tf.transformations import euler_from_quaternion
+
 
 class ActionClient(object):
 
@@ -92,32 +94,13 @@ class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
 
 
-class StartTakeWallPuck(ActionClientNode):
+class StepUp(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "start_collect_wall"
-        super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
-
-class StartTakeWallPuckPlatform(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "StartTakeWallPuckPlatform"
-        super(StartTakeWallPuckPlatform, self).__init__(cmd, action_client_id)
-
-class CompleteTakeWallPuck(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_wall"
-        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
-
-class CompleteCollectLastWall(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_last_wall"
-        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
+        cmd = "stepper_step_up"
+        super(StepUp, self).__init__(cmd, action_client_id)
 
 
-class CompleteCollectLastPuck(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_last_puck"
-        super(CompleteCollectLastPuck, self).__init__(cmd, action_client_id)
-
+# ===========================================================
 
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
@@ -129,6 +112,38 @@ class MoveArcToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
         cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
+
+# ===========================================================
+
+
+class StartTakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "start_collect_wall"
+        super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
+
+
+class StartTakeWallPuckPlatform(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "StartTakeWallPuckPlatform"
+        super(StartTakeWallPuckPlatform, self).__init__(cmd, action_client_id)
+
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+
+class CompleteCollectLastWall(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_last_wall"
+        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
+
+
+class CompleteCollectLastPuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_last_puck"
+        super(CompleteCollectLastPuck, self).__init__(cmd, action_client_id)
 
 
 class ReleaseFivePucks(ActionClientNode):
@@ -152,9 +167,6 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
-# ===========================================================
-
-
 class StartCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_blunium"
@@ -166,6 +178,13 @@ class UnloadAccelerator(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_accelerator"
         super(UnloadAccelerator, self).__init__(cmd, action_client_id)
+
+
+# Goldenium angle
+class SetManipulatortoGoldenium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_angle_to_grab_goldenium"
+        super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
 
 
 # Command to grab Goldenium, push up and hold it there
@@ -181,17 +200,7 @@ class UnloadGoldenium(ActionClientNode):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
-
-class StepUp(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "stepper_step_up"
-        super(StepUp, self).__init__(cmd, action_client_id)
-
-
-class SetManipulatortoGoldenium(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "set_angle_to_grab_goldenium"
-        super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
+# ===========================================================
 
 
 class SetToWall_ifReachedGoal(bt.SequenceNode):
@@ -240,6 +249,47 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
+
+
+class ScoreMaster:
+    def __init__(self):
+        self.collected_pucks = bt.BTVariable()
+        self.places = ["RED_CELL", "GREEN_CELL", "BLUE_CELL", "ACC", "SCALES"]
+        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
+        # super(ScoreMaster, self).__init__(self.add, self.unload)
+
+    # for bonus points
+    def bonus(self, cmd):
+        self.score_publisher.publish(cmd)
+
+    def add(self, puck):
+        self.collected_pucks.set(self.collected_pucks.get().append(puck))
+        return True  # FIXME
+
+    def unload(self, place, side="top"):
+        assert place in self.places
+
+        if side == "top":
+            lifo_puck = self.collected_pucks.get()[-1]
+            print(lifo_puck)
+            self.score_publisher.publish(lifo_puck + "_" + place)
+
+        elif side == "bottom":
+            fifo_puck = self.collected_pucks.get()[0]
+            print(fifo_puck)
+            self.score_publisher.publish(fifo_puck + "_" + place)
+
+        return True  # FIXME
+
+
+# class ScoreSlaveBTNode(bt.ActionNode):
+#     def __init__(self, score_cmd, score_master):
+#         self.score_cmd = score_cmd
+#         self.score_master = score_master
+#         super(ScoreSlaveBTNode, self).__init__(lambda: self.update_score())
+#
+#     def update_score(self):
+#         self.root.action_clients[self.score_master].unload(self.score_cmd)
 
 
 class MoveWaypoints(bt.FallbackNode):

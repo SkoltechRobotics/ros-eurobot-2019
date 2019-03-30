@@ -213,6 +213,10 @@ class MainRobotBT(object):
 
         self.side_status = side_status
 
+        self.is_puck_grabbed = grab_status
+        self.score_master = bt_ros.ScoreMaster()
+
+
         if self.side_status == SideStatus.PURPLE:
             self.tactics = self.purple_tactics
         elif self.side_status == SideStatus.YELLOW:
@@ -230,6 +234,8 @@ class MainRobotBT(object):
 
         # FIXME change structure to subtrees!
 
+        # Add condition node before updating score
+
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
                 bt_ros.SetToDefaultState("manipulator_client"),
@@ -237,6 +243,17 @@ class MainRobotBT(object):
                 bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
                 bt_ros.StartCollectGround("manipulator_client"),
 
+                bt.FallbackWithMemoryNode([
+                    bt.SequenceWithMemoryNode([
+                        bt.ConditionNode(self.is_puck_grabbed),
+                        bt.ActionNode(lambda: self.score_master.add("   FIXME !!!!!!    ")),
+                        bt.ActionNode(self.is_puck_grabbed.reset)]),
+                    bt.ActionNode(self.is_puck_grabbed.reset)
+                    ]),
+
+    # .add("REDIUM")
+    # .update("OPEN_GOLDENIUM_BONUS")
+                
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
@@ -248,6 +265,9 @@ class MainRobotBT(object):
                     bt_ros.MoveLineToPoint(self.tactics.third_puck_landing, "move_client"),
                 ], threshold=2),
                 bt_ros.StartCollectGround("manipulator_client"),
+                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+
+
 
                 # move to blunium and collect it
                 bt.ParallelWithMemoryNode([
