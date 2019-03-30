@@ -63,7 +63,7 @@ class STMstatus(object):
     def update_status(self, event):
         try:
             print ("self.end_flag", self.start_flag)
-            if self.start_flag is False:
+            if not self.start_flag:
                 successfully, values = self.stm_protocol.send(0x3, args=None)
             
                 message = ""
@@ -73,7 +73,7 @@ class STMstatus(object):
                     self.start_status_counter += 1
                 if self.start_status_counter == 5:
                     self.start_flag = True
-                if successfully and self.start_flag == True:
+                if successfully and self.start_flag:
                     self.start_status_publisher.publish("1")
                 elif successfully:
                     self.start_status_publisher.publish("0")
@@ -87,7 +87,7 @@ class STMstatus(object):
                     self.side_status_publisher.publish(message)
 
             else:
-                successfully, values = self.stm_protocol.send(64, args=None)
+                successfully, values = self.stm_protocol.send(0x40, args=None)
 
                 message = ""
                 for val in values:

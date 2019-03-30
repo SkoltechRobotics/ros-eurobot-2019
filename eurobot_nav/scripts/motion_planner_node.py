@@ -78,7 +78,7 @@ class MotionPlannerNode:
         self.dist_to_obstacle = 100
         self.timer = None
         #self.sensors_coords_vector = np.array([, [-1, 0], [np.sin(np.pi/6), np.cos(np.pi/6)]])
-        self.sensors_coords_vector = np.array([[np.sin(np.pi/6), np.cos(np.pi/6)], [-1, 0] ,[np.sin(np.pi/6), -np.cos(np.pi/6)]])
+        self.sensors_coords_vector = np.array([[-1, 0], [np.sin(np.pi/6), np.cos(np.pi/6)]  ,[np.sin(np.pi/6), -np.cos(np.pi/6)]])
         self.sensor_ind = 0
         self.sensor_angles = wrap_angle(np.array([np.pi/6, np.pi*(2/3), np.pi*(4/3)]))
         self.distances = np.array([100., 100., 100.])
