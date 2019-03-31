@@ -37,10 +37,14 @@ class Prediction:
             "GOLDENIUM_ON_SCALES": 24,
         }
 
+    def get_points(self, key):
+        return self.puck_points.get(key)
+
 
 class App:
     def __init__(self, master):
         self.master = master
+        self.predict = Prediction()
 
         # Master page
         frame = Frame(master, bg="white", colormap="new")
@@ -98,9 +102,16 @@ class App:
             self.side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
     def score_callback(self, data):
-        rospy.loginfo(data.data)
-        
-        self.score.set(self.score.get() + int(data.data))
+        """
+
+        :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
+        :return:
+        """
+        # data = data.data.split()
+        rospy.loginfo(data)
+        points = self.predict.get_points(data)
+        print("ppoints are: ", points)
+        self.score.set(self.score.get() + int(points))
 
     def wire_status_callback(self, data):
         if data.data == "0":
