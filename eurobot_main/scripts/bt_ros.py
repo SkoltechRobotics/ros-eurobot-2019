@@ -260,17 +260,16 @@ class ScoreMaster:
         self.collected_pucks = collected_pucks
         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
         self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
-        self.bonuses = ["OPEN_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
+        self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
         self.score_publisher = rospy.Publisher("score", String, queue_size=100)
 
-    def add_bonus(self, bonus):
+    def reward(self, bonus):
         assert bonus in self.bonuses
         self.score_publisher.publish(bonus)
 
     def add(self, puck):
         assert puck in self.pucks
         self.collected_pucks.set(self.collected_pucks.get().append(puck))
-        # return True  # FIXME
 
     def unload(self, place, side="top"):
         assert place in self.places
@@ -283,8 +282,6 @@ class ScoreMaster:
             fifo_puck = self.collected_pucks.get()[0]
             print(fifo_puck)
             self.score_publisher.publish(fifo_puck + "_ON_" + place)
-
-        # return True  # FIXME
 
 
 # class ScoreSlaveBTNode(bt.ActionNode):

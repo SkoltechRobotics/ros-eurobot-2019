@@ -28,7 +28,7 @@ class Prediction:
             "GREENIUM_ON_ACC": 10,
             "BLUNIUM_ON_ACC": 10,
 
-            "OPEN_GOLDENIUM_BONUS": 10,  # TODO ! add this bonus right after first puck in acc
+            "UNLOCK_GOLDENIUM_BONUS": 10,  # TODO ! add this bonus right after first puck in acc
             "GRAB_GOLDENIUM_BONUS": 20,
 
             "REDIUM_ON_SCALES": 4,
@@ -99,6 +99,7 @@ class App:
 
     def score_callback(self, data):
         rospy.loginfo(data.data)
+        
         self.score.set(self.score.get() + int(data.data))
 
     def wire_status_callback(self, data):
