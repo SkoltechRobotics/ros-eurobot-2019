@@ -253,7 +253,7 @@ class MainRobotBT(object):
 
     # .add("REDIUM")
     # .update("OPEN_GOLDENIUM_BONUS")
-                
+
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
