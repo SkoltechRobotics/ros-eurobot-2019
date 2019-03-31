@@ -252,19 +252,25 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
 
 
 class ScoreMaster:
-    def __init__(self):
-        self.collected_pucks = bt.BTVariable()
-        self.places = ["RED_CELL", "GREEN_CELL", "BLUE_CELL", "ACC", "SCALES"]
-        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
-        # super(ScoreMaster, self).__init__(self.add, self.unload)
 
-    # for bonus points
-    def bonus(self, cmd):
-        self.score_publisher.publish(cmd)
+    # use case: bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+    # use case2: bt.ActionNode(lambda: self.score_master.unload("SCALES")),
+
+    def __init__(self, collected_pucks):
+        self.collected_pucks = collected_pucks
+        self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
+        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
+        self.bonuses = ["OPEN_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
+        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
+
+    def bonus(self, bonus):
+        assert bonus in self.bonuses
+        self.score_publisher.publish(bonus)
 
     def add(self, puck):
+        assert puck in self.pucks
         self.collected_pucks.set(self.collected_pucks.get().append(puck))
-        return True  # FIXME
+        # return True  # FIXME
 
     def unload(self, place, side="top"):
         assert place in self.places
@@ -272,14 +278,13 @@ class ScoreMaster:
         if side == "top":
             lifo_puck = self.collected_pucks.get()[-1]
             print(lifo_puck)
-            self.score_publisher.publish(lifo_puck + "_" + place)
-
+            self.score_publisher.publish(lifo_puck + "_ON_" + place)
         elif side == "bottom":
             fifo_puck = self.collected_pucks.get()[0]
             print(fifo_puck)
-            self.score_publisher.publish(fifo_puck + "_" + place)
+            self.score_publisher.publish(fifo_puck + "_ON_" + place)
 
-        return True  # FIXME
+        # return True  # FIXME
 
 
 # class ScoreSlaveBTNode(bt.ActionNode):
