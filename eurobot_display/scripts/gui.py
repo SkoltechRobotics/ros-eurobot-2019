@@ -8,8 +8,6 @@ from std_msgs.msg import Int32MultiArray
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
                         [128, 0, 128]])  # purple
 
-COLORS_NAME = ["blunium", "greenium", "goldenium", "redium"]
-
 
 class Prediction:
     def __init__(self):
@@ -86,9 +84,9 @@ class App:
         self.time = Label(font=(None, 32), text="Timer: " + "100")
         self.time.pack()
 
-    def loop(self, n):
+    def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        self.frame3.after(1000, self.loop, n-1)  # call loop(n-1) in 1 seconds
+        self.frame3.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
     def side_status_callback(self, data):
         if data.data == "1":
@@ -112,7 +110,7 @@ class App:
             self.wire_frame.config(bg="green")
 
             # start timer countdown
-            self.frame3.after_idle(self.loop, 99)  # start loop
+            self.frame3.after_idle(self.countdown, 99)  # start loop
             self.frame3.after(100000, self.frame3.destroy)  # quit in 100 seconds
 
 

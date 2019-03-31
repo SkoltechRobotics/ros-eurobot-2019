@@ -263,7 +263,7 @@ class ScoreMaster:
         self.bonuses = ["OPEN_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
         self.score_publisher = rospy.Publisher("score", String, queue_size=100)
 
-    def bonus(self, bonus):
+    def add_bonus(self, bonus):
         assert bonus in self.bonuses
         self.score_publisher.publish(bonus)
 
