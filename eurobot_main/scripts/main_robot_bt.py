@@ -264,27 +264,24 @@ class MainRobotBT(object):
         (unload, "RED", side="bottom")
         (reward, "OPEN_GOLDENIUM_BONUS")
 
-        # bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-
         :param cmd: add, unload, reward
-        :param kwargs: puck - color,
-                        place - where to unload,
-                        side - unload from top or from bottom (only for Main robot)
+        :param args: color of puck, where to unload
+        :param kwargs: unload from top or from bottom (only for Main robot)
         :return:
         """
 
-        # TODO
-        # Add condition node before updating score
-        # update_score = bt.FallbackWithMemoryNode([
-        #                     bt.SequenceWithMemoryNode([
-        #                         bt.ConditionNode(self.is_puck_grabbed),
-        #                         self.update_score("add", "REDIUM"),
-        #                         bt.ActionNode(self.is_puck_grabbed.reset)]),
-        #                     bt.ActionNode(self.is_puck_grabbed.reset)
-        #             ]),
+        # TODO Add condition node before updating score
+
+        # TODO if puck wasn't taken, DON't MAKE STEP DOWN
 
         if cmd == "add":
-            bt.ActionNode(lambda: self.score_master.add(args))
+            bt.FallbackWithMemoryNode([
+                bt.SequenceWithMemoryNode([
+                    bt.ConditionNode(self.is_puck_grabbed),
+                    bt.ActionNode(lambda: self.score_master.add(args)),
+                    bt.ActionNode(self.is_puck_grabbed.reset)]),
+                bt.ActionNode(self.is_puck_grabbed.reset)
+            ]),
         elif cmd == "unload":
             bt.ActionNode(lambda: self.score_master.unload(args, kwargs))
         elif cmd == "reward":

@@ -1,6 +1,6 @@
 import rospy
-import eurobot_main.scripts.behavior_tree as bt
-import eurobot_main.scripts.bt_ros
+import behavior_tree as bt
+import bt_ros
 import numpy as np
 from std_msgs.msg import String
 
@@ -11,7 +11,7 @@ class MoveWaypoints(bt.FallbackNode):
         self.waypoints = bt.BTVariable(waypoints)
 
         # Init useful child nodes
-        self.move_to_waypoint_node = eurobot_main.scripts.bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
+        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
         self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
 
         # Make BT

@@ -332,6 +332,30 @@ GOALS
 Вынести все параметры в yaml файл
 
 
+# Team
+Александр Соколовский - XL (54) + 110
+Семен Лыхин - M
+Батыржан Алиханов - L
+Никита Горбадей - L
+Хуан Эредиа - L
+Эдгар Казиахмедов - L
+Антон Егоров - L
+Егор Пристанский - XXL
+Алексей Кашапов - L
+Николай Жердев - L
+
+Sergei Vostrikov - 
+Taras Melnik - L
+Andrew Chemikhin - M
+Evgeny Safronov - M
+Vladimir Karandaev - XL
+Mikhail Kurenkov - M
+Dzmitry Tsetserukou -
+
+Optional:
+Evgeniy - L
+poc - L
+
 
 # BT
 - Action sets params - SET
