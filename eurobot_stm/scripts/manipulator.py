@@ -24,11 +24,8 @@ class Manipulator(object):
         rospy.Subscriber("stm/response", String, self.response_callback)
 
         self.responses = {}
-
-        self.last_response_id = None
-        self.last_response_args = None
         self.id_command = 1
-        
+
         self.protocol = {
             "SET_ANGLE" : 0x10,
             "START_PUMP" : 0x11,
@@ -60,8 +57,6 @@ class Manipulator(object):
             "GET_STEP_MOTOR_STATUS" : 0x34,
             "GET_PROXIMITY_STATUS" : 0x40
         }
-        
-        # rospy.sleep(2)
 
     def parse_data(self, data):
         data = data.data.split()
@@ -76,14 +71,20 @@ class Manipulator(object):
             self.set_manipulator_wall()
         elif cmd == "manipulator_up":
             self.set_manipulator_platform()
+        elif cmd == "manipulator_ground":
+            self.set_manipulator_ground()
+        elif cmd == "manipulator_ground_delay":
+            self.set_manipulator_ground_delay()
         elif cmd == "start_collect_ground":
             self.start_collect_ground()
-        elif cmd == "StartTakeWallPuckPlatform":
+        elif cmd == "release_from_manipulator":
             self.release_from_manipulator()
         elif cmd == "complete_collect_ground":
             self.complete_collect_ground()
         elif cmd == "start_collect_wall":
             self.start_collect_wall()
+        elif cmd == "start_collect_wall_without_grabber":
+            self.start_collect_wall_without_grabber()
         elif cmd == "complete_collect_wall":
             self.complete_collect_wall()
         elif cmd == "complete_collect_last_wall":
@@ -115,8 +116,20 @@ class Manipulator(object):
     def response_callback(self, data):
         response = data.data.split()
         if re.match(r"manipulator-\d", response[0]):
-            rospy.loginfo("manipulator RESPONSE=" + str(response))
             self.responses[response[0]] = response[1]
+
+    def is_okay_answer(self):
+        while True:
+            if ("manipulator-" + str(self.id_command)) in self.responses.keys():
+                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK.value:
+                    self.id_command += 1
+                    return True
+                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR.value:
+                    self.id_command += 1
+                    rospy.sleep(0.1)
+                    return False
+                else:
+                    rospy.loginfo("Error in send_command()->manipulator.py")
 
     def send_command(self, cmd, args=None):
         while True:
@@ -124,20 +137,9 @@ class Manipulator(object):
                 message = "manipulator-" + str(self.id_command) + " " + str(cmd)
             else:
                 message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
-            
             self.stm_publisher.publish(String(message))
-            
-            # Wait answer
-            rospy.sleep(0.1)
-            if ("manipulator-" + str(self.id_command)) in self.responses.keys():
-                if self.responses[("manipulator-" + str(self.id_command))] == "OK":
-                    self.id_command += 1
-                    return
-                elif self.responses[("manipulator-" + str(self.id_command))] == "ER":
-                    self.id_command += 1
-                else:
-                    rospy.loginfo("Error in send_command()->manipulator.py")
-            self.id_command += 1
+            if self.is_okay_answer():
+                return True
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
@@ -170,6 +172,15 @@ class Manipulator(object):
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
+    def set_manipulator_ground(self):
+        self.send_command(self.protocol["SET_GROUND"])
+        return True
+
+    def set_manipulator_ground_delay(self):
+        rospy.sleep(0.5)
+        self.send_command(self.protocol["SET_GROUND"])
+        return True
+
     def set_manipulator_wall(self):
         self.send_command(self.protocol["SET_WALL"])
         return True
@@ -183,6 +194,14 @@ class Manipulator(object):
             pass
         if self.robot_name == "secondary_robot":
             self.send_command(self.protocol["OPEN_GRABBER"])
+            self.send_command(self.protocol["SET_WALL"])
+            self.send_command(self.protocol["START_PUMP"])
+            return True
+
+    def start_collect_wall_without_grabber(self):
+        if self.robot_name == "main_robot":
+            pass
+        if self.robot_name == "secondary_robot":
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
             return True
@@ -212,9 +231,11 @@ class Manipulator(object):
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
             return True
 
+
     def release_from_manipulator(self):
-        self.send_command(self.protocol["SET_GROUND"])
+        # self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["STOP_PUMP"])
+        rospy.sleep(0.3)
         self.send_command(self.protocol["SET_PLATFORM"])
 
     def release(self, pucks_number):

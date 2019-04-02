@@ -105,7 +105,8 @@ class PFNode(object):
             x = distances * np.cos(angles)
             y = distances * np.sin(angles)
             landmarks = (np.array([x, y])).T
-            start_coords = find_position_triangulation(beacons, landmarks, init_start)
+            # start_coords = find_position_triangulation(beacons, landmarks, init_start)
+            start_coords = init_start
             self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
         
 
