@@ -209,7 +209,7 @@ class SetManipulatortoGoldenium(ActionClientNode):
 
 
 class SetToWall_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, action_client_id, threshold=0.2):
+    def __init__(self, goal, action_client_id, threshold=0.3):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 

@@ -4,13 +4,13 @@ num_points_in_path: 100
 robot_radius: 0.1
 k_linear_wp: 5
 k_linear_vp: 3
-k : 0.15
+k : 0.1
 min_dist_to_goal_point: 0.2
 # max rate of the planner
 RATE: 15
 # goal tolerance
-XY_GOAL_TOLERANCE: 0.013
-YAW_GOAL_TOLERANCE: 0.005
+XY_GOAL_TOLERANCE: 0.007
+YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
 V_MAX: 0.6
 W_MAX: 1.2
