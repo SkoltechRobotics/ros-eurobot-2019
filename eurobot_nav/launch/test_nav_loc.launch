@@ -7,7 +7,6 @@
     <node pkg="master_sync_fkie" type="master_sync" name="master_sync"/>
     <group ns="secondary_robot">
         <include file="$(find eurobot_loc)/launch/localization.launch" />
-    </group>
     <node pkg="laser_scan_matcher" type="laser_scan_matcher_node" name="laser_scan_matcher_node" output="screen">
             <param name="max_iterations" value="10"/>
             <param name="fixed_frame" value="secondary_robot_odom"/>
@@ -16,6 +15,7 @@
             <param name="publish_tf" value="true"/>
             <param name="publish_pose_stamped" value="true"/>
     </node>
+    </group>
     <include file="$(find eurobot_stm)/launch/STM_node.launch" />
     <include file="$(find eurobot_nav)/launch/motion_planner_secondary_robot.launch"/>
 </launch>
