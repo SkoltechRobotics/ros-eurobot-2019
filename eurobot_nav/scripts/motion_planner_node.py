@@ -344,20 +344,22 @@ class MotionPlannerNode:
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
             w = v / R  # must be depended on v such way so path becomes an arc
-
+        '''
         if abs(w) > self.W_MAX:
             k = abs(w) / self.W_MAX
             v /= k
             w /= k
-
+        '''
         beta = wrap_angle(self.gamma - self.theta_diff / 2)
 
         # Deceleration when we are near the goal point
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         rospy.loginfo("DEC COEFF + %.4f", deceleration_coefficient)
-        vx = v * np.cos(beta)
-        vy = v * np.sin(beta)
+        vx = v * np.cos(beta)*self.k_linear_vp
+        vy = v * np.sin(beta)*self.k_linear_vp
+        w *= self.k_linear_vp
+        vx, vy, w = vx/2, vy/2, w/2
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
         curr_time = rospy.Time.now().to_sec()
