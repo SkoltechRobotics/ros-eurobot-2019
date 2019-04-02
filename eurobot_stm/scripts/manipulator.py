@@ -111,17 +111,17 @@ class Manipulator(object):
     def response_callback(self, data):
         response = data.data.split()
         if re.match(r"manipulator-\d", response[0]):
-            rospy.loginfo("manipulator RESPONSE=" + str(response))
             self.responses[response[0]] = response[1]
 
     def is_okay_answer(self):
         while True:
             if ("manipulator-" + str(self.id_command)) in self.responses.keys():
-                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK:
+                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK.value:
                     self.id_command += 1
                     return True
-                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR:
+                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR.value:
                     self.id_command += 1
+                    rospy.sleep(0.1)
                     return False
                 else:
                     rospy.loginfo("Error in send_command()->manipulator.py")
@@ -132,9 +132,8 @@ class Manipulator(object):
                 message = "manipulator-" + str(self.id_command) + " " + str(cmd)
             else:
                 message = "manipulator-" + str(self.id_command) + " " + str(cmd) + " " + str(args)
-            
             self.stm_publisher.publish(String(message))
-            if self.parse_answer(self.id_command):
+            if self.is_okay_answer():
                 return True
 
     def calibrate(self):

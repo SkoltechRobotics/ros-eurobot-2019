@@ -48,7 +48,6 @@ class Strategy(object):
         else:
             return bt.Status.FAILED
 
-class BaseStrategy()
 
 class YellowStrategy(Strategy):
     def __init__(self):
@@ -95,7 +94,7 @@ class YellowStrategy(Strategy):
             bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (-0.47, -0.5, 0), "move_client")]),
+                    bt_ros.MoveLineToPoint(self.second_puck + (-0.46, -0.5, 0), "move_client")]),
                 bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
@@ -142,6 +141,7 @@ class YellowStrategy(Strategy):
         sixth_puck = bt.SequenceWithMemoryNode([
             bt.ParallelWithMemoryNode([
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.04, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.04, 0), "move_client"),
                 bt_ros.SetManipulatortoWall("manipulator_client")
             ], threshold=2),
             bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
@@ -173,7 +173,7 @@ class YellowStrategy(Strategy):
         ])
 
         nineth_puck = bt.SequenceWithMemoryNode([
-            bt_ros.MoveLineToPoint(self.nineth_puck + (-0.1, -0.14, 0), "move_client"),
+            bt_ros.MoveLineToPoint(self.nineth_puck + (0.1, -0.14, 0), "move_client"),
             bt_ros.SetManipulatortoWall("manipulator_client"),
             bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.04, 0), "move_client"),
             bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
@@ -244,7 +244,7 @@ class PurpleStrategy(Strategy):
             bt.ParallelWithMemoryNode([
                 bt.SequenceWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (0.47, -0.5, 0), "move_client")]),
+                    bt_ros.MoveLineToPoint(self.second_puck + (0.46, -0.5, 0), "move_client")]),
                 bt_ros.CompleteTakeWallPuck("manipulator_client")
             ], threshold=2)
         ])
@@ -290,6 +290,7 @@ class PurpleStrategy(Strategy):
 
         sixth_puck = bt.SequenceWithMemoryNode([
             bt.ParallelWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.04, 0), "move_client"),
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.04, 0), "move_client"),
                 bt_ros.SetManipulatortoWall("manipulator_client")
             ], threshold=2),
