@@ -3,9 +3,9 @@
     <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery"/>
     <!--<param name="/secondary_robot/robot_name" value="secondary_robot" />-->
     <!--<param name="/secondary_robot/start_side" value="purple" />-->
-    <rosparam file="$(find eurobot_loc)/config/main_robot_localization_params.yaml" command="load" ns="main_robot"/>
+    <rosparam file="$(find eurobot_loc)/config/secondary_robot_localization_params.yaml" command="load" ns="secondary_robot"/>
     <node pkg="master_sync_fkie" type="master_sync" name="master_sync"/>
-    <group ns="main_robot">
+    <group ns="secondary_robot">
         <include file="$(find eurobot_loc)/launch/localization.launch" />
     </group>
     <node pkg="laser_scan_matcher" type="laser_scan_matcher_node" name="laser_scan_matcher_node" output="screen">
@@ -17,5 +17,5 @@
             <param name="publish_pose_stamped" value="true"/>
     </node>
     <include file="$(find eurobot_stm)/launch/STM_node.launch" />
-    <include file="$(find eurobot_nav)/launch/motion_planner_main_robot.launch"/>
+    <include file="$(find eurobot_nav)/launch/motion_planner_secondary_robot.launch"/>
 </launch>
