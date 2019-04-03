@@ -6,9 +6,14 @@ import rospy
 from std_msgs.msg import String
 
 
-class ResponseStatus(enum.Enum):
+class ResponseAnswer(enum.Enum):
     OK = "OK"
     ERROR = "ER"
+
+
+class ResponseStatus(enum.Enum):
+    FAIL = 0
+    SUCCESS = 1
 
 
 class Manipulator(object):
@@ -50,7 +55,7 @@ class Manipulator(object):
             "SET_LIFT_GOLDENIUM_ANGLE_MAIN" : 0x26,
 
             # for both Main and Secondary robots
-            "GET_PACK_PUMP_STATUS" : 0x27
+            "GET_PACK_PUMPED_STATUS" : 0x27,
             "START_CALIBRATION" : 0x30,
             "MAKE_STEP" : 0x31,
             "MAKE_STEP_DOWN" : 0x32,
@@ -67,44 +72,43 @@ class Manipulator(object):
 
     def do_command(self, cmd):
         if cmd == "default":
-            self.calibrate()
+            return self.calibrate()
         elif cmd == "manipulator_wall":
-            self.set_manipulator_wall()
+            return self.set_manipulator_wall()
         elif cmd == "manipulator_up":
-            self.set_manipulator_platform()
+            return self.set_manipulator_platform()
         elif cmd == "manipulator_ground":
-            self.set_manipulator_ground()
+            return self.set_manipulator_ground()
         elif cmd == "manipulator_ground_delay":
-            self.set_manipulator_ground_delay()
+            return self.set_manipulator_ground_delay()
         elif cmd == "start_collect_ground":
-            self.start_collect_ground()
+            return self.start_collect_ground()
         elif cmd == "release_from_manipulator":
-            self.release_from_manipulator()
+            return self.release_from_manipulator()
         elif cmd == "complete_collect_ground":
-            self.complete_collect_ground()
+            return self.complete_collect_ground()
         elif cmd == "start_collect_wall":
-            self.start_collect_wall()
+            return self.start_collect_wall()
         elif cmd == "start_collect_wall_without_grabber":
-            self.start_collect_wall_without_grabber()
+            return self.start_collect_wall_without_grabber()
         elif cmd == "complete_collect_wall":
-            self.complete_collect_wall()
+            return self.complete_collect_wall()
         elif cmd == "complete_collect_last_wall":
-            self.complete_collect_last_wall()
+            return self.complete_collect_last_wall()
         elif cmd == "release_5":
-            self.release(5)
+            return self.release(5)
         elif cmd == "release_accelerator":
-            self.release_accelerator()
+            return self.release_accelerator()
         elif cmd == "start_collect_blunium":
-            self.start_collect_blunium()
+            return self.start_collect_blunium()
         elif cmd == "grab_goldenium_and_hold_up":
-            self.goldenium_up_and_hold()
+            return self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
-            self.release_goldenium_on_scales()
+            return self.release_goldenium_on_scales()
         elif cmd == "set_angle_to_grab_goldenium":
-            self.set_angle_to_grab_goldenium()
+            return self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
-            self.stepper_step_up()
-        return True
+            return self.stepper_step_up()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -122,15 +126,15 @@ class Manipulator(object):
     def is_okay_answer(self):
         while True:
             if ("manipulator-" + str(self.id_command)) in self.responses.keys():
-                if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.OK.value:
+                if self.responses[("manipulator-" + str(self.id_command))] == ResponseAnswer.OK.value:
                     self.id_command += 1
                     return True
-                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.ERROR.value:
+                elif self.responses[("manipulator-" + str(self.id_command))] == ResponseAnswer.ERROR.value:
                     self.id_command += 1
-                    rospy.sleep(0.1)
+                    # rospy.sleep(0.1)
                     return False
                 else:
-                    rospy.loginfo("Error in send_command()->manipulator.py")
+                    rospy.loginfo("Error in send_command()->manipulator.py->is_okay_answer")
 
     def send_command(self, cmd, args=None):
         while True:
@@ -141,6 +145,22 @@ class Manipulator(object):
             self.stm_publisher.publish(String(message))
             if self.is_okay_answer():
                 return True
+
+    def is_success_status(self):
+        if ("manipulator-" + str(self.id_command)) in self.responses.keys():
+            if self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.SUCCESS.value:
+                self.id_command += 1
+                return True
+            elif self.responses[("manipulator-" + str(self.id_command))] == ResponseStatus.FAIL.value:
+                self.id_command += 1
+                # rospy.sleep(0.1)
+                return False
+            else:
+                rospy.loginfo("Error in send_command()->manipulator.py->is_success_status")
+
+    def check_status(self, cmd):
+        self.stm_publisher.publish(String("manipulator-" + str(self.id_command) + " " + str(cmd)))
+        return self.is_success_status()
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
@@ -197,7 +217,10 @@ class Manipulator(object):
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
-            return True
+            if self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"]):
+                return True
+            else:
+                return False
 
     def start_collect_wall_without_grabber(self):
         if self.robot_name == "main_robot":
