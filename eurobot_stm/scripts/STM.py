@@ -62,7 +62,6 @@ class STMstatus(object):
 
     def update_status(self, event):
         try:
-            print ("self.end_flag", self.start_flag)
             if not self.start_flag:
                 successfully, values = self.stm_protocol.send(0x3, args=None)
             

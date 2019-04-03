@@ -17,7 +17,7 @@
             <param name="frame_id" value="/secondary_robot_laser"/>
         </node>
         <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
-        <node pkg="laser_scan_matcher" type="laser_scan_matcher_node" name="laser_scan_matcher_node" output="screen">
+        <node pkg="laser_scan_matcher" type="laser_scan_matcher_node" name="laser_scan_matcher_node" output="log">
             <param name="max_iterations" value="10"/>
             <param name="fixed_frame" value="secondary_robot_odom"/>
             <param name="base_frame" value="secondary_robot"/>

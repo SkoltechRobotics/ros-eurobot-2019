@@ -106,6 +106,12 @@ class StartTakeWallPuck(ActionClientNode):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+class StopPump(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stop_pump"
+        super(StopPump, self).__init__(cmd, action_client_id)
+
+
 class StartTakeWallPuckWithoutGrabber(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall_without_grabber"
