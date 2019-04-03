@@ -91,16 +91,30 @@ class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
         cmd = "manipulator_up"
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
 
+class SetManipulatortoGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "manipulator_ground"
+        super(SetManipulatortoGround, self).__init__(cmd, action_client_id)
+
+class SetManipulatortoGroundDelay(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "manipulator_ground_delay"
+        super(SetManipulatortoGroundDelay, self).__init__(cmd, action_client_id)
 
 class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
-class StartTakeWallPuckPlatform(ActionClientNode):
+class StartTakeWallPuckWithoutGrabber(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "StartTakeWallPuckPlatform"
-        super(StartTakeWallPuckPlatform, self).__init__(cmd, action_client_id)
+        cmd = "start_collect_wall_without_grabber"
+        super(StartTakeWallPuckWithoutGrabber, self).__init__(cmd, action_client_id)
+
+class ReleaseFromManipulator(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_from_manipulator"
+        super(ReleaseFromManipulator, self).__init__(cmd, action_client_id)
 
 class CompleteTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
@@ -233,10 +247,13 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
     def is_coordinates_reached(self):
         # FIXME:: self.update_coordinates() replace???!!!
         self.update_coordinates()
+        if self.robot_coordinates is None:
+            return bt.Status.RUNNING
         distance, _ = calculate_distance(self.robot_coordinates, self.goal)
         norm_distance = np.linalg.norm(distance)
+        print("_______________________________________")
         print ("DISTANCE=",norm_distance)
-        if norm_distance < self.threshold:
+        if norm_distance < self.threshold.get():
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
