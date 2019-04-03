@@ -36,7 +36,8 @@ class Manipulator(object):
             "OPEN_GRABBER" : 0x16,
             "PROP_PUCK_GRABBER" : 0x17,
             "GRAB_PUCK_GRABBER" : 0x18,
-    
+            "IS_PUCK_GRABBED": 0x27,
+
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x19,
             "RELEASER_THROW_SECONDARY" : 0x20,

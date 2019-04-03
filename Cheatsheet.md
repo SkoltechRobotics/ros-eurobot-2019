@@ -344,17 +344,28 @@ GOALS
 Алексей Кашапов - L
 Николай Жердев - L
 
-Sergei Vostrikov - 
+Sergei Vostrikov - L
 Taras Melnik - L
 Andrew Chemikhin - M
 Evgeny Safronov - M
 Vladimir Karandaev - XL
 Mikhail Kurenkov - M
-Dzmitry Tsetserukou -
+Dzmitry Tsetserukou - XXL
+Alexandr Kuleshov - XXL
 
 Optional:
 Evgeniy - L
 poc - L
+110
+
+
+Поло и Худи
+110 - 1
+M - 4
+L - 11
+XL - 2
+XXL - 3
+
 
 
 # BT
