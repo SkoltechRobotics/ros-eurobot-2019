@@ -269,7 +269,7 @@ class MainRobotBT(object):
             temporary_move,
             collect_goldenium,
             unload_goldenium,
-            move_finish
+            # move_finish
         ])
 
         self.bt = bt.Root(self.tree,
