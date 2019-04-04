@@ -14,15 +14,15 @@ class Prediction:
 
         self.puck_points = {
             "REDIUM_ON_RED": 6,
-            "REDIUM_ON_OTHER": 1,
+            "REDIUM_ON_OTHER": 1,  # FIXME
 
             "GREENIUM_ON_GREEN": 6,
-            "GREENIUM_ON_OTHER": 1,
+            "GREENIUM_ON_OTHER": 1,  # FIXME
 
             "BLUNIUM_ON_BLUE": 6,
-            "BLUNIUM_ON_OTHER": 1,
+            "BLUNIUM_ON_OTHER": 1,  # FIXME
 
-            "GOLDENIUM_ON_ANY": 7,
+            "GOLDENIUM_ON_ANY": 6,
 
             "REDIUM_ON_ACC": 10,
             "GREENIUM_ON_ACC": 10,

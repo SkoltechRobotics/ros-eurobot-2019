@@ -27,7 +27,7 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
 
 ## to ride by odometry
-rostopic pub -1 /main_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
+rostopic pub -1 /main_robot/stm/command std_msgs/String "data: '1 8 0.2 0 0'" 
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
