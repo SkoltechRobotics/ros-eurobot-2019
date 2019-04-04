@@ -4,7 +4,7 @@ import geometry_msgs.msg
 import tf_conversions
 import tf2_ros
 import nav_msgs.msg 
-
+from std_msgs.msg import String
 class Odometry():
     def __init__(self, stm_protocol, rate):
         self.robot_name = rospy.get_param("robot_name")
@@ -26,7 +26,6 @@ class Odometry():
         successfully, values = self.stm_protocol.send(0x0F, args=None)
         if successfully:
             self.send_odometry(values)
-
 
     def send_odometry(self, values):
 

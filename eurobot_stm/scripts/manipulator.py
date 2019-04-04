@@ -152,7 +152,32 @@ class Manipulator(object):
             self.stm_publisher.publish(String(message))
             if self.is_okay_answer(self.id_command):
                 return True
-                
+
+    def is_success_status(self, id_command):
+        rospy.sleep(0.05)
+        while True:
+            if ("manipulator_status-" + str(id_command)) in self.responses.keys():
+                if self.responses[("manipulator_status-" + str(id_command))] == ResponseStatus.SUCCESS.value:
+                    rospy.loginfo("SUCCESS")
+                    self.status_command += 1
+                    return True
+                elif self.responses[("manipulator_status-" + str(id_command))] == ResponseStatus.FAIL.value:
+                    self.status_command += 1
+                    rospy.loginfo("FAIL")
+                    # rospy.sleep(0.1)
+                    return False
+                else:
+                    rospy.loginfo("Error in send_command()->manipulator.py->is_success_status")
+
+    def check_status(self, cmd):
+        counter = 0
+        for i in range(10):
+            self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
+            if self.is_success_status(self.status_command):
+                counter += 1
+            if counter > 0:
+                return True
+        return False
 
     def is_success_status(self, id_command):
         rospy.sleep(0.05)
@@ -210,6 +235,43 @@ class Manipulator(object):
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        return True
+
+    def release_accelerator(self):
+        # assume that we need to move pucks 1 level up to start throwing them
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        return True
+
+    def start_collect_blunium(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
+        self.send_command(self.protocol["START_PUMP"])
+        return True
+
+    def goldenium_up_and_hold(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(1)
+        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
+        return True
+
+    def set_angle_to_grab_goldenium(self):
+        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
+        return True
+
+    def release_goldenium_on_scales(self):
+        self.send_command(self.protocol["SET_WALL"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["SET_PLATFORM"])
+        return True
+
+    def stepper_step_up(self):
+        self.send_command(self.protocol["MAKE_STEP_UP"])
         return True
 
     def set_manipulator_ground(self):
@@ -401,42 +463,70 @@ class Manipulator(object):
             print ("RELEASER_DEFAULT_SECONDARY_END")
             return True
 
-    def release_accelerator(self):
-        # assume that we need to move pucks 1 level up to start throwing them
-        self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["MAKE_STEP_UP"])
-        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
-        self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
-        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
-        return True
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-    def start_collect_blunium(self):
-        self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
-        self.send_command(self.protocol["START_PUMP"])
-        return True
 
-    def goldenium_up_and_hold(self):
-        self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
-        self.send_command(self.protocol["START_PUMP"])
-        rospy.sleep(1)
-        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
-        return True
+        if pucks_number == 4:
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-    def set_angle_to_grab_goldenium(self):
-        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
-        return True
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+            
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-    def release_goldenium_on_scales(self):
-        self.send_command(self.protocol["SET_WALL"])
-        self.send_command(self.protocol["STOP_PUMP"])
-        self.send_command(self.protocol["SET_PLATFORM"])
-        return True
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
 
-    def stepper_step_up(self):
-        self.send_command(self.protocol["MAKE_STEP_UP"])
-        return True
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+
+            return True
+        if pucks_number == 5:
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+            
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+
+            self.send_command(self.protocol["MAKE_STEP_UP"])
+            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+            print ("RELEASER_DEFAULT_SECONDARY")
+            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+            print ("RELEASER_DEFAULT_SECONDARY_END")
+            return True
 
 
 if __name__ == '__main__':

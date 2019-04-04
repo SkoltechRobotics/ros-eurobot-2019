@@ -131,6 +131,12 @@ class StartTakeWallPuck(ActionClientNode):
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
 
+class StopPump(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stop_pump"
+        super(StopPump, self).__init__(cmd, action_client_id)
+
+
 class StartTakeWallPuckWithoutGrabber(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall_without_grabber"
@@ -143,28 +149,24 @@ class ReleaseFromManipulator(ActionClientNode):
         super(ReleaseFromManipulator, self).__init__(cmd, action_client_id)
 
 
-class CompleteTakeWallPuck(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_wall"
-        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
-
-
-class CompleteCollectLastWall(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "complete_collect_last_wall"
-        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
-
-
 class CompleteCollectLastPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_last_puck"
         super(CompleteCollectLastPuck, self).__init__(cmd, action_client_id)
 
 
-class ReleaseFivePucks(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "release_5"
-        super(ReleaseFivePucks, self).__init__(cmd, action_client_id)
+class MoveLineToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveLineToPoint, self).__init__(cmd, action_client_id)
+
+
+class MoveArcToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveArcToPoint, self).__init__(cmd, action_client_id)
+
+
 
 # ===========================================================
 
@@ -217,6 +219,78 @@ class UnloadGoldenium(ActionClientNode):
 
 # ===========================================================
 
+#-------------
+
+class ReleaseSomePucks(ActionClientNode):
+    def __init__(self, pucks_inside, action_client_id):
+        self.pucks_inside = pucks_inside
+
+        cmd = "release_" + str(pucks_inside)
+        super(ReleaseSomePucks, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        
+        cmd = "release_" + str(len(self.pucks_inside))
+        self.cmd = bt.BTVariable(cmd)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+
+class CompleteCollectLastWall(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_last_wall"
+        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+    def start_action(self): 
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        
+
+class ReleaseAndBack(bt.SequenceWithMemoryNode):
+    def __init__(self, pucks_inside, scales_zone, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.scales_zone = scales_zone
+
+        super(ReleaseAndBack, self).__init__([
+            ReleaseSomePucks(self.pucks_inside, "manipulator_client"),
+            MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client")
+        ])
+
 
 class SetToWall_ifReachedGoal(bt.SequenceNode):
     def __init__(self, goal, action_client_id, threshold=0.3):
@@ -255,51 +329,15 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return False
 
     def is_coordinates_reached(self):
-        # FIXME:: self.update_coordinates() replace???!!!
         self.update_coordinates()
         if self.robot_coordinates is None:
             return bt.Status.RUNNING
         distance, _ = calculate_distance(self.robot_coordinates, self.goal)
         norm_distance = np.linalg.norm(distance)
-        print("_______________________________________")
-        print ("DISTANCE=",norm_distance)
         if norm_distance < self.threshold.get():
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
-
-
-# class ScoreMaster:
-#
-#     # use case: bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-#     # use case2: bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-#
-#     def __init__(self, collected_pucks):
-#         self.collected_pucks = collected_pucks
-#         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
-#         self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
-#         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
-#         self.score_publisher = rospy.Publisher("score", String, queue_size=100)
-#
-#     def reward(self, bonus):
-#         assert bonus in self.bonuses
-#         self.score_publisher.publish(bonus)
-#
-#     def add(self, puck):
-#         assert puck in self.pucks
-#         self.collected_pucks.set(self.collected_pucks.get().append(puck))
-#
-#     def unload(self, place, side="top"):
-#         assert place in self.places
-#
-#         if side == "top":
-#             lifo_puck = self.collected_pucks.get()[-1]
-#             print(lifo_puck)
-#             self.score_publisher.publish(lifo_puck + "_ON_" + place)
-#         elif side == "bottom":
-#             fifo_puck = self.collected_pucks.get()[0]
-#             print(fifo_puck)
-#             self.score_publisher.publish(fifo_puck + "_ON_" + place)
 
 
 # class ScoreSlaveBTNode(bt.ActionNode):

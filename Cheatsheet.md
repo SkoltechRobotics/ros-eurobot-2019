@@ -389,7 +389,6 @@ XXL - 3
 # Выключить насос
 
 
-
 # NO RVIZ IN LAUNCH FILE
 
 #! /bin/bash
@@ -419,3 +418,6 @@ sudo systemctl daemon-reload
 And enable it on boot:
 sudo systemctl enable mavros.service
 
+=======
+# required packages:
+ros-laser-scan-matcher
