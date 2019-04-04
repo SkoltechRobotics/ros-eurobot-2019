@@ -269,37 +269,37 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return bt.Status.RUNNING
 
 
-class ScoreMaster:
-
-    # use case: bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-    # use case2: bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-
-    def __init__(self, collected_pucks):
-        self.collected_pucks = collected_pucks
-        self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
-        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
-        self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
-        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
-
-    def reward(self, bonus):
-        assert bonus in self.bonuses
-        self.score_publisher.publish(bonus)
-
-    def add(self, puck):
-        assert puck in self.pucks
-        self.collected_pucks.set(self.collected_pucks.get().append(puck))
-
-    def unload(self, place, side="top"):
-        assert place in self.places
-
-        if side == "top":
-            lifo_puck = self.collected_pucks.get()[-1]
-            print(lifo_puck)
-            self.score_publisher.publish(lifo_puck + "_ON_" + place)
-        elif side == "bottom":
-            fifo_puck = self.collected_pucks.get()[0]
-            print(fifo_puck)
-            self.score_publisher.publish(fifo_puck + "_ON_" + place)
+# class ScoreMaster:
+#
+#     # use case: bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+#     # use case2: bt.ActionNode(lambda: self.score_master.unload("SCALES")),
+#
+#     def __init__(self, collected_pucks):
+#         self.collected_pucks = collected_pucks
+#         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
+#         self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
+#         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
+#         self.score_publisher = rospy.Publisher("score", String, queue_size=100)
+#
+#     def reward(self, bonus):
+#         assert bonus in self.bonuses
+#         self.score_publisher.publish(bonus)
+#
+#     def add(self, puck):
+#         assert puck in self.pucks
+#         self.collected_pucks.set(self.collected_pucks.get().append(puck))
+#
+#     def unload(self, place, side="top"):
+#         assert place in self.places
+#
+#         if side == "top":
+#             lifo_puck = self.collected_pucks.get()[-1]
+#             print(lifo_puck)
+#             self.score_publisher.publish(lifo_puck + "_ON_" + place)
+#         elif side == "bottom":
+#             fifo_puck = self.collected_pucks.get()[0]
+#             print(fifo_puck)
+#             self.score_publisher.publish(fifo_puck + "_ON_" + place)
 
 
 # class ScoreSlaveBTNode(bt.ActionNode):
