@@ -3,7 +3,7 @@ particles_num: 1000
 sense_noise: 0.00075
 distance_noise: 0.002
 angle_noise: 0.0035
-min_intens: 3000
+min_intens: 2700
 min_point_per_beacon: 3
 max_dist: 3700
 k_angle: 0
