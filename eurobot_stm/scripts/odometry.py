@@ -27,7 +27,6 @@ class Odometry():
         if successfully:
             self.send_odometry(values)
 
-
     def send_odometry(self, values):
 
         if self.is_publish_tf:
