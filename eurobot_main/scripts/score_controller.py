@@ -17,7 +17,7 @@ class ScoreController(object):
 
         # self.is_puck_grabbed_flag = False
 
-    def score_controller(self, cmd, *args, **kwargs):
+    def score_master(self, cmd, *args, **kwargs):
         """
         Examples:
         (add, "REDIUM")
