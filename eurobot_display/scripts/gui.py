@@ -28,7 +28,7 @@ class Prediction:
             "GREENIUM_ON_ACC": 10,
             "BLUNIUM_ON_ACC": 10,
 
-            "UNLOCK_GOLDENIUM_BONUS": 10,  # TODO ! add this bonus right after first puck in acc
+            "UNLOCK_GOLDENIUM_BONUS": 10,
             "GRAB_GOLDENIUM_BONUS": 20,
 
             "REDIUM_ON_SCALES": 4,

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import rospy
 import behavior_tree as bt
 import bt_ros
@@ -6,106 +7,6 @@ from std_msgs.msg import String
 from bt_controller import SideStatus, BTController
 from score_controller import ScoreController
 from core_functions import *
-
-# import tf2_ros
-# from tf.transformations import euler_from_quaternion
-# from threading import Lock
-# from manipulator import Manipulator
-# from tactics_math import *
-# from core_functions import cvt_local2global
-# from visualization_msgs.msg import MarkerArray
-
-# ====================================
-
-# parallel2 = bt.ParallelNode([bt.SequenceNode([move_2_back,move_2_back2]), complete_take_2_puck], threshold=2)
-
-# calibrate
-# move to first puck on the field and collect it
-# move to second puck on the field and collect it
-# move to third puck on the field and KEEP IT UP, NOT COLLECT!
-# move to blunium on acc, prepare manipulator with puck to push it
-# push blunium and and finish collect puck in manip
-# FIXME move side and unload pucks in acc
-# approach goldenium, grab it and push up
-# move to scales and unload Goldenium
-
-# ====================================
-
-# class CollectChaosPucks(bt.FallbackNode):
-#     def __init__(self, move_client, manipulator_client):
-#
-#         # Init parameters
-#         self.pucks = bt.BTVariable([])
-#         self.is_observed = bt.BTVariable(False)
-#
-#         rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-#
-#         # Init useful child nodes
-#         self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", move_client, name="move_to_waypoint")
-#         self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", manipulator_client, name="move_to_waypoint")
-#         self.choose_new_waypoint_latch = bt.Latch(bt.ActionNode(self.choose_new_waypoint))
-#
-#         # Make BT
-#         super(CollectChaosPucks, self).__init__([
-#             bt.ConditionNode(self.is_chaos_collected_completely),
-#             bt.SequenceNode([
-#                 bt.SequenceWithMemoryNode([
-#                     bt.FallbackNode([
-#                         bt.ActionNode(self.get_chaos_observation_from_camera)  # FIXME
-#                     ]),
-#                     bt.ConditionNode(self.is_chaos_observed), # return RUNNING when not observed
-#
-#                     bt.FallbackWithMemoryNode([
-#                         bt.ConditionNode(self.is_not_first_puck),
-#                         bt.SequenceWithMemoryNode([
-#                             bt.ActionNode(self.calculate_pucks_configuration),
-#                             bt.ActionNode(self.calculate_landings),
-#                             bt_ros.MoveLineToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
-#                             bt_ros.MoveLineToPoint(landings[0], "move_client"),
-#                         ]),
-#
-#                     ]),
-#
-#                     bt_ros.StartCollectGround("manipulator_client"),  # self.start_suck()
-#
-#                     bt.FallbackWithMemoryNode([
-#                         bt.ConditionNode(self.is_safe_away_from_other_pucks_to_suck),
-#                         bt.SequenceNode([
-#                             bt_ros.MoveLineToPoint(drive_back_point, "move_client")  # self.drive_back()
-#                         ])
-#                     ]),
-#
-#                     bt.ParallelNode([
-#                         bt_ros.CompleteCollectGround("manipulator_client"),
-#
-#                         bt.FallbackWithMemoryNode([
-#                             bt.ConditionNode(self.is_last_puck),
-#                             bt.SequenceWithMemoryNode([
-#                                 bt.ActionNode(self.calculate_pucks_configuration),
-#                                 bt.ActionNode(self.calculate_landings)
-#                                 bt_ros.MoveArcToPoint(prelanding, "move_client"),  # approach_nearest_prelanding
-#                                 bt_ros.MoveLineToPoint(landings[0], "move_client"),  # approach_nearest_landing
-#                             ])
-#                         ])
-#                     ], threshold=2),  # FIXME
-#                 ]),
-#                 bt.ConditionNode(lambda: bt.Status.RUNNING),
-#             ])
-#         ])
-#
-#     def pucks_callback(self, data):
-#         self.pucks.set(data)  # Action
-#         self.is_observed.set(True)
-#
-#     def is_chaos_observed(self):  # Condition
-#         if self.is_observed.get():
-#             return bt.Status.SUCCESS
-#         else:
-#             return bt.Status.RUNNING
-
-# add in MainRobotBT when collect_chaos ready
-# self.bt = bt.Root(CollectChaosPucks("move_client", "manipulator_client"),
-#                   action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
 
 class Tactics(object):
@@ -258,37 +159,6 @@ class MainRobotBT(object):
         else:
             return bt.Status.SUCCESS
 
-    # def score_controller(self, cmd, *args, **kwargs):
-    #     """
-    #     Examples:
-    #     (add, "REDIUM")
-    #     (unload, "SCALES")
-    #     (unload, "RED", side="bottom")
-    #     (reward, "OPEN_GOLDENIUM_BONUS")
-    #
-    #     :param cmd: add, unload, reward
-    #     :param args: color of puck, where to unload
-    #     :param kwargs: unload from top or from bottom (only for Main robot)
-    #     :return:
-    #     """
-    #
-    #     # TODO Add condition node before updating score
-    #
-    #     # TODO if puck wasn't taken, DON't MAKE STEP DOWN
-    #
-    #     if cmd == "add":
-    #         bt.FallbackWithMemoryNode([
-    #             bt.SequenceWithMemoryNode([
-    #                 bt.ConditionNode(self.is_puck_grabbed),
-    #                 bt.ActionNode(lambda: self.score_master.add(args)),
-    #             bt.ConditionNode(lambda: bt.Status.SUCCESS)
-    #             ]),
-    #         ])
-    #     elif cmd == "unload":
-    #         bt.ActionNode(lambda: self.score_master.unload(args, kwargs))
-    #     elif cmd == "reward":
-    #         bt.ActionNode(lambda: self.score_master.reward(args))
-
     def strategy_vovan(self):
         default_state = bt_ros.SetToDefaultState("manipulator_client")
 
@@ -397,86 +267,6 @@ class MainRobotBT(object):
         self.bt = bt.Root(
                     bt.SequenceWithMemoryNode([self.current_strategy]),
                     action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
-
-        # self.bt = bt.Root(
-        #     bt.SequenceWithMemoryNode([
-        #         bt_ros.SetToDefaultState("manipulator_client"),
-        #
-        #         bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #
-        #         # bt.FallbackWithMemoryNode([
-        #         #     bt.SequenceWithMemoryNode([
-        #         #         bt.ConditionNode(self.is_puck_grabbed),
-        #         #         bt.ActionNode(lambda: self.score_master.add("   FIXME !!!!!!    ")),
-        #         #         bt.ActionNode(self.is_puck_grabbed.reset)]),
-        #         #     bt.ActionNode(self.is_puck_grabbed.reset)
-        #         #     ]),
-        #
-        #
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
-        #         ], threshold=2),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.tactics.third_puck_landing, "move_client"),
-        #         ], threshold=2),
-        #         bt_ros.StartCollectGround("manipulator_client"),
-        #
-        #         bt.ParallelWithMemoryNode([
-        #             bt_ros.CompleteCollectGround("manipulator_client"),
-        #             bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
-        #         ], threshold=2),
-        #         bt_ros.StartCollectBlunium("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
-        #         bt_ros.CompleteCollectGround("manipulator_client"),
-        #
-        #         bt_ros.SetManipulatortoUp("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
-        #         # FIXME Sasha have to fix height of unloading mechanism
-        #         bt_ros.StepUp("manipulator_client"),
-        #
-        #         # unload first in acc
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client"),
-        #
-        #         # unload second in acc
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client"),
-        #
-        #         # unload third in acc
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client"),
-        #
-        #         # unload forth in acc
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #         bt_ros.UnloadAccelerator("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client"),
-        #
-        #         # to make sure that the LAST puck is unloaded
-        #         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #
-        #         # collect Goldenium
-        #         bt_ros.MoveLineToPoint(self.tactics.goldenium_PREgrab_pos, "move_client"),
-        #         bt_ros.SetManipulatortoGoldenium("manipulator_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
-        #         bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-        #
-        #         # move to scales and unload
-        #         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client"), # FIXME
-        #         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"), # FIXME
-        #         bt_ros.UnloadGoldenium("manipulator_client"),
-        #
-        #         bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
-        #         bt_ros.MoveLineToPoint(self.tactics.start_zone, "move_client"),
-        #     ]),
-        #     action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
 
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
