@@ -418,10 +418,12 @@ sudo systemctl daemon-reload
 And enable it on boot:
 sudo systemctl enable mavros.service
 
-=======
+
+        <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="screen"/>
+
 # required packages:
 ros-laser-scan-matcher
-
+>>>>>>> Stashed changes
 sudo apt-get install ros-kinetic-laser-scan-matcher
 roslaunch polar_scan_matcher demo.launch
 
