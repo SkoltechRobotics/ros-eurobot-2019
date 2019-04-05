@@ -45,8 +45,8 @@ class Manipulator(object):
             "GET_PACK_PUMPED_STATUS" : 0x19,
     
             # only for Secondary
-            "RELEASER_DEFAULT_SECONDARY" : 0x19,
-            "RELEASER_THROW_SECONDARY" : 0x20,
+            "RELEASER_DEFAULT_SECONDARY" : 0x20,
+            "RELEASER_THROW_SECONDARY" : 0x21,
     
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
@@ -177,7 +177,7 @@ class Manipulator(object):
 
     def check_status(self, cmd):
         counter = 0
-        for i in range(10):
+        for i in range(15):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1

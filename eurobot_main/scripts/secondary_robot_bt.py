@@ -324,6 +324,7 @@ class YellowStrategy(Strategy):
         ])
 
         nineth_puck = bt.SequenceWithMemoryNode([
+            bt_ros.MoveLineToPoint(self.nineth_puck + (0.1, -0.04, 0), "move_client"),
             bt_ros.StartPump("manipulator_client"),
             bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
             bt_ros.StartTakeWallPuckWithoutGrabber("manipulator_client"),
