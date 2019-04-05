@@ -47,6 +47,9 @@ class YellowTactics(Tactics):
         self.blunium_collect_PREpos = rospy.get_param("yellow_zone/blunium_collect_PREpos")
         self.blunium_collect_pos = rospy.get_param("yellow_zone/blunium_collect_pos")
 
+        self.blunium_rotate_PREpose = rospy.get_param("yellow_zone/blunium_rotate_PREpose")
+        self.blunium_rotate_pose = rospy.get_param("yellow_zone/blunium_rotate_pose")
+
         self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
         self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
         self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
@@ -87,6 +90,9 @@ class PurpleTactics(Tactics):
 
         self.blunium_collect_PREpos = rospy.get_param("purple_zone/blunium_collect_PREpos")
         self.blunium_collect_pos = rospy.get_param("purple_zone/blunium_collect_pos")
+
+        # self.blunium_rotate_PREpose = rospy.get_param("yellow_zone/blunium_rotate_PREpose")
+        # self.blunium_rotate_pose = rospy.get_param("yellow_zone/blunium_rotate_pose")
 
         self.accelerator_PREunloading_pos = rospy.get_param("purple_zone/accelerator_PREunloading_pos")
         self.accelerator_unloading_pos = rospy.get_param("purple_zone/accelerator_unloading_pos")
@@ -190,14 +196,24 @@ class MainRobotBT(object):
                             # self.SC.score_master("add", "REDIUM")  # FIXME: color is undetermined without camera!
                         ]),
 
+        # blunium_acc = bt.SequenceWithMemoryNode([
+        #                 bt.ParallelWithMemoryNode([
+        #                     bt_ros.CompleteCollectGround("manipulator_client"),
+        #                     bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+        #                 ], threshold=2),
+        #                 bt_ros.StartCollectBlunium("manipulator_client"),
+        #                 bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
+        #                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                 # self.SC.score_master("add", "BLUNIUM"),
+        #             ])
+
         blunium_acc = bt.SequenceWithMemoryNode([
                         bt.ParallelWithMemoryNode([
                             bt_ros.CompleteCollectGround("manipulator_client"),
-                            bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+                            bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
                         ], threshold=2),
-                        bt_ros.StartCollectBlunium("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
-                        bt_ros.CompleteCollectGround("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_pose, "move_client"),
+                        bt_ros.SetManipulatortoUp("manipulator_client")
                         # self.SC.score_master("add", "BLUNIUM"),
                     ])
 
@@ -372,7 +388,7 @@ class MainRobotBT(object):
         #     bt_ros.MoveLineToPoint(self.tactics.start_zone, "move_client"),
         # ])
         # self.current_strategy = self.strategy_vovan()
-        
+
         self.current_strategy = self.test_tyda_suda()
 
         # self.bt = bt.Root(self.current_strategy,
