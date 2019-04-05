@@ -42,28 +42,29 @@ class Manipulator(object):
             "OPEN_GRABBER" : 0x16,
             "PROP_PUCK_GRABBER" : 0x17,
             "GRAB_PUCK_GRABBER" : 0x18,
+            "GET_PACK_PUMPED_STATUS" : 0x19,
     
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x19,
             "RELEASER_THROW_SECONDARY" : 0x20,
     
             # only for Main
-            "UNLOAD_PUCK_TOP_MAIN" : 0x21,
-            "UNLOAD_DEFAULT_MAIN" : 0x22,  # FIXME
-            "UNLOAD_PUCK_BOTTOM_MAIN" : 0x23,
-            "RELEASER_PACK_DOWN" : 0x24,
-            "SET_BLUNIUM_ANGLE_MAIN" : 0x25,
-            "SET_GRAB_GOLDENIUM_ANGLE_MAIN" : 0x26,
-            "SET_LIFT_GOLDENIUM_ANGLE_MAIN" : 0x27,
+            "UNLOAD_PUCK_TOP_MAIN" : 0x30,
+            "UNLOAD_DEFAULT_MAIN" : 0x31,  # FIXME
+            "UNLOAD_PUCK_BOTTOM_MAIN" : 0x32,
+            "RELEASER_PACK_DOWN" : 0x33,
+            "SET_BLUNIUM_ANGLE_MAIN" : 0x34,
+            "SWING_PUCK" : 0x35,
+            "SET_GRAB_GOLDENIUM_ANGLE_MAIN" : 0x36,
+            "SET_LIFT_GOLDENIUM_ANGLE_MAIN" : 0x37,
 
             # for both Main and Secondary robots
-            "GET_PACK_PUMPED_STATUS" : 0x28,
-            "START_CALIBRATION" : 0x30,
-            "MAKE_STEP" : 0x31,
-            "MAKE_STEP_DOWN" : 0x32,
-            "MAKE_STEP_UP" : 0x33,
-            "GET_STEP_MOTOR_STATUS" : 0x34,
-            "GET_PROXIMITY_STATUS" : 0x40
+            "START_CALIBRATION" : 0x60,
+            "MAKE_STEP" : 0x61,
+            "MAKE_STEP_DOWN" : 0x62,
+            "MAKE_STEP_UP" : 0x63,
+            "GET_STEP_MOTOR_STATUS" : 0x64,
+            "GET_PROXIMITY_STATUS" : 0x70
         }
 
     def parse_data(self, data):

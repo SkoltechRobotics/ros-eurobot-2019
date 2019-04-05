@@ -12,6 +12,7 @@ class STMprotocol(object):
 
         self.ser = serial.Serial(serial_port,baudrate=baudrate, timeout = 0.01)
         self.pack_format = {
+            # both
             0x01: "=cccc",
             0x02: "=",
             0x03: "=",
@@ -31,21 +32,26 @@ class STMprotocol(object):
             0x17: "=",
             0x18: "=",
             0x19: "=",
+            # secondary
             0x20: "=",
-            0x21: "=B",
-            0x22: "=",
-            0x23: "=",
-            0x24: "=",
-            0x25: "=",
-            0x26: "=",
-            0x27: "=",
-            0x28: "=",
-            0x30: "=B",
+            0x21: "=",
+            # main
+            0x30: "="
             0x31: "=",
-            0x32: "=B",
-            0x33: "=B",
-            0x34: "=B",
-            0x40: "="
+            0x32: "=",
+            0x33: "=",
+            0x34: "=",
+            0x35: "=",
+            0x36: "=",
+            0x37: "=",
+            
+            0x60: "=",
+            0x61: "=",
+            0x62: "=",
+            0x63: "=",
+            0x64: "=",
+
+            0x70: "=",
         }
 
         self.unpack_format = {
@@ -64,25 +70,30 @@ class STMprotocol(object):
             0x13: "=cc",
             0x14: "=cc",
             0x15: "=cc",
-            0x16: "=cc",
+            0x16: "cc"
             0x17: "=cc",
             0x18: "=cc",
-            0x19: "=cc",
+            0x19: "=B",
+            # secondary
             0x20: "=cc",
             0x21: "=cc",
-            0x22: "=cc",
-            0x23: "=cc",
-            0x24: "=cc",
-            0x25: "=cc",
-            0x26: "=cc",
-            0x27: "=cc",
-            0x28: "=B",
+            # main
             0x30: "=cc",
             0x31: "=cc",
             0x32: "=cc",
             0x33: "=cc",
             0x34: "=cc",
-            0x40: "=BBB"
+            0x35: "=cc",
+            0x36: "=cc",
+            0x37: "=cc",
+
+            0x60: "=cc",
+            0x61: "=cc",
+            0x62: "=cc",
+            0x63: "=cc",
+            0x64: "=cc",
+
+            0x70: "=BBB"
         }
 
         self.response_bytes = {
@@ -104,22 +115,27 @@ class STMprotocol(object):
             0x16: 2,
             0x17: 2,
             0x18: 2,
-            0x19: 2,
+            0x19: 1,
+            # secondary
             0x20: 2,
             0x21: 2,
-            0x22: 2,
-            0x23: 2,
-            0x24: 2,
-            0x25: 2,
-            0x26: 2,
-            0x27: 2,
-            0x28: 1,
+            # main
             0x30: 2,
             0x31: 2,
             0x32: 2,
             0x33: 2,
             0x34: 2,
-            0x40: 3
+            0x35: 2,
+            0x36: 2,
+            0x37: 2,
+
+            0x60: 2,
+            0x61: 2,
+            0x62: 2,
+            0x63: 2,
+            0x64: 2,
+
+            0x70: 3
         }
 
     def send(self, cmd, args):
