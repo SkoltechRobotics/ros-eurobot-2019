@@ -583,8 +583,8 @@ class MotionPlannerNode:
             #rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
         elif self.current_state == "following" and self.is_robot_stopped:
             self.is_robot_stopped = False
-            self.current_state = "Stop"
-            self.terminate_moving()
+            self.current_state = "stop"
+            #self.terminate_moving()
         elif self.current_state == 'following' and self.delta_dist < self.min_dist_to_goal_point:
             self.move_arc()
         elif self.current_state == 'move_arc':
