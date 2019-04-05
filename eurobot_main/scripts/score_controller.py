@@ -38,7 +38,7 @@ class ScoreController(object):
         elif len(self.collected_pucks.get().split()) == 1:
             lifo_puck = self.collected_pucks.get()
             print "unloading lifo ", lifo_puck, "in ", place
-            self.collected_pucks.set(None)
+            self.collected_pucks.set([])
         else:
             print "there are no pucks ERORR"
 

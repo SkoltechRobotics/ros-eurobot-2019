@@ -149,7 +149,7 @@ class MainRobotBT(object):
         # score master
         # self.is_puck_grabbed = grab_status  TODO
 
-        self.collected_pucks = bt.BTVariable([])
+        self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
 
         self.is_puck_first_flag = True

@@ -109,7 +109,7 @@ class App:
         """
         # data = data.data.split()
         rospy.loginfo(data)
-        points = self.predict.get_points(data)
+        points = self.predict.get_points(data.data)
         print("ppoints are: ", points)
         self.score.set(self.score.get() + int(points))
 
