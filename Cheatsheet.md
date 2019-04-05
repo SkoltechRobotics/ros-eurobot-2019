@@ -421,3 +421,10 @@ sudo systemctl enable mavros.service
 =======
 # required packages:
 ros-laser-scan-matcher
+
+sudo apt-get install ros-kinetic-laser-scan-matcher
+roslaunch polar_scan_matcher demo.launch
+
+cp -a .git .git-old1
+
+git hash-object -w Cheatsheet.md

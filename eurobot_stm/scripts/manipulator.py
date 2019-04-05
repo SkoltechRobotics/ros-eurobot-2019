@@ -230,6 +230,7 @@ class Manipulator(object):
     def complete_collect_ground(self):
         self.send_command(self.protocol["SET_PLATFORM"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        rospy.sleep(0.5)
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
