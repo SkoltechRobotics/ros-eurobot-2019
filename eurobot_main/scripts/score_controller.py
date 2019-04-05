@@ -17,33 +17,33 @@ class ScoreController(object):
 
         # self.is_puck_grabbed_flag = False
 
-    def score_master(self, cmd, *args, **kwargs):
-        """
-        Examples:
-        (add, "REDIUM")
-        (unload, "SCALES")
-        (unload, "RED", side="bottom")
-        (reward, "OPEN_GOLDENIUM_BONUS")
+    # def score_master(self, cmd, *args, **kwargs):
+    #     """
+    #     Examples:
+    #     (add, "REDIUM")
+    #     (unload, "SCALES")
+    #     (unload, "RED", side="bottom")
+    #     (reward, "OPEN_GOLDENIUM_BONUS")
 
-        # TODO Add condition node before updating score
-        # TODO if puck wasn't taken, DON't MAKE STEP DOWN
+    #     # TODO Add condition node before updating score
+    #     # TODO if puck wasn't taken, DON't MAKE STEP DOWN
 
-        :param cmd: add, unload, reward
-        :param args: color of puck, where to unload
-        :param kwargs: unload from top or from bottom (only for Main robot)
-        :return:
-        """
+    #     :param cmd: add, unload, reward
+    #     :param args: color of puck, where to unload
+    #     :param kwargs: unload from top or from bottom (only for Main robot)
+    #     :return:
+    #     """
 
-        if cmd == "add":
-            bt.ActionNode(lambda: self.add(args))
-            print("collected_pucks are: ", self.collected_pucks)
+    #     if cmd == "add":
+    #         bt.ActionNode(lambda: self.add(args))
+    #         print("collected_pucks are: ", self.collected_pucks)
 
-        elif cmd == "unload":
-            bt.ActionNode(lambda: self.unload(args))
-            print("aafter unloading pucks are: ", self.collected_pucks)
+    #     elif cmd == "unload":
+    #         bt.ActionNode(lambda: self.unload(args))
+    #         print("aafter unloading pucks are: ", self.collected_pucks)
 
-        elif cmd == "reward":
-            bt.ActionNode(lambda: self.reward(args))
+    #     elif cmd == "reward":
+    #         bt.ActionNode(lambda: self.reward(args))
 
     def reward(self, bonus):
         assert bonus in self.bonuses
@@ -52,12 +52,15 @@ class ScoreController(object):
     def add(self, puck):
         assert puck in self.pucks
         self.collected_pucks.set(self.collected_pucks.get().append(puck))
+        print("collected_pucks are: ", self.collected_pucks)
+
 
     def unload(self, place):  # side="top"
         assert place in self.places
         lifo_puck = self.collected_pucks.get()[-1]
         print(lifo_puck)
         self.score_publisher.publish(lifo_puck + "_ON_" + place)
+        print("aafter unloading pucks are: ", self.collected_pucks)
 
 
     # if side == "top":
