@@ -106,6 +106,11 @@ class StartTakeWallPuck(ActionClientNode):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+class StartPump(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "start_pump"
+        super(StartPump, self).__init__(cmd, action_client_id)
+
 class StopPump(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stop_pump"

@@ -356,10 +356,10 @@ class MotionPlannerNode:
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         rospy.loginfo("DEC COEFF + %.4f", deceleration_coefficient)
-        vx = v * np.cos(beta)*self.k_linear_vp
-        vy = v * np.sin(beta)*self.k_linear_vp
-        w *= self.k_linear_vp
-        vx, vy, w = vx/2, vy/2, w/2
+        vx = v * np.cos(beta)
+        vy = v * np.sin(beta)
+        #w *= self.k_linear_vp
+        #vx, vy, w = vx/2, vy/2, w/2
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
         curr_time = rospy.Time.now().to_sec()
@@ -389,7 +389,7 @@ class MotionPlannerNode:
             delta_coords = self.coords - self.path[-1, :1]
             delta_coords[2] = wrap_angle(delta_coords[2])
             delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
             self.follow_path()
             self.current_state = 'following'
         elif self.current_state == 'trajectory_following':

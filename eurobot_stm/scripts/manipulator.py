@@ -83,6 +83,8 @@ class Manipulator(object):
             return self.set_manipulator_ground()
         elif cmd == "manipulator_ground_delay":
             return self.set_manipulator_ground_delay()
+        elif cmd == "start_pump":
+            return self.start_pump()
         elif cmd == "stop_pump":
             return self.stop_pump()
         elif cmd == "start_collect_ground":
@@ -282,7 +284,7 @@ class Manipulator(object):
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
-            self.send_command(self.protocol["START_PUMP"])
+            # self.send_command(self.protocol["START_PUMP"])
             return True
 
     def complete_collect_last_wall(self):

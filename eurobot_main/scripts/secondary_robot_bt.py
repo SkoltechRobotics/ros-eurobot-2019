@@ -105,6 +105,7 @@ class YellowStrategy(Strategy):
 
         second_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.second_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                     bt_ros.StartTakeWallPuck("manipulator_client"),
@@ -121,7 +122,7 @@ class YellowStrategy(Strategy):
                         bt_ros.MoveLineToPoint(self.second_puck + (-0.46, -0.5, 0), "move_client")
                     ]),
                     bt_ros.CompleteTakeWallPuck(self.pucks_inside, "bluemium", "manipulator_client")
-                ], threshold=2)
+                ], threshold=2),
             ]),
             bt.SequenceWithMemoryNode([
                     bt_ros.StopPump("manipulator_client"),
@@ -132,6 +133,7 @@ class YellowStrategy(Strategy):
 
         third_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.third_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                     bt_ros.StartTakeWallPuck("manipulator_client"),
@@ -159,6 +161,7 @@ class YellowStrategy(Strategy):
 
         forth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.forth_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                     bt_ros.StartTakeWallPuck("manipulator_client"),
@@ -194,6 +197,7 @@ class YellowStrategy(Strategy):
 
         fifth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                         bt_ros.StartTakeWallPuck("manipulator_client"),
@@ -223,6 +227,7 @@ class YellowStrategy(Strategy):
                     bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client")
                     # bt_ros.SetManipulatortoWall("manipulator_client")
                 ], threshold=2),
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                         bt_ros.StartTakeWallPuckWithoutGrabber("manipulator_client"),
@@ -255,6 +260,7 @@ class YellowStrategy(Strategy):
 
         seventh_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                         bt_ros.StartTakeWallPuckWithoutGrabber("manipulator_client"),
@@ -286,6 +292,7 @@ class YellowStrategy(Strategy):
 
         eighth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
+                bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
                 bt.FallbackWithMemoryNode([
                         bt_ros.StartTakeWallPuckWithoutGrabber("manipulator_client"),
@@ -301,7 +308,7 @@ class YellowStrategy(Strategy):
                 ], threshold=2),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.04, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.nineth_puck + (0.1, -0.04, 0), "move_client"),
                     bt_ros.SetToWall_ifReachedGoal(self.nineth_puck, "manipulator_client")
                 ], threshold=2)
             ]),
@@ -317,6 +324,7 @@ class YellowStrategy(Strategy):
         ])
 
         nineth_puck = bt.SequenceWithMemoryNode([
+            bt_ros.StartPump("manipulator_client"),
             bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
             bt_ros.StartTakeWallPuckWithoutGrabber("manipulator_client"),
             bt.ParallelWithMemoryNode([
