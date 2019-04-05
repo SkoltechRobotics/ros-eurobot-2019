@@ -7,7 +7,7 @@ Panels:
         - /TF1/Frames1
         - /TF1/Tree1
       Splitter Ratio: 0.592190862
-    Tree Height: 286
+    Tree Height: 590
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -87,10 +87,6 @@ Visualization Manager:
           Value: true
         secondary_robot:
           Value: true
-        secondary_robot_laser:
-          Value: true
-        secondary_robot_odom:
-          Value: true
       Marker Scale: 0.400000006
       Name: TF
       Show Arrows: true
@@ -98,10 +94,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          secondary_robot_odom:
-            secondary_robot:
-              secondary_robot_laser:
-                {}
+          secondary_robot:
+            {}
       Update Interval: 0
       Value: true
     - Attached Body Color: 150; 50; 150
@@ -520,7 +514,7 @@ Visualization Manager:
       Marker Topic: /secondary_robot/beacons
       Name: MarkerArray
       Namespaces:
-        beacons: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -583,6 +577,22 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /navigation/obstacle
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /navigation/collision_area
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /obstacle_point
       Name: MarkerArray
       Namespaces:
         {}

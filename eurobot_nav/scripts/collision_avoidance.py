@@ -94,7 +94,7 @@ class CollisionAvoidance(object):
             point.scale.z = 0.35
             point.color.a = 1
             point.color.r = 1
-            point.lifetime = rospy.Duration(0.7)
+            #point.lifetime = rospy.Duration(0.7)
             marker.append(point)
         self.point_publisher.publish(marker)
 
