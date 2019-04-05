@@ -35,9 +35,13 @@ class ScoreController(object):
         """
 
         if cmd == "add":
-            bt.ActionNode(lambda: self.add(args)),
+            bt.ActionNode(lambda: self.add(args))
+            print("collected_pucks are: ", self.collected_pucks)
+
         elif cmd == "unload":
             bt.ActionNode(lambda: self.unload(args))
+            print("aafter unloading pucks are: ", self.collected_pucks)
+
         elif cmd == "reward":
             bt.ActionNode(lambda: self.reward(args))
 
