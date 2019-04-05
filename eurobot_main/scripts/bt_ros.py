@@ -122,6 +122,25 @@ class MoveArcToPoint(ActionClientNode):
         cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
+
+class SetSpeedSTM(ActionClientNode):
+    def __init__(self, speed, time, action_client_id):
+        self.delay = time
+        cmd = "bt-1 " + "8 " + str(speed[0]) + " " + str(speed[1]) + " " + str(speed[2])
+        super(SetSpeedSTM, self).__init__(cmd, action_client_id)
+
+    def start_action(self):
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        rospy.sleep(self.delay)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("bt-2 8 0 0 0"))
+        rospy.sleep(self.delay/4)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("bt-3 8 -0.2 0 0"))
+        rospy.sleep(self.delay)
+
+
 # ===========================================================
 
 

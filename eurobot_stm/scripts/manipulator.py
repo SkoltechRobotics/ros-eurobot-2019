@@ -178,32 +178,6 @@ class Manipulator(object):
             if counter > 0:
                 return True
         return False
-
-    def is_success_status(self, id_command):
-        rospy.sleep(0.05)
-        while True:
-            if ("manipulator_status-" + str(id_command)) in self.responses.keys():
-                if self.responses[("manipulator_status-" + str(id_command))] == ResponseStatus.SUCCESS.value:
-                    rospy.loginfo("SUCCESS")
-                    self.status_command += 1
-                    return True
-                elif self.responses[("manipulator_status-" + str(id_command))] == ResponseStatus.FAIL.value:
-                    self.status_command += 1
-                    rospy.loginfo("FAIL")
-                    # rospy.sleep(0.1)
-                    return False
-                else:
-                    rospy.loginfo("Error in send_command()->manipulator.py->is_success_status")
-
-    def check_status(self, cmd):
-        counter = 0
-        for i in range(10):
-            self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
-            if self.is_success_status(self.status_command):
-                counter += 1
-            if counter > 0:
-                return True
-        return False
         
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
@@ -310,14 +284,6 @@ class Manipulator(object):
                 return True
             else:
                 return False
-
-    def start_collect_wall_without_grabber(self):
-        if self.robot_name == "main_robot":
-            pass
-        if self.robot_name == "secondary_robot":
-            self.send_command(self.protocol["SET_WALL"])
-            self.send_command(self.protocol["START_PUMP"])
-            return True
 
     def start_collect_wall_without_grabber(self):
         if self.robot_name == "main_robot":
@@ -465,12 +431,6 @@ class Manipulator(object):
             self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
             print ("RELEASER_DEFAULT_SECONDARY_END")
             return True
-
-            self.send_command(self.protocol["MAKE_STEP_UP"])
-            self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
-            self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
-            self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
-
 
         if pucks_number == 4:
             self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
