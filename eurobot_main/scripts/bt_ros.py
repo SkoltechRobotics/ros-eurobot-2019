@@ -126,7 +126,8 @@ class MoveArcToPoint(ActionClientNode):
 class SetSpeedSTM(ActionClientNode):
     def __init__(self, speed, time, action_client_id):
         self.delay = time
-        cmd = "bt-1 " + "8 " + str(speed[0]) + " " + str(speed[1]) + " " + str(speed[2])
+        self.speed = speed
+        cmd = "8 " + str(self.speed[0]) + " " + str(self.speed[1]) + " " + str(self.speed[2])
         super(SetSpeedSTM, self).__init__(cmd, action_client_id)
 
     def start_action(self):
@@ -134,12 +135,18 @@ class SetSpeedSTM(ActionClientNode):
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
         rospy.sleep(self.delay)
         print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("bt-2 8 0 0 0"))
-        rospy.sleep(self.delay/4)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
+        rospy.sleep(self.delay)
         print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("bt-3 8 -0.2 0 0"))
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 -0.1 0 0"))  # "8 " + str(-self.speed[0]) + "0 " + "0"
+        rospy.sleep(self.delay)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
         rospy.sleep(self.delay)
 
+    def action_status(self):
+        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
+        return bt.Status.SUCCESS
 
 # ===========================================================
 
