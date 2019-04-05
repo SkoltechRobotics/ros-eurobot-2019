@@ -112,6 +112,9 @@ class MainRobotBT(object):
         self.move_client = bt_ros.ActionClient(self.move_publisher)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
+        # usefull child node
+        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", action_client_id, name="move_to_waypoint")
+
         # choose side
         self.purple_tactics = PurpleTactics()
         self.yellow_tactics = YellowTactics()
@@ -277,8 +280,6 @@ class MainRobotBT(object):
 
         self.bt = bt.Root(
             bt.SequenceWithMemoryNode([
-                bt_ros.SetToDefaultState("manipulator_client"),
-        
                 bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
                 bt_ros.StartCollectGround("manipulator_client"),
         
