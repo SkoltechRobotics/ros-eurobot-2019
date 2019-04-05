@@ -17,51 +17,38 @@ class ScoreController(object):
 
         # self.is_puck_grabbed_flag = False
 
-    # def score_master(self, cmd, *args, **kwargs):
-    #     """
-    #     Examples:
-    #     (add, "REDIUM")
-    #     (unload, "SCALES")
-    #     (unload, "RED", side="bottom")
-    #     (reward, "OPEN_GOLDENIUM_BONUS")
+    def add(self, puck):
+        assert puck in self.pucks
+        print "adding ", puck
+        if len(self.collected_pucks.get()) == 0:
+            self.collected_pucks.set(puck)
+        else:
+            self.collected_pucks.set(self.collected_pucks.get() + " " + puck)
+        print "inside: ", self.collected_pucks.get()
+        print " "
 
-    #     # TODO Add condition node before updating score
-    #     # TODO if puck wasn't taken, DON't MAKE STEP DOWN
+    def unload(self, place):  # side="top"
+        assert place in self.places
+        lifo_puck = None
 
-    #     :param cmd: add, unload, reward
-    #     :param args: color of puck, where to unload
-    #     :param kwargs: unload from top or from bottom (only for Main robot)
-    #     :return:
-    #     """
+        if len(self.collected_pucks.get().split()) > 1:
+            lifo_puck = self.collected_pucks.get().split()[-1]
+            self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])
+            print "unloading lifo ", lifo_puck, "in ", place
+        elif len(self.collected_pucks.get().split()) == 1:
+            lifo_puck = self.collected_pucks.get()
+            print "unloading lifo ", lifo_puck, "in ", place
+            self.collected_pucks.set(None)
+        else:
+            print "there are no pucks ERORR"
 
-    #     if cmd == "add":
-    #         bt.ActionNode(lambda: self.add(args))
-    #         print("collected_pucks are: ", self.collected_pucks)
-
-    #     elif cmd == "unload":
-    #         bt.ActionNode(lambda: self.unload(args))
-    #         print("aafter unloading pucks are: ", self.collected_pucks)
-
-    #     elif cmd == "reward":
-    #         bt.ActionNode(lambda: self.reward(args))
+        print "unloading lifo ", lifo_puck, "in ", place
+        self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
     def reward(self, bonus):
         assert bonus in self.bonuses
         self.score_publisher.publish(bonus)
-
-    def add(self, puck):
-        assert puck in self.pucks
-        self.collected_pucks.set(self.collected_pucks.get().append(puck))
-        print("collected_pucks are: ", self.collected_pucks)
-
-
-    def unload(self, place):  # side="top"
-        assert place in self.places
-        lifo_puck = self.collected_pucks.get()[-1]
-        print(lifo_puck)
-        self.score_publisher.publish(lifo_puck + "_ON_" + place)
-        print("aafter unloading pucks are: ", self.collected_pucks)
-
+        print "YOU ACHIEVED A BONUS!!!!!"
 
     # if side == "top":
     # elif side == "bottom":
@@ -69,17 +56,3 @@ class ScoreController(object):
     #     print(fifo_puck)
     #     self.score_publisher.publish(fifo_puck + "_ON_" + place)
     #
-
-    # def is_puck_grabbed(self):
-    #     if self.is_puck_grabbed_flag is True:
-    #         return bt.Status.SUCCESS
-    #     else:
-    #         return bt.Status.FAILED
-
-    # bt.FallbackWithMemoryNode([
-    #     bt.SequenceWithMemoryNode([
-    #         bt.ConditionNode(self.is_puck_grabbed),
-    #         bt.ActionNode(lambda: self.score_master.add(args)),
-    #     bt.ConditionNode(lambda: bt.Status.SUCCESS)
-    #     ]),
-    # ])
