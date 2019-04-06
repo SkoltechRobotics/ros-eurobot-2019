@@ -140,7 +140,7 @@ class SetSpeedSTM(ActionClientNode):
         rospy.sleep(self.delay*2)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
         rospy.sleep(self.delay/2)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 -0.05 0 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
         rospy.sleep(self.delay*2)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
         rospy.sleep(self.delay/2)

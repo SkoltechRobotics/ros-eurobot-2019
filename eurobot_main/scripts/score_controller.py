@@ -32,19 +32,23 @@ class ScoreController(object):
         assert place in self.places
         lifo_puck = None
 
-        if len(self.collected_pucks.get().split()) > 1:
-            lifo_puck = self.collected_pucks.get().split()[-1]
-            self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])
-        elif len(self.collected_pucks.get().split()) == 1:
-            lifo_puck = self.collected_pucks.get()
-            self.collected_pucks.set(())
-        else:
-            print "there are no pucks ERORR"
+        try:
+            if len(self.collected_pucks.get()) == 0:
+                rospy.loginfo("there are no pucks ERORR")
+            elif len(self.collected_pucks.get().split()) == 1:
+                lifo_puck = self.collected_pucks.get()
+                rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+                self.score_publisher.publish(lifo_puck + "_ON_" + place)
+                self.collected_pucks.set(0)
+            elif len(self.collected_pucks.get().split()) > 1:
+                lifo_puck = self.collected_pucks.get().split()[-1]
+                self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])  # most right word
+                rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+                self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
-        rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+        except AttributeError as Error:  # FIXME
+            rospy.loginfo("se lia vi, tuple object has no attribute split")
         # rospy.loginfo('Pucks to unload: '+ str(len(self.collected_pucks.get().split())))
-
-        self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
     def reward(self, bonus):
         assert bonus in self.bonuses
