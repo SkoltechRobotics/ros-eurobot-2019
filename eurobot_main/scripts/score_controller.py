@@ -37,11 +37,13 @@ class ScoreController(object):
             self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])
         elif len(self.collected_pucks.get().split()) == 1:
             lifo_puck = self.collected_pucks.get()
-            self.collected_pucks.set([])
+            self.collected_pucks.set(())
         else:
             print "there are no pucks ERORR"
 
-        print "unloading lifo ", lifo_puck, "on ", place
+        rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+        # rospy.loginfo('Pucks to unload: '+ str(len(self.collected_pucks.get().split())))
+
         self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
     def reward(self, bonus):

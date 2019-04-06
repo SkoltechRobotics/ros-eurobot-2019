@@ -117,6 +117,8 @@ class Manipulator(object):
             return self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
             return self.stepper_step_up()
+        elif cmd == "stepper_step_down":
+            return self.stepper_step_down()
         elif cmd == "swing_puck":
             return self.swing_puck()
         elif cmd == "release_accelerator_first_move_when_full":
@@ -270,6 +272,10 @@ class Manipulator(object):
 
     def stepper_step_up(self):
         self.send_command(self.protocol["MAKE_STEP_UP"])
+        return True
+
+    def stepper_step_down(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
     def set_manipulator_ground(self):

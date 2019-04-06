@@ -153,7 +153,7 @@ class MainRobotBT(object):
 
     def is_robot_empty(self):
         if len(self.collected_pucks.get()) > 0:
-            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get())))
+            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
             return bt.Status.FAILED
         else:
             rospy.loginfo('All pucks unloaded')
@@ -318,26 +318,6 @@ class MainRobotBT(object):
     def test_snoshenie(self):
         # strategy = bt.SequenceWithMemoryNode([])
 
-        # bt.FallbackNode([
-        #     bt.SequenceNode([
-        #         bt.ConditionNode(self.is_puck_first_flag),
-        #     ]),
-        #     bt.ConditionNode(lambda: bt.Status.SUCCESS)
-        # ]),
-
-        # strategy = bt.FallbackNode([
-        #                 bt.ConditionNode(self.is_robot_empty),
-        #                 bt.SequenceNode([
-        #                     bt.SequenceWithMemoryNode([
-        #                         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #                         bt_ros.UnloadAccelerator("manipulator_client"),
-        #                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client"),
-        #                     ]),
-        #                     bt.ConditionNode(lambda: bt.Status.RUNNING)
-        #                 ])
-        #             ])
-
         go_to_acc = bt.ParallelWithMemoryNode([
                         bt_ros.SetManipulatortoUp("manipulator_client"),
                         bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
@@ -348,22 +328,28 @@ class MainRobotBT(object):
         dummy = bt_ros.SetManipulatortoGoldenium("manipulator_client")
 
         add_pucks = bt.SequenceWithMemoryNode([
+                        bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+                        bt_ros.StepDown("manipulator_client"),
+                        bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                        bt_ros.StepDown("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                        bt_ros.StepDown("manipulator_client"),
+                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                        bt_ros.StepDown("manipulator_client"),
 
         ])
 
         snoshenie = bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_robot_empty),
-                        bt.ParallelWithMemoryNode([
-                                bt_ros.SetSpeedSTM([0.1, 0, 0], 0.3, "stm_client"),
-                                bt_ros.UnloadAccelerator("manipulator_client"),
-                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                            ], threshold=3),
-                        bt.ConditionNode(lambda: bt.Status.RUNNING)
-                        ])
+                        bt.SequenceNode([
+                            bt.ParallelWithMemoryNode([
+                                    bt_ros.SetSpeedSTM([0.05, 0, 0], 0.2, "stm_client"),
+                                    bt_ros.UnloadAccelerator("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                                ], threshold=3),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)
+                        ]),
+                    ])
 
         move_finish = bt.SequenceWithMemoryNode([
                         bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
@@ -372,10 +358,10 @@ class MainRobotBT(object):
 
         strategy = bt.SequenceWithMemoryNode([
                         # go_to_acc,
-                        dummy,
+                        # dummy,
                         add_pucks,
                         snoshenie,
-                        move_finish
+                        # move_finish
                         ])
 
         return strategy

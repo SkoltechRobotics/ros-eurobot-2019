@@ -108,6 +108,10 @@ class StepUp(ActionClientNode):
         cmd = "stepper_step_up"
         super(StepUp, self).__init__(cmd, action_client_id)
 
+class StepDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_step_down"
+        super(StepDown, self).__init__(cmd, action_client_id)
 
 # ===========================================================
 
@@ -133,16 +137,13 @@ class SetSpeedSTM(ActionClientNode):
     def start_action(self):
         print("Start BT Action: " + self.cmd.get())
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-        rospy.sleep(self.delay)
-        print("Start BT Action: " + self.cmd.get())
+        rospy.sleep(self.delay*2)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        rospy.sleep(self.delay)
-        print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 -0.1 0 0"))  # "8 " + str(-self.speed[0]) + "0 " + "0"
-        rospy.sleep(self.delay)
-        print("Start BT Action: " + self.cmd.get())
+        rospy.sleep(self.delay/2)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 -0.05 0 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
+        rospy.sleep(self.delay*2)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        rospy.sleep(self.delay)
+        rospy.sleep(self.delay/2)
 
     def action_status(self):
         status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
