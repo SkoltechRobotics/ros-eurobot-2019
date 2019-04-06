@@ -50,9 +50,9 @@ class Manipulator(object):
 
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
-            "UNLOAD_DEFAULT_MAIN" : 0x31,  # FIXME
-            "UNLOAD_PUCK_BOTTOM_MAIN" : 0x32,
-            "RELEASER_PACK_DOWN" : 0x33,
+            # "UNLOAD_DEFAULT_MAIN" : 0x31,  # FIXME
+            # "UNLOAD_PUCK_BOTTOM_MAIN" : 0x32,
+            # "RELEASER_PACK_DOWN" : 0x33,
             "SET_BLUNIUM_ANGLE_MAIN" : 0x34,
             "SWING_PUCK" : 0x35,
             "SET_GRAB_GOLDENIUM_ANGLE_MAIN" : 0x36,
@@ -117,6 +117,10 @@ class Manipulator(object):
             return self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
             return self.stepper_step_up()
+        elif cmd == "swing_puck":
+            return self.swing_puck()
+        elif cmd == "release_accelerator_first_move_when_full":
+            return self.release_accelerator_first_move_when_full()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -198,8 +202,8 @@ class Manipulator(object):
 
     def start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["SET_GROUND"])
-        rospy.sleep(0.3)
         self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(1)
         return True
@@ -216,13 +220,28 @@ class Manipulator(object):
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
+    def release_accelerator_first_move_when_full(self):
+        # this func is for case when we got all 7 pucks inside
+        # FIRST move without making step up
+        # Check if it's robust when we accidentally miss one puck
+
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        return True
+
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them
-        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_UP"])
         self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
         self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        return True
+
+    def swing_puck(self):
+        self.send_command(self.protocol["SWING_PUCK"])
         return True
 
     def start_collect_blunium(self):

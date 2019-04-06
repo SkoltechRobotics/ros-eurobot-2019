@@ -19,6 +19,7 @@ class ScoreController(object):
 
     def add(self, puck):
         assert puck in self.pucks
+
         print "adding ", puck
         if len(self.collected_pucks.get()) == 0:
             self.collected_pucks.set(puck)
@@ -34,19 +35,18 @@ class ScoreController(object):
         if len(self.collected_pucks.get().split()) > 1:
             lifo_puck = self.collected_pucks.get().split()[-1]
             self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])
-            print "unloading lifo ", lifo_puck, "in ", place
         elif len(self.collected_pucks.get().split()) == 1:
             lifo_puck = self.collected_pucks.get()
-            print "unloading lifo ", lifo_puck, "in ", place
             self.collected_pucks.set([])
         else:
             print "there are no pucks ERORR"
 
-        print "unloading lifo ", lifo_puck, "in ", place
+        print "unloading lifo ", lifo_puck, "on ", place
         self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
     def reward(self, bonus):
         assert bonus in self.bonuses
+
         self.score_publisher.publish(bonus)
         print "YOU ACHIEVED A BONUS!!!!!"
 

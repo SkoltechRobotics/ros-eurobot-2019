@@ -230,6 +230,17 @@ class UnloadGoldenium(ActionClientNode):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
+class SetManipulatorToPushBlunium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "swing_puck"
+        super(SetManipulatorToPushBlunium, self).__init__(cmd, action_client_id)
+
+
+class ReleaseInAccFirstMove(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_accelerator_first_move_when_full"
+        super(ReleaseInAccFirstMove, self).__init__(cmd, action_client_id)
+
 # ===========================================================
 
 #-------------
