@@ -86,7 +86,7 @@ class STMstatus(object):
                     self.side_status_publisher.publish(message)
 
             else:
-                successfully, values = self.stm_protocol.send(0x40, args=None)
+                successfully, values = self.stm_protocol.send(0x70, args=None)
 
                 message = ""
                 for val in values:

@@ -40,7 +40,7 @@ class PFNode(object):
         self.robot_name = rospy.get_param("robot_name")
         rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
         rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
-        self.color = "yellow"
+        self.color = "none"
         if self.color == "purple":
             beacons = PURPLE_BEACONS
         else:
@@ -77,13 +77,13 @@ class PFNode(object):
             init_start = np.array(rospy.get_param("start_purple"))
         else:
             init_start = np.array(rospy.get_param("start_yellow"))
-        buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
-        angles, distances = buf_pf.get_landmarks(self.scan)
-        x = distances * np.cos(angles)
-        y = distances * np.sin(angles)
-        landmarks = (np.array([x, y])).T
-        start_coords = find_position_triangulation(beacons, landmarks, init_start)
-        self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
+        #buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
+        #angles, distances = buf_pf.get_landmarks(self.scan)
+        #x = distances * np.cos(angles)
+        #y = distances * np.sin(angles)
+        #landmarks = (np.array([x, y])).T
+        #start_coords = find_position_triangulation(beacons, landmarks, init_start)
+        self.pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
         self.last_odom = np.zeros(3)
         self.alpha = rospy.get_param("alpha")
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)

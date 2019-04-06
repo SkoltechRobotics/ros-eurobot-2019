@@ -177,7 +177,7 @@ class Manipulator(object):
 
     def check_status(self, cmd):
         counter = 0
-        for i in range(15):
+        for i in range(20):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
@@ -298,6 +298,7 @@ class Manipulator(object):
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["PROP_PUCK_GRABBER"])
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             return True
 
 

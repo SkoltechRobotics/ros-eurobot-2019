@@ -289,7 +289,7 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
         self.goal = goal
         self.threshold = bt.BTVariable(threshold)
 
-        self.set_to_wall_node = ActionClientNode("manipulator_wall_pump", action_client_id, name="manipulator_to_wall")
+        self.set_to_wall_node = ActionClientNode("manipulator_wall", action_client_id, name="manipulator_to_wall")
 
         super(SetToWall_ifReachedGoal, self).__init__([
             bt.ConditionNode(self.is_coordinates_reached),
