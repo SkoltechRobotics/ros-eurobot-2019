@@ -197,20 +197,18 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
-class StartCollectBlunium(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "start_collect_blunium"
-        super(StartCollectBlunium, self).__init__(cmd, action_client_id)
+# class StartCollectBlunium(ActionClientNode):
+#     def __init__(self, action_client_id):
+#         cmd = "start_collect_blunium"
+#         super(StartCollectBlunium, self).__init__(cmd, action_client_id)
 
 
-# Command to unload in Accelerator
 class UnloadAccelerator(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_accelerator"
         super(UnloadAccelerator, self).__init__(cmd, action_client_id)
 
 
-# Goldenium angle
 class SetManipulatortoGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "set_angle_to_grab_goldenium"
@@ -224,12 +222,12 @@ class GrabGoldeniumAndHoldUp(ActionClientNode):
         super(GrabGoldeniumAndHoldUp, self).__init__(cmd, action_client_id)
 
 
-# Command to unload Goldenium on Scales
 class UnloadGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
+# to push blunium in acc
 class SetManipulatorToPushBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "swing_puck"

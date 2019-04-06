@@ -153,8 +153,10 @@ class MainRobotBT(object):
 
     def is_robot_empty(self):
         if len(self.collected_pucks.get()) > 0:
+            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get())))
             return bt.Status.FAILED
         else:
+            rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
 
     def is_puck_first(self):
@@ -288,11 +290,12 @@ class MainRobotBT(object):
         go_to_blunium = bt.ParallelWithMemoryNode([
                             bt_ros.SetManipulatortoUp("manipulator_client"),
                             # bt_ros.CompleteCollectGround("manipulator_client"),
+                            bt_ros.SetManipulatortoGoldenium("manipulator_client"),  # FIXME
                             bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
-                        ], threshold=2),
+                        ], threshold=2)
 
         push_blunium = bt.SequenceWithMemoryNode([
-                        bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
+                        # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
                         bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_pose, "move_client"),
                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
@@ -307,7 +310,8 @@ class MainRobotBT(object):
         strategy = bt.SequenceWithMemoryNode([
                         go_to_blunium,
                         push_blunium,
-                        move_finish])
+                        #move_finish
+                        ])
 
         return strategy
 
@@ -341,7 +345,17 @@ class MainRobotBT(object):
                         bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
                     ], threshold=3)
 
-        snoshenie = bt.FallbackNode([
+        dummy = bt_ros.SetManipulatortoGoldenium("manipulator_client")
+
+        add_pucks = bt.SequenceWithMemoryNode([
+                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+
+        ])
+
+        snoshenie = bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_robot_empty),
                         bt.ParallelWithMemoryNode([
                                 bt_ros.SetSpeedSTM([0.1, 0, 0], 0.3, "stm_client"),
@@ -357,9 +371,12 @@ class MainRobotBT(object):
                     ])
 
         strategy = bt.SequenceWithMemoryNode([
-                        go_to_acc,
+                        # go_to_acc,
+                        dummy,
+                        add_pucks,
                         snoshenie,
-                        move_finish])
+                        move_finish
+                        ])
 
         return strategy
 
@@ -384,9 +401,9 @@ class MainRobotBT(object):
         # test_push_blunium
         # strategy_vovan
         # test_tyda_suda
+        # test_snoshenie
 
-
-        self.bt = bt.Root(self.test_push_blunium(),
+        self.bt = bt.Root(self.test_snoshenie(),
                 action_clients={"move_client": self.move_client,
                                 "manipulator_client": self.manipulator_client,
                                 "stm_client": self.stm_client})
