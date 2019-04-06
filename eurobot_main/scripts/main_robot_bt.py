@@ -145,26 +145,18 @@ class MainRobotBT(object):
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
 
-        self.is_puck_first_flag = True
-
-        # subscribers
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
     def is_robot_empty(self):
+        rospy.loginfo("pucks inside")
+        rospy.loginfo(self.collected_pucks.get())
         if self.collected_pucks.get() == 0:
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
             rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
             return bt.Status.FAILED
-
-    # def is_puck_first(self):
-    #     if self.is_puck_first_flag:
-    #         self.is_puck_first_flag = False
-    #         return bt.Status.SUCCESS
-    #     else:
-    #         return bt.Status.FAILED
 
     def strategy_vovan(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
@@ -196,7 +188,7 @@ class MainRobotBT(object):
                             bt_ros.CompleteCollectGround("manipulator_client"),
                             bt_ros.SetManipulatortoGoldenium("manipulator_client"),  # FIXME
                             bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
-                        ], threshold=2)
+                        ], threshold=4)
 
         push_blunium = bt.SequenceWithMemoryNode([
                         # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
@@ -206,23 +198,14 @@ class MainRobotBT(object):
                         bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                     ])
 
-        # blunium_acc = bt.SequenceWithMemoryNode([
-        #                 bt.ParallelWithMemoryNode([
-        #                     bt_ros.CompleteCollectGround("manipulator_client"),
-        #                     bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
-        #                 ], threshold=2),
-        #                 bt_ros.StartCollectBlunium("manipulator_client"),
-        #                 bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
-        #                 bt_ros.CompleteCollectGround("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM"))
-        #                 ])
-
         go_to_acc = bt.ParallelWithMemoryNode([
                         bt_ros.SetManipulatortoUp("manipulator_client"),
                         # FIXME Sasha will change unloading mechanism
-                        bt_ros.StepUp("manipulator_client"),
+                        bt_ros.StepDown("manipulator_client"),
+                        bt_ros.StepDown("manipulator_client"),
+                        bt_ros.StepDown("manipulator_client"),
                         bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-                    ], threshold=3)
+                    ], threshold=5)
 
         snoshenie = bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_robot_empty),
@@ -296,16 +279,10 @@ class MainRobotBT(object):
                         red_cell_puck,
                         green_cell_puck,
                         blue_cell_puck,
-                        go_to_blunium,
-                        push_blunium,
+                        #go_to_blunium,
+                        #push_blunium,
                         go_to_acc,
-                        # unload_acc1,
-                        # unload_acc2,
-                        # unload_acc3,
-                        # unload_acc4,
-                        # unload_acc,
                         snoshenie,
-                        # temporary_move,
                         collect_goldenium,
                         unload_goldenium,
                         move_finish])
@@ -405,12 +382,6 @@ class MainRobotBT(object):
             bt_ros.SetSpeedSTM([0.1, 0, 0], 0.3, "stm_client"),
             bt_ros.SetSpeedSTM([0.1, 0, 0], 0.3, "stm_client"),
             ])
-        # strategy = bt.FallbackNode([
-        #     bt.ConditionNode(self.is_waypoints_empty),
-        #     bt.ParallelNode([
-        
-        #     ], threshold=)
-        # ])
         return strategy
 
 # ====================================================

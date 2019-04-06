@@ -33,7 +33,7 @@ class ScoreController(object):
         lifo_puck = None
 
         try:
-            if len(self.collected_pucks.get()) == 0:
+            if self.collected_pucks.get() == 0:
                 rospy.loginfo("there are no pucks ERORR")
             elif len(self.collected_pucks.get().split()) == 1:
                 lifo_puck = self.collected_pucks.get()

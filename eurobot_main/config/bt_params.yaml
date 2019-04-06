@@ -44,8 +44,8 @@ yellow_zone:
   blunium_collect_PREpos: [1.275, 0.35, -1.57]
   blunium_collect_pos: [1.29, 0.24, -1.57]
 
-  blunium_rotate_PREpose: [1.29, 0.24, -0.78]
-  blunium_rotate_pose: [1.29, 0.24, -1.57]
+  blunium_rotate_PREpose: [1.295, 0.235, -0.78]
+  blunium_rotate_pose: [1.295, 0.235, -1.57]
 
   accelerator_PREunloading_pos: [1.14, 0.2, 0.56]  # 0.525
   accelerator_unloading_pos_far: [1.06, 0.15, 0.56]
