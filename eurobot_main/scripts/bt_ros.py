@@ -207,6 +207,66 @@ class SetManipulatortoGoldenium(ActionClientNode):
 
 #-------------
 
+
+class CompleteTakePuckAndMoveToNext(bt.ParallelWithMemoryNode):
+    def __init__(self, current_puck_coordinates, next_puck_coordinates, score_master, puck_type):
+        super(CompleteTakePuckAndMoveToNext, self).__init__([
+            bt.SequenceWithMemoryNode([
+                MoveLineToPoint(current_puck_coordinates + (0, -0.07, 0), "move_client"),
+                MoveLineToPoint(next_puck_coordinates + (0, -0.07, 0), "move_client")
+            ]),
+            bt.SequenceWithMemoryNode([
+                CompleteTakeWallPuck("manipulator_client"),
+                bt.ActionNode(lambda: score_master.add(puck_type))
+            ])
+        ], threshold=2)
+
+
+class MoveToNextPuckIfFailedToScales(bt.SequenceWithMemoryNode):
+    def __init__(self, current_puck_coordinates, next_puck_coordinates):
+        super(MoveToNextPuckIfFailedToScales, self).__init__([
+            StopPump("manipulator_client"),
+            MoveLineToPoint(current_puck_coordinates + (0, -0.07, 0), "move_client"),
+            MoveLineToPoint(next_puck_coordinates + (0, -0.07, 0), "move_client")
+        ])
+
+
+class TryToPumpWallPuck(bt.FallbackWithMemoryNode):
+        def __init__(self, puck_coordinates):
+            super(TryToPumpWallPuck, self).__init__([
+                StartTakeWallPuck("manipulator_client"),
+                bt.SequenceWithMemoryNode([
+                    MoveLineToPoint(puck_coordinates + (0, -0.04, 0), "move_client"),
+                    MoveLineToPoint(puck_coordinates, "move_client"),
+                    StartTakeWallPuck("manipulator_client"),
+                ])
+            ])
+
+
+class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
+    def __init__(self, puck_coordinates):
+        super(TryToPumpWallPuckWithoutGrabber, self).__init__([
+            StartTakeWallPuckWithoutGrabber("manipulator_client"),
+            bt.SequenceWithMemoryNode([
+                MoveLineToPoint(puck_coordinates + (0, -0.04, 0), "move_client"),
+                MoveLineToPoint(puck_coordinates, "move_client"),
+                StartTakeWallPuckWithoutGrabber("manipulator_client"),
+            ])
+        ])
+
+
+class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
+    def __init__(self, current_puck_coordinates, next_puck_coordinates):
+        super(MoveToNextPuckIfFailedToStartZone, self).__init__([
+                    StopPump("manipulator_client"),
+                    MoveLineToPoint(current_puck_coordinates + (0, -0.04, 0), "move_client"),
+                    bt.ParallelWithMemoryNode([
+                        MoveLineToPoint(next_puck_coordinates + (0, -0.04, 0), "move_client"),
+                        SetToWall_ifReachedGoal(next_puck_coordinates, "manipulator_client")
+                    ], threshold=2)
+        ])
+
+
 class ReleaseSomePucks(ActionClientNode):
     def __init__(self, pucks_inside, action_client_id):
         self.pucks_inside = pucks_inside
@@ -229,52 +289,22 @@ class ReleaseSomePucks(ActionClientNode):
 
 class CompleteCollectLastWall(ActionClientNode):
     def __init__(self, pucks_inside, puck_type, action_client_id):
-        self.pucks_inside = pucks_inside
-        self.puck_type = puck_type
         cmd = "complete_collect_last_wall"
         super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
 
-    def start_action(self): 
-        """
-        action_clients: {}
-
-        :return:
-        """
-        print("Start BT Action: " + self.cmd.get())
-        print("add puck")
-        self.pucks_inside.append(self.puck_type)
-        print(self.pucks_inside)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-        
 
 class CompleteTakeWallPuck(ActionClientNode):
-    def __init__(self, pucks_inside, puck_type, action_client_id):
-        self.pucks_inside = pucks_inside
-        self.puck_type = puck_type
+    def __init__(self, action_client_id):
         cmd = "complete_collect_wall"
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
-
-    def start_action(self): 
-        """
-        action_clients: {}
-
-        :return:
-        """
-        print("Start BT Action: " + self.cmd.get())
-        print("add puck")
-        self.pucks_inside.append(self.puck_type)
-        print(self.pucks_inside)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
         
 
 class ReleaseAndBack(bt.SequenceWithMemoryNode):
-    def __init__(self, pucks_inside, scales_zone, action_client_id):
-        self.pucks_inside = pucks_inside
-        self.scales_zone = scales_zone
+    def __init__(self, pucks_inside, scales_zone):
 
         super(ReleaseAndBack, self).__init__([
-            ReleaseSomePucks(self.pucks_inside, "manipulator_client"),
-            MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client")
+            ReleaseSomePucks(pucks_inside, "manipulator_client"),
+            MoveLineToPoint(scales_zone + (0, -0.14, 0), "move_client")
         ])
 
 
