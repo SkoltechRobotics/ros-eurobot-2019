@@ -44,18 +44,18 @@ yellow_zone:
   blunium_collect_PREpos: [1.275, 0.35, -1.57]
   blunium_collect_pos: [1.29, 0.24, -1.57]
 
-  blunium_rotate_PREpose: [1.295, 0.235, -0.78]
-  blunium_rotate_pose: [1.295, 0.235, -1.57]
+  # blunium_rotate_PREpose: [1.295, 0.235, -0.78]
+  # blunium_rotate_pose: [1.295, 0.235, -1.57]
 
-  blunium_push_PREpose: [1.85, 0.155, 0.56]
-  blunium_push_pose: [1.72, 0.155, 0.56]
+  blunium_push_PREpose: [1.32, 0.155, 0.56]
+  blunium_push_pose: [1.15, 0.155, 0.56]
 
-  accelerator_PREunloading_pos: [1.13, 0.18, 0.56]  # 0.525
-  accelerator_unloading_pos_far: [1.06, 0.15, 0.56]
+  accelerator_PREunloading_pos: [1.13, 0.155, 0.56]  # 0.525
+  # accelerator_unloading_pos_far: [1.06, 0.15, 0.56]
   accelerator_unloading_pos: [1.06, 0.135, 0.56]  # for main
   
-  goldenium_PREgrab_pos: [0.9, 0.45, -1.57]
-  goldenium_grab_pos: [0.78, 0.24, -1.57]  # for main
+  goldenium_PREgrab_pos: [0.78, 0.35, -1.57]
+  goldenium_grab_pos: [0.78, 0.245, -1.57]  # for main
   scales_goldenium_PREpos: [1.8, 1.05, 1.4]  # for main
   scales_goldenium_pos: [1.72, 1.4, 1.9]  # for main
 

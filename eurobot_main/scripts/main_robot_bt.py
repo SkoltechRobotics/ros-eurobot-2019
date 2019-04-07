@@ -232,13 +232,14 @@ class MainRobotBT(object):
                         bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
                         # FIXME Sasha will change unloading mechanism
                         bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-                    ], threshold=3)  # FIXME thres
+                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1, "stm_client"),
+                    ], threshold=4)  # FIXME thres
 
-        careful_approach = bt.ParallelWithMemoryNode([
-                        # bt_ros.StepUp("manipulator_client"),
-                        bt_ros.SetManipulatortoGround("manipulator_client"),
-                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1.5, "stm_client"),
-            ], threshold=2)
+        # careful_approach = bt.ParallelWithMemoryNode([
+        #                 # bt_ros.StepUp("manipulator_client"),
+        #                 # bt_ros.SetManipulatortoGround("manipulator_client"),
+        #                 # bt_ros.SetSpeedSTM([0, -0.1, 0], 1, "stm_client"),
+        #                 ], threshold=2)
 
         unload = bt.SequenceNode([
                         bt.FallbackNode([
@@ -291,7 +292,8 @@ class MainRobotBT(object):
                         go_to_blunium,
                         push_blunium,
                         go_to_acc,
-                        careful_approach,
+                        unload,
+                        # careful_approach,
                         collect_goldenium,
                         unload_goldenium,
                         move_finish])
