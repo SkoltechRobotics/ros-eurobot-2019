@@ -398,7 +398,8 @@ class MainRobotBT(object):
         if side == SideStatus.PURPLE:
             self.tactics = self.purple_tactics
         elif side == SideStatus.YELLOW:
-            self.tactics = self.yellow_tactics
+            # self.tactics = self.yellow_tactics
+            rospy.loginfo("Error 2")
         else:
             self.tactics = None
 
