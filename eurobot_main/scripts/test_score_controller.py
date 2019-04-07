@@ -19,32 +19,65 @@ class ScoreController(object):
     def reward(self, bonus):
         assert bonus in self.bonuses
         # self.score_publisher.publish(bonus)
+        # rospy.loginfo("you get a " + str(bonus) + " - " + str(predict.get_points(bonus)))
+        print "you get a ", bonus, predict.get_points(bonus)
 
     def add(self, puck):
         assert puck in self.pucks
+
         print "adding ", puck
         if len(self.collected_pucks.get()) == 0:
             self.collected_pucks.set(puck)
+            # rospy.loginfo("you added " + puck)
         else:
             self.collected_pucks.set(self.collected_pucks.get() + " " + puck)
-
         print "inside: ", self.collected_pucks.get()
+        # rospy.loginfo("inside " + str(self.collected_pucks.get()))
+        # rospy.loginfo(" ")
         print " "
 
     def unload(self, place):  # side="top"
         assert place in self.places
-        if len(self.collected_pucks.get().split()) > 1:
-            lifo_puck = self.collected_pucks.get().split()[-1]
-            self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])
-            print "unloading lifo ", lifo_puck, "in ", place
+        lifo_puck = None
 
-        elif len(self.collected_pucks.get().split()) == 1:
-            lifo_puck = self.collected_pucks.get()
-            print "unloading lifo ", lifo_puck, "in ", place
-            self.collected_pucks.set([])
+        try:
+            if len(self.collected_pucks.get()) == 0:
+                # rospy.loginfo("you tried unloading a puck, but there are no pucks left ")
 
-        # self.score_publisher.publish(lifo_puck + "_ON_" + place)
-        print "aafter unloading pucks are: ", self.collected_pucks.get()
+                print "you tried unloading a puck, but there are no pucks left"
+                print " "
+                # rospy.loginfo("there are no pucks ERORR")
+            elif len(self.collected_pucks.get().split()) == 1:
+                lifo_puck = self.collected_pucks.get()
+                # rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+                # rospy.loginfo("you receive: ", str(predict.get_points(lifo_puck + "_ON_" + place)))
+                # self.score_publisher.publish(lifo_puck + "_ON_" + place)
+                self.collected_pucks.set(str())
+
+                print 'Unloaded lifo: ' + str(lifo_puck) + " on " + place
+                print "you receive: ", predict.get_points(lifo_puck + "_ON_" + place)
+                print " "
+
+            elif len(self.collected_pucks.get().split()) > 1:
+                lifo_puck = self.collected_pucks.get().split()[-1]
+                self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])  # most right word
+                # rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
+                # rospy.loginfo("you receive: ", str(predict.get_points(lifo_puck + "_ON_" + place)))
+                # self.score_publisher.publish(lifo_puck + "_ON_" + place)
+
+                print 'Unloaded lifo: ' + str(lifo_puck) + " on " + place
+                print "you receive: ", predict.get_points(lifo_puck + "_ON_" + place)
+                print " "
+
+        except AttributeError as Error:  # FIXME
+            print "error"
+            # rospy.loginfo("se lia vi, tuple object has no attribute split")
+        #rospy.loginfo('Pucks to unload: '+ str(len(self.collected_pucks.get().split())))
+        pucks_to_unload = str(self.collected_pucks.get().split())
+        quantity = len(self.collected_pucks.get().split())
+        # print 'Pucks to unload: ' + str(self.collected_pucks.get().split())
+        # print 'Pucks to unload: ' + str(len(self.collected_pucks.get().split()))
+        print 'Pucks to unload: ' + str(quantity) + " " + pucks_to_unload
         print " "
 
     # if side == "top":
@@ -87,9 +120,10 @@ class Prediction:
 
 
 if __name__ == '__main__':
-    collected_pucks = BTVariable(np.array([]))
+    collected_pucks = BTVariable(str()) #np.array([])
     predict = Prediction()
     score_master = ScoreController(collected_pucks)
+    score_master.unload("ACC")
     score_master.add("BLUNIUM")
     score_master.add("REDIUM")
     score_master.add("GREENIUM")
@@ -98,6 +132,15 @@ if __name__ == '__main__':
     score_master.unload("SCALES")
     score_master.unload("ACC")
     score_master.unload("ACC")
+    score_master.unload("ACC")
+    score_master.add("GOLDENIUM")
+    score_master.reward("UNLOCK_GOLDENIUM_BONUS")
     print " "
-    print "inside main", len(collected_pucks.get())
-    print predict.get_points("REDIUM_ON_SCALES")
+    print "inside main"
+    if collected_pucks.get() == 0:
+        print type(collected_pucks.get())
+        print 'All pucks unloaded'
+    else:
+        print 'Pucks to unload: ' + str(collected_pucks.get().split())
+
+    # print predict.get_points("REDIUM_ON_SCALES")

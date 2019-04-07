@@ -137,13 +137,13 @@ class SetSpeedSTM(ActionClientNode):
     def start_action(self):
         print("Start BT Action: " + self.cmd.get())
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-        rospy.sleep(self.delay*2)
+        rospy.sleep(self.delay)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        rospy.sleep(self.delay/2)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
-        rospy.sleep(self.delay*2)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        rospy.sleep(self.delay/2)
+        # rospy.sleep(self.delay/2)
+        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
+        # rospy.sleep(self.delay*2)
+        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
+        # rospy.sleep(self.delay/2)
 
     def action_status(self):
         status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())

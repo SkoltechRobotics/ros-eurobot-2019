@@ -218,6 +218,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        rospy.sleep(3)  # FIXME 0.2
         return True
 
     def release_accelerator_first_move_when_full(self):

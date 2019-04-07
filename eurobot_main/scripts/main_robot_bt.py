@@ -324,40 +324,72 @@ class MainRobotBT(object):
     def test_snoshenie(self):
         # strategy = bt.SequenceWithMemoryNode([])
 
-        go_to_acc = bt.ParallelWithMemoryNode([
-                        bt_ros.SetManipulatortoUp("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-                        # FIXME Sasha will change unloading mechanism
-                        bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-                    ], threshold=3)
-
-        dummy = bt_ros.SetManipulatortoGoldenium("manipulator_client")
-
-        add_pucks = bt.SequenceWithMemoryNode([
+        load_pucks = bt.SequenceWithMemoryNode([
+                        bt_ros.StartCollectGround("manipulator_client"),
+                        bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-                        bt_ros.StepDown("manipulator_client"),
+
+                        bt_ros.StartCollectGround("manipulator_client"),
+                        bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
-                        bt_ros.StepDown("manipulator_client"),
+
+                        bt_ros.StartCollectGround("manipulator_client"),
+                        bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                        bt_ros.StepDown("manipulator_client"),
+
+                        bt_ros.StartCollectGround("manipulator_client"),
+                        bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
         ])
 
-        go_and_add = bt.ParallelWithMemoryNode([
-                        go_to_acc,
-                        add_pucks
-                    ], threshold = 2)
+        go_to_acc = bt.ParallelWithMemoryNode([
+                        bt_ros.SetManipulatortoUp("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
+                        # FIXME Sasha will change unloading mechanism
+                        bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                    ], threshold=4)  # FIXME thres
 
-        snoshenie = bt.FallbackWithMemoryNode([
+        # dummy = bt_ros.SetManipulatortoGoldenium("manipulator_client")
+        #
+        # add_pucks = bt.SequenceWithMemoryNode([
+        #                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+        #                 bt_ros.StepDown("manipulator_client"),
+        #                 bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+        #                 bt_ros.StepDown("manipulator_client"),
+        #                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+        #                 bt_ros.StepDown("manipulator_client"),
+        #                 bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+        # ])
+        #
+        # go_and_add = bt.ParallelWithMemoryNode([
+        #                 go_to_acc,
+        #                 load_pucks
+        #             ], threshold = 2)
+        #
+        # snoshenie = bt.FallbackWithMemoryNode([
+        #                 bt.ConditionNode(self.is_robot_empty),
+        #                 bt.SequenceNode([
+        #                     bt.ParallelWithMemoryNode([
+        #                             bt_ros.SetSpeedSTM([0, 0.05, 0], 0.25, "stm_client"),
+        #                             bt_ros.UnloadAccelerator("manipulator_client"),
+        #                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
+        #                         ], threshold=3),
+        #                     bt.ConditionNode(lambda: bt.Status.RUNNING)
+        #                 ]),
+        #             ])
+
+        careful_approach = bt.ParallelWithMemoryNode([
+                        # bt_ros.StepUp("manipulator_client"),
+                        bt_ros.SetSpeedSTM([0, 0.05, 0], 0.3, "stm_client"),
+            ], threshold=2)
+
+        unload = bt.FallbackWithMemoryNode([
                         bt.ConditionNode(self.is_robot_empty),
-                        bt.SequenceNode([
-                            bt.ParallelWithMemoryNode([
-                                    bt_ros.SetSpeedSTM([0, 0.05, 0], 0.25, "stm_client"),
-                                    bt_ros.UnloadAccelerator("manipulator_client"),
-                                    bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                ], threshold=3),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)
+                        bt.SequenceWithMemoryNode([
+                            bt_ros.UnloadAccelerator("manipulator_client"),
+                            bt.ActionNode(lambda: self.score_master.unload("ACC")),
                         ]),
+                        bt.ConditionNode(lambda: bt.Status.RUNNING)
                     ])
 
         move_finish = bt.SequenceWithMemoryNode([
@@ -366,11 +398,12 @@ class MainRobotBT(object):
                     ])
 
         strategy = bt.SequenceWithMemoryNode([
-                        #go_to_acc,
-                        # dummy,
-                        #add_pucks,
-                        go_and_add,
-                        snoshenie,
+                        load_pucks,
+                        go_to_acc,
+                        careful_approach,
+                        unload,
+                        # go_and_add,
+                        # snoshenie,
                         move_finish
                         ])
 
@@ -393,7 +426,7 @@ class MainRobotBT(object):
         # test_tyda_suda
         # test_snoshenie
 
-        self.bt = bt.Root(self.strategy_vovan(),
+        self.bt = bt.Root(self.test_snoshenie(),
                 action_clients={"move_client": self.move_client,
                                 "manipulator_client": self.manipulator_client,
                                 "stm_client": self.stm_client})

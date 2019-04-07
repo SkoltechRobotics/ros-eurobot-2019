@@ -110,7 +110,7 @@ class App:
         # data = data.data.split()
         rospy.loginfo(data)
         points = self.predict.get_points(data.data)
-        print("ppoints are: ", points)
+        print("points are: ", points)
         self.score.set(self.score.get() + int(points))
 
     def wire_status_callback(self, data):
@@ -134,7 +134,8 @@ if __name__ == '__main__':
 
     app = App(root)
 
-    rospy.Subscriber("score", String, app.score_callback)
+    # rospy.Subscriber("score", String, app.score_callback)
+    rospy.Subscriber("/score", String, app.score_callback)
     rospy.Subscriber("stm/start_status", String, app.wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.side_status_callback)
     rate = rospy.Rate(100)
