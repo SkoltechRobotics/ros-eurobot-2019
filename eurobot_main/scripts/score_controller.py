@@ -15,6 +15,7 @@ class ScoreController(object):
         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
         self.score_publisher = rospy.Publisher("/score", String, queue_size=100)
 
+
     def reward(self, bonus):
         assert bonus in self.bonuses
         self.score_publisher.publish(bonus)
@@ -24,6 +25,7 @@ class ScoreController(object):
 
         if len(self.collected_pucks.get()) == 0:
             self.collected_pucks.set(puck)
+            # self.collected_pucks.get().append(puck)
             rospy.loginfo("you added " + puck)
         else:
             self.collected_pucks.set(self.collected_pucks.get() + " " + puck)

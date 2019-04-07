@@ -50,6 +50,9 @@ class YellowTactics(Tactics):
         self.blunium_rotate_PREpose = rospy.get_param("yellow_zone/blunium_rotate_PREpose")
         self.blunium_rotate_pose = rospy.get_param("yellow_zone/blunium_rotate_pose")
 
+        self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
+        self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
+
         self.accelerator_PREunloading_pos = rospy.get_param("yellow_zone/accelerator_PREunloading_pos")
         self.accelerator_unloading_pos = rospy.get_param("yellow_zone/accelerator_unloading_pos")
         self.accelerator_unloading_pos_far = rospy.get_param("yellow_zone/accelerator_unloading_pos_far")
@@ -151,15 +154,26 @@ class MainRobotBT(object):
     def is_robot_empty(self):
         rospy.loginfo("pucks inside")
         rospy.loginfo(self.collected_pucks.get())
-        if self.collected_pucks.get() == 0:
+        if len(self.collected_pucks.get()) == 0:
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
             rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
             return bt.Status.FAILED
 
+    def is_robot_empty_1(self):
+        rospy.loginfo("pucks inside")
+        rospy.loginfo(self.collected_pucks.get())
+        if len(self.collected_pucks.get()) == 0:
+            rospy.loginfo('All pucks unloaded')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
+            return bt.Status.RUNNING
+
     def strategy_vovan(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
+                            bt_ros.SetManipulatortoWall("manipulator_client"),
                             bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
                             bt_ros.StartCollectGround("manipulator_client"),
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))  # FIXME: color is undetermined without camera!
@@ -183,16 +197,31 @@ class MainRobotBT(object):
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))  # FIXME
                         ])
 
+        # go_to_blunium = bt.ParallelWithMemoryNode([
+        #                     bt_ros.SetManipulatortoUp("manipulator_client"),
+        #                     bt_ros.CompleteCollectGround("manipulator_client"),
+        #                     bt_ros.SetManipulatortoGoldenium("manipulator_client"),  # FIXME
+        #                     bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
+        #                 ], threshold=4)
+
+        # push_blunium = bt.SequenceWithMemoryNode([
+        #                 # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
+        #                 bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_pose, "move_client"),
+        #                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
+        #                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
+        #             ])
+
         go_to_blunium = bt.ParallelWithMemoryNode([
                             bt_ros.SetManipulatortoUp("manipulator_client"),
                             bt_ros.CompleteCollectGround("manipulator_client"),
-                            bt_ros.SetManipulatortoGoldenium("manipulator_client"),  # FIXME
-                            bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
-                        ], threshold=4)
+                            bt_ros.MoveLineToPoint(self.tactics.blunium_push_PREpose, "move_client"),
+                        ], threshold=3)
 
         push_blunium = bt.SequenceWithMemoryNode([
                         # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_pose, "move_client"),
+                        # bt_ros.SetSpeedSTM([0, -0.1, 0], 1.5, "stm_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose, "move_client"),
                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
                         bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
@@ -200,57 +229,37 @@ class MainRobotBT(object):
 
         go_to_acc = bt.ParallelWithMemoryNode([
                         bt_ros.SetManipulatortoUp("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
                         # FIXME Sasha will change unloading mechanism
-                        bt_ros.StepDown("manipulator_client"),
-                        bt_ros.StepDown("manipulator_client"),
-                        bt_ros.StepDown("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-                    ], threshold=5)
+                        bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                    ], threshold=3)  # FIXME thres
 
-        snoshenie = bt.FallbackWithMemoryNode([
-                        bt.ConditionNode(self.is_robot_empty),
-                        bt.SequenceNode([
-                            bt.ParallelWithMemoryNode([
-                                    bt_ros.SetSpeedSTM([0, 0.05, 0], 0.35, "stm_client"),
-                                    bt_ros.UnloadAccelerator("manipulator_client"),
-                                    bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                ], threshold=3),
-                            bt.ConditionNode(lambda: bt.Status.RUNNING)
+        careful_approach = bt.ParallelWithMemoryNode([
+                        # bt_ros.StepUp("manipulator_client"),
+                        bt_ros.SetManipulatortoGround("manipulator_client"),
+                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1.5, "stm_client"),
+            ], threshold=2)
+
+        unload = bt.SequenceNode([
+                        bt.FallbackNode([
+                            bt.ConditionNode(self.is_robot_empty),
+                            bt.SequenceWithMemoryNode([
+                                bt_ros.UnloadAccelerator("manipulator_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                            ])
                         ]),
+                        bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
-
-        # unload_acc1 = bt.SequenceWithMemoryNode([
+        # go_to_acc = bt.ParallelWithMemoryNode([
+        #                 bt_ros.SetManipulatortoUp("manipulator_client"),
+        #                 # FIXME Sasha will change unloading mechanism
+        #                 bt_ros.StepDown("manipulator_client"),
+        #                 bt_ros.StepDown("manipulator_client"),
+        #                 bt_ros.StepDown("manipulator_client"),
         #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #                 bt_ros.UnloadAccelerator("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client")
-        #             ])
+        #             ], threshold=5)
 
-        # unload_acc2 = bt.SequenceWithMemoryNode([
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #                 bt_ros.UnloadAccelerator("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client")
-        #             ])
-
-        # unload_acc3 = bt.SequenceWithMemoryNode([
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #                 bt_ros.UnloadAccelerator("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client")
-        #             ])
-
-        # unload_acc4 = bt.SequenceWithMemoryNode([
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #                 bt_ros.UnloadAccelerator("manipulator_client"),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos_far, "move_client")
-        #             ])
-
-        # to make sure that the LAST puck is unloaded
-        # temporary_move = bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client")
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_PREgrab_pos, "move_client"),
@@ -279,10 +288,10 @@ class MainRobotBT(object):
                         red_cell_puck,
                         green_cell_puck,
                         blue_cell_puck,
-                        #go_to_blunium,
-                        #push_blunium,
+                        go_to_blunium,
+                        push_blunium,
                         go_to_acc,
-                        snoshenie,
+                        careful_approach,
                         collect_goldenium,
                         unload_goldenium,
                         move_finish])
@@ -339,15 +348,8 @@ class MainRobotBT(object):
 
                         bt_ros.StartCollectGround("manipulator_client"),
                         bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                        bt.ActionNode(lambda: self.score_master.add("REDIUM")),
         ])
-
-        go_to_acc = bt.ParallelWithMemoryNode([
-                        bt_ros.SetManipulatortoUp("manipulator_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
-                        # FIXME Sasha will change unloading mechanism
-                        bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-                    ], threshold=4)  # FIXME thres
 
         # dummy = bt_ros.SetManipulatortoGoldenium("manipulator_client")
         #
@@ -378,18 +380,28 @@ class MainRobotBT(object):
         #                 ]),
         #             ])
 
+        go_to_acc = bt.ParallelWithMemoryNode([
+                        bt_ros.SetManipulatortoUp("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
+                        # FIXME Sasha will change unloading mechanism
+                        bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                    ], threshold=3)  # FIXME thres
+
         careful_approach = bt.ParallelWithMemoryNode([
                         # bt_ros.StepUp("manipulator_client"),
-                        bt_ros.SetSpeedSTM([0, 0.05, 0], 0.3, "stm_client"),
+                        bt_ros.SetManipulatortoGround("manipulator_client"),
+                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1.5, "stm_client"),
             ], threshold=2)
 
-        unload = bt.FallbackWithMemoryNode([
-                        bt.ConditionNode(self.is_robot_empty),
-                        bt.SequenceWithMemoryNode([
-                            bt_ros.UnloadAccelerator("manipulator_client"),
-                            bt.ActionNode(lambda: self.score_master.unload("ACC")),
+        unload = bt.SequenceNode([
+                        bt.FallbackNode([
+                            bt.ConditionNode(self.is_robot_empty),
+                            bt.SequenceWithMemoryNode([
+                                bt_ros.UnloadAccelerator("manipulator_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                            ])
                         ]),
-                        bt.ConditionNode(lambda: bt.Status.RUNNING)
+                        bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
         move_finish = bt.SequenceWithMemoryNode([
@@ -426,7 +438,7 @@ class MainRobotBT(object):
         # test_tyda_suda
         # test_snoshenie
 
-        self.bt = bt.Root(self.test_snoshenie(),
+        self.bt = bt.Root(self.strategy_vovan(),
                 action_clients={"move_client": self.move_client,
                                 "manipulator_client": self.manipulator_client,
                                 "stm_client": self.stm_client})
