@@ -218,7 +218,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
-        rospy.sleep(3)  # FIXME 0.2
+        rospy.sleep(0.5)  # FIXME 0.2
         return True
 
     def release_accelerator_first_move_when_full(self):
@@ -239,6 +239,7 @@ class Manipulator(object):
         self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
         self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        rospy.sleep(0.2)
         return True
 
     def swing_puck(self):
