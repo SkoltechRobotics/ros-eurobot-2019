@@ -16,42 +16,42 @@ class Tactics(object):
         self.robot_coordinates = None
 
 
-class YellowTactics(Tactics):
-    def __init__(self):
-        super(YellowTactics, self).__init__()
+# class YellowTactics(Tactics):
+#     def __init__(self):
+#         super(YellowTactics, self).__init__()
 
-        self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
-        self.approach_dist = np.array(self.approach_dist)
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+#         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
+#         self.approach_dist = np.array(self.approach_dist)
+#         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
 
-        # can be reached using rospy.get_param("purple_zone/red_cell_puck"
-        self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
-        self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
-        self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
+#         # can be reached using rospy.get_param("purple_zone/red_cell_puck"
+#         self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
+#         self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
+#         self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
 
-        # use find origin
-        self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
-                                           self.red_cell_puck[1],
-                                           3.14])
+#         # use find origin
+#         self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
+#                                            self.red_cell_puck[1],
+#                                            3.14])
 
-        self.second_puck_landing = np.array([self.green_cell_puck[0],
-                                            self.green_cell_puck[1]-self.approach_dist,
-                                            1.57])
+#         self.second_puck_landing = np.array([self.green_cell_puck[0],
+#                                             self.green_cell_puck[1]-self.approach_dist,
+#                                             1.57])
 
-        self.third_puck_landing = np.array([self.blue_cell_puck[0],
-                                           self.blue_cell_puck[1]-self.approach_dist,
-                                           1.57])
+#         self.third_puck_landing = np.array([self.blue_cell_puck[0],
+#                                            self.blue_cell_puck[1]-self.approach_dist,
+#                                            1.57])
 
-        self.start_zone = rospy.get_param("yellow_zone/start_zone")
+#         self.start_zone = rospy.get_param("yellow_zone/start_zone")
 
-        self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
-        self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
+#         self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
+#         self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
 
-        self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
-        self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
+#         self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
+#         self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
 
-        self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
-        self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
+#         self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
+#         self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
 
 
 class PurpleTactics(Tactics):
@@ -93,7 +93,7 @@ class PurpleTactics(Tactics):
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
-    def __init__(self, side_status=SideStatus.YELLOW):
+    def __init__(self, side_status=SideStatus.PURPLE):
         self.robot_name = rospy.get_param("robot_name")
 
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
@@ -105,14 +105,15 @@ class MainRobotBT(object):
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
         self.purple_tactics = PurpleTactics()
-        self.yellow_tactics = YellowTactics()
+        # self.yellow_tactics = YellowTactics()
 
         self.side_status = side_status
 
         if self.side_status == SideStatus.PURPLE:
             self.tactics = self.purple_tactics
         elif self.side_status == SideStatus.YELLOW:
-            self.tactics = self.yellow_tactics
+            rospy.loginfo("ERROOOOOOOOR")
+            # self.tactics = self.yellow_tactics
         else:
             self.tactics = None
 
@@ -180,21 +181,6 @@ class MainRobotBT(object):
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))  # FIXME
                         ])
 
-        # go_to_blunium = bt.ParallelWithMemoryNode([
-        #                     bt_ros.SetManipulatortoUp("manipulator_client"),
-        #                     bt_ros.CompleteCollectGround("manipulator_client"),
-        #                     bt_ros.SetManipulatortoGoldenium("manipulator_client"),  # FIXME
-        #                     bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_PREpose, "move_client"),
-        #                 ], threshold=4)
-
-        # push_blunium = bt.SequenceWithMemoryNode([
-        #                 # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
-        #                 bt_ros.MoveLineToPoint(self.tactics.blunium_rotate_pose, "move_client"),
-        #                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-        #                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                 bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-        #             ])
-
         go_to_blunium = bt.ParallelWithMemoryNode([
                             bt_ros.SetManipulatortoUp("manipulator_client"),
                             bt_ros.CompleteCollectGround("manipulator_client"),
@@ -211,20 +197,6 @@ class MainRobotBT(object):
                         bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                     ])
 
-        # go_to_acc = bt.ParallelWithMemoryNode([
-        #                 bt_ros.SetManipulatortoUp("manipulator_client"),
-        #                 #bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
-        #                 # FIXME Sasha will change unloading mechanism
-        #                 bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-        #                 # bt_ros.SetSpeedSTM([0, -0.1, 0], 2, "stm_client"),
-        #             ], threshold=3)  # FIXME thres
-
-        # careful_approach = bt.ParallelWithMemoryNode([
-        #                 # bt_ros.StepUp("manipulator_client"),
-        #                 # bt_ros.SetManipulatortoGround("manipulator_client"),
-        #                 # bt_ros.SetSpeedSTM([0, -0.1, 0], 1, "stm_client"),
-        #                 ], threshold=2)
-
         unload = bt.SequenceNode([
                         bt.FallbackNode([
                             bt.ConditionNode(self.is_robot_empty),
@@ -235,16 +207,6 @@ class MainRobotBT(object):
                         ]),
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
-
-        # go_to_acc = bt.ParallelWithMemoryNode([
-        #                 bt_ros.SetManipulatortoUp("manipulator_client"),
-        #                 # FIXME Sasha will change unloading mechanism
-        #                 bt_ros.StepDown("manipulator_client"),
-        #                 bt_ros.StepDown("manipulator_client"),
-        #                 bt_ros.StepDown("manipulator_client"),
-        #                 bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
-        #             ], threshold=5)
-
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.SetSpeedSTM([0, 0.3, 0], 1, "stm_client"),
