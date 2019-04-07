@@ -192,7 +192,7 @@ git reflog
 - to remove latest pull
 git reset --hard a0d3fe6, // where  a0d3fe6 - is a head id
 
-test2
+test3
 
 ## Team
 
