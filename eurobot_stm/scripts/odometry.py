@@ -19,7 +19,7 @@ class Odometry():
         self.stm_protocol = stm_protocol
 
         self.odom_publisher = rospy.Publisher("odom", nav_msgs.msg.Odometry, queue_size = 1)
-        # self.pcucks_sucked = rospy.Publisher("pcucks_sucked", String, queue_size = 1)
+        self.pcucks_sucked = rospy.Publisher("pcucks_sucked", String, queue_size = 1)
         rospy.Timer(rospy.Duration(1. / rate), self.odom_callback)
         
     
@@ -28,9 +28,9 @@ class Odometry():
         if successfully:
             self.send_odometry(values)
 
-        # successfully, values = self.stm_protocol.send(0x19, args=None)
-        # if successfully:
-        #     self.pcucks_sucked.publish(str(values))
+        successfully, values = self.stm_protocol.send(0x19, args=None)
+        if successfully:
+            self.pcucks_sucked.publish(str(values))
 
     def send_odometry(self, values):
 

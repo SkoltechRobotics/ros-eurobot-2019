@@ -48,6 +48,20 @@ class Strategy(object):
             return bt.Status.FAILED
 
 
+    def is_no_pucks(self):
+        if len(self.collected_pucks.get()) == 0:
+            return bt.Status.SUCCESS
+        else: 
+            return bt.Status.FAILED
+
+    def is_no_pucks_1(self):
+        if len(self.collected_pucks.get()) == 0:
+            return bt.Status.SUCCESS
+        else: 
+            return bt.Status.RUNNING
+
+
+
 class VovanStrategy(Strategy):
     def __init__(self, side):
         super(VovanStrategy, self).__init__()
@@ -106,7 +120,7 @@ class VovanStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
                         bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
-                        bt_ros.MoveLineToPoint(self.third_puck + (0, -0.5, 0), "move_client")
+                        bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
@@ -117,7 +131,7 @@ class VovanStrategy(Strategy):
             bt.SequenceWithMemoryNode([
                     bt_ros.StopPump("manipulator_client"),
                     bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.46, -0.5, 0), "move_client")
+                    bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client")
                 ])
         ])
 
@@ -173,14 +187,16 @@ class VovanStrategy(Strategy):
             bt_ros.MoveLineToPoint(self.scales_zone, "move_client")
         ])
 
-        release_and_back = bt.SequenceWithMemoryNode([
-            bt_ros.ReleaseAndBack(self.pucks_inside, self.scales_zone, "manipulator_client"),
-            bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-            bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-            bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-            bt.ActionNode(lambda: self.score_master.unload("SCALES")),
-            bt.ActionNode(lambda: self.score_master.unload("SCALES"))
-            ])
+        unload = bt.SequenceNode([
+                        bt.FallbackNode([
+                            bt.ConditionNode(self.is_no_pucks),
+                            bt.SequenceWithMemoryNode([
+                                bt_ros.ReleaseOnePuck("manipulator_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("SCALES")),
+                            ])
+                        ]),
+                        bt.ConditionNode(self.is_no_pucks_1)
+                    ])
 
         sixth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -231,7 +247,7 @@ class VovanStrategy(Strategy):
                 bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.eighth_puck),
-                bt.ActionNode(lambda: self.score_master.add("REDIUM"))
+                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
                     bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
@@ -274,7 +290,7 @@ class VovanStrategy(Strategy):
             third_puck,
             forth_puck,
             fifth_puck,
-            release_and_back,
+            unload,
             sixth_puck,
             seventh_puck,
             eighth_puck,
