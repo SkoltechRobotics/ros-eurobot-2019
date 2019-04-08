@@ -129,7 +129,7 @@ class MainRobotBT(object):
 
         # self.is_puck_grabbed = grab_status  TODO
 
-        self.collected_pucks = bt.BTVariable(np.array([]))
+        self.collected_pucks = bt.BTVariable([])
         self.score_master = ScoreController(self.collected_pucks)
 
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)

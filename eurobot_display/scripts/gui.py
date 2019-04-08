@@ -135,7 +135,7 @@ class App:
         rospy.loginfo(data)
         points = self.predict.get_points(data.data)
         print("points are: ", points)
-        self.score_main.set(self.score_main.get() + int(points))
+        self.score_secondary.set(self.score_secondary.get() + int(points))
 
     def wire_status_callback(self, data):
         if data.data == "0":
