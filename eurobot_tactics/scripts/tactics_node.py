@@ -58,103 +58,104 @@ class TacticsNode:
         # TF
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-        self.mutex = Lock()
+        # self.mutex = Lock()
+        #
+        # self.robot_name = rospy.get_param("robot_name")  # "secondary_robot"
+        #
+        # self.critical_angle = np.pi * 2/3
+        # # self.critical_angle = rospy.get_param("critical_angle")
+        #
+        # self.red_zone_coords = np.array([0.3, 0.6, -np.pi/3])
+        # self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
+        # self.approach_dist = np.array(self.approach_dist)
+        #
+        # self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
+        # self.drive_back_dist = np.array(self.drive_back_dist)
+        #
+        # self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+        # self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
 
-        self.robot_name = rospy.get_param("robot_name")  # "secondary_robot"
+        # self.coords_threshold = rospy.get_param("coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
 
-        self.critical_angle = np.pi * 2/3
-        # self.critical_angle = rospy.get_param("critical_angle")
+        # self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
+        # self.scale_factor = np.array(self.scale_factor)
 
-        self.red_zone_coords = np.array([0.3, 0.6, -np.pi/3])
-        self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_dist = np.array(self.approach_dist)
-        
-        self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
-        self.drive_back_dist = np.array(self.drive_back_dist)
+        # self.RATE = rospy.get_param("RATE")
 
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
-        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
+        # self.robot_coords = np.zeros(3)
+        # self.active_goal = None
+        # self.goal_landing = None
+        # self.pucks_inside = 0  # to preliminary calculate our score
+        # self.pucks_unloaded = 0
 
-        self.coords_threshold = rospy.get_param("coords_threshold")  # meters, this is variance of detecting pucks coords using camera, used in update
+        # self.sorted_chaos_landings = np.array([])
+        # self.known_chaos_pucks = np.array([])  # (x, y, id, r, g, b)
 
-        self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
-        self.scale_factor = np.array(self.scale_factor)
-        self.RATE = rospy.get_param("RATE")
+        # self.operating_state = 'waiting for command'
+        # self.is_finished = False
+        # self.is_puck_sucked = False
+        # self.is_puck_collected = False
 
-        self.robot_coords = np.zeros(3)
-        self.active_goal = None
-        self.goal_landing = None
-        self.pucks_inside = 0  # to preliminary calculate our score
-        self.pucks_unloaded = 0
-
-        self.sorted_chaos_landings = np.array([])
-        self.known_chaos_pucks = np.array([])  # (x, y, id, r, g, b)
-
-        self.operating_state = 'waiting for command'
-        self.is_finished = False
-        self.is_puck_sucked = False
-        self.is_puck_collected = False
-
-        self.cmd_id = None
-        self.cmd_type = None
+        # self.cmd_id = None
+        # self.cmd_type = None
 
         # publishers
         self.move_command_publisher = rospy.Publisher('move_command', String, queue_size=10)
         self.stm_command_publisher = rospy.Publisher('stm_command', String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
 
-        rospy.sleep(2)
-
-        self.timer = None
-
-        self.manipulator = Manipulator()
-
-        if self.robot_name == "main_robot":
-            if not self.manipulator.calibrate_big():
-                return
-
-        if self.robot_name == "secondary_robot":
-            if not self.manipulator.calibrate_small():
-                return
-            rospy.sleep(2)
+        # rospy.sleep(2)
+        #
+        # self.timer = None
+        #
+        # self.manipulator = Manipulator()
+        #
+        # if self.robot_name == "main_robot":
+        #     if not self.manipulator.calibrate_big():
+        #         return
+        #
+        # if self.robot_name == "secondary_robot":
+        #     if not self.manipulator.calibrate_small():
+        #         return
+        #     rospy.sleep(2)
 
         # coords are published as markers in one list according to 91-92 undistort.py
-        rospy.Subscriber("/pucks", MarkerArray, self.chaos_pucks_coords_callback, queue_size=1)
-        rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
-        rospy.Subscriber("response", String, self.response_callback, queue_size=10)
+        # rospy.Subscriber("/pucks", MarkerArray, self.chaos_pucks_coords_callback, queue_size=1)
+        # rospy.Subscriber("cmd_tactics", String, self.tactics_callback, queue_size=1)
+        # rospy.Subscriber("response", String, self.response_callback, queue_size=10)
 
-    def chaos_pucks_coords_callback(self, data):
-        """
-        implement comparing with threshold,
-        if newly received coord differs from old known one less than threshold level,
-        than ignore it and continue collecting pucks.
-        Else change coord of that puck and recalculate
-
-        In first step we just write received coords to list of known pucks,
-        in further steps we compare two lists and decide whether to update it or ignore
-
-        :param self:
-        :param data:
-        :return:
-        """
-        self.mutex.acquire()
-
-        if len(self.known_chaos_pucks) == 0:
-            new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
-            # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
-            print('TN -- new_observation_pucks')
-            print(new_observation_pucks)
-
-            try:
-                self.known_chaos_pucks = np.array(new_observation_pucks)
-                print("known")
-                print(self.known_chaos_pucks)
-            except Exception:  # FIXME
-                print("list index out of range - no visible pucks on the field ")
-        # else:
-        #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
-
-        self.mutex.release()
+    # def chaos_pucks_coords_callback(self, data):
+    #     """
+    #     implement comparing with threshold,
+    #     if newly received coord differs from old known one less than threshold level,
+    #     than ignore it and continue collecting pucks.
+    #     Else change coord of that puck and recalculate
+    #
+    #     In first step we just write received coords to list of known pucks,
+    #     in further steps we compare two lists and decide whether to update it or ignore
+    #
+    #     :param self:
+    #     :param data:
+    #     :return:
+    #     """
+    #     self.mutex.acquire()
+    #
+    #     if len(self.known_chaos_pucks) == 0:
+    #         new_observation_pucks = [[marker.pose.position.x, marker.pose.position.y, marker.id, marker.color.r, marker.color.g, marker.color.b] for marker in data.markers]
+    #         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+    #         print('TN -- new_observation_pucks')
+    #         print(new_observation_pucks)
+    #
+    #         try:
+    #             self.known_chaos_pucks = np.array(new_observation_pucks)
+    #             print("known")
+    #             print(self.known_chaos_pucks)
+    #         except Exception:  # FIXME
+    #             print("list index out of range - no visible pucks on the field ")
+    #     # else:
+    #     #     self.compare_to_update_or_ignore(new_observation_pucks)  # in case robot accidentally moved some of pucks
+    #
+    #     self.mutex.release()
 
     # noinspection PyTypeChecker
     # def tactics_callback(self, data):
