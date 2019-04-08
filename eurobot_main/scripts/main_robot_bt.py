@@ -58,9 +58,9 @@ class PurpleTactics(Tactics):
     def __init__(self):
         super(PurpleTactics, self).__init__()
 
-        self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
+        self.approach_dist = rospy.get_param("approach_dist")
         self.approach_dist = np.array(self.approach_dist)
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])
 
         self.red_cell_puck = rospy.get_param("purple_zone/red_cell_puck")
         self.green_cell_puck = rospy.get_param("purple_zone/green_cell_puck")
@@ -142,7 +142,7 @@ class MainRobotBT(object):
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get().split())))
             return bt.Status.FAILED
 
     def is_robot_empty_1(self):

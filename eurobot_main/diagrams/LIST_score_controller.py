@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import threading
-from behavior_tree import BTVariable
+from eurobot_main.scripts.behavior_tree import BTVariable
 from std_msgs.msg import String
 import numpy as np
 

@@ -157,64 +157,64 @@ class TacticsNode:
         self.mutex.release()
 
     # noinspection PyTypeChecker
-    def tactics_callback(self, data):
-
-        self.mutex.acquire()
-
-        if self.timer is not None:
-            self.timer.shutdown()
-
-        # self.parse_and_update_active_cmd(data)
-        rospy.loginfo("")
-        rospy.loginfo("=====================================")
-        rospy.loginfo("TN: NEW CMD:\t" + str(data.data))
-        rospy.loginfo("=====================================")
-        rospy.loginfo("")
-
-        data_split = data.data.split()
-        self.cmd_id = data_split[0]
-        self.cmd_type = data_split[1]
-
-        self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
-
-        # FIXME There is a time delay for coords from camera to come
-        self.mutex.release()
+    # def tactics_callback(self, data):
+    #
+    #     self.mutex.acquire()
+    #
+    #     if self.timer is not None:
+    #         self.timer.shutdown()
+    #
+    #     # self.parse_and_update_active_cmd(data)
+    #     rospy.loginfo("")
+    #     rospy.loginfo("=====================================")
+    #     rospy.loginfo("TN: NEW CMD:\t" + str(data.data))
+    #     rospy.loginfo("=====================================")
+    #     rospy.loginfo("")
+    #
+    #     data_split = data.data.split()
+    #     self.cmd_id = data_split[0]
+    #     self.cmd_type = data_split[1]
+    #
+    #     self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
+    #
+    #     # FIXME There is a time delay for coords from camera to come
+    #     self.mutex.release()
 
     # noinspection PyUnusedLocal
-    def timer_callback(self, event):
-        """
-        When BT publishes command something like "collect atoms in Chaos Zone", we start calculating and updating configuration of pucks
-        :param event: cmd_type can be one of these:
-        - collect_chaos
-        - if in chaos taken blue - put it separately
-        - take_from_wall_and_hold_above (
-        - take_goldenium_and_hold_middle
-        - collect_accel_blue (diff height, maybe we need to hold it up for a while)
-        - skip
-        :return:
-        """
-
-        if self.cmd_type == "collect_chaos":
-            if len(self.known_chaos_pucks) > 0:
-                # print("inside timer: collect chaos and pucks > 0")
-                self.collect_chaos()
-            else:
-                print("NO VISIBLE PUCKS ON THE FIELD")
-                self.completely_stop()
-
-        elif self.cmd_type == "collect_chaos_and_unload":
-            if len(self.known_chaos_pucks) > 0:
-                self.collect_chaos()
-            elif self.pucks_inside == 4:
-                self.unload_pucks_in_red()
-            elif self.pucks_inside == 0 and self.pucks_unloaded == 4:
-                print("pucks unloaded")
-                self.completely_stop()
-
-        else:
-            # print("cmd_type is ", self.cmd_type)
-            print("nothing was commanded")
-            self.completely_stop()
+    # def timer_callback(self, event):
+    #     """
+    #     When BT publishes command something like "collect atoms in Chaos Zone", we start calculating and updating configuration of pucks
+    #     :param event: cmd_type can be one of these:
+    #     - collect_chaos
+    #     - if in chaos taken blue - put it separately
+    #     - take_from_wall_and_hold_above (
+    #     - take_goldenium_and_hold_middle
+    #     - collect_accel_blue (diff height, maybe we need to hold it up for a while)
+    #     - skip
+    #     :return:
+    #     """
+    #
+    #     if self.cmd_type == "collect_chaos":
+    #         if len(self.known_chaos_pucks) > 0:
+    #             # print("inside timer: collect chaos and pucks > 0")
+    #             self.collect_chaos()
+    #         else:
+    #             print("NO VISIBLE PUCKS ON THE FIELD")
+    #             self.completely_stop()
+    #
+    #     elif self.cmd_type == "collect_chaos_and_unload":
+    #         if len(self.known_chaos_pucks) > 0:
+    #             self.collect_chaos()
+    #         elif self.pucks_inside == 4:
+    #             self.unload_pucks_in_red()
+    #         elif self.pucks_inside == 0 and self.pucks_unloaded == 4:
+    #             print("pucks unloaded")
+    #             self.completely_stop()
+    #
+    #     else:
+    #         # print("cmd_type is ", self.cmd_type)
+    #         print("nothing was commanded")
+    #         self.completely_stop()
 
     def collect_chaos(self):
         """
@@ -261,8 +261,6 @@ class TacticsNode:
         if self.operating_state == 'approaching nearest LANDING' and self.is_finished:
             self.operating_state = 'sucking puck'
             rospy.loginfo(self.operating_state)
-            # if self.robot_name == "main_robot":
-            #    self.is_puck_sucked = self.manipulator.grab_and_suck_big()
             if self.robot_name == "secondary_robot":
                 self.is_puck_sucked = self.manipulator.grab_and_suck_small()
             self.is_finished = False
@@ -291,7 +289,6 @@ class TacticsNode:
             self.operating_state = 'puck successfully collected'
             rospy.loginfo("Wohoo! " + str(self.known_chaos_pucks[0]) + " " + str(self.operating_state))
             self.pucks_inside += 1
-            # self.predicted_points += how_much_for_this_puck(self.known_chaos_pucks[0])
             print(" ")
             print("now delete puck", self.known_chaos_pucks[0])
             print(" ")
@@ -307,64 +304,64 @@ class TacticsNode:
             self.operating_state = 'waiting for command'
             rospy.loginfo(self.operating_state)
 
-    def unload_pucks_in_red(self):
-        if self.operating_state == "waiting for command":
-            self.operating_state = "moving to red zone"
-            rospy.loginfo(self.operating_state)
-            self.is_finished = False
-            self.active_goal = self.red_zone_coords
-            cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
-            self.move_command_publisher.publish(cmd)
+    # def unload_pucks_in_red(self):
+    #     if self.operating_state == "waiting for command":
+    #         self.operating_state = "moving to red zone"
+    #         rospy.loginfo(self.operating_state)
+    #         self.is_finished = False
+    #         self.active_goal = self.red_zone_coords
+    #         cmd = self.compose_command(self.active_goal, cmd_id='move_to_red_zone', move_type='move_line')
+    #         self.move_command_publisher.publish(cmd)
+    #
+    #     if self.operating_state == "moving to red zone" and self.is_finished:
+    #         self.operating_state = "start unloading"
+    #         rospy.loginfo(self.operating_state)
+    #         self.is_finished = False
+    #         self.manipulator.release_small()
+    #         self.pucks_unloaded = 4
+    #         self.pucks_inside = 0
 
-        if self.operating_state == "moving to red zone" and self.is_finished:
-            self.operating_state = "start unloading"
-            rospy.loginfo(self.operating_state)
-            self.is_finished = False
-            self.manipulator.release_small()
-            self.pucks_unloaded = 4
-            self.pucks_inside = 0
+    # def response_callback(self, data):
+    #     """
+    #     here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
+    #     callback_response will fire and change self.is_finished to True
+    #     :param data:
+    #     :return:
+    #     """
+    #     if data.data == 'finished':  # TODO change so that response is marked by cmd_id ''
+    #         self.is_finished = True
 
-    def response_callback(self, data):
-        """
-        here when robot reaches the goal MotionPlannerNode will publish in response topic "finished" and in this code
-        callback_response will fire and change self.is_finished to True
-        :param data:
-        :return:
-        """
-        if data.data == 'finished':  # TODO change so that response is marked by cmd_id ''
-            self.is_finished = True
+    # @staticmethod
+    # def compose_command(landing, cmd_id, move_type):
+    #     x, y, theta = landing[0], landing[1], landing[2]
+    #     command = str(cmd_id)
+    #     command += ' '
+    #     command += str(move_type)
+    #     command += ' '
+    #     command += str(x)
+    #     command += ' '
+    #     command += str(y)
+    #     command += ' '
+    #     command += str(theta)
+    #     rospy.loginfo("=============================")
+    #     rospy.loginfo('TN: NEW COMMAND COMPOSED')
+    #     rospy.loginfo(command)
+    #     rospy.loginfo("=============================")
+    #     return command
 
-    @staticmethod
-    def compose_command(landing, cmd_id, move_type):
-        x, y, theta = landing[0], landing[1], landing[2]
-        command = str(cmd_id)
-        command += ' '
-        command += str(move_type)
-        command += ' '
-        command += str(x)
-        command += ' '
-        command += str(y)
-        command += ' '
-        command += str(theta)
-        rospy.loginfo("=============================")
-        rospy.loginfo('TN: NEW COMMAND COMPOSED')
-        rospy.loginfo(command)
-        rospy.loginfo("=============================")
-        return command
+    # def imitate_manipulator(self):
+    #     rospy.loginfo('TN: puck collected by imitator!!')
+    #     self.is_puck_collected = True
 
-    def imitate_manipulator(self):
-        rospy.loginfo('TN: puck collected by imitator!!')
-        self.is_puck_collected = True
-
-    def completely_stop(self):
-        self.timer.shutdown()
-        rospy.loginfo("TN -- Robot has completely stopped")
-        rospy.sleep(1.0 / 40)
-        self.operating_state = 'waiting for command'
-        rospy.loginfo(self.operating_state)
-        print(" ")
-        print(" ")
-        self.response_publisher.publish(self.cmd_id + " finished")
+    # def completely_stop(self):
+    #     self.timer.shutdown()
+    #     rospy.loginfo("TN -- Robot has completely stopped")
+    #     rospy.sleep(1.0 / 40)
+    #     self.operating_state = 'waiting for command'
+    #     rospy.loginfo(self.operating_state)
+    #     print(" ")
+    #     print(" ")
+    #     self.response_publisher.publish(self.cmd_id + " finished")
 
     def update_coords(self):
         try:

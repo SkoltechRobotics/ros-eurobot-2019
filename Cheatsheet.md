@@ -345,6 +345,12 @@ GOALS
 Егор Пристанский - XXL
 Алексей Кашапов - L
 Николай Жердев - L
+Dzmitry Tsetserukou - XXL
+
+
+L - 8
+XL - 1
+XXL - 2
 
 Sergei Vostrikov - L
 Taras Melnik - L
@@ -352,7 +358,8 @@ Andrew Chemikhin - M
 Evgeny Safronov - M
 Vladimir Karandaev - XL
 Mikhail Kurenkov - M
-Dzmitry Tsetserukou - XXL
+
+
 Alexandr Kuleshov - XXL
 
 Optional:

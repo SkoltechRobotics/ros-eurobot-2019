@@ -6,7 +6,7 @@ from Tkinter import *
 from std_msgs.msg import Int32MultiArray
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
-                        [128, 0, 128]])  # purple
+                        [255, 0, 255]])  # purple
 
 
 class Prediction:
@@ -83,12 +83,13 @@ class App:
         # Score config
         self.score_main = IntVar()
         self.score_secondary = IntVar()
-        self.score_main.set(40)
-        self.score_secondary.set(40)
+        self.score_main.set(0)
+        self.score_secondary.set(0)
 
-        Label(self.frame3, bg="white", height=1, width=8, font=("Helvetica", 32), text="SCORE").pack(side="center")
+        Label(self.frame3, bg="white", height=1, width=8, font=("Helvetica", 32), text="SCORE").pack(side="top")
+        Label(self.frame4, bg="white", height=3, width=10, text="40", font=("Helvetica", 60)).pack(side="left")
         Label(self.frame4, bg="white", height=3, width=10, textvariable=self.score_main, font=("Helvetica", 60)).pack(side="left")
-        Label(self.frame4, bg="white", height=1, width=10, textvariable=self.score_secondary, font=("Helvetica", 60)).pack(side="right")
+        Label(self.frame4, bg="white", height=3, width=10, textvariable=self.score_secondary, font=("Helvetica", 60)).pack(side="right")
 
         # WIRE config
         self.start_status = StringVar()
