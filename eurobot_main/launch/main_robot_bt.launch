@@ -2,6 +2,7 @@
 <launch>
     <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="log"/>  # FIXME
     <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="log"/>  # FIXME
+    <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="screen"/>
 
     <rosparam file="$(find eurobot_loc)/config/main_robot_localization_params.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="main_robot"/>
@@ -27,7 +28,6 @@
         </node>
         <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="log"/>
         <node pkg="eurobot_main" name="behavior_tree" type="main_robot_bt.py" respawn="true" output="screen"/>
-        <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="screen"/>
         <!--  -->
     </group>
 </launch>

@@ -58,13 +58,21 @@ class App:
         self.frame1 = Frame(frame, bg="white", colormap="new")
         self.frame1.pack(side="top")
 
-        # Score block
+        # Time block
         self.frame2 = Frame(frame, bg="white", colormap="new")
         self.frame2.pack(side="top")
 
-        # Time block
+        # Score block
         self.frame3 = Frame(frame, bg="white", colormap="new")
         self.frame3.pack(side="top")
+
+        # Points block
+        self.frame4 = Frame(frame, bg="white", colormap="new")
+        self.frame4.pack(side="top")
+
+        # # Secondary block
+        # self.frame5 = Frame(frame, bg="white", colormap="new")
+        # self.frame5.pack(side="right")
 
         # SIDE config
         self.side_status = StringVar()
@@ -73,10 +81,14 @@ class App:
         self.side_frame.pack(side="left")
 
         # Score config
-        self.score = IntVar()
-        self.score.set(40)
-        Label(self.frame2, bg="white", height=1, width=8, font=("Helvetica", 32), text="Score: ").pack(side="left")
-        Label(self.frame2, bg="white", height=1, width=5, textvariable=self.score, font=("Helvetica", 32)).pack(side="right")
+        self.score_main = IntVar()
+        self.score_secondary = IntVar()
+        self.score_main.set(40)
+        self.score_secondary.set(40)
+
+        Label(self.frame3, bg="white", height=1, width=8, font=("Helvetica", 32), text="SCORE").pack(side="center")
+        Label(self.frame4, bg="white", height=3, width=10, textvariable=self.score_main, font=("Helvetica", 60)).pack(side="left")
+        Label(self.frame4, bg="white", height=1, width=10, textvariable=self.score_secondary, font=("Helvetica", 60)).pack(side="right")
 
         # WIRE config
         self.start_status = StringVar()
@@ -90,7 +102,7 @@ class App:
 
     def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        self.frame3.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
+        self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
     def side_status_callback(self, data):
         if data.data == "1":
@@ -101,7 +113,7 @@ class App:
             self.side_status.set("Side: Purple")
             self.side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
-    def score_callback(self, data):
+    def main_score_callback(self, data):
         """
 
         :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
@@ -111,7 +123,19 @@ class App:
         rospy.loginfo(data)
         points = self.predict.get_points(data.data)
         print("points are: ", points)
-        self.score.set(self.score.get() + int(points))
+        self.score_main.set(self.score_main.get() + int(points))
+
+    def secondary_score_callback(self, data):
+        """
+
+        :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
+        :return:
+        """
+        # data = data.data.split()
+        rospy.loginfo(data)
+        points = self.predict.get_points(data.data)
+        print("points are: ", points)
+        self.score_main.set(self.score_main.get() + int(points))
 
     def wire_status_callback(self, data):
         if data.data == "0":
@@ -122,8 +146,8 @@ class App:
             self.wire_frame.config(bg="green")
 
             # start timer countdown
-            self.frame3.after_idle(self.countdown, 99)  # start loop
-            self.frame3.after(100000, self.frame3.destroy)  # quit in 100 seconds
+            self.frame2.after_idle(self.countdown, 99)  # start loop
+            self.frame2.after(100000, self.frame2.destroy)  # quit in 100 seconds
 
 
 if __name__ == '__main__':
@@ -134,8 +158,9 @@ if __name__ == '__main__':
 
     app = App(root)
 
-    # rospy.Subscriber("score", String, app.score_callback)
-    rospy.Subscriber("/score", String, app.score_callback)
+    rospy.Subscriber("/main_robot/score", String, app.main_score_callback)
+    rospy.Subscriber("/secondary_robot/score", String, app.secondary_score_callback)
+
     rospy.Subscriber("stm/start_status", String, app.wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.side_status_callback)
     rate = rospy.Rate(100)
