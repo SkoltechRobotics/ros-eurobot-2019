@@ -10,6 +10,7 @@
 
     <group ns = "secondary_robot">
         <include file="$(find eurobot_nav)/launch/motion_planner_secondary_robot.launch"/>
+
         <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="log" respawn="true" >
             <param name="is_publish_tf" value="false"/>
         </node>

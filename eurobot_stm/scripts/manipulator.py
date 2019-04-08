@@ -177,7 +177,7 @@ class Manipulator(object):
 
     def check_status(self, cmd):
         counter = 0
-        for i in range(20):
+        for i in range(30):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1

@@ -212,8 +212,8 @@ class CompleteTakePuckAndMoveToNext(bt.ParallelWithMemoryNode):
     def __init__(self, current_puck_coordinates, next_puck_coordinates, score_master, puck_type):
         super(CompleteTakePuckAndMoveToNext, self).__init__([
             bt.SequenceWithMemoryNode([
-                MoveLineToPoint(current_puck_coordinates + (0, -0.07, 0), "move_client"),
-                MoveLineToPoint(next_puck_coordinates + (0, -0.07, 0), "move_client")
+                MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
+                MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client")
             ]),
             bt.SequenceWithMemoryNode([
                 CompleteTakeWallPuck("manipulator_client"),
@@ -226,8 +226,8 @@ class MoveToNextPuckIfFailedToScales(bt.SequenceWithMemoryNode):
     def __init__(self, current_puck_coordinates, next_puck_coordinates):
         super(MoveToNextPuckIfFailedToScales, self).__init__([
             StopPump("manipulator_client"),
-            MoveLineToPoint(current_puck_coordinates + (0, -0.07, 0), "move_client"),
-            MoveLineToPoint(next_puck_coordinates + (0, -0.07, 0), "move_client")
+            MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
+            MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client")
         ])
 
 
@@ -236,7 +236,7 @@ class TryToPumpWallPuck(bt.FallbackWithMemoryNode):
             super(TryToPumpWallPuck, self).__init__([
                 StartTakeWallPuck("manipulator_client"),
                 bt.SequenceWithMemoryNode([
-                    MoveLineToPoint(puck_coordinates + (0, -0.04, 0), "move_client"),
+                    MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
                     MoveLineToPoint(puck_coordinates, "move_client"),
                     StartTakeWallPuck("manipulator_client"),
                 ])
@@ -248,7 +248,7 @@ class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
         super(TryToPumpWallPuckWithoutGrabber, self).__init__([
             StartTakeWallPuckWithoutGrabber("manipulator_client"),
             bt.SequenceWithMemoryNode([
-                MoveLineToPoint(puck_coordinates + (0, -0.04, 0), "move_client"),
+                MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
                 MoveLineToPoint(puck_coordinates, "move_client"),
                 StartTakeWallPuckWithoutGrabber("manipulator_client"),
             ])
@@ -259,9 +259,9 @@ class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
     def __init__(self, current_puck_coordinates, next_puck_coordinates):
         super(MoveToNextPuckIfFailedToStartZone, self).__init__([
                     StopPump("manipulator_client"),
-                    MoveLineToPoint(current_puck_coordinates + (0, -0.04, 0), "move_client"),
+                    MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
                     bt.ParallelWithMemoryNode([
-                        MoveLineToPoint(next_puck_coordinates + (0, -0.04, 0), "move_client"),
+                        MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client"),
                         SetToWall_ifReachedGoal(next_puck_coordinates, "manipulator_client")
                     ], threshold=2)
         ])

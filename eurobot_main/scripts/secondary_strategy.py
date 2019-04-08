@@ -95,14 +95,7 @@ class VovanStrategy(Strategy):
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.second_puck, "move_client"),
-                bt.FallbackWithMemoryNode([
-                    bt_ros.StartTakeWallPuck("manipulator_client"),
-                    bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.second_puck + (0, -0.05, 0), "move_client"),
-                        bt_ros.MoveLineToPoint(self.second_puck, "move_client"),
-                        bt_ros.StartTakeWallPuck("manipulator_client"),
-                    ])
-                ]),
+                bt_ros.TryToPumpWallPuck(self.second_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
                         bt_ros.MoveLineToPoint(self.second_puck + (0, -0.5, 0), "move_client"),
