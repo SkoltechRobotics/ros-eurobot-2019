@@ -13,33 +13,40 @@ class ScoreController(object):
         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
         self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
-        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
+        self.score_publisher = rospy.Publisher("/score", String, queue_size=100)
 
-        # self.is_puck_grabbed_flag = False
+
+    def reward(self, bonus):
+        assert bonus in self.bonuses
+        self.score_publisher.publish(bonus)
 
     def add(self, puck):
         assert puck in self.pucks
 
-        print "adding ", puck
         if len(self.collected_pucks.get()) == 0:
             self.collected_pucks.set(puck)
+            # self.collected_pucks.get().append(puck)
+            rospy.loginfo("you added " + puck)
         else:
             self.collected_pucks.set(self.collected_pucks.get() + " " + puck)
-        print "inside: ", self.collected_pucks.get()
-        print " "
+
+        rospy.loginfo("inside " + str(self.collected_pucks.get()))
+        rospy.loginfo(" ")
 
     def unload(self, place):  # side="top"
         assert place in self.places
         lifo_puck = None
 
         try:
-            if self.collected_pucks.get() == 0:
-                rospy.loginfo("there are no pucks ERORR")
+            if len(self.collected_pucks.get()) == 0:
+                rospy.loginfo("you tried unloading a puck, but there are no pucks left ")
+
             elif len(self.collected_pucks.get().split()) == 1:
                 lifo_puck = self.collected_pucks.get()
                 rospy.loginfo('Unloaded lifo: ' + str(lifo_puck) + " on " + place)
                 self.score_publisher.publish(lifo_puck + "_ON_" + place)
-                self.collected_pucks.set(0)
+                self.collected_pucks.set(str())
+
             elif len(self.collected_pucks.get().split()) > 1:
                 lifo_puck = self.collected_pucks.get().split()[-1]
                 self.collected_pucks.set(self.collected_pucks.get().rsplit(' ', 1)[0])  # most right word
@@ -47,14 +54,11 @@ class ScoreController(object):
                 self.score_publisher.publish(lifo_puck + "_ON_" + place)
 
         except AttributeError as Error:  # FIXME
-            rospy.loginfo("se lia vi, tuple object has no attribute split")
-        # rospy.loginfo('Pucks to unload: '+ str(len(self.collected_pucks.get().split())))
+            rospy.loginfo("se lia vi, error")
 
-    def reward(self, bonus):
-        assert bonus in self.bonuses
-
-        self.score_publisher.publish(bonus)
-        print "YOU ACHIEVED A BONUS!!!!!"
+        pucks_to_unload = str(self.collected_pucks.get().split())
+        quantity = len(self.collected_pucks.get().split())
+        rospy.loginfo('Pucks to unload: ' + str(quantity) + " " + pucks_to_unload)
 
     # if side == "top":
     # elif side == "bottom":

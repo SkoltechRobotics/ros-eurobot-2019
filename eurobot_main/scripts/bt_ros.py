@@ -287,8 +287,14 @@ class ReleaseSomePucks(ActionClientNode):
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
 
 
+class ReleaseOnePuck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "release_puck"
+        super(ReleaseOnePuck, self).__init__(cmd, action_client_id)
+
+
 class CompleteCollectLastWall(ActionClientNode):
-    def __init__(self, pucks_inside, puck_type, action_client_id):
+    def __init__(self, action_client_id):
         cmd = "complete_collect_last_wall"
         super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
 
@@ -301,7 +307,6 @@ class CompleteTakeWallPuck(ActionClientNode):
 
 class ReleaseAndBack(bt.SequenceWithMemoryNode):
     def __init__(self, pucks_inside, scales_zone):
-
         super(ReleaseAndBack, self).__init__([
             ReleaseSomePucks(pucks_inside, "manipulator_client"),
             MoveLineToPoint(scales_zone + (0, -0.14, 0), "move_client")

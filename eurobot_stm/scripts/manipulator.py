@@ -104,6 +104,8 @@ class Manipulator(object):
             return self.complete_collect_wall()
         elif cmd == "complete_collect_last_wall":
             return self.complete_collect_last_wall()
+        elif cmd == "release_puck":
+            return self.release_puck()
         elif cmd == "release_4":
             return self.release(4)
         elif cmd == "release_5":
@@ -297,7 +299,7 @@ class Manipulator(object):
             self.send_command(self.protocol["STOP_PUMP"])
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["PROP_PUCK_GRABBER"])
-            self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            # self.send_command(self.protocol["MAKE_STEP_DOWN"])
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             return True
 
@@ -307,6 +309,14 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         rospy.sleep(0.5)
         self.send_command(self.protocol["SET_PLATFORM"])
+        return True
+
+    def release_puck(self):
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
+        self.send_command(self.protocol["RELEASER_THROW_SECONDARY"])
+        self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
         return True
 
     def release(self, pucks_number):
