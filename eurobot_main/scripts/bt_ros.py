@@ -267,26 +267,6 @@ class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
         ])
 
 
-class ReleaseSomePucks(ActionClientNode):
-    def __init__(self, pucks_inside, action_client_id):
-        self.pucks_inside = pucks_inside
-
-        cmd = "release_" + str(pucks_inside)
-        super(ReleaseSomePucks, self).__init__(cmd, action_client_id)
-
-    def start_action(self): 
-        """
-        action_clients: {}
-
-        :return:
-        """
-        
-        cmd = "release_" + str(len(self.pucks_inside))
-        self.cmd = bt.BTVariable(cmd)
-        print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-
-
 class ReleaseOnePuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_puck"
@@ -359,6 +339,53 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
+
+
+class PublishScore_ifReachedGoal(bt.SequenceNode):
+    def __init__(self, goal, score_controller, unload_zone ,threshold=0.2):
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+
+        self.robot_name = rospy.get_param("robot_name")
+        self.robot_coordinates = None
+
+        self.goal = goal
+        self.threshold = bt.BTVariable(threshold)
+
+        super(SetToWall_ifReachedGoal, self).__init__([
+            bt.ConditionNode(self.is_coordinates_reached),
+            score_controller.unload(unload_zone)
+        ])
+
+    def update_coordinates(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
+            q = [trans.transform.rotation.x,
+                 trans.transform.rotation.y,
+                 trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+            self.robot_coordinates = np.array([trans.transform.translation.x,
+                                               trans.transform.translation.y,
+                                               angle])
+            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            rospy.logwarn("SMT WROND QQ")
+            return False
+
+    def is_coordinates_reached(self):
+        self.update_coordinates()
+        if self.robot_coordinates is None:
+            return bt.Status.RUNNING
+        distance, _ = calculate_distance(self.robot_coordinates, self.goal)
+        norm_distance = np.linalg.norm(distance)
+        if norm_distance < self.threshold.get():
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
 
 
 class MoveWaypoints(bt.FallbackNode):
