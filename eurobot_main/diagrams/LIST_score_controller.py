@@ -1,9 +1,24 @@
 #!/usr/bin/env python
 
 import threading
-from eurobot_main.scripts.behavior_tree import BTVariable
+# from eurobot_main.scripts.behavior_tree import BTVariable
 from std_msgs.msg import String
 import numpy as np
+
+
+class BTVariable(object):
+    def __init__(self, default_data=None):
+        self.data = default_data
+        self.mutex = threading.Lock()
+
+    def set(self, data):
+        with self.mutex:
+            self.data = data
+
+    def get(self):
+        with self.mutex:
+            data = self.data
+        return data
 
 
 class ScoreController(object):
@@ -21,7 +36,9 @@ class ScoreController(object):
     def add(self, puck):
         assert puck in self.pucks
         print "adding ", puck
-        self.collected_pucks.get().append(puck)
+        # self.collected_pucks.get().append(puck)
+        self.collected_pucks.set(np.append(self.collected_pucks.get(), puck))  # Action
+
         print "inside: ", self.collected_pucks.get()
         print " "
 
@@ -80,24 +97,25 @@ class Prediction:
 
 
 if __name__ == '__main__':
-    collected_pucks = BTVariable([]) #np.array([])
+    collected_pucks = BTVariable(np.array([]))
+    # collected_pucks = BTVariable([]) #np.array([])
     predict = Prediction()
     score_master = ScoreController(collected_pucks)
-    score_master.unload("ACC")
+    # score_master.unload("ACC")
     score_master.add("BLUNIUM")
     score_master.add("REDIUM")
     score_master.add("GREENIUM")
-    score_master.unload("ACC")
+    # score_master.unload("ACC")
     score_master.add("GOLDENIUM")
-    score_master.unload("SCALES")
-    score_master.unload("ACC")
-    score_master.unload("ACC")
-    score_master.unload("ACC")
+    # score_master.unload("SCALES")
+    # score_master.unload("ACC")
+    # score_master.unload("ACC")
+    # score_master.unload("ACC")
     score_master.add("GOLDENIUM")
     score_master.reward("UNLOCK_GOLDENIUM_BONUS")
     print " "
     print "inside main"
-    if collected_pucks.get() == 0:
+    if collected_pucks.get().size == 0:
         print type(collected_pucks.get())
         print 'All pucks unloaded'
     else:
