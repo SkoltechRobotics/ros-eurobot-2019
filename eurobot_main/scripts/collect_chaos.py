@@ -26,9 +26,10 @@ class CollectChaosPucks(bt.FallbackNode):
         self.sorted_chaos_landings = bt.BTVariable(np.array([]))
         self.is_observed = bt.BTVariable(False)
 
-        self.active_goal = None
-        self.goal_landing = None
+        self.nearest_landing = None
+        self.nearest_PRElanding = None
         self.robot_coords = None
+        self.drive_back_point = None
 
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
@@ -90,24 +91,6 @@ class CollectChaosPucks(bt.FallbackNode):
         else:
             return bt.Status.RUNNING
 
-    def update_coordinates(self):
-        try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
-            q = [trans.transform.rotation.x,
-                 trans.transform.rotation.y,
-                 trans.transform.rotation.z,
-                 trans.transform.rotation.w]
-            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
-            self.robot_coords = np.array([trans.transform.translation.x,
-                                          trans.transform.translation.y,
-                                          angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coords))
-            return True
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            rospy.logwarn("SMT WROND QQ")
-            return False
-
     # FIXME inside
     def calculate_pucks_configuration(self):
         """
@@ -148,24 +131,35 @@ class CollectChaosPucks(bt.FallbackNode):
 
 
     def choose_new_landing(self):
-        self.goal_landing = self.sorted_chaos_landings[0]
+        self.nearest_landing = self.sorted_chaos_landings.get()[0]
+        rospy.loginfo("Nearest landing chosen: " + str(self.nearest_landing))
 
-        self.nearest_prelanding = cvt_local2global(self.drive_back_vec, self.goal_landing)
-        self.active_goal = prelanding
+    def calculate_prelanding(self):
+        self.nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.nearest_landing)
+        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_landing))
 
+    def calculate_drive_back_point(self):
+        self.drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing)
+        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.drive_back_point))
 
-
+    def is_last_puck(self):
+        if self.known_chaos_pucks.get().size == 1:
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
 
     def collect_chaos_bt(self):
 
         # calculate and move to first
         move_to_chaos = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(self.update_coordinates),
+                            bt.ActionNode(self.update_robot_coords),  # FIXME check with Alexey
                             bt.ActionNode(self.calculate_pucks_configuration),
                             bt.ActionNode(self.calculate_landings),
                             bt.ActionNode(self.choose_new_landing),
-                            bt_ros.MoveLineToPoint(self.nearest_prelanding, "move_client"),
-                            bt_ros.MoveLineToPoint(landings[0], "move_client"),
+                            bt.ActionNode(self.calculate_prelanding),
+
+                            bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
+                            bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
                         ]),
 
         collect_chaos = bt.SequenceWithMemoryNode([
@@ -186,7 +180,8 @@ class CollectChaosPucks(bt.FallbackNode):
                                 # calc config and start collect
                                 bt.SequenceWithMemoryNode([
                                     bt_ros.StartCollectGround("manipulator_client"),
-                                    bt_ros.MoveLineToPoint(drive_back_point, "move_client"), # FIXME make it closer
+                                    bt.ActionNode(self.calculate_drive_back_point),
+                                    bt_ros.MoveLineToPoint(self.drive_back_point, "move_client"), # FIXME make it closer
 
                                     # calc new landing
                                     bt.ActionNode(self.calculate_pucks_configuration),
@@ -194,20 +189,18 @@ class CollectChaosPucks(bt.FallbackNode):
 
                                     # drive back, collect and move to new prelanding
                                     bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client")
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
-                                        bt_ros.MoveLineToPoint(self.nearest_prelanding, "move_client"),
+                                        bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
                                     ], threshold=3),
 
-                                    bt_ros.MoveLineToPoint(landings[0], "move_client"),
+                                    bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
                                 ]),
                             ]),
                             bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
                         ])
 
-
-
-    def update_coords(self):
+    def update_robot_coords(self):
         try:
             trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
             q = [trans.transform.rotation.x,
@@ -218,10 +211,10 @@ class CollectChaosPucks(bt.FallbackNode):
 
             self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
             # rospy.loginfo("TN: Robot coords:\t" + str(self.robot_coords))
-            return True
+            # return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
-            return False
+            # return False
 
 
         # # Make BT

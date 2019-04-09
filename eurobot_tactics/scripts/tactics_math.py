@@ -8,6 +8,95 @@ from core_functions import wrap_back
 from core_functions import cvt_local2global
 
 
+# def calculate_pucks_configuration(robot_coords, known_chaos_pucks, critical_angle):
+#
+#     known_chaos_pucks = sort_wrt_robot(robot_coords, known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
+#
+#     if len(known_chaos_pucks) >= 3:
+#         is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(robot_coords, known_chaos_pucks, critical_angle)
+#
+#         if is_hull_safe_to_approach:  # only sharp angles
+#             print("hull is SAFE to approach, sorted wrt robot")
+#
+#         if not is_hull_safe_to_approach:
+#             known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
+#             print("hull is not safe to approach, sorted by angle")
+#
+#     # when we finally sorted them, chec if one of them is blue. If so, roll it
+#     if len(known_chaos_pucks) > 1 and all(known_chaos_pucks[0][3:6] == [0, 0, 1]):
+#         known_chaos_pucks = np.roll(known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
+#         print("blue rolled")
+#     return known_chaos_pucks
+
+#
+# def calculate_landings(robot_coords, coordinates, approach_vec, scale_factor, approach_dist):
+#     coords = coordinates[:, :2]
+#     if len(coords) == 1:
+#         landings = calculate_closest_landing_to_point(robot_coords, coords, approach_vec)  # Should be [(x, y, theta), ...]
+#     else:
+#         landings = unleash_power_of_geometry(coords, scale_factor, approach_dist)
+#     return landings
+
+
+def unleash_power_of_geometry(coords, scale_factor, approach_dist):
+    """
+    Calculates offset a hull,
+    get line between orig hull and offset
+    search intersection point between orbit around centre of each puck and line
+    There are many safe landing coords, not just on outer bissectrisa, but for now only the intersection
+
+    Solve system of two equations:
+    x**2 + y**2 = r**2, where r is an approch distance to puck for robot
+    y = tg(gamma) * x, using calculated slope to get equation of the line
+    Orbit inersects line in two points, so we get two landings
+
+    for two pucks there are 4 candidates, for three - 6 candidates
+    we calculate to keep only those that lie between puck and it's outer offset
+
+    :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
+    """
+
+    landings = []
+
+    mc = np.mean(coords, axis=0)
+    offset = list(coords)  # a miserable attempt to copy a list
+    offset -= mc  # Normalize the polygon by subtracting the center values from every point.
+    offset *= scale_factor
+    offset += mc
+
+    for orig, ofs in zip(coords, offset):
+        dist, _ = calculate_distance(ofs, orig)
+        gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
+        gamma = wrap_back(gamma)
+        x_candidate1 = np.sqrt(approach_dist**2 / (1 + np.tan(gamma)**2))
+        x_candidate2 = - np.sqrt(approach_dist**2 / (1 + np.tan(gamma)**2))
+
+        y_candidate1 = np.tan(gamma) * x_candidate1
+        y_candidate2 = np.tan(gamma) * x_candidate2
+
+        candidate1 = np.array([x_candidate1 + orig[0], y_candidate1 + orig[1], gamma])
+        candidate2 = np.array([x_candidate2 + orig[0], y_candidate2 + orig[1], gamma])
+
+        xmin = min(orig[0], ofs[0])
+        xmax = max(orig[0], ofs[0])
+        ymin = min(orig[1], ofs[1])
+        ymax = max(orig[1], ofs[1])
+
+        if all([candidate1[0] >= xmin, candidate1[0] <= xmax, candidate1[1] >= ymin, candidate1[1] <= ymax]):
+            landings.append(candidate1)
+        elif all([candidate2[0] >= xmin, candidate2[0] <= xmax, candidate2[1] >= ymin, candidate2[1] <= ymax]):
+            landings.append(candidate2)
+        else:
+            print ("ORIG=", orig)
+            print ("OFS=", ofs)
+            print ("candidate1=", candidate1)
+            print ("candidate2=", candidate2)
+            print ("SOMETHING WRONG AT LANDING CALCULATIONS")
+
+    landings = np.array(landings)
+
+    return landings
+
 def calc_inner_angles(coords):
     is_line = polygon_area(coords)  # returns area
     if is_line == 0:
@@ -104,97 +193,6 @@ def find_indexes_of_outer_points_on_line(coords):
         indexes.append(srt.pop(0))
 
     return indexes
-
-
-def calculate_pucks_configuration(robot_coords, known_chaos_pucks, critical_angle):
-
-    known_chaos_pucks = sort_wrt_robot(robot_coords, known_chaos_pucks)  # [(0.95, 1.1, 3, 0, 0, 1), ...]
-
-    if len(known_chaos_pucks) >= 3:
-        is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(robot_coords, known_chaos_pucks, critical_angle)
-
-        if is_hull_safe_to_approach:  # only sharp angles
-            print("hull is SAFE to approach, sorted wrt robot")
-
-        if not is_hull_safe_to_approach:
-            known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
-            print("hull is not safe to approach, sorted by angle")
-
-    # when we finally sorted them, chec if one of them is blue. If so, roll it
-    if len(known_chaos_pucks) > 1 and all(known_chaos_pucks[0][3:6] == [0, 0, 1]):
-        known_chaos_pucks = np.roll(known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
-        print("blue rolled")
-    return known_chaos_pucks
-
-
-def calculate_landings(robot_coords, coordinates, approach_vec, scale_factor, approach_dist):
-    coords = coordinates[:, :2]
-    if len(coords) == 1:
-        landings = calculate_closest_landing_to_point(robot_coords, coords, approach_vec)  # Should be [(x, y, theta), ...]
-    else:
-        landings = unleash_power_of_geometry(coords, scale_factor, approach_dist)
-    return landings
-
-
-def unleash_power_of_geometry(coords, scale_factor, approach_dist):
-    """
-    Calculates offset a hull,
-    get line between orig hull and offset
-    search intersection point between orbit around centre of each puck and line
-    There are many safe landing coords, not just on outer bissectrisa, but for now only the intersection
-
-    Solve system of two equations:
-    x**2 + y**2 = r**2, where r is an approch distance to puck for robot
-    y = tg(gamma) * x, using calculated slope to get equation of the line
-    Orbit inersects line in two points, so we get two landings
-
-    for two pucks there are 4 candidates, for three - 6 candidates
-    we calculate to keep only those that lie between puck and it's outer offset
-
-    :return: list of landing coordinates for all angles [[x_l, y_l, gamma], ...]
-    """
-
-    landings = []
-
-    mc = np.mean(coords, axis=0)
-    offset = list(coords)  # a miserable attempt to copy a list
-    offset -= mc  # Normalize the polygon by subtracting the center values from every point.
-    offset *= scale_factor
-    offset += mc
-
-    for orig, ofs in zip(coords, offset):
-        dist, _ = calculate_distance(ofs, orig)
-        gamma = np.arctan2(dist[1], dist[0])  # and here we calculate slope of outer bis
-        gamma = wrap_back(gamma)
-        x_candidate1 = np.sqrt(approach_dist**2 / (1 + np.tan(gamma)**2))
-        x_candidate2 = - np.sqrt(approach_dist**2 / (1 + np.tan(gamma)**2))
-
-        y_candidate1 = np.tan(gamma) * x_candidate1
-        y_candidate2 = np.tan(gamma) * x_candidate2
-
-        candidate1 = np.array([x_candidate1 + orig[0], y_candidate1 + orig[1], gamma])
-        candidate2 = np.array([x_candidate2 + orig[0], y_candidate2 + orig[1], gamma])
-
-        xmin = min(orig[0], ofs[0])
-        xmax = max(orig[0], ofs[0])
-        ymin = min(orig[1], ofs[1])
-        ymax = max(orig[1], ofs[1])
-
-        if all([candidate1[0] >= xmin, candidate1[0] <= xmax, candidate1[1] >= ymin, candidate1[1] <= ymax]):
-            landings.append(candidate1)
-        elif all([candidate2[0] >= xmin, candidate2[0] <= xmax, candidate2[1] >= ymin, candidate2[1] <= ymax]):
-            landings.append(candidate2)
-        else:
-            print ("ORIG=", orig)
-            print ("OFS=", ofs)
-            print ("candidate1=", candidate1)
-            print ("candidate2=", candidate2)
-            print ("SOMETHING WRONG AT LANDING CALCULATIONS")
-
-    landings = np.array(landings)
-
-    return landings
-
 
 def sort_wrt_robot(robot_coords, coords):
     """
