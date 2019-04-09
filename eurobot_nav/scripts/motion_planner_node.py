@@ -6,39 +6,32 @@
 import rospy
 import numpy as np
 import tf2_ros
-import time
 from tf.transformations import euler_from_quaternion
+from visualization_msgs.msg import MarkerArray, Marker
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
 from geometry_msgs.msg import Twist
-from core_functions import *
+from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance, cvt_ros_scan2points
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
+from sensor_msgs.msg import LaserScan
 
-
-# from std_msgs.msg import Int32MultiArray
-# from core_functions import cvt_local2global
-# from core_functions import wrap_angle
-
-
-def wrap_angle(angle):
-    """
-    Wraps the given angle to the range [-pi, +pi].
-    :param angle: The angle (in rad) to wrap (can be unbounded).
-    :return: The wrapped angle (guaranteed to in [-pi, +pi]).
-    """
-    return (angle + np.pi) % (np.pi * 2) - np.pi
-
-
+LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
+LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
 class MotionPlannerNode:
     def __init__(self):
-        rospy.init_node("motion_planner", anonymous=True)
         self.robot_name = rospy.get_param("robot_name")
+        rospy.init_node("motion_planner", anonymous=True)
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("/navigation/path", Path, self.callback_path)
+        self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
+        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
+        rospy.Subscriber("/obstacle_point", MarkerArray, self.obstacle_callback, queue_size=1)
+        #rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.distance_callback, queue_size=10)
         self.command_publisher = rospy.Publisher("/%s/stm/command"%self.robot_name, String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
+        self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
         self.V_MAX = rospy.get_param("V_MAX")   # m/s
@@ -46,6 +39,7 @@ class MotionPlannerNode:
         self.AV_MAX = rospy.get_param("AV_MAX")  # m / s / s
         self.AW_MAX = rospy.get_param("AW_MAX")  # 1 / s / s
         self.R_DEC = rospy.get_param("R_DECELERATION")
+        self.min_dist_to_obstacle = rospy.get_param("min_dist_to_obstacle")
         self.k = rospy.get_param("k")
         self.min_dist_to_goal_point = rospy.get_param("min_dist_to_goal_point")
         self.e_const = rospy.get_param("exp_const")
@@ -59,12 +53,12 @@ class MotionPlannerNode:
         self.r = rospy.get_param("robot_radius")
         self.num_points_in_path = rospy.get_param("num_points_in_path")
         self.acceleration_vector = self.velocity_vector * 2 * self.velocity_vector[2]
-        #self.acceleration_vector[:2] *= 2
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.mutex = Lock()
         self.path = np.array([])
         self.buf_path = self.path
+        self.global_goal = None
         self.prev_vel = np.array([0., 0., 0.])
         self.result_vel = np.array([0., 0., 0.])
         self.cmd_id = None
@@ -74,27 +68,183 @@ class MotionPlannerNode:
         self.goal = None
         self.current_cmd = None
         self.current_state = 'start'
-        # in future current state is for example, follow path and stopping by rangefinders, stopping by localization
+        self.collision_area = None
         self.delta_dist = 0
         self.vel = np.zeros(3)
         self.theta_diff = None
         self.d_norm = None
         self.gamma = None
         self.coords = None
+        self.start_collision_point = None
+        self.dist_to_start_collision_point = None
         self.path = np.array([[]])
         self.point = np.array([0., 0., 0.])
         self.path_left = 9999  # big initial value
         self.distance_map_frame = None
-        self.cmd_stop_robot_id = None
-        self.vx_prev = 0
-        self.vy_prev = 0
-        self.w_prev = 0
-        self.t_prev = time.time()
         self.stop_id = 0
+        self.obstacle_points = np.array([100, 100])
+        self.dist_to_obstacle = 100
         self.timer = None
+        self.buf_goal= None
+        self.is_robot_stopped = False
+        #self.sensors_coords_vector = np.array([, [-1, 0], [np.sin(np.pi/6), np.cos(np.pi/6)]])
+        self.sensors_coords_vector = np.array([[-1, 0], [np.sin(np.pi/6), np.cos(np.pi/6)]  ,[np.sin(np.pi/6), -np.cos(np.pi/6)]])
+        self.sensor_ind = 0
+        self.sensor_angles = wrap_angle(np.array([np.pi/6, np.pi*(2/3), np.pi*(4/3)]))
+        self.distances = np.array([100., 100., 100.])
+        self.min_sin = 0.3
+        #self.robot_name = "secondary_robot"
+        self.max_dist = 0.5
+        self.length_x = 300
+        self.length_y = 200
+        self.resolution = 0.01
+        self.map = np.zeros((self.length_y, self.length_x))
+        self.map[149:200, 40:260] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 153:157] = 100
+        self.p = 1
 
 
+    def get_landmarks(self, scan):
+        """Returns filtrated lidar data"""
+        ranges = np.array(scan.ranges)
+        ind = self.filter_scan(scan)
+        final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
+        angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
+        distances = ranges[final_ind]
+        return angles, distances
+
+    def scan_callback(self, scan):
+        self.scan = scan
+        self.update_coords()
+        self.scan_stamp = scan.header.stamp
+        angles, distances = self.get_landmarks(self.scan)
+        x = distances * np.cos(angles)
+        y = distances * np.sin(angles)
+        if x.shape[0] > 0:
+            landmarks = (np.array([x, y])).T
+            rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
+            rospy.loginfo(landmarks)
+            landmarks = cvt_local2global(landmarks, self.coords)
+            collision_points = landmarks[(landmarks[:, 0] > 0.15) & (landmarks[:, 0] < 2.85) & (landmarks[:, 1] > 0.15) & (landmarks[:, 1] < 1.85)]
+            self.obstacle_points = landmarks[np.argmin(np.linalg.norm(self.coords[:2] - collision_points), axis=0)]
+            self.set_collision_point(self.obstacle_points)
+        #else:
+        #   self.obstacle_points = np.array([100, 100])
+
+    def filter_scan(self, scan):
+        ranges = np.array(scan.ranges)
+        intensities = np.array(scan.intensities)
+        cloud = cvt_ros_scan2points(scan)
+        index0 = ranges < self.max_dist
+        #index1 = self.alpha_filter(cloud, self.min_sin)
+        index = index0 #* index1
+        return np.where(index, ranges, 0)
+
+    def set_collision_area(self, points):
+        marker = Marker()
+        marker.type = marker.LINE_STRIP
+        marker.action = marker.ADD
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+        marker.color.a = 1
+        marker.color.g = 1
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.1
+        for i, position in enumerate(points):
+            point = Point()
+            point.x = position[0]
+            point.y = position[1]
+            point.z = 0.2
+            marker.points.append(point)
+        self.collision_area_publisher.publish(marker)
+
+    def convert_world2map(self, point):
+        return np.array(point/0.01).astype(int)
+
+    def is_path_cross_map(self, path):
+        points = self.convert_world2map(path)
+        for i in points:
+
+            rospy.loginfo(self.map[i])
+            if self.map[i[1], i[0]] != 0:
+                return True
+        return False
+
+    def is_inside_collision_area(self, point):
+        if ((point[0] < self.collision_area[0,0] and point[0] > self.collision_area[2, 0]) \
+                or (point[0] > self.collision_area[0,0] and point[0] < self.collision_area[2, 0]))\
+                and ((point[1] < self.collision_area[0,1] and self.point[1] > self.collision_area[2, 1]) \
+                or (point[1] > self.collision_area[0,1] and point[1] < self.collision_area[2, 1])):
+            return True
+        else:
+            return False
+
+    def get_collision_area(self):
+        goal = cvt_global2local(self.goal, self.coords)
+        dist_to_goal = np.linalg.norm(self.goal[:2] - self.coords[:2])
+        points = np.array([[-0.2, -0.2], [dist_to_goal, -0.2], [dist_to_goal, 0.2], [0, 0.2], [0, -0.2]])
+        # points = cvt_local2global(points, self.coords)
+        self.collision_area = cvt_local2global(points, np.array(
+            [self.coords[0], self.coords[1], self.coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
+        # rospy.loginfo(points)
+        self.set_collision_area(self.collision_area)
+
+    @staticmethod
+    def alpha_filter(cloud, min_sin_angle):
+        x, y = cloud.T
+        x0, y0 = 0, 0
+        x1, y1 = np.roll(x, 1), np.roll(y, 1)
+        cos_angle = ((x - x0) * (x - x1) + (y - y0) * (y - y1)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+                                                                   * np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1)))
+        sin_angle = np.sqrt(1 - cos_angle * cos_angle)
+        index = sin_angle >= min_sin_angle
+        return index
     # noinspection PyTypeChecker
+    def set_collision_point(self, positions):
+        marker = []
+        #for i, position in enumerate(positions):
+        point = Marker()
+        point.header.stamp = rospy.Time.now()
+        point.header.frame_id = "map"
+        point.id = 1
+        point.type = 1
+        point.ns = "obstacle"
+        rospy.loginfo(positions)
+        point.pose.position.x = positions[0]
+        point.pose.position.y = positions[1]
+        point.pose.position.z = 0
+        point.pose.orientation.w = 1
+        point.scale.x = 0.1
+        point.scale.y = 0.1
+        point.scale.z = 0.1
+        point.color.a = 1
+        point.color.r = 1
+        #point.lifetime = rospy.Duration(0.7)
+        marker.append(point)
+        self.point_publisher.publish(marker)
+
+    def cvt_distances2points(self):
+        self.update_coords()
+        point_local = ((self.sensors_coords_vector.T) * (self.distances + self.r)).T
+        # self.obstacle_points = cvt_local2global(point_local, self.coords)
+        self.set_collision_point(cvt_local2global(point_local, self.coords))
+
+    def distance_callback(self, data):
+        self.distances = np.array(data.data.split()).astype(float)/100
+        #rospy.loginfo(self.distances)
+        #self.cvt_distances2points()
+
     def pub_path(self):
         path = Path()
         path.header.stamp = rospy.Time.now()
@@ -108,13 +258,18 @@ class MotionPlannerNode:
             path.poses.append(pose)
             self.path_publisher.publish(path)
 
+    def obstacle_callback(self, data):
+        self.update_coords()
+        self.obstacle_points = np.array([data.markers[0].pose.position.x, data.markers[0].pose.position.y])
+        self.dist_to_obstacle = np.linalg.norm(self.coords[:2] - self.obstacle_points)
+
     def constraint(self, prev_vel, target_vel, dt):
         k_ = np.linalg.norm((target_vel - prev_vel)/(self.acceleration_vector*dt))
         k = np.linalg.norm(target_vel / self.velocity_vector)
         if k > 1:
             target_vel /= k
-        rospy.loginfo(str(target_vel-prev_vel))
-        rospy.loginfo(str(k))
+        #rospy.loginfo(str(target_vel-prev_vel))
+        #rospy.loginfo(str(k))
         if k_ < 1:
             return target_vel
         else:
@@ -150,12 +305,18 @@ class MotionPlannerNode:
         cmd_type = data_split[1]
         cmd_args = data_split[2:]
         rospy.loginfo(cmd_type)
-        if cmd_type == "move_arc" or cmd_type == "move_line" or cmd_type == "trajectory_following":
+        #self.update_coords()
+        # self.path = main(self.coords)
+        #self.pub_path()
+        #rospy.sleep(10)
+        if cmd_type == "move_arc" or cmd_type == "move_line" or cmd_type == "trajectory_following" \
+                or cmd_type == "move_forward_sensor":
             rospy.loginfo('START')
             args = np.array(cmd_args).astype('float')
             goal = args[:3]
             goal[2] %= (2 * np.pi)
             self.goal = goal
+            self.global_goal = self.goal.copy()
             self.start_moving(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1.0 / self.RATE), self.timer_callback)
         elif cmd_type == "stop":
@@ -171,24 +332,24 @@ class MotionPlannerNode:
         self.cmd_id = cmd_id
         self.current_cmd = cmd_type
         self.goal = goal
+        self.update_coords()
         if cmd_type == "trajectory_following":
             self.current_state = cmd_type
         else:
             self.current_state = "start"
-            rospy.loginfo('----------------------!!!!!------------')
+            # rospy.loginfo(self.current_cmd)
+            if self.current_cmd == "move_line":
+                self.create_linear_path()
+            elif self.current_cmd == "move_forward_sensor":
+                self.create_linear_path_forward_sensor()
+            elif self.current_cmd == "move_arc":
+                self.current_state = "move_arc"
+        rospy.loginfo('----------------------!!!!!------------')
 
     # noinspection PyUnusedLocal
     def timer_callback(self, event):
-
         self.calculate_current_status()
-
-        if self.current_cmd == "move_arc":
-            self.move_arc()
-        elif self.current_cmd == "move_line":
-            self.move_line()
-        elif self.current_cmd =='trajectory_following':
-            self.current_cmd = 'trajectory_following'
-            self.move_line()
+        self.move()
 
     def calculate_current_status(self):
         """
@@ -200,16 +361,16 @@ class MotionPlannerNode:
         """
 
         # rospy.loginfo('---------------------------------------')
-        rospy.loginfo('CURRENT STATUS')
-        rospy.loginfo(self.current_state)
+        #rospy.loginfo('CURRENT STATUS')
+        #rospy.loginfo(self.current_state)
         while not self.update_coords():
             rospy.sleep(0.05)
 
-        self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
+        self.distance_map_frame, self.theta_diff = calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
-        rospy.loginfo("d_norm %.3f", self.d_norm)
-        rospy.loginfo("theta_diff %.3f" % self.theta_diff)
+        #rospy.loginfo("d_norm %.3f", self.d_norm)
+        #rospy.loginfo("theta_diff %.3f" % self.theta_diff)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
@@ -219,6 +380,7 @@ class MotionPlannerNode:
         self.set_speed(np.zeros(3))
         self.set_speed_simulation(0, 0, 0)
         rospy.loginfo("Robot has stopped.")
+        rospy.loginfo(str(self.dist_to_obstacle))
         rospy.sleep(1.0 / 40)
         answer = str(self.cmd_id) + " success"
         self.response_publisher.publish(answer)
@@ -229,17 +391,41 @@ class MotionPlannerNode:
         theta = np.linspace(0, wrap_angle(self.goal[2] - self.coords[2]), self.num_points_in_path)
         theta += self.coords[2]
         self.path = np.array([x, y, theta]).T
+        self.pub_path()
+
+    def create_linear_path_forward_sensor(self):
+        self.update_coords()
+        goal = cvt_global2local(self.goal, self.coords)
+        rospy.loginfo(str(goal))
+        x = np.linspace(0., goal[0], self.num_points_in_path)
+        y = np.linspace(0., goal[1], self.num_points_in_path)
+        angles = np.arctan2(self.sensors_coords_vector[:, 1], self.sensors_coords_vector[:, 0])
+        trajectory_angle = np.arctan2(goal[1], goal[0])
+        rospy.loginfo("ANGLES %s", angles)
+        rospy.loginfo("TRAJECTORY ANGLE %s", trajectory_angle)
+        rospy.loginfo(np.linalg.norm(self.sensors_coords_vector - goal[:2], axis=1))
+        self.sensor_ind = np.argmin(np.linalg.norm(self.sensors_coords_vector - goal[:2], axis=1))
+        rospy.loginfo(self.sensor_ind)
+        rospy.loginfo(self.sensors_coords_vector[self.sensor_ind])
+        angle = angles[self.sensor_ind]
+        angle += trajectory_angle
+        rospy.loginfo("angle %s", angle)
+        theta = np.ones(self.num_points_in_path) * wrap_angle(angle)
+        theta[-1] = goal[2]
+        self.path = cvt_local2global(np.array([x, y, theta]).T, self.coords)
+        rospy.loginfo(self.path)
 
     def path_position_arg(self, path, point, r=0):
         path = path.copy()
         path[:, 2] = wrap_angle(path[:, 2])
         delta = path - point
-        # delta[2] = wrap_angle(delta[2])
+        delta[2] = wrap_angle(delta[2])
         return np.argmin(np.linalg.norm(delta[:, :2], axis=1))
 
     def path_follower_regulator(self, point, r=0):
         # nearest path point to robot pose
         p = self.path.copy()
+        #rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!! %s", self.delta_dist)
         path_point = self.path_position_arg(p, point, r)
         # delta coords to next path point
         if path_point == p.shape[0] - 1:
@@ -267,6 +453,7 @@ class MotionPlannerNode:
         self.result_vel = cvt_global2local(np.array([self.result_vel.copy()[0], self.result_vel.copy()[1], 0]),
                                            np.array([0., 0., point[2]]))
         self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
+        self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
         curr_time = rospy.Time.now().to_sec()
         dt = curr_time - self.prev_time
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
@@ -274,13 +461,15 @@ class MotionPlannerNode:
         self.result_vel = self.constraint(self.prev_vel.copy(), self.result_vel.copy(), dt)
         self.result_vel *= deceleration_coefficient
         self.prev_vel = self.result_vel.copy()
-        self.vx_prev, self.vy_prev, self.w_prev = self.result_vel.copy()
         self.prev_time = curr_time
-        self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
         return self.result_vel
 
     def follow_path(self):
         self.update_coords()
+        # try:
+            # self.cvt_distances2points()
+        # except:
+        #     pass
         velocity = self.path_follower_regulator(self.coords)
         # self.prev_vel = self.result_vel
         self.set_speed(velocity)
@@ -308,10 +497,10 @@ class MotionPlannerNode:
 
         # TODO
         # vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
-
-        cmd = str(self.cmd_id ) + " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
-          
-        rospy.loginfo("Sending cmd: " + cmd)
+        v_cmd *= self.p
+        cmd = str(self.cmd_id) +  " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+        #rospy.loginfo("Sending cmd: " + cmd)
+        self.set_speed_simulation(0,0,0)
         self.command_publisher.publish(cmd)
 
     # def get_optimal_velocity(self):
@@ -325,7 +514,7 @@ class MotionPlannerNode:
         :param distance: Euclidean distance from robot's location to goal location
         :return:
         """
-        return np.exp(-self.k / (distance + self.e_const))
+        return np.e ** (-self.k / (distance + self.e_const))
 
     # noinspection PyPep8Naming
     def move_arc(self):
@@ -333,33 +522,30 @@ class MotionPlannerNode:
         go to goal in one movement by arc path
         :return:
         """
-
+        try:
+            self.cvt_distances2points()
+        except:
+            pass
         rospy.loginfo("NEW ARC MOVEMENT")
         rospy.loginfo("Goal:\t" + str(self.goal))
 
         v = self.V_MAX
-        if abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
+        if np.abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
             rospy.loginfo("orientation is the same, start arcline move")
         else:
             R = 0.5 * self.d_norm / np.sin(self.theta_diff / 2)
-            w = v / R  # must be depended on v such way so path becomes an arc
-        '''
-        if abs(w) > self.W_MAX:
-            k = abs(w) / self.W_MAX
-            v /= k
-            w /= k
-        '''
+            if R != 0:
+                w = v / R  # must be depended on v such way so path becomes an arc
+            else:
+                self.terminate_moving()
         beta = wrap_angle(self.gamma - self.theta_diff / 2)
-
         # Deceleration when we are near the goal point
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         rospy.loginfo("DEC COEFF + %.4f", deceleration_coefficient)
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
-        #w *= self.k_linear_vp
-        #vx, vy, w = vx/2, vy/2, w/2
         vx, vy = self.rotation_transform(np.array([vx, vy]), -self.coords[2])
         v_cmd = np.array([vx, vy, w])
         curr_time = rospy.Time.now().to_sec()
@@ -371,96 +557,134 @@ class MotionPlannerNode:
         self.set_speed(v_cmd)
         self.set_speed_simulation(v_cmd[0], v_cmd[1], v_cmd[2])
         if self.path_left < self.XY_GOAL_TOLERANCE and self.path_left < self.YAW_GOAL_TOLERANCE:
-            self.terminate_moving()
+            self.is_robot_stopped = True
 
-    def move_line(self):
-        rospy.loginfo('==================NEW LINE MOVEMENT=====================')
-        rospy.loginfo('goal is' + str(self.goal))
+    def move(self):
+        self.update_coords()
+        delta_coords = self.coords[:2] - self.path[-1, :2]
+        # delta_coords[2] = wrap_angle(delta_coords[2])
+        # delta_coords[2] *= self.r
+        self.delta_dist = np.linalg.norm(delta_coords, axis=0)
+        rospy.loginfo(self.is_robot_stopped)
+        rospy.loginfo("DIST %s", self.delta_dist)
 
         if self.current_state == "stop":
+            self.is_robot_stopped = False
             self.terminate_moving()
+        elif self.get_collision_status():
+            self.current_state = "moving_backward"
+            self.buf_goal = self.goal.copy()
+            self.goal = cvt_global2local(self.path[0, :], self.coords)
+            dist = np.linalg.norm(self.goal[:2])
+            if dist < 1e-4:
+                self.goal = self.coords
+            else:
+                self.goal[:2] *= 0.1 / dist
+                self.goal = cvt_local2global(self.goal, self.coords)
+            self.create_linear_path()
+            self.start_collision_point = self.coords
+            self.dist_to_start_collision_point = np.linalg.norm(self.coords[:2] - self.start_collision_point[:2])
+        elif self.current_state == "moving_backward":
+            if self.is_robot_stopped:
+                self.set_speed(np.zeros(3))
+                self.goal = self.buf_goal.copy()
+                # self.start_collision_point = self.coords
+                # self.create_collision_path(np.pi/2)
+                self.create_linear_path()
+                # rospy.loginfo("PSTH STATUS")
+                # rospy.loginfo(self.is_path_cross_map(self.path))
+                # rospy.sleep(2)
+                # if self.is_path_cross_map(self.path):
+                #     rospy.loginfo("REGENERATE PATH")
+                #     rospy.sleep(2)
+                #     self.goal = self.buf_goal.copy()
+                #     self.create_collision_path(-(np.pi/2))
+                # # self.create_linear_path()
+                #
+                # rospy.loginfo("START CREATE PATH")
+                # rospy.loginfo(self.path)
+                # rospy.loginfo("CREATED")
+                # rospy.loginfo(len(self.path.shape))
+                # rospy.sleep(7)
+                self.is_robot_stopped = False
+                self.current_state = "following"
+            elif self.delta_dist >= self.min_dist_to_goal_point:
+                self.follow_path()
+            else:
+                self.move_arc()
+        elif self.current_state == "avoid_obstacle_step1":
+            if self.is_robot_stopped:
+                self.set_speed(np.zeros(3))
+                self.goal = self.buf_goal.copy()
+                self.buf_goal = self.goal.copy()
+                point = cvt_global2local(self.goal, self.start_collision_point)
+                self.goal = cvt_local2global(point, self.coords)
+                self.buf_goal = self.goal.copy()
+                rospy.loginfo("GOAL %s", self.goal)
+                self.create_linear_path()
+                self.is_robot_stopped = False
+                self.current_state = "avoid_obstacle_step2"
+            elif self.delta_dist >= self.min_dist_to_goal_point:
+                self.follow_path()
+            else:
+                self.move_arc()
+        elif self.current_state == "avoid_obstacle_step2":
+            if self.is_robot_stopped:
+                self.set_speed(np.zeros(3))
+                self.goal = self.global_goal.copy()
+                self.create_linear_path()
+                self.is_robot_stopped = False
+                self.current_state = "following"
+            elif self.delta_dist >= self.min_dist_to_goal_point:
+                self.follow_path()
+            else:
+                self.move_arc()
         elif self.current_state == 'start':
-            self.update_coords()
             self.create_linear_path()
             self.pub_path()
             self.prev_time = rospy.Time.now().to_sec()
             self.prev_vel = np.array([0., 0., 0.])
             self.follow_path()
-            delta_coords = self.coords - self.path[-1, :1]
-            delta_coords[2] = wrap_angle(delta_coords[2])
-            delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
-            self.follow_path()
             self.current_state = 'following'
-        elif self.current_state == 'trajectory_following':
-            self.update_coords()
-            self.path = self.buf_path.copy()
-            self.pub_path()
-            self.follow_path()
-            rospy.loginfo("START_TRAJECTORY_FOLLOWING")
-            delta_coords = self.coords - self.path[-1, :]
-            delta_coords[2] = wrap_angle(delta_coords[2])
-            delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
-            self.goal = np.array([self.path[-1, 0], self.path[-1, 1], self.path[-1, 2]])
-            self.current_state = 'following'
-        elif self.current_state == 'following' and self.delta_dist >= self.min_dist_to_goal_point:
-            self.update_coords()
-            self.follow_path()
-            rospy.loginfo("PREV_VELF")
-            rospy.loginfo(str(self.prev_vel))
-            delta_coords = self.coords - self.path[-1, :]
-            delta_coords[2] = wrap_angle(delta_coords[2])
-            delta_coords[2] *= self.r
-            self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
-            rospy.loginfo("DELTA DIST %.4f", self.delta_dist)
-        elif self.current_state == 'following' and self.delta_dist < self.min_dist_to_goal_point:
-            self.current_state = 'move_arc'
-            self.vx_prev, self.vy_prev, self.w_prev = self.prev_vel
-            self.t_prev = self.prev_time
-            self.move_arc()
-        elif self.current_state == 'move_arc':
-            self.move_arc()
+        elif self.current_state == "following":
+            if self.is_robot_stopped:
+                self.terminate_moving()
+                self.is_robot_stopped = False
+            elif self.delta_dist >= self.min_dist_to_goal_point:
+                self.follow_path()
+            else:
+                self.move_arc()
 
-    def acceleration_constraint(self, vel_cmd):
-        vx, vy, w = vel_cmd
-        t = time.time()
-        if np.abs(w - self.w_prev) > self.AW_MAX * (t - self.t_prev):
-            w_new = self.w_prev + self.AW_MAX * (t - self.t_prev) * np.sign(w - self.w_prev)
-            if abs(w) > 5 * self.AW_MAX * (t - self.t_prev):
-                vx *= w_new / w
-                vy *= w_new / w
-            w = w_new
+    def get_collision_status(self):
+        rospy.loginfo("!!!!!!!COLLISION!!!!!!!")
+        rospy.loginfo(self.distances)
+        rospy.loginfo(self.sensor_ind)
+        self.p = 1
+        rospy.loginfo(self.obstacle_points)
+        if self.is_inside_collision_area(self.obstacle_points):
+            if (np.linalg.norm(self.coords[:2] - self.obstacle_points) < 0.3):
+                rospy.loginfo("TRUE COLLISION")
+                return True
+            else:
+                self.p = np.linalg.norm(self.coords[:2] - self.obstacle_points) / 0.7
+                self.p *= 0.5
+                if self.p > 1:
+                    self.p = 1
+        return False
 
-        if np.abs(vx - self.vx_prev) > self.AV_MAX * (t - self.t_prev):
-            vx = self.vx_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vx - self.vx_prev)
-
-        if np.abs(vy - self.vy_prev) > self.AV_MAX * (t - self.t_prev):
-            vy = self.vy_prev + self.AV_MAX * (t - self.t_prev) * np.sign(vy - self.vy_prev)
-
-        if abs(vx) > self.V_MAX:
-            k = abs(vx) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(vy) > self.V_MAX:
-            k = abs(vy) / self.V_MAX
-            w /= k
-            vx /= k
-            vy /= k
-
-        if abs(w) > self.W_MAX:
-            k = abs(w) / self.W_MAX
-            vx /= k
-            vy /= k
-            w /= k
-
-        self.vy_prev = vy
-        self.vx_prev = vx
-        self.w_prev = w
-        self.t_prev = t
-        return np.array([vx, vy, w])
+    def create_collision_path(self, angle):
+        self.buf_goal = self.goal.copy()
+        goal = cvt_global2local(self.goal, self.coords)
+        rotate_g = cvt_local2global(goal, np.array([0., 0., angle]))
+        rotate_g *= 0.6/np.linalg.norm(rotate_g)
+        rotate_g = cvt_local2global(rotate_g, self.coords)
+        rospy.loginfo(rotate_g)
+        self.goal = np.array([rotate_g[0], rotate_g[1], self.coords[2]])
+        self.create_linear_path()
+        self.set_collision_point(rotate_g)
+        rospy.loginfo("!!!!!!!!!     !!!!!")
+        rospy.loginfo(self.goal)
+        self.pub_path()
 
     def set_speed_simulation(self, vx, vy, w):
         tw = Twist()
@@ -470,17 +694,18 @@ class MotionPlannerNode:
         self.twist_publisher.publish(tw)
 
     def update_coords(self):
+        #rospy.loginfo(self.goal)
         try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
                  trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            rospy.loginfo("Robot coords:\t" + str(self.coords))
+            self.get_collision_area()
+            #rospy.loginfo("Robot coords:\t" + str(self.coords))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
-            rospy.logwarn("SMT WROND QQ")
             return False
 
     def callback_path(self, data):
