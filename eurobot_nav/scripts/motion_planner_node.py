@@ -128,7 +128,8 @@ class MotionPlannerNode:
             rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
             rospy.loginfo(landmarks)
             landmarks = cvt_local2global(landmarks, self.coords)
-            self.obstacle_points = landmarks[np.argmin(np.linalg.norm(self.coords[:2] - landmarks))]
+            collision_points = (landmarks[:, 0] > 0.15) & (landmarks[:, 0] < 2.85) & (landmarks[:, 1] > 0.15) & (landmarks[:, 1] < 1.85)
+            self.obstacle_points = landmarks[np.argmin(np.linalg.norm(self.coords[:2] - collision_points), axis=1)]
             self.set_collision_point(self.obstacle_points)
         #else:
         #   self.obstacle_points = np.array([100, 100])
