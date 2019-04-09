@@ -17,7 +17,6 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, Point
 from sensor_msgs.msg import LaserScan
 
-
 LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
 LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
 class MotionPlannerNode:
@@ -96,6 +95,15 @@ class MotionPlannerNode:
         self.min_sin = 0.3
         #self.robot_name = "secondary_robot"
         self.max_dist = 0.5
+        self.length_x = 300
+        self.length_y = 200
+        self.resolution = 0.01
+        self.map = np.zeros((self.length_y, self.length_x))
+        self.map[149:200, 40:260] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 153:157] = 100
         self.p = 1
 
 
@@ -160,6 +168,18 @@ class MotionPlannerNode:
             marker.points.append(point)
         self.collision_area_publisher.publish(marker)
 
+    def convert_world2map(self, point):
+        return np.array(point/0.01).astype(int)
+
+    def is_path_cross_map(self, path):
+        points = self.convert_world2map(path)
+        for i in points:
+
+            rospy.loginfo(self.map[i])
+            if self.map[i[1], i[0]] != 0:
+                return True
+        return False
+
     def is_inside_collision_area(self, point):
         if ((point[0] < self.collision_area[0,0] and point[0] > self.collision_area[2, 0]) \
                 or (point[0] > self.collision_area[0,0] and point[0] < self.collision_area[2, 0]))\
@@ -172,7 +192,7 @@ class MotionPlannerNode:
     def get_collision_area(self):
         goal = cvt_global2local(self.goal, self.coords)
         dist_to_goal = np.linalg.norm(self.goal[:2] - self.coords[:2])
-        points = np.array([[0, -0.2], [dist_to_goal, -0.2], [dist_to_goal, 0.2], [0, 0.2], [0, -0.2]])
+        points = np.array([[-0.2, -0.2], [dist_to_goal, -0.2], [dist_to_goal, 0.2], [0, 0.2], [0, -0.2]])
         # points = cvt_local2global(points, self.coords)
         self.collision_area = cvt_local2global(points, np.array(
             [self.coords[0], self.coords[1], self.coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
@@ -284,6 +304,10 @@ class MotionPlannerNode:
         cmd_type = data_split[1]
         cmd_args = data_split[2:]
         rospy.loginfo(cmd_type)
+        #self.update_coords()
+        # self.path = main(self.coords)
+        #self.pub_path()
+        #rospy.sleep(10)
         if cmd_type == "move_arc" or cmd_type == "move_line" or cmd_type == "trajectory_following" \
                 or cmd_type == "move_forward_sensor":
             rospy.loginfo('START')
@@ -428,6 +452,7 @@ class MotionPlannerNode:
         self.result_vel = cvt_global2local(np.array([self.result_vel.copy()[0], self.result_vel.copy()[1], 0]),
                                            np.array([0., 0., point[2]]))
         self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
+        self.result_vel[2] = wrap_angle(omega_vel + ref_vel[2])
         curr_time = rospy.Time.now().to_sec()
         dt = curr_time - self.prev_time
         distance = max(self.d_norm, self.R_DEC * abs(self.theta_diff))
@@ -535,10 +560,10 @@ class MotionPlannerNode:
 
     def move(self):
         self.update_coords()
-        delta_coords = self.coords - self.path[-1, :]
-        delta_coords[2] = wrap_angle(delta_coords[2])
-        delta_coords[2] *= self.r
-        self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
+        delta_coords = self.coords[:2] - self.path[-1, :2]
+        # delta_coords[2] = wrap_angle(delta_coords[2])
+        # delta_coords[2] *= self.r
+        self.delta_dist = np.linalg.norm(delta_coords, axis=0)
         rospy.loginfo(self.is_robot_stopped)
         rospy.loginfo("DIST %s", self.delta_dist)
 
@@ -562,10 +587,26 @@ class MotionPlannerNode:
             if self.is_robot_stopped:
                 self.set_speed(np.zeros(3))
                 self.goal = self.buf_goal.copy()
-                self.start_collision_point = self.coords
-                self.create_collision_path()
+                # self.start_collision_point = self.coords
+                # self.create_collision_path(np.pi/2)
+                self.create_linear_path()
+                # rospy.loginfo("PSTH STATUS")
+                # rospy.loginfo(self.is_path_cross_map(self.path))
+                # rospy.sleep(2)
+                # if self.is_path_cross_map(self.path):
+                #     rospy.loginfo("REGENERATE PATH")
+                #     rospy.sleep(2)
+                #     self.goal = self.buf_goal.copy()
+                #     self.create_collision_path(-(np.pi/2))
+                # # self.create_linear_path()
+                #
+                # rospy.loginfo("START CREATE PATH")
+                # rospy.loginfo(self.path)
+                # rospy.loginfo("CREATED")
+                # rospy.loginfo(len(self.path.shape))
+                # rospy.sleep(7)
                 self.is_robot_stopped = False
-                self.current_state = "avoid_obstacle_step1"
+                self.current_state = "following"
             elif self.delta_dist >= self.min_dist_to_goal_point:
                 self.follow_path()
             else:
@@ -620,7 +661,7 @@ class MotionPlannerNode:
         self.p = 1
         rospy.loginfo(self.obstacle_points)
         if self.is_inside_collision_area(self.obstacle_points):
-            if (np.linalg.norm(self.coords[:2] - self.obstacle_points) < 0.5):
+            if (np.linalg.norm(self.coords[:2] - self.obstacle_points) < 0.3):
                 rospy.loginfo("TRUE COLLISION")
                 return True
             else:
@@ -630,10 +671,10 @@ class MotionPlannerNode:
                     self.p = 1
         return False
 
-    def create_collision_path(self):
+    def create_collision_path(self, angle):
         self.buf_goal = self.goal.copy()
         goal = cvt_global2local(self.goal, self.coords)
-        rotate_g = cvt_local2global(goal, np.array([0., 0., np.pi / 2]))
+        rotate_g = cvt_local2global(goal, np.array([0., 0., angle]))
         rotate_g *= 0.6/np.linalg.norm(rotate_g)
         rotate_g = cvt_local2global(rotate_g, self.coords)
         rospy.loginfo(rotate_g)
@@ -652,7 +693,7 @@ class MotionPlannerNode:
         self.twist_publisher.publish(tw)
 
     def update_coords(self):
-        rospy.loginfo(self.goal)
+        #rospy.loginfo(self.goal)
         try:
             trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
@@ -660,7 +701,7 @@ class MotionPlannerNode:
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)
             self.coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
             self.get_collision_area()
-            rospy.loginfo("Robot coords:\t" + str(self.coords))
+            #rospy.loginfo("Robot coords:\t" + str(self.coords))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
