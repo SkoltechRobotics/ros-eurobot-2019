@@ -146,7 +146,10 @@ class MoveArcToPoint(ActionClientNode):
         super(MoveArcToPoint, self).__init__(cmd, action_client_id)
 
 
-
+class MovingDefault(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "moving_default"
+        super(MovingDefault, self).__init__(cmd, action_client_id)
 
 # ===========================================================
 
@@ -227,7 +230,11 @@ class MoveToNextPuckIfFailedToScales(bt.SequenceWithMemoryNode):
         super(MoveToNextPuckIfFailedToScales, self).__init__([
             StopPump("manipulator_client"),
             MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
-            MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client")
+            bt.ParallelWithMemoryNode([
+                MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client"),
+                SetToWall_ifReachedGoal(next_puck_coordinates + (0, -0.15, 0), "manipulator_client")
+            ], threshold = 2)
+
         ])
 
 
@@ -272,6 +279,11 @@ class ReleaseOnePuck(ActionClientNode):
         cmd = "release_puck"
         super(ReleaseOnePuck, self).__init__(cmd, action_client_id)
 
+
+class StepperUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_up"
+        super(StepperUp, self).__init__(cmd, action_client_id)
 
 class CompleteCollectLastWall(ActionClientNode):
     def __init__(self, action_client_id):

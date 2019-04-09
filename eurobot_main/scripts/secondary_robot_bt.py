@@ -32,8 +32,6 @@ class SecondaryRobotBT(object):
         self.bt_timer = None
 
 
-
-
     def start(self):
         self.bt = bt.Root(self.strategy.tree,
                           action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
