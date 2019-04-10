@@ -45,16 +45,16 @@ class TestBT(object):
     def __init__(self):
         rospy.init_node("test_bt_node")
         self.move_publisher = rospy.Publisher("/navigation/move_command", String, queue_size=100)
-        self.move_client = eurobot_main.scripts.bt_ros.ActionClient(self.move_publisher)
+        self.move_client = bt_ros.ActionClient(self.move_publisher)
         rospy.Subscriber("/response", String, self.move_client.response_callback)
 
         rospy.sleep(1)
         self.bt = bt.Root(
-            eurobot_main.scripts.bt_ros.MoveWaypoints([
-                np.array([1, 1, 1]),
-                np.array([2, 1, 1]),
-                np.array([2, 2, 1]),
-            ], "move_client"), action_clients={"move_client": self.move_client})
+                    MoveWaypoints([
+                        np.array([1, 1, 1]),
+                        np.array([2, 1, 1]),
+                        np.array([2, 2, 1]),
+                    ], "move_client"), action_clients={"move_client": self.move_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def timer_callback(self, event):

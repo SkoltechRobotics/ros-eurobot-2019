@@ -93,20 +93,24 @@ class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
         cmd = "manipulator_up"
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
 
+
 class SetManipulatortoGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "manipulator_ground"
         super(SetManipulatortoGround, self).__init__(cmd, action_client_id)
+
 
 class SetManipulatortoGroundDelay(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "manipulator_ground_delay"
         super(SetManipulatortoGroundDelay, self).__init__(cmd, action_client_id)
 
+
 class StepUp(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stepper_step_up"
         super(StepUp, self).__init__(cmd, action_client_id)
+
 
 class StepDown(ActionClientNode):
     def __init__(self, action_client_id):
@@ -115,10 +119,17 @@ class StepDown(ActionClientNode):
 
 # ===========================================================
 
+
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
         cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveLineToPoint, self).__init__(cmd, action_client_id)
+
+
+class SlowMoveLineToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "slow_move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(SlowMoveLineToPoint, self).__init__(cmd, action_client_id)
 
 
 class MoveArcToPoint(ActionClientNode):

@@ -14,7 +14,7 @@ from core_functions import cvt_local2global
 from visualization_msgs.msg import MarkerArray
 
 
-class CollectChaosPucks(bt.FallbackNode):
+class CollectChaos:
     def __init__(self, move_client, manipulator_client):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -28,7 +28,7 @@ class CollectChaosPucks(bt.FallbackNode):
 
         self.nearest_landing = None
         self.nearest_PRElanding = None
-        self.robot_coords = None
+        self.main_coords = None
         self.drive_back_point = None
 
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
@@ -49,6 +49,56 @@ class CollectChaosPucks(bt.FallbackNode):
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
 
+        # # calculate and move to first
+        # move_to_chaos = bt.SequenceWithMemoryNode([
+        #                     bt.ActionNode(self.update_robot_coords),  # FIXME check with Alexey
+        #                     bt.ActionNode(self.calculate_pucks_configuration),
+        #                     bt.ActionNode(self.calculate_landings),
+        #                     bt.ActionNode(self.choose_new_landing),
+        #                     bt.ActionNode(self.calculate_prelanding),
+        #
+        #                     bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
+        #                     bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+        #                 ])
+        #
+        # collect_chaos = bt.SequenceWithMemoryNode([
+        #                     bt.FallbackNode([
+        #                         # completely?
+        #                         bt.ConditionNode(self.is_chaos_collected_completely),
+        #
+        #                         # if last puck, just collect it, return success and get fuck out of here
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt.ConditionNode(self.is_last_puck),
+        #                             bt.SequenceWithMemoryNode([
+        #                                 bt_ros.StartCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
+        #                                 bt_ros.CompleteCollectGround("manipulator_client")
+        #                             ])
+        #                         ]),
+        #
+        #                         # calc config and start collect
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt_ros.StartCollectGround("manipulator_client"),
+        #                             bt.ActionNode(self.calculate_drive_back_point),
+        #                             bt_ros.MoveLineToPoint(self.drive_back_point, "move_client"), # FIXME make it closer
+        #
+        #                             # calc new landing
+        #                             bt.ActionNode(self.calculate_pucks_configuration),
+        #                             bt.ActionNode(self.calculate_landings),
+        #
+        #                             # drive back, collect and move to new prelanding
+        #                             bt.ParallelWithMemoryNode([
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
+        #                                 bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
+        #                             ], threshold=3),
+        #
+        #                             bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+        #                         ]),
+        #                     ]),
+        #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
+        #                 ])
+
     def pucks_callback(self, data):
         self.is_observed.set(True)
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
@@ -61,7 +111,6 @@ class CollectChaosPucks(bt.FallbackNode):
                                           marker.color.r,
                                           marker.color.g,
                                           marker.color.b] for marker in data.markers]
-
 
                 self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
                 rospy.loginfo("Got pucks observation:")
@@ -98,10 +147,10 @@ class CollectChaosPucks(bt.FallbackNode):
 
         :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
         """
-        self.known_chaos_pucks = sort_wrt_robot(self.robot_coords, self.known_chaos_pucks)
+        self.known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks)
 
         if len(self.known_chaos_pucks) >= 3:
-            is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.robot_coords,
+            is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks,
                                                                                                      self.critical_angle)
             if is_hull_safe_to_approach:  # only sharp angles
@@ -123,7 +172,7 @@ class CollectChaosPucks(bt.FallbackNode):
         """
         coords = self.known_chaos_pucks[:, :2]
         if len(coords) == 1:
-            landings = calculate_closest_landing_to_point(self.robot_coords, coords, self.approach_vec)
+            landings = calculate_closest_landing_to_point(self.main_coords, coords, self.approach_vec)
             self.sorted_chaos_landings.set(np.append(self.sorted_chaos_landings.get(), landings))
         else:
             landings = unleash_power_of_geometry(coords, self.scale_factor, self.approach_dist)
@@ -147,73 +196,21 @@ class CollectChaosPucks(bt.FallbackNode):
         else:
             return bt.Status.RUNNING
 
-    def collect_chaos_bt(self):
-
-        # calculate and move to first
-        move_to_chaos = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(self.update_robot_coords),  # FIXME check with Alexey
-                            bt.ActionNode(self.calculate_pucks_configuration),
-                            bt.ActionNode(self.calculate_landings),
-                            bt.ActionNode(self.choose_new_landing),
-                            bt.ActionNode(self.calculate_prelanding),
-
-                            bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
-                            bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
-                        ]),
-
-        collect_chaos = bt.SequenceWithMemoryNode([
-                            bt.FallbackNode([
-                                # completely?
-                                bt.ConditionNode(self.is_chaos_collected_completely),
-
-                                # if last puck, just collect it, return success and get fuck out of here
-                                bt.SequenceWithMemoryNode([
-                                    bt.ConditionNode(self.is_last_puck),
-                                    bt.SequenceWithMemoryNode([
-                                        bt_ros.StartCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
-                                        bt_ros.CompleteCollectGround("manipulator_client")
-                                    ])
-                                ]),
-
-                                # calc config and start collect
-                                bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
-                                    bt.ActionNode(self.calculate_drive_back_point),
-                                    bt_ros.MoveLineToPoint(self.drive_back_point, "move_client"), # FIXME make it closer
-
-                                    # calc new landing
-                                    bt.ActionNode(self.calculate_pucks_configuration),
-                                    bt.ActionNode(self.calculate_landings),
-
-                                    # drive back, collect and move to new prelanding
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
-                                        bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
-                                    ], threshold=3),
-
-                                    bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
-                                ]),
-                            ]),
-                            bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
-                        ])
-
-    def update_robot_coords(self):
-        try:
-            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
-            q = [trans.transform.rotation.x,
-                 trans.transform.rotation.y,
-                 trans.transform.rotation.z,
-                 trans.transform.rotation.w]
-            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
-
-            self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
-            # rospy.loginfo("TN: Robot coords:\t" + str(self.robot_coords))
-            # return True
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            # return False
+    # def update_robot_coords(self):
+    #     try:
+    #         trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time())
+    #         q = [trans.transform.rotation.x,
+    #              trans.transform.rotation.y,
+    #              trans.transform.rotation.z,
+    #              trans.transform.rotation.w]
+    #         angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+    #
+    #         self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
+    #         # rospy.loginfo("TN: Robot coords:\t" + str(self.robot_coords))
+    #         # return True
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+    #         rospy.logwarn(str(msg))
+    #         # return False
 
 
         # # Make BT

@@ -45,16 +45,17 @@ class ScoreController(object):
     def unload(self, place):  # side="top"
         assert place in self.places
 
-        if len(self.collected_pucks.get()) == 0:
+        if self.collected_pucks.get().size == 0:
             print "you tried unloading a puck, but there are no pucks left"
             print " "
         else:
-            lifo_puck = self.collected_pucks.get().pop()
+            lifo_puck = self.collected_pucks.get()[-1]
+            self.collected_pucks.set(self.collected_pucks.get()[:-1])
             print 'Unloaded lifo: ' + str(lifo_puck) + " on " + place
             print "you receive: ", predict.get_points(lifo_puck + "_ON_" + place)
             print " "
 
-        print 'Pucks to unload: ' + str(len(self.collected_pucks.get())) + " " + str(self.collected_pucks.get())
+        print 'Pucks to unload: ' + str(self.collected_pucks.get().size) + " " + str(self.collected_pucks.get())
         print " "
 
     # if side == "top":
@@ -98,19 +99,18 @@ class Prediction:
 
 if __name__ == '__main__':
     collected_pucks = BTVariable(np.array([]))
-    # collected_pucks = BTVariable([]) #np.array([])
     predict = Prediction()
     score_master = ScoreController(collected_pucks)
-    # score_master.unload("ACC")
+    score_master.unload("ACC")
     score_master.add("BLUNIUM")
     score_master.add("REDIUM")
     score_master.add("GREENIUM")
-    # score_master.unload("ACC")
+    score_master.unload("ACC")
     score_master.add("GOLDENIUM")
-    # score_master.unload("SCALES")
-    # score_master.unload("ACC")
-    # score_master.unload("ACC")
-    # score_master.unload("ACC")
+    score_master.unload("SCALES")
+    score_master.unload("ACC")
+    score_master.unload("ACC")
+    score_master.unload("ACC")
     score_master.add("GOLDENIUM")
     score_master.reward("UNLOCK_GOLDENIUM_BONUS")
     print " "
