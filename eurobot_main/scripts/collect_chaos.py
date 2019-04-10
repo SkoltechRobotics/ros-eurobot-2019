@@ -78,6 +78,7 @@ class CollectChaosPucks(bt.FallbackNode):
         else:
             return bt.Status.FAILED
 
+    # FIXME remove this
     def is_chaos_collected_completely1(self):
         if self.known_chaos_pucks.get().size == 0:
             rospy.loginfo("Chaos collected completely")
@@ -104,16 +105,16 @@ class CollectChaosPucks(bt.FallbackNode):
                                                                                                      self.known_chaos_pucks,
                                                                                                      self.critical_angle)
             if is_hull_safe_to_approach:  # only sharp angles
-                print("hull is SAFE to approach, sorted wrt robot")
+                rospy.loginfo("hull is SAFE to approach, sorted wrt robot")
 
             if not is_hull_safe_to_approach:
                 known_chaos_pucks = coords_sorted_by_angle  # calc vert-angle, sort by angle, return vertices (sorted)
-                print("hull is not safe to approach, sorted by angle")
+                rospy.loginfo("hull is not safe to approach, sorted by angle")
 
-        # when we finally sorted them, chec if one of them is blue. If so, roll it
+        # when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
         if len(self.known_chaos_pucks) > 1 and all(self.known_chaos_pucks[0][3:6] == [0, 0, 1]):
-            self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)  # so blue becomes last one to collect
-            print("blue rolled")
+            self.known_chaos_pucks = np.roll(self.known_chaos_pucks, -1, axis=0)
+            rospy.loginfo("blue rolled")
 
     def calculate_landings(self):
         """
@@ -127,8 +128,6 @@ class CollectChaosPucks(bt.FallbackNode):
         else:
             landings = unleash_power_of_geometry(coords, self.scale_factor, self.approach_dist)
             self.sorted_chaos_landings.set(np.append(self.sorted_chaos_landings.get(), landings))
-
-
 
     def choose_new_landing(self):
         self.nearest_landing = self.sorted_chaos_landings.get()[0]

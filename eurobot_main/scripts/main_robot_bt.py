@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
 import rospy
+import numpy as np
 import behavior_tree as bt
 import bt_ros
+import tf2_ros
+from tf.transformations import euler_from_quaternion
 from std_msgs.msg import String
 from bt_controller import SideStatus, BTController
 from score_controller import ScoreController
 from core_functions import *
-
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 
 class Tactics(object):
     def __init__(self):
@@ -95,6 +99,9 @@ class MainRobotBT(object):
     # noinspection PyTypeChecker
     def __init__(self, side_status=SideStatus.PURPLE):
         self.robot_name = rospy.get_param("robot_name")
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        self.secondary_coords = None
 
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
@@ -132,6 +139,9 @@ class MainRobotBT(object):
         self.collected_pucks = bt.BTVariable([])
         self.score_master = ScoreController(self.collected_pucks)
 
+        self.scales_area = rospy.get_param("scales_area")
+        self.scales_area = np.array(self.scales_area)
+
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
@@ -142,7 +152,7 @@ class MainRobotBT(object):
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get().split())))
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
             return bt.Status.FAILED
 
     def is_robot_empty_1(self):
@@ -152,8 +162,20 @@ class MainRobotBT(object):
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
+            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
             return bt.Status.RUNNING
+
+    def is_landing_free(self, robot, area):
+        rospy.loginfo("pucks inside")
+        point = Point(robot[0], robot[1])
+        polygon = Polygon([area[0], area[1], area[2], area[3]])
+
+        if polygon.contains(point):
+            rospy.loginfo('Landing busy')
+            return bt.Status.RUNNING
+        else:
+            rospy.loginfo('Landing is free to go')
+            return bt.Status.SUCCESS
 
     def strategy_vovan(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
@@ -197,16 +219,27 @@ class MainRobotBT(object):
                         bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                     ])
 
-        unload = bt.SequenceNode([
-                        bt.FallbackNode([
-                            bt.ConditionNode(self.is_robot_empty),
-                            bt.SequenceWithMemoryNode([
-                                bt_ros.UnloadAccelerator("manipulator_client"),
-                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                            ])
-                        ]),
-                        bt.ConditionNode(self.is_robot_empty_1)
+        # works
+        # unload = bt.SequenceNode([
+        #                 bt.FallbackNode([
+        #                     bt.ConditionNode(self.is_robot_empty),
+        #                     bt.SequenceWithMemoryNode([
+        #                         bt_ros.UnloadAccelerator("manipulator_client"),
+        #                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
+        #                     ])
+        #                 ]),
+        #                 bt.ConditionNode(self.is_robot_empty_1)
+        #             ])
+
+        # NEED TO TEST
+        unload = bt.FallbackNode([
+                    bt.ConditionNode(self.is_robot_empty),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.UnloadAccelerator("manipulator_client"),
+                        bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                        bt.ConditionNode(lambda: bt.Status.RUNNING)
                     ])
+                ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.SetSpeedSTM([0, 0.3, 0], 1, "stm_client"),
@@ -220,12 +253,17 @@ class MainRobotBT(object):
                                 bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
                             ])
 
-        unload_goldenium = bt.SequenceWithMemoryNode([
-                                bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client"),
-                                bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
-                                bt_ros.UnloadGoldenium("manipulator_client"),
-                                bt.ActionNode(lambda: self.score_master.unload("SCALES"))
-                            ])
+        move_to_goldenium_prepose = bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+
+        unload_goldenium = bt.SequenceNode([
+                                bt.ActionNode(self.update_robot_coords),
+                                bt.ConditionNode(lambda: self.is_landing_free(self.secondary_coords, self.scales_area)),
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
+                                    bt_ros.UnloadGoldenium("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.unload("SCALES"))
+                                ])
+        ])
 
         move_finish = bt.SequenceWithMemoryNode([
                         # bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
@@ -242,6 +280,7 @@ class MainRobotBT(object):
                         unload,
                         # careful_approach,
                         collect_goldenium,
+                        move_to_goldenium_prepose,
                         unload_goldenium,
                         move_finish])
 
@@ -410,6 +449,22 @@ class MainRobotBT(object):
             self.bt_timer.shutdown()
         print("============== BT LOG ================")
         self.bt.log(0)
+
+    def update_robot_coords(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time())
+            q = [trans.transform.rotation.x,
+                 trans.transform.rotation.y,
+                 trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+
+            self.robot_coords = np.array([trans.transform.translation.x, trans.transform.translation.y, angle])
+            # rospy.loginfo("TN: Robot coords:\t" + str(self.robot_coords))
+            # return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            # return False
 
 
 if __name__ == '__main__':

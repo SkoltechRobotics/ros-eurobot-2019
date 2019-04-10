@@ -213,8 +213,8 @@ rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and file
 
 chmod +x "filename"
 
-sudo pip install --target=/usr/local/lib/python2.7/dist-packages sympy
-sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages sympy
+sudo pip install --target=/usr/local/lib/python2.7/dist-packages shapely
+sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages shapely
 
 on odroid to show 
 ls -l /dev/tty*
