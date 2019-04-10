@@ -2,6 +2,17 @@
 import cv2
 import skimage
 
+def rotate_image(image, angle):
+    (height, weight) = image.shape[:2]
+    center = (weight / 2, height / 2)
+
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated180 = cv2.warpAffine(image, M, (weight, height))
+    return rotated180
+
+
+
+
 def equalize_histogram(image, clipLimit=1.0, tileGridSize=(21, 21)):
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
     channels = cv2.split(image)

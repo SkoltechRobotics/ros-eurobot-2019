@@ -115,12 +115,15 @@ class CameraUndistortNode():
     def __callback_vertical(self, data):
         start_time = time.time()
         image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
         rospy.loginfo(rospy.get_caller_id())
 
         # Process image
         # TODO:: ADD cropping the image to
         # image = image_processing.equalize_histogram(image, 1.0, (21,21))
-        undistorted_image = self.camera.undistort(image)
+
+        rotated_image = image_processing.rotate_image(image, 180)
+        undistorted_image = self.camera.undistort(rotated_image)
         image = undistorted_image
 
         # Align image using field template
