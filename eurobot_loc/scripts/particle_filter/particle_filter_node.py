@@ -13,7 +13,7 @@ import tf_conversions
 import matplotlib as mpl
 import scipy.optimize
 import tf2_geometry_msgs
-PF_RATE = rospy.get_param("rate")
+PF_RATE = 25
 BEAC_R = rospy.get_param("beacons_radius")
 WORLD_X = rospy.get_param("world_x")
 WORLD_Y = rospy.get_param("world_y")
@@ -212,8 +212,12 @@ class PFNode(object):
             marker.color.g = color[1]
             marker.color.b = color[0]
             marker.color.r = color[2]
-            marker.lifetime = rospy.Duration(0.1)
+            marker.lifetime = rospy.Duration(0.3)
             markers.append(marker)
+        rospy.loginfo("BEACONS")
+        rospy.loginfo(rospy.Time.now().to_sec())
+        rospy.loginfo(beacons)
+        rospy.loginfo(self.world_beacons)
         self.beacons_publisher.publish(markers)
 
 
@@ -268,10 +272,12 @@ class PFNode(object):
         points = self.point_cloud_from_scan()
         #self.publish_landmarks(points, header)
         beacons, color = self.beacons_detection(points)
-        self.publish_beacons(beacons, header, color)
+        #self.publish_beacons(beacons, header, color)
         f, robot_odom_point = self.get_odom()
         robot_odom_point = self.point_extrapolation(self.prev_lidar_odom_point_odom, self.lidar_odom_point_odom,
                                                     self.prev_lidar_odom_time, self.lidar_odom_time, self.laser_time)
+        rospy.loginfo("ODOM")
+        rospy.loginfo(robot_odom_point)
         if f:
             lidar_odom_point = cvt_local2global(self.lidar_point, robot_odom_point)
             delta = cvt_global2local(lidar_odom_point, self.prev_lidar_odom_point)
@@ -279,7 +285,7 @@ class PFNode(object):
             lidar_pf_point = self.pf.localization(delta, beacons)
             self.robot_pf_point = find_src(lidar_pf_point, self.lidar_point)
             self.publish_pf(self.get_odom_frame(self.robot_pf_point, robot_odom_point))
-            self.publish_particles()
+            #self.publish_particles()
 
     def get_odom(self):
         try:

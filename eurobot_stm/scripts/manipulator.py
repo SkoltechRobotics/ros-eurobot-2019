@@ -227,7 +227,7 @@ class Manipulator(object):
         return True
 
     def set_manipulator_ground_delay(self):
-        rospy.sleep(1)
+        rospy.sleep(1.5)
         self.send_command(self.protocol["SET_GROUND"])
         return True
 
@@ -320,7 +320,7 @@ class Manipulator(object):
     def release_from_manipulator(self):
         # self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.8)
+        rospy.sleep(0.5)
         self.send_command(self.protocol["SET_PLATFORM"])
         return True
 
