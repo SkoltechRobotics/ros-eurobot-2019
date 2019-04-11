@@ -13,7 +13,7 @@ import tf_conversions
 import matplotlib as mpl
 import scipy.optimize
 import tf2_geometry_msgs
-PF_RATE = rospy.get_param("rate")
+PF_RATE = 40 
 BEAC_R = rospy.get_param("beacons_radius")
 WORLD_X = rospy.get_param("world_x")
 WORLD_Y = rospy.get_param("world_y")
@@ -202,6 +202,9 @@ class PFNode(object):
             marker.color.r = color[2]
             marker.lifetime = rospy.Duration(0.1)
             markers.append(marker)
+        rospy.loginfo("Beacons")
+        rospy.loginfo(rospy.Time.now().to_sec())
+        rospy.loginfo(beacons)
         self.beacons_publisher.publish(markers)
 
 
@@ -311,6 +314,8 @@ class PFNode(object):
         pose_viz.header.stamp = rospy.Time.now()
         pose_viz.header.frame_id = "map"
         pose_viz.poses = self.particles_to_poses()
+        rospy.loginfo("Particles")
+        rospy.loginfo(rospy.Time.now().to_sec())
         self.particle_pub.publish(pose_viz)
 
     def stamp2secs(self, time):

@@ -113,8 +113,6 @@ class MotionPlannerNode:
         k = np.linalg.norm(target_vel / self.velocity_vector)
         if k > 1:
             target_vel /= k
-        rospy.loginfo(str(target_vel-prev_vel))
-        rospy.loginfo(str(k))
         if k_ < 1:
             return target_vel
         else:
@@ -135,6 +133,8 @@ class MotionPlannerNode:
         """
 
         self.mutex.acquire()
+        rospy.loginfo("CMD CALLBACK")
+        rospy.loginfo(rospy.Time.now().to_sec())
         self.prev_vel = np.array([0., 0., 0.])
         rospy.loginfo("")
         rospy.loginfo("=====================================")
@@ -200,16 +200,16 @@ class MotionPlannerNode:
         """
 
         # rospy.loginfo('---------------------------------------')
-        rospy.loginfo('CURRENT STATUS')
-        rospy.loginfo(self.current_state)
+        #rospy.loginfo('CURRENT STATUS')
+        #rospy.loginfo(self.current_state)
         while not self.update_coords():
             rospy.sleep(0.05)
 
         self.distance_map_frame, self.theta_diff = self.calculate_distance(self.coords, self.goal)
         self.gamma = np.arctan2(self.distance_map_frame[1], self.distance_map_frame[0])
         self.d_norm = np.linalg.norm(self.distance_map_frame)
-        rospy.loginfo("d_norm %.3f", self.d_norm)
-        rospy.loginfo("theta_diff %.3f" % self.theta_diff)
+        #rospy.loginfo("d_norm %.3f", self.d_norm)
+        #rospy.loginfo("theta_diff %.3f" % self.theta_diff)
 
         # path_done = np.sqrt(self.d_init**2 + self.alpha_init**2) - np.sqrt(d**2 + alpha**2)
         self.path_left = np.sqrt(self.d_norm ** 2 + self.theta_diff ** 2)
@@ -312,6 +312,7 @@ class MotionPlannerNode:
         cmd = str(self.cmd_id ) + " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
           
         rospy.loginfo("Sending cmd: " + cmd)
+        rospy.loginfo(rospy.Time.now().to_sec())
         self.command_publisher.publish(cmd)
 
     # def get_optimal_velocity(self):
