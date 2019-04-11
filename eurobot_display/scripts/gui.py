@@ -84,9 +84,9 @@ class App:
         self.score_main = IntVar()
         self.score_secondary = IntVar()
         self.score_main.set(40)
-        self.score_secondary.set(40)
+        self.score_secondary.set(0)
 
-        Label(self.frame3, bg="white", height=1, width=8, font=("Helvetica", 32), text="SCORE").pack(side="center")
+        Label(self.frame3, bg="white", height=1, width=8, font=("Helvetica", 32), text="SCORE").pack(side="top")
         Label(self.frame4, bg="white", height=3, width=10, textvariable=self.score_main, font=("Helvetica", 60)).pack(side="left")
         Label(self.frame4, bg="white", height=1, width=10, textvariable=self.score_secondary, font=("Helvetica", 60)).pack(side="right")
 

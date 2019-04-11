@@ -16,60 +16,22 @@ class Tactics(object):
         self.robot_coordinates = None
 
 
-# class YellowTactics(Tactics):
-#     def __init__(self):
-#         super(YellowTactics, self).__init__()
-
-#         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
-#         self.approach_dist = np.array(self.approach_dist)
-#         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
-
-#         # can be reached using rospy.get_param("purple_zone/red_cell_puck"
-#         self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
-#         self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
-#         self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
-
-#         # use find origin
-#         self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
-#                                            self.red_cell_puck[1],
-#                                            3.14])
-
-#         self.second_puck_landing = np.array([self.green_cell_puck[0],
-#                                             self.green_cell_puck[1]-self.approach_dist,
-#                                             1.57])
-
-#         self.third_puck_landing = np.array([self.blue_cell_puck[0],
-#                                            self.blue_cell_puck[1]-self.approach_dist,
-#                                            1.57])
-
-#         self.start_zone = rospy.get_param("yellow_zone/start_zone")
-
-#         self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
-#         self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
-
-#         self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
-#         self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
-
-#         self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
-#         self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
-
-
-class PurpleTactics(Tactics):
+class YellowTactics(Tactics):
     def __init__(self):
-        super(PurpleTactics, self).__init__()
+        super(YellowTactics, self).__init__()
 
         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
         self.approach_dist = np.array(self.approach_dist)
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])
 
-        self.red_cell_puck = rospy.get_param("purple_zone/red_cell_puck")
-        self.green_cell_puck = rospy.get_param("purple_zone/green_cell_puck")
-        self.blue_cell_puck = rospy.get_param("purple_zone/blue_cell_puck")
+        self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
+        self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
+        self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
 
         # use find origin
-        self.first_puck_landing = np.array([self.red_cell_puck[0]-self.approach_dist,
+        self.first_puck_landing = np.array([self.red_cell_puck[0]+self.approach_dist,
                                            self.red_cell_puck[1],
-                                           0])
+                                           3.14])
 
         self.second_puck_landing = np.array([self.green_cell_puck[0],
                                             self.green_cell_puck[1]-self.approach_dist,
@@ -79,21 +41,59 @@ class PurpleTactics(Tactics):
                                            self.blue_cell_puck[1]-self.approach_dist,
                                            1.57])
 
-        self.start_zone = rospy.get_param("purple_zone/start_zone")
+        self.start_zone = rospy.get_param("yellow_zone/start_zone")
 
-        self.blunium_push_PREpose = rospy.get_param("purple_zone/blunium_push_PREpose")
-        self.blunium_push_pose = rospy.get_param("purple_zone/blunium_push_pose")
+        self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
+        self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
 
-        self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
-        self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
+        self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
+        self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
 
-        self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
-        self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
+        self.scales_goldenium_PREpos = rospy.get_param("yellow_zone/scales_goldenium_PREpos")
+        self.scales_goldenium_pos = rospy.get_param("yellow_zone/scales_goldenium_pos")
+
+# Error
+
+# class PurpleTactics(Tactics):
+#     def __init__(self):
+#         super(PurpleTactics, self).__init__()
+
+#         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
+#         self.approach_dist = np.array(self.approach_dist)
+#         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+
+#         self.red_cell_puck = rospy.get_param("purple_zone/red_cell_puck")
+#         self.green_cell_puck = rospy.get_param("purple_zone/green_cell_puck")
+#         self.blue_cell_puck = rospy.get_param("purple_zone/blue_cell_puck")
+
+#         # use find origin
+#         self.first_puck_landing = np.array([self.red_cell_puck[0]-self.approach_dist,
+#                                            self.red_cell_puck[1],
+#                                            0])
+
+#         self.second_puck_landing = np.array([self.green_cell_puck[0],
+#                                             self.green_cell_puck[1]-self.approach_dist,
+#                                             1.57])
+
+#         self.third_puck_landing = np.array([self.blue_cell_puck[0],
+#                                            self.blue_cell_puck[1]-self.approach_dist,
+#                                            1.57])
+
+#         self.start_zone = rospy.get_param("purple_zone/start_zone")
+
+#         self.blunium_push_PREpose = rospy.get_param("purple_zone/blunium_push_PREpose")
+#         self.blunium_push_pose = rospy.get_param("purple_zone/blunium_push_pose")
+
+#         self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
+#         self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
+
+#         self.scales_goldenium_PREpos = rospy.get_param("purple_zone/scales_goldenium_PREpos")
+#         self.scales_goldenium_pos = rospy.get_param("purple_zone/scales_goldenium_pos")
 
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
-    def __init__(self, side_status=SideStatus.PURPLE):
+    def __init__(self, side_status=SideStatus.YELLOW): # Error
         self.robot_name = rospy.get_param("robot_name")
 
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
@@ -104,16 +104,17 @@ class MainRobotBT(object):
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
-        self.purple_tactics = PurpleTactics()
-        # self.yellow_tactics = YellowTactics()
+        # self.purple_tactics = PurpleTactics()  # Error
+        self.yellow_tactics = YellowTactics()
 
         self.side_status = side_status
 
         if self.side_status == SideStatus.PURPLE:
-            self.tactics = self.purple_tactics
+            # self.tactics = self.purple_tactics
+            rospy.loginfo("Error")
         elif self.side_status == SideStatus.YELLOW:
-            rospy.loginfo("ERROOOOOOOOR")
-            # self.tactics = self.yellow_tactics
+            # rospy.loginfo("Error")
+            self.tactics = self.yellow_tactics
         else:
             self.tactics = None
 
@@ -142,7 +143,7 @@ class MainRobotBT(object):
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
+            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get())))
             return bt.Status.FAILED
 
     def is_robot_empty_1(self):
@@ -152,7 +153,7 @@ class MainRobotBT(object):
             rospy.loginfo('All pucks unloaded')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get().split())))
+            rospy.loginfo('Pucks inside: '+ str(len(self.collected_pucks.get())))
             return bt.Status.RUNNING
 
     def strategy_vovan(self):
@@ -396,10 +397,11 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         if side == SideStatus.PURPLE:
-            self.tactics = self.purple_tactics
-        elif side == SideStatus.YELLOW:
-            # self.tactics = self.yellow_tactics
+            # self.tactics = self.purple_tactics
             rospy.loginfo("Error 2")
+        elif side == SideStatus.YELLOW:
+            self.tactics = self.yellow_tactics
+            # rospy.loginfo("Error 2")
         else:
             self.tactics = None
 
