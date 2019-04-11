@@ -33,7 +33,6 @@ class YellowTactics(Tactics):
         self.approach_dist = np.array(self.approach_dist)
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
 
-        # can be reached using rospy.get_param("purple_zone/red_cell_puck"
         self.red_cell_puck = rospy.get_param("yellow_zone/red_cell_puck")
         self.green_cell_puck = rospy.get_param("yellow_zone/green_cell_puck")
         self.blue_cell_puck = rospy.get_param("yellow_zone/blue_cell_puck")
@@ -57,7 +56,8 @@ class YellowTactics(Tactics):
         self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
         self.blunium_push_pose = rospy.get_param("yellow_zone/blunium_push_pose")
 
-        self.goldenium_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_PREgrab_pos")
+        self.goldenium_first_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_first_PREgrab_pos")
+        self.goldenium_second_PREgrab_pos = rospy.get_param("yellow_zone/goldenium_second_PREgrab_pos")
         self.goldenium_grab_pos = rospy.get_param("yellow_zone/goldenium_grab_pos")
 
         self.scales_area = rospy.get_param("yellow_zone/scales_area")
@@ -100,7 +100,9 @@ class YellowTactics(Tactics):
 #         self.blunium_push_PREpose = rospy.get_param("purple_zone/blunium_push_PREpose")
 #         self.blunium_push_pose = rospy.get_param("purple_zone/blunium_push_pose")
 
-#         self.goldenium_PREgrab_pos = rospy.get_param("purple_zone/goldenium_PREgrab_pos")
+        # self.goldenium_first_PREgrab_pos = rospy.get_param("purple_zone/goldenium_first_PREgrab_pos")
+
+#         self.goldenium_second_PREgrab_pos = rospy.get_param("purple_zone/goldenium_second_PREgrab_pos")
 #         self.goldenium_grab_pos = rospy.get_param("purple_zone/goldenium_grab_pos")
 
 #         self.scales_area = rospy.get_param("purple_zone/scales_area")
@@ -112,7 +114,7 @@ class YellowTactics(Tactics):
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
-    def __init__(self, side_status=SideStatus.YELLOW): # fixme
+    def __init__(self, side_status=SideStatus.YELLOW):  # fixme
         self.robot_name = rospy.get_param("robot_name")
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -134,9 +136,9 @@ class MainRobotBT(object):
 
         if self.side_status == SideStatus.PURPLE:
             # self.tactics = self.purple_tactics
-            rospy.loginfo("Error") # fixme
+            rospy.loginfo("Error")  # fixme
         elif self.side_status == SideStatus.YELLOW:
-            rospy.loginfo("Error")
+            # rospy.loginfo("Error")
             self.tactics = self.yellow_tactics
         else:
             self.tactics = None
@@ -147,7 +149,6 @@ class MainRobotBT(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
-        # Init parameters
         self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
@@ -422,7 +423,7 @@ class MainRobotBT(object):
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
-        # NEED TO TEST
+        # NEED TO TEST - fails
         # unload = bt.FallbackNode([
         #             bt.ConditionNode(self.is_robot_empty),
         #             bt.SequenceWithMemoryNode([
@@ -433,8 +434,9 @@ class MainRobotBT(object):
         #         ])
 
         collect_goldenium = bt.SequenceWithMemoryNode([
-                                bt_ros.SetSpeedSTM([0, 0.3, 0], 1, "stm_client"),
-                                bt_ros.MoveLineToPoint(self.tactics.goldenium_PREgrab_pos, "move_client"),
+                                # bt_ros.SetSpeedSTM([0, 0.3, 0], 1, "stm_client"),  # FIXME
+                                bt_ros.MoveLineToPoint(self.tactics.goldenium_first_PREgrab_pos, "move_client"),
+                                bt_ros.MoveLineToPoint(self.tactics.goldenium_second_PREgrab_pos, "move_client"),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.SetManipulatortoGoldenium("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
@@ -508,10 +510,10 @@ class MainRobotBT(object):
         #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
         #                 ])
 
-        move_finish = bt.SequenceWithMemoryNode([
-                        # bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
-                        bt_ros.MoveLineToPoint(self.tactics.start_zone, "move_client"),
-                    ])
+        # move_finish = bt.SequenceWithMemoryNode([
+        #                 # bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
+        #                 bt_ros.MoveLineToPoint(self.tactics.start_zone, "move_client"),
+        #             ])
 
         strategy = bt.SequenceWithMemoryNode([
                         red_cell_puck,
@@ -546,7 +548,7 @@ class MainRobotBT(object):
             rospy.loginfo("Error 2")
         elif side == SideStatus.YELLOW:
             self.tactics = self.yellow_tactics
-            rospy.loginfo("Error 2")
+            # rospy.loginfo("Error 2")
         else:
             self.tactics = None
 

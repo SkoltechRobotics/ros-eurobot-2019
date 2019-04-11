@@ -147,7 +147,7 @@ class App:
             self.side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
         self.frame4.after(1000, self.update_main_coords)  # start loop
-        self.frame5.after(1000, self.update_secondary_coords)  # start loop
+        # self.frame5.after(1000, self.update_secondary_coords)  # start loop
 
     def main_score_callback(self, data):
         """
@@ -155,7 +155,6 @@ class App:
         :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
         :return:
         """
-        # data = data.data.split()
         rospy.loginfo(data)
         points = self.predict.get_points(data.data)
         print("points are: ", points)
@@ -167,7 +166,6 @@ class App:
         :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
         :return:
         """
-        # data = data.data.split()
         rospy.loginfo(data)
         points = self.predict.get_points(data.data)
         print("points are: ", points)
@@ -181,8 +179,7 @@ class App:
             self.start_status.set("GO!")
             self.wire_frame.config(bg="green")
 
-            # start timer countdown
-            self.frame2.after_idle(self.countdown, 99)  # start loop
+            self.frame2.after_idle(self.countdown, 99)  # start timer countdown
             self.frame2.after(100000, self.frame2.destroy)  # quit in 100 seconds
 
     def update_main_coords(self):
@@ -196,10 +193,10 @@ class App:
 
             angle_main = euler_from_quaternion(q_main)[2] % (2 * np.pi)
 
-            self.main_coords = np.array([trans_main.transform.translation.x,
-                                         trans_main.transform.translation.y,
-                                         angle_main])
-
+            main_coords = np.array([trans_main.transform.translation.x,
+                                    trans_main.transform.translation.y,
+                                    angle_main])
+            self.main_coords.set(main_coords)
             self.frame4.after(200, self.update_main_coords)  # update coords 5 time/second, (200 ms delay)
 
             return True

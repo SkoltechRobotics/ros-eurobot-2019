@@ -11,7 +11,7 @@ class ScoreController(object):
     def __init__(self, collected_pucks):
         self.collected_pucks = collected_pucks
         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
-        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES"]
+        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES", "OTHER"]
         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
         self.score_publisher = rospy.Publisher("score", String, queue_size=100)
 
