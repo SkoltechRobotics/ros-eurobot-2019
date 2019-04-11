@@ -1,2 +1,5 @@
 #!/usr/bin/env bash
-roslaunch eurobot_tactics tactics_secondary_robot.launch
+
+
+
+roslaunch eurobot_main secondary_robot_bt.launch
