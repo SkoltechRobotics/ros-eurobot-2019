@@ -241,7 +241,7 @@ class Manipulator(object):
         self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
         self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
-        rospy.sleep(0.2)
+        rospy.sleep(0.5)
         return True
 
     def swing_puck(self):
@@ -256,14 +256,13 @@ class Manipulator(object):
 
     def goldenium_up_and_hold(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
-        self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(1)
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
     def set_angle_to_grab_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
+        self.send_command(self.protocol["START_PUMP"])
         return True
 
     def release_goldenium_on_scales(self):

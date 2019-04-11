@@ -83,14 +83,14 @@ class App:
 
         # SIDE config
         self.side_status = StringVar()
-        self.side_frame = Label(self.frame0, bg="yellow", height=1, width=10, font=("Helvetica", 32), textvariable=self.side_status)
+        self.side_frame = Label(self.frame0, bg="yellow", height=1, width=12, font=("Helvetica", 32), textvariable=self.side_status)
         self.side_status.set("Yellow")
         self.side_frame.pack(side="left")
 
         # WIRE config
         self.start_status = StringVar()
         self.start_status.set("Waiting")
-        self.wire_frame = Label(self.frame0, bg="gray", height=1, width=10, font=("Helvetica", 32), textvariable=self.start_status)
+        self.wire_frame = Label(self.frame0, bg="gray", height=1, width=12, font=("Helvetica", 32), textvariable=self.start_status)
         self.wire_frame.pack(side="right")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
@@ -104,9 +104,9 @@ class App:
         self.score_main = IntVar()
         self.score_main.set(0)
 
-        Label(self.frame4, bg="white", height=1, width=9, font=("Helvetica", 15), text="Main").pack(side="top")
-        self.main_coords_frame = Label(self.frame4, bg="white", height=1, width=9, font=("Helvetica", 15), 
-                                        textvariable=self.main_coords
+        Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 15), text="Main").pack(side="top")
+        self.main_coords_frame = Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 15), 
+                                        textvariable=self.main_coords)
         self.main_coords_frame.pack(side="top")
         Label(self.frame4, bg="white", height=1, width=4, textvariable=self.score_main, font=("Helvetica", 50)).pack(side="top")
 
@@ -120,9 +120,9 @@ class App:
         self.score_secondary = IntVar()
         self.score_secondary.set(0)
 
-        Label(self.frame5, bg="white", height=1, width=9, font=("Helvetica", 15), text="Secondary").pack(side="top")
-        self.secondary_coords_frame = Label(self.frame5, bg="white", height=1, width=9, font=("Helvetica", 15), 
-                                            textvariable=self.secondary_coords
+        Label(self.frame5, bg="white", height=1, width=13, font=("Helvetica", 15), text="Secondary").pack(side="top")
+        self.secondary_coords_frame = Label(self.frame5, bg="white", height=1, width=13, font=("Helvetica", 15), 
+                                            textvariable=self.secondary_coords)
         self.secondary_coords_frame.pack(side="top")
         Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_secondary, font=("Helvetica", 50)).pack(side="top")
 
@@ -139,7 +139,6 @@ class App:
 
     def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        rospy.loginfo("timer here not workking")
         self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
     def side_status_callback(self, data):
@@ -201,9 +200,13 @@ class App:
             self.main_coords_array = np.array([trans_main.transform.translation.x,
                                     trans_main.transform.translation.y,
                                     angle_main])
-            self.main_coords.set(self.main_coords_array)
-            self.frame4.after(200, self.update_main_coords)  # update coords 5 time/second, (200 ms delay)
-            rospy.loginfo(str(self.main_coords))
+
+            self.main_coords.set(('%.2f' % self.main_coords_array[0], 
+                                    '%.2f' % self.main_coords_array[1], 
+                                    '%.2f' % self.main_coords_array[2]))
+
+            self.frame4.after(2000, self.update_main_coords)  # update coords 5 time/second, (200 ms delay)
+            # rospy.loginfo(str(self.main_coords))
             return True
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
@@ -224,9 +227,12 @@ class App:
             self.secondary_coords_array = np.array([trans_secondary.transform.translation.x,
                                               trans_secondary.transform.translation.y,
                                               angle_secondary])
-            self.secondary_coords.set(self.secondary_coords_array)
 
-            self.frame5.after(200, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+            self.secondary_coords.set(('%.2f' % self.secondary_coords_array[0], 
+                                    '%.2f' % self.secondary_coords_array[1], 
+                                    '%.2f' % self.secondary_coords_array[2]))
+
+            self.frame5.after(2000, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
 
             # root.update()
             return True

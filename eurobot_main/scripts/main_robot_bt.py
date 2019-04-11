@@ -49,7 +49,8 @@ class YellowTactics(Tactics):
         self.third_puck_landing = np.array([self.blue_cell_puck[0],
                                            self.blue_cell_puck[1]-self.approach_dist,
                                            1.57])
-        self.chaos_push_pose = np.array([1.8, 1.05, 0])
+
+        self.chaos_push_pose = np.array([1.8, 1.2, -0.78])
         self.chaos_in_red_zone = np.array([2.65, 0.6, -1.57])
         self.start_zone = rospy.get_param("yellow_zone/start_zone")
 
@@ -92,7 +93,7 @@ class YellowTactics(Tactics):
 #                                            self.blue_cell_puck[1]-self.approach_dist,
 #                                            1.57])
 
-#         self.chaos_push_pose = np.array([1.2, 1.05, 3.14])
+#         self.chaos_push_pose = np.array([1.2, 1.2, -2.35])
 #         self.chaos_in_red_zone = np.array([0.35, 0.6, -1.57])
 
 #         self.start_zone = rospy.get_param("purple_zone/start_zone")
@@ -209,9 +210,11 @@ class MainRobotBT(object):
             return bt.Status.RUNNING
 
     def is_scales_landing_free(self):
-        self.update_secondary_coords()  # FIXME
-        if self.secondary_coords is None:
-            return bt.Status.RUNNING
+        if not self.update_secondary_coords():
+            return bt.Status.SUCCESS  # FIXME
+
+        # if self.secondary_coords is None:
+        #     return bt.Status.RUNNING
 
         area = self.tactics.scales_area
         robot = self.secondary_coords
@@ -384,20 +387,6 @@ class MainRobotBT(object):
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))  # FIXME
                         ])
 
-        # move_chaos_to_red = bt.SequenceWithMemoryNode([
-        #                         bt_ros.MoveArcToPoint(self.tactics.chaos_push_pose, "move_client"),
-        #                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-        #                         bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
-        #                         bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-        #                         bt.ActionNode(lambda: self.score_master.add("REDIUM")),
-
-        #                         bt_ros.MoveArcToPoint(self.tactics.chaos_in_red_zone, "move_client"),
-        #                         bt.ActionNode(lambda: self.score_master.unload("RED")),
-        #                         bt.ActionNode(lambda: self.score_master.unload("RED")),
-        #                         bt.ActionNode(lambda: self.score_master.unload("RED")),
-        #                         bt.ActionNode(lambda: self.score_master.unload("RED"))
-        #                     ])
-
         go_to_blunium = bt.ParallelWithMemoryNode([
                             bt_ros.CompleteCollectGround("manipulator_client"),
                             bt_ros.SetManipulatortoUp("manipulator_client"),
@@ -408,7 +397,7 @@ class MainRobotBT(object):
         push_blunium = bt.SequenceWithMemoryNode([
                         # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
                         bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose, "move_client"),
-                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1, "stm_client"),
+                        bt_ros.SetSpeedSTM([0, -0.1, 0], 1.2, "stm_client"),
                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
                         bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
@@ -448,7 +437,10 @@ class MainRobotBT(object):
                                 bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
                             ])
 
-        move_to_goldenium_prepose = bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+        move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
+                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+                                    ])
 
         unload_goldenium = bt.SequenceNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
@@ -458,6 +450,20 @@ class MainRobotBT(object):
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES"))
                                 ])
         ])
+
+        move_chaos_to_red = bt.SequenceWithMemoryNode([
+                                bt_ros.MoveLineToPoint(self.tactics.chaos_push_pose, "move_client"),
+                                bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+
+                                bt_ros.MoveLineToPoint(self.tactics.chaos_in_red_zone, "move_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED"))
+                            ])
 
         # calculate and move to first
         # move_to_chaos = bt.SequenceWithMemoryNode([
@@ -580,6 +586,7 @@ class MainRobotBT(object):
 
     def update_secondary_coords(self):
         try:
+            print("trying getting secondary coords")
             trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time())
             q_secondary = [trans_secondary.transform.rotation.x,
                            trans_secondary.transform.rotation.y,
@@ -589,6 +596,7 @@ class MainRobotBT(object):
             self.secondary_coords = np.array([trans_secondary.transform.translation.x,
                                               trans_secondary.transform.translation.y,
                                               angle_secondary])
+            print("from update: ", self.secondary_coords)
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
