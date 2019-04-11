@@ -438,7 +438,7 @@ class MainRobotBT(object):
                             ])
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
-                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client"),
                                         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
                                     ])
 
@@ -536,7 +536,8 @@ class MainRobotBT(object):
                         unload_goldenium,
                         # move_to_chaos,
                         # collect_chaos,
-                        move_finish
+                        #move_finish
+                        move_chaos_to_red
                         ])
 
         return strategy

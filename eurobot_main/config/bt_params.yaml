@@ -45,7 +45,7 @@ yellow_zone:
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
 
-  scales_area: [[1.4, 1.2], [1.4, 1.6], [2.1, 1.2], [2.1, 1.6]]
+  scales_area: [[1.4, 1.2], [1.4, 1.6], [2.3, 1.2], [2.3, 1.6]]
   # blunium_collect_PREpos: [1.275, 0.35, -1.57]
   # blunium_collect_pos: [1.29, 0.24, -1.57]
 
@@ -77,7 +77,7 @@ purple_zone:
   green_cell_puck: [0.5, 0.75]
   blue_cell_puck: [0.5, 1.05]
   
-  scales_area: [[1.4, 1.2], [1.4, 1.6], [0.9, 1.2], [0.9, 1.6]]
+  scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.2], [0.7, 1.6]]
 
   # blunium_collect_PREpos: [1.72, 0.45, -1.57]
   # blunium_collect_pos: [1.72, 0.25, -1.57]
