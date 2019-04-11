@@ -127,6 +127,8 @@ class Manipulator(object):
             return self.set_angle_to_grab_goldenium()
         elif cmd == "stepper_step_up":
             return self.stepper_step_up()
+        elif cmd == "get_limit_switch_status":
+            return self.stepper_step_up()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -224,12 +226,12 @@ class Manipulator(object):
         return True
 
     def set_manipulator_ground(self):
-        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["SET PUMP TO THE MOVING STATE"])
         return True
 
     def set_manipulator_ground_delay(self):
-        rospy.sleep(1.5)
-        self.send_command(self.protocol["SET_GROUND"])
+        rospy.sleep(1.3)
+        self.send_command(self.protocol["SET PUMP TO THE MOVING STATE"])
         return True
 
     def set_manipulator_wall(self):
@@ -440,6 +442,8 @@ class Manipulator(object):
             return True
 
     
+    def get_limit_switch_status(self):
+        return self.send_command(self.protocol["GET_PACK_PUMPED_STATUS"])        
 
     def release_accelerator(self):
         # assume that we need to move pucks 1 level up to start throwing them

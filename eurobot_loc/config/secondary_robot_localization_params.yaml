@@ -6,11 +6,12 @@ start_yellow: [2.880, 0.525, 3.14]
 lidar_x: 0
 lidar_y: 0
 lidar_a: 0
+
 beacons_radius: 0.048
 beacon_range: 0.2
 min_range: 0.05
 alpha: 1
-min_point_per_beacon: 5
+min_point_per_beacon: 3
 
 world_x: 3
 world_y: 2
@@ -19,4 +20,3 @@ beac_l: 0.1
 beac_border: 0.022
 
 rate: 20
-

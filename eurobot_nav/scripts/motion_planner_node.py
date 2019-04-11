@@ -100,11 +100,12 @@ class MotionPlannerNode:
         self.length_y = 200
         self.resolution = 0.01
         self.map = np.zeros((self.length_y, self.length_x))
-        self.map[149:205, 40:260] = 100
+        self.map[149:200, 40:260] = 100
         self.map[0:7, 50:250] = 100
         self.map[197:200, 8:38] = 100
         self.map[197:200, 262:293] = 100
         self.map[134:200, 148:152] = 100
+        self.map[30:120, 255:300] = 100
 
 
     def get_points_outside_map(self, points):
@@ -165,10 +166,10 @@ class MotionPlannerNode:
         #   self.obstacle_points = np.array([100, 100])
 
     def get_landmarks_inside_table(self, landmarks):
-        landmarks = landmarks[ np.where(landmarks[:, 0] > 0.05)]
-        landmarks = landmarks[np.where(landmarks[:, 0] < 2.95)]
-        landmarks = landmarks[np.where(landmarks[:, 1] >  0.05)]
-        landmarks = landmarks[np.where(landmarks[:, 1] < 1.95)]
+        landmarks = landmarks[ np.where(landmarks[:, 0] > 0.15)]
+        landmarks = landmarks[np.where(landmarks[:, 0] < 2.85)]
+        landmarks = landmarks[np.where(landmarks[:, 1] >  0.15)]
+        landmarks = landmarks[np.where(landmarks[:, 1] < 1.85)]
         return landmarks
 
     def filter_scan(self, scan):

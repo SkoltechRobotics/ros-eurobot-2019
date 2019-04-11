@@ -54,6 +54,7 @@ class STMstatus(object):
         self.start_status_publisher = rospy.Publisher("stm/start_status", String, queue_size=1)
         self.side_status_publisher = rospy.Publisher("stm/side_status", String, queue_size=1)
         self.proximity_status_publisher = rospy.Publisher("stm/proximity_status", String, queue_size=1)
+        self.limit_switch_status_publisher = rospy.Publisher("stm/limit_switch_status", String, queue_size=1)
 
         self.start_flag = False
         self.start_status_counter = 0
@@ -93,6 +94,15 @@ class STMstatus(object):
                     message += str(val) + " "
                 if successfully:
                     self.proximity_status_publisher.publish(message)
+
+
+                successfully, values = self.stm_protocol.send(0x19, args=None)
+
+                message = ""
+                for val in values:
+                    message += str(val) + " "
+                if successfully:
+                    self.limit_switch_status_publisher.publish(message)
 
         except Exception as exc:
             rospy.loginfo('Exception:\t' + str(exc))

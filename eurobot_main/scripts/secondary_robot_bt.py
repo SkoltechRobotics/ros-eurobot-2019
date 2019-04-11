@@ -20,6 +20,10 @@ class SecondaryRobotBT(object):
 
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=10)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
+
+        self.stm_publisher = rospy.Publisher("stm/command", String, queue_size=10)
+        self.stm_client = bt_ros.ActionClient(self.stm_publisher)
+
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
         self.purple_strategy = secondary_strategy.VovanStrategy(SideStatus.PURPLE)
@@ -34,7 +38,9 @@ class SecondaryRobotBT(object):
 
     def start(self):
         self.bt = bt.Root(self.strategy.tree,
-                          action_clients={"move_client": self.move_client, "manipulator_client": self.manipulator_client})
+                          action_clients={"move_client": self.move_client,
+                           "manipulator_client": self.manipulator_client,
+                           "stm_client": self.stm_client})
 
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 

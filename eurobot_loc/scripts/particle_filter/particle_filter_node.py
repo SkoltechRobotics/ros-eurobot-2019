@@ -272,7 +272,7 @@ class PFNode(object):
         points = self.point_cloud_from_scan()
         #self.publish_landmarks(points, header)
         beacons, color = self.beacons_detection(points)
-        #self.publish_beacons(beacons, header, color)
+        self.publish_beacons(beacons, header, color)
         f, robot_odom_point = self.get_odom()
         robot_odom_point = self.point_extrapolation(self.prev_lidar_odom_point_odom, self.lidar_odom_point_odom,
                                                     self.prev_lidar_odom_time, self.lidar_odom_time, self.laser_time)
