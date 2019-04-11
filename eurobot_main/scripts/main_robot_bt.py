@@ -223,13 +223,16 @@ class MainRobotBT(object):
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
         rospy.loginfo("Checking if scales are available to approach...")
+        rospy.sleep(12)
+        return bt.Status.SUCCESS
+        # if polygon.contains(point):
+        #     rospy.loginfo('Landing busy')
+        #     return bt.Status.RUNNING
+        # else:
+        #     rospy.loginfo('Landing is free to go')
+        #     return bt.Status.SUCCESS
 
-        if polygon.contains(point):
-            rospy.loginfo('Landing busy')
-            return bt.Status.RUNNING
-        else:
-            rospy.loginfo('Landing is free to go')
-            return bt.Status.SUCCESS
+
 
     # def pucks_callback(self, data):
     #     self.is_observed.set(True)
