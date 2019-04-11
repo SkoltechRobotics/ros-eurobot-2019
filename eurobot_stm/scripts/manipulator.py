@@ -43,6 +43,7 @@ class Manipulator(object):
             "PROP_PUCK_GRABBER" : 0x17,
             "GRAB_PUCK_GRABBER" : 0x18,
             "GET_PACK_PUMPED_STATUS" : 0x19,
+            "SET PUMP TO THE MOVING STATE" : 0x1A,
     
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,

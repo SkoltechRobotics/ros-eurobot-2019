@@ -346,3 +346,34 @@ GOALS
 
 # required packages:
 ros-laser-scan-matcher
+
+
+
+# services
+add ros-bashrc to service
+sudo systemctl status secondary_start.service   -  status of service
+sudo journalctl -f -u secondary_start.service   -  logs 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
