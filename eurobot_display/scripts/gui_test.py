@@ -208,29 +208,29 @@ class App:
             rospy.logwarn(str(msg))
             return False
 
-    def update_secondary_coords(self):
-        try:
-            trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time())
+    # def update_secondary_coords(self):
+    #     try:
+    #         trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time())
 
-            q_secondary = [trans_secondary.transform.rotation.x,
-                           trans_secondary.transform.rotation.y,
-                           trans_secondary.transform.rotation.z,
-                           trans_secondary.transform.rotation.w]
+    #         q_secondary = [trans_secondary.transform.rotation.x,
+    #                        trans_secondary.transform.rotation.y,
+    #                        trans_secondary.transform.rotation.z,
+    #                        trans_secondary.transform.rotation.w]
 
-            angle_secondary = euler_from_quaternion(q_secondary)[2] % (2 * np.pi)
+    #         angle_secondary = euler_from_quaternion(q_secondary)[2] % (2 * np.pi)
 
-            self.secondary_coords = np.array([trans_secondary.transform.translation.x,
-                                              trans_secondary.transform.translation.y,
-                                              angle_secondary])
+    #         self.secondary_coords = np.array([trans_secondary.transform.translation.x,
+    #                                           trans_secondary.transform.translation.y,
+    #                                           angle_secondary])
 
-            self.frame5.after(200, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+    #         self.frame5.after(200, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
 
-            # root.update()
-            return True
+    #         # root.update()
+    #         return True
 
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            return False
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+    #         rospy.logwarn(str(msg))
+    #         return False
 
 
 if __name__ == '__main__':
