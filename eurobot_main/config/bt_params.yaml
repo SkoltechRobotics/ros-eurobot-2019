@@ -45,7 +45,7 @@ yellow_zone:
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
 
-  scales_area: [[1.4, 1.2], [1.4, 1.6], [2.3, 1.2], [2.3, 1.6]]
+  scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.], [2.3, 1.6]]
   # blunium_collect_PREpos: [1.275, 0.35, -1.57]
   # blunium_collect_pos: [1.29, 0.24, -1.57]
 
@@ -63,9 +63,9 @@ yellow_zone:
 
   goldenium_first_PREgrab_pos: [1.11, 0.25, 0.56]
   goldenium_second_PREgrab_pos: [0.78, 0.35, -1.57]
-  goldenium_grab_pos: [0.775, 0.265, -1.57]
+  goldenium_grab_pos: [0.775, 0.27, -1.57]
 
-  scales_goldenium_PREpos: [1.8, 1.05, 1.4]
+  scales_goldenium_PREpos: [1.8, 0.6, 1.4]
   scales_goldenium_pos: [1.72, 1.4, 1.9]
 
 #FIXME::CHANGE ZONE TO SIDE
@@ -91,7 +91,7 @@ purple_zone:
 
   goldenium_first_PREgrab_pos: [2.01, 0.25, 0.56]
   goldenium_second_PREgrab_pos: [2.1, 0.35, -1.57]
-  goldenium_grab_pos: [2.25, 0.265, -1.57]
+  goldenium_grab_pos: [2.25, 0.27, -1.57]
 
-  scales_goldenium_PREpos: [1.34, 1.05, 1.4]
+  scales_goldenium_PREpos: [1.34, 0.6, 1.4]
   scales_goldenium_pos: [1.34, 1.2, 1.4]  # for main  # FIXME
