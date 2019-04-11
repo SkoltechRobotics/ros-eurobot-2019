@@ -172,18 +172,17 @@ class MainRobotBT(object):
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
         self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
 
-        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-
         # TODO: pucks in front of starting cells are random, so while we aren't using camera
         #       will call them REDIUM  (it doesn't matter, because in this strategy we move them all to acc)
 
         # TODO: It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
         # self.is_puck_grabbed = grab_status  TODO
-
+        self.incoming_puck_color = None
         self.collected_pucks = bt.BTVariable(np.array([]))  # FIXME change to np.array!
         self.score_master = ScoreController(self.collected_pucks)
 
+        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
@@ -230,6 +229,9 @@ class MainRobotBT(object):
     def pucks_callback(self, data):
         self.is_observed.set(True)
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+        # red (1, 0, 0)
+        # green (0, 1, 0)
+        # blue (0, 0, 1)
 
         if self.known_chaos_pucks.get().size == 0:
             try:
@@ -324,7 +326,32 @@ class MainRobotBT(object):
         else:
             return bt.Status.RUNNING
 
-    def get_puck_color
+    @staticmethod
+    def get_color(puck):
+        """
+        red (1, 0, 0)
+        green (0, 1, 0)
+        blue (0, 0, 1)
+        :param puck: (x, y, id, 0, 0, 1)
+        :return:
+        """
+        pucks_colors = {
+            (1, 0, 0): "REDIUM",
+            (0, 1, 0): "GREENIUM",
+            (0, 0, 1): "BLUNIUM"
+        }
+        color_key = puck[3:]
+        color_val = pucks_colors.get(color_key)
+        return color_val
+
+    def update_chaos_pucks(self):
+        """
+        delete taken puck from known on the field
+        get color of last taken puck
+        :return: None
+        """
+        self.incoming_puck_color = self.get_color(self.known_chaos_pucks.get()[0])
+        self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
 
     def strategy_msc(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
@@ -429,7 +456,7 @@ class MainRobotBT(object):
 
         # calculate and move to first
         move_to_chaos = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(self.update_main_coords),  # FIXME check with Alexey
+                            bt.ActionNode(self.update_main_coords),
                             bt.ActionNode(self.calculate_pucks_configuration),
                             bt.ActionNode(self.calculate_landings),
                             bt.ActionNode(self.choose_new_landing),
@@ -453,7 +480,8 @@ class MainRobotBT(object):
                                     bt.ConditionNode(self.is_last_puck),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.StartCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),  # FIXME get color from camera
+                                        bt.ActionNode(self.update_chaos_pucks),
+                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color)),
                                         bt_ros.CompleteCollectGround("manipulator_client")
                                     ])
                                 ]),
@@ -471,7 +499,7 @@ class MainRobotBT(object):
                                     # drive back, collect and move to new prelanding
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),  # FIXME get color from camera
+                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
                                         bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
                                     ], threshold=3),
 
