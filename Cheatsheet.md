@@ -82,6 +82,9 @@ rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 rosrun eurobot_tactics imitate_cam.py -n 4
 
+rostopic pub -1 /main_robot/navigation/command std_msgs/String "data: '1 move_line 0.4 0.4 0'"
+
+
 rosrun rqt_graph rqt_graph
 
 to puck near red field SMALL

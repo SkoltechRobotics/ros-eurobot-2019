@@ -50,7 +50,8 @@ class Tactics(object):
 #         self.third_puck_landing = np.array([self.blue_cell_puck[0],
 #                                            self.blue_cell_puck[1]-self.approach_dist,
 #                                            1.57])
-#
+#         self.chaos_push_pose = np.array([1.8, 1.05, 0])
+#         self.chaos_in_red_zone = np.array([2.65, 0.6, -1.57])
 #         self.start_zone = rospy.get_param("yellow_zone/start_zone")
 #
 #         self.blunium_push_PREpose = rospy.get_param("yellow_zone/blunium_push_PREpose")
@@ -90,6 +91,9 @@ class PurpleTactics(Tactics):
         self.third_puck_landing = np.array([self.blue_cell_puck[0],
                                            self.blue_cell_puck[1]-self.approach_dist,
                                            1.57])
+
+        self.chaos_push_pose = np.array([1.2, 1.05, 3.14])
+        self.chaos_in_red_zone = np.array([0.35, 0.6, -1.57])
 
         self.start_zone = rospy.get_param("purple_zone/start_zone")
 
@@ -320,6 +324,8 @@ class MainRobotBT(object):
         else:
             return bt.Status.RUNNING
 
+    def get_puck_color
+
     def strategy_msc(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
                             bt_ros.SetManipulatortoWall("manipulator_client"),
@@ -345,6 +351,20 @@ class MainRobotBT(object):
                             bt_ros.StartCollectGround("manipulator_client"),
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))  # FIXME
                         ])
+
+        move_chaos_to_red = bt.SequenceWithMemoryNode([
+                                bt_ros.MoveArcToPoint(self.tactics.chaos_push_pose, "move_client"),
+                                bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+                                bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+
+                                bt_ros.MoveArcToPoint(self.tactics.chaos_in_red_zone, "move_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED")),
+                                bt.ActionNode(lambda: self.score_master.unload("RED"))
+                            ])
 
         go_to_blunium = bt.ParallelWithMemoryNode([
                             bt_ros.SetManipulatortoUp("manipulator_client"),
@@ -419,6 +439,10 @@ class MainRobotBT(object):
                             bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
                         ])
 
+        # FIXME get color from camera!!!!!!!!!!!  Now adding GOLDENIUM
+        # TODO take into account, that when colecting 7 pucks, don't make step down
+        # TODO make parsing known_chaos_pucks, extract last one and keep reduced list
+        # TODO where we update self.known_chaos_pucks ?
         collect_chaos = bt.SequenceWithMemoryNode([
                             bt.FallbackNode([
                                 # completely?
@@ -429,7 +453,7 @@ class MainRobotBT(object):
                                     bt.ConditionNode(self.is_last_puck),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.StartCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
+                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),  # FIXME get color from camera
                                         bt_ros.CompleteCollectGround("manipulator_client")
                                     ])
                                 ]),
@@ -447,7 +471,7 @@ class MainRobotBT(object):
                                     # drive back, collect and move to new prelanding
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),  # FIXME get color from camera
+                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),  # FIXME get color from camera
                                         bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
                                     ], threshold=3),
 
@@ -466,14 +490,15 @@ class MainRobotBT(object):
                         red_cell_puck,
                         green_cell_puck,
                         blue_cell_puck,
+                        move_chaos_to_red,
                         go_to_blunium,
                         push_blunium,
-                        # go_to_acc,
                         unload,
-                        # careful_approach,
                         collect_goldenium,
                         move_to_goldenium_prepose,
                         unload_goldenium,
+                        # move_to_chaos,
+                        # collect_chaos,
                         move_finish])
 
         return strategy

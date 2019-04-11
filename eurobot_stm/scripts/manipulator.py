@@ -204,6 +204,8 @@ class Manipulator(object):
 
     def start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_WALL"])  # FIXME need to remove?
+        self.send_command(self.protocol["SET_WALL"])  # FIXME need to remove?
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(0.2)
@@ -218,7 +220,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
-        rospy.sleep(0.5)  # FIXME 0.2
+        rospy.sleep(0.2)  # FIXME 0.2
         return True
 
     def release_accelerator_first_move_when_full(self):
