@@ -89,6 +89,10 @@ class Manipulator(object):
             return self.start_pump()
         elif cmd == "stop_pump":
             return self.stop_pump()
+        elif cmd == "moving_default":
+            return self.moving_default()
+        elif cmd == "stepper_up":
+            return self.stepper_up()
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
         elif cmd == "release_from_manipulator":
@@ -180,7 +184,7 @@ class Manipulator(object):
 
     def check_status(self, cmd):
         counter = 0
-        for i in range(30):
+        for i in range(15):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
@@ -250,6 +254,16 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         return True
 
+    def moving_default(self):
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        return True
+
+    def stepper_up(self):
+        self.send_command(self.protocol["MAKE_STEP_UP"])
+        return True
+
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -288,7 +302,6 @@ class Manipulator(object):
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["MAKE_STEP_DOWN"])
-            # self.send_command(self.protocol["START_PUMP"])
             return True
 
     def complete_collect_last_wall(self):
@@ -300,7 +313,7 @@ class Manipulator(object):
             self.send_command(self.protocol["STOP_PUMP"])
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             self.send_command(self.protocol["PROP_PUCK_GRABBER"])
-            # self.send_command(self.protocol["MAKE_STEP_DOWN"])
+            self.send_command(self.protocol["MAKE_STEP_DOWN"])
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             return True
 
@@ -308,7 +321,7 @@ class Manipulator(object):
     def release_from_manipulator(self):
         # self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.5)
+        rospy.sleep(0.8)
         self.send_command(self.protocol["SET_PLATFORM"])
         return True
 

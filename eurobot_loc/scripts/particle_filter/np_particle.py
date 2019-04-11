@@ -204,11 +204,11 @@ class ParticleFilter:
             weights = np.ones(particles.shape[0], dtype=np.float) / particles.shape[0]
         return weights
 
-    def filter_scan(self, scan):
+    def filter_scan(self, scan, intense):
         ranges = np.array(scan.ranges)
         intensities = np.array(scan.intensities)
         cloud = cvt_ros_scan2points(scan)
-        index0 = (intensities > self.min_intens) & (ranges < self.max_dist)
+        index0 = (intensities > intense) & (ranges < self.max_dist)
         index1 = self.alpha_filter(cloud, self.min_sin)
         index = index0 * index1
         return np.where(index, ranges, 0)
@@ -224,10 +224,10 @@ class ParticleFilter:
         index = sin_angle >= min_sin_angle
         return index
 
-    def get_landmarks(self, scan):
+    def get_landmarks(self, scan, intense):
         """Returns filtrated lidar data"""
         ranges = np.array(scan.ranges)
-        ind = self.filter_scan(scan)
+        ind = self.filter_scan(scan, intense)
         final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
