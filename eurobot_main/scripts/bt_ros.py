@@ -267,7 +267,7 @@ class TryToPumpWallPuck(bt.FallbackWithMemoryNode):
                 StartTakeWallPuck("manipulator_client"),
                 bt.SequenceWithMemoryNode([
                     MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
-                    MoveLineToPoint(puck_coordinates, "move_client"),
+                    MoveLineToPoint(puck_coordinates + (0, 0.02, 0), "move_client"),
                     StartTakeWallPuck("manipulator_client"),
                 ])
             ])
@@ -279,7 +279,7 @@ class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
             StartTakeWallPuckWithoutGrabber("manipulator_client"),
             bt.SequenceWithMemoryNode([
                 MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
-                MoveLineToPoint(puck_coordinates, "move_client"),
+                MoveLineToPoint(puck_coordinates + (0, 0.02, 0), "move_client"),
                 StartTakeWallPuckWithoutGrabber("manipulator_client"),
             ])
         ])
