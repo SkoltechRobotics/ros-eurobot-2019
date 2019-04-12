@@ -184,6 +184,7 @@ git config --global http.sslverify false
 copy file or folder from other branch
 git checkout branchname path/to/file/file.py
 git checkout collect_chaos_pucks eurobot_tactics/notebooks
+git checkout behavior_tree_backend eurobot_nav/scripts
 
 
 To revert the previous commit (our merge commit), we do:
