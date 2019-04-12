@@ -442,7 +442,7 @@ class MainRobotBT(object):
                                         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
                                     ])
 
-        unload_goldenium = bt.SequenceNode([
+        unload_goldenium = bt.SequenceWithMemoryNode([  # FIXME
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
