@@ -85,8 +85,8 @@ class MotionPlannerNode:
         self.obstacle_points_lidar = None
         self.obstacle_points_sensor = None
         self.obstacle_points = None
-        self.sensor_coords = np.array([[-0.131, 0, np.pi], [0.06568, 0.11377, np.pi/3], [0.06592, -0.11363, 5.21],
-        [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0]])
+        self.sensor_coords = np.array([[-0.122, -0.05959, 2.0944], [0.0327, 0.14795, 2.0944], [0.105, 0.07032, 0],
+        [0.105, -0.08249, 0], [0.01315, -0.13807, 4.19], [-0.13415, -0.05303, 4.19]])
         self.dist_to_obstacle = 100
         self.timer = None
         self.buf_goal= None
