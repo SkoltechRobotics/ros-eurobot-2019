@@ -56,6 +56,8 @@ class CameraUndistortNode():
         self.templ_path = template
         self.mode = mode
 
+        self.counter = 0
+
         self.node = rospy.init_node('camera_node', anonymous=True)
         self.publisher_undistorted = rospy.Publisher("/undistorted_image", Image, queue_size=1)
         self.publisher = rospy.Publisher("/recognition_image", Image, queue_size=1)
@@ -123,6 +125,8 @@ class CameraUndistortNode():
         # image = image_processing.equalize_histogram(image, 1.0, (21,21))
 
         rotated_image = image_processing.rotate_image(image, 180)
+
+        cv2.imwrite("./data/images/rotated_image_" + str(self.counter) + ".png", rotated_image)
         undistorted_image = self.camera.undistort(rotated_image)
         image = undistorted_image
 
@@ -153,11 +157,13 @@ class CameraUndistortNode():
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
+            cv2.imwrite("./data/images/undistorted_image_" + str(self.counter) + ".png", image)
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
             self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresh))
             self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
             self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
+            cv2.imwrite("./data/images/image_pucks_" + str(self.counter) + ".png", image_pucks)
 
             # Publish pucks coordinates
             self.publish_pucks(coordinates, colors)
