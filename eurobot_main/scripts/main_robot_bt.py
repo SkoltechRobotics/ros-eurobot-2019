@@ -209,29 +209,39 @@ class MainRobotBT(object):
             rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
             return bt.Status.RUNNING
 
-    def is_scales_landing_free(self):
-        # if not self.update_secondary_coords():
-        #     return bt.Status.SUCCESS  # FIXME
 
-        # if self.secondary_coords is None:
-        #     return bt.Status.RUNNING
-        self.update_secondary_coords()
+    def is_scales_landing_free(self):
+        """
+        Secondary may be: 
+        - not working at all -- than 
+        - somewhere else and we know of it
+        - working but we don't get info about it -- wait
+
+        if we don't get secondary coords - wait 10 sec
+        if we get them, wait until it gets out of zone
+
+        """
+        self.is_secondary_working = self.update_secondary_coords()
+        rospy.loginfo("Checking if scales are available to approach...")
+
         area = self.tactics.scales_area
-        robot = self.secondary_coords
+        robot = self.secondary_coords  # can be 0, 0, 0  or  some value
 
         point = Point(robot[0], robot[1])
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
-        rospy.loginfo("Checking if scales are available to approach...")
-        rospy.sleep(12)
-        return bt.Status.SUCCESS
-        # if polygon.contains(point):
-        #     rospy.loginfo('Landing busy')
-        #     return bt.Status.RUNNING
-        # else:
-        #     rospy.loginfo('Landing is free to go')
-        #     return bt.Status.SUCCESS
-
+        if not self.is_secondary_working:
+            rospy.sleep(10)
+            return bt.Status.SUCCESS  # FIXME
+        else:
+            print("got coords in condition:")
+            print(self.secondary_coords)
+            if polygon.contains(point):
+                rospy.loginfo('Landing busy')
+                return bt.Status.RUNNING
+            else:
+                rospy.loginfo('Landing is free to go')
+                return bt.Status.SUCCESS
 
 
     # def pucks_callback(self, data):
@@ -571,7 +581,7 @@ class MainRobotBT(object):
 
     def update_main_coords(self):
         try:
-            trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time())
+            trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))  # 0 means last measurment
             q_main = [trans_main.transform.rotation.x,
                       trans_main.transform.rotation.y,
                       trans_main.transform.rotation.z,
@@ -587,8 +597,7 @@ class MainRobotBT(object):
 
     def update_secondary_coords(self):
         try:
-            print("trying getting secondary coords")
-            trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time())
+            trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time(0))
             q_secondary = [trans_secondary.transform.rotation.x,
                            trans_secondary.transform.rotation.y,
                            trans_secondary.transform.rotation.z,
@@ -597,8 +606,9 @@ class MainRobotBT(object):
             self.secondary_coords = np.array([trans_secondary.transform.translation.x,
                                               trans_secondary.transform.translation.y,
                                               angle_secondary])
-
-            rospy.loginfo("Got coords of secondary robot")
+            
+            rospy.loginfo("=============================================================")
+            rospy.loginfo("Got coords of secondary robot: ")
             rospy.loginfo(self.secondary_coords)
             return True
 
