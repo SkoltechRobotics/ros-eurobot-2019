@@ -443,3 +443,21 @@ roslaunch polar_scan_matcher demo.launch
 cp -a .git .git-old1
 
 git hash-object -w Cheatsheet.md
+
+
+
+
+
+15
+
+It seems that your ~/.config/dconf/user* files are corrupted. Try the following command, it should recreate a new one and allow you to store your settings persistently:
+
+mv ~/.config/dconf/ ~/.config/dconf.bak
+Note that you may loose some customization that you may have set on your system as all of them will be reset.
+
+If it does not solve your problem all you have to do is:
+
+mv ~/.config/dconf.bak ~/.config/dconf/ 
+
+
+sudo mate-panel start
