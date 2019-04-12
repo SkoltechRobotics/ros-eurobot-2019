@@ -22,7 +22,7 @@ secondary_robot:
     first_puck_zone: [2.775, 1.81, 1.57]
     second_puck_zone: [2.875, 1.81, 1.57]
     third_puck_zone: [2.4, 1.36, 1.57]
-    forth_puck_zone: [2.2, 1.36, 1.57]
+    forth_puck_zone: [2.2, 1.37, 1.57]
     fifth_puck_zone: [2.0, 1.36, 1.57]
     scales_zone: [1.66, 1.49, 3.65]
     sixth_puck_zone: [2.1, 1.36, 1.57]
