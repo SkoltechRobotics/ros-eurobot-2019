@@ -168,6 +168,8 @@ class CameraUndistortNode():
             # Publish pucks coordinates
             self.publish_pucks(coordinates, colors)
 
+            self.counter += 1
+
             res_time = time.time() - start_time
             rospy.loginfo("RESULT TIME = " + str(res_time))
 
