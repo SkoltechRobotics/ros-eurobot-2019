@@ -19,6 +19,14 @@ class BTController(object):
         self.behavior_tree = behavior_tree
 
     def side_status_callback(self, data):
+            if self.behavior_tree.side_status is None:
+                if data.data == "1":
+                    cprint ("UPDATE SIDE TO " + colored("YELLOW", "yellow", attrs=['bold', 'blink']))
+                    self.behavior_tree.change_side(SideStatus.YELLOW)
+                elif data.data == "0":
+                    cprint ("UPDATE SIDE TO " + colored("PURPLE", "magenta", attrs=['bold', 'blink']))
+                    self.behavior_tree.change_side(SideStatus.PURPLE)
+
             if data.data == "1" and self.behavior_tree.side_status == SideStatus.PURPLE:
                 cprint ("UPDATE SIDE TO " + colored("YELLOW", "yellow", attrs=['bold', 'blink']))
                 self.behavior_tree.change_side(SideStatus.YELLOW)
@@ -31,13 +39,3 @@ class BTController(object):
             self.behavior_tree.start()
             self.start_status_subscriber.unregister()
             self.side_status_subscriber.unregister()
-
-        # if data.data == "1":
-        #     self.start_counter += 1
-        # else:
-        #     self.start_counter = 0
-        # if self.start_counter == 5:
-        #     # TRY TO SHUTDOWN THE SUBSCRIBER
-        #     self.behavior_tree.start()
-        #     self.start_status_subscriber.unregister()
-        #     self.side_status_subscriber.unregister()

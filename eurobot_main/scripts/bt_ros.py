@@ -215,6 +215,12 @@ class StartCollectBlunium(ActionClientNode):
         super(StartCollectBlunium, self).__init__(cmd, action_client_id)
 
 
+class FinishCollectBlunium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "finish_collect_blunium"
+        super(FinishCollectBlunium, self).__init__(cmd, action_client_id)
+
+
 class UnloadAccelerator(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_accelerator"

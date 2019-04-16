@@ -125,7 +125,7 @@ class PurpleTactics(Tactics):
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
-    def __init__(self, side_status=SideStatus.PURPLE):  # fixme  YELLOW  PURPLE
+    def __init__(self):  # fixme  YELLOW  PURPLE  side_status=SideStatus.PURPLE
         self.robot_name = rospy.get_param("robot_name")
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -140,45 +140,16 @@ class MainRobotBT(object):
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
-
-
-
         self.purple_tactics = PurpleTactics()
-        # self.yellow_tactics = YellowTactics() # fixme
+        self.yellow_tactics = YellowTactics()
 
-
-
-
-        self.side_status = side_status
-        if self.side_status == SideStatus.PURPLE:
-            self.tactics = self.purple_tactics
-            # rospy.loginfo("Error")  # fixme
-        elif self.side_status == SideStatus.YELLOW:
-            rospy.loginfo("Error")
-            # self.tactics = self.yellow_tactics
-        else:
-            self.tactics = None
-
-
-
-
+        self.side_status = None
 
         self.bt = None
         self.bt_timer = None
 
-        self.tfBuffer = tf2_ros.Buffer()
-        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-        self.sorted_chaos_landings = bt.BTVariable(np.array([]))
-
-        self.is_observed = bt.BTVariable(False)
-
-        self.nearest_landing = None
-        self.nearest_PRElanding = None
-
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-        self.sorted_chaos_landings = bt.BTVariable(np.array([]))
+        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        # self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
         self.is_observed = bt.BTVariable(False)
 
@@ -311,9 +282,8 @@ class MainRobotBT(object):
                                 ], threshold=2)
 
         finish_collect_blunium = bt.SequenceWithMemoryNode([
-                                    bt_ros.CompleteCollectGround("manipulator_client"),
+                                    bt_ros.FinishCollectBlunium("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                    bt_ros.SetManipulatortoUp("manipulator_client")
                                 ])
 
         move_to_acc = bt.SequenceWithMemoryNode([
@@ -340,8 +310,7 @@ class MainRobotBT(object):
                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                     ])
 
-        # works
-        unload = bt.SequenceNode([
+        unload_acc = bt.SequenceNode([
                         bt.FallbackNode([
                             bt.ConditionNode(self.is_robot_empty),
                             bt.SequenceWithMemoryNode([
@@ -397,7 +366,7 @@ class MainRobotBT(object):
                         finish_collect_blunium,
                         move_to_acc,
                         unload_first_in_acc,
-                        unload,
+                        unload_acc,
                         collect_goldenium,
                         move_to_goldenium_prepose,
                         unload_goldenium
@@ -424,10 +393,11 @@ class MainRobotBT(object):
             self.tactics = self.purple_tactics # FIXME
             # rospy.loginfo("Error 2")
         elif side == SideStatus.YELLOW:
-            # self.tactics = self.yellow_tactics
-            rospy.loginfo("Error 2")
+            self.tactics = self.yellow_tactics
+            # rospy.loginfo("Error 2")
         else:
             self.tactics = None
+        self.side_status = side
 
     def timer_callback(self, event):
 

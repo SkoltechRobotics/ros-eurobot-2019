@@ -123,6 +123,8 @@ class Manipulator(object):
             return self.swing_puck()
         elif cmd == "release_accelerator_first_move_when_full":
             return self.release_accelerator_first_move_when_full()
+        elif cmd == "finish_collect_blunium":
+            return self.finish_collect_blunium()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -252,17 +254,29 @@ class Manipulator(object):
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
         self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.3)
+        return True
+
+    def finish_collect_blunium(self):
+        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.2)
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        rospy.sleep(0.2)  # FIXME 0.2
         return True
 
     def goldenium_up_and_hold(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        rospy.sleep(1)
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
     def set_angle_to_grab_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
+        rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.4)
         return True
 
     def release_goldenium_on_scales(self):

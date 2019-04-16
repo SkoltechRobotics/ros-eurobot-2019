@@ -100,8 +100,8 @@ class App:
 
         # main SIDE config
         self.main_side_status = StringVar()
-        self.main_side_frame = Label(self.frame7, bg="yellow", height=1, width=9, font=("Helvetica", 25), textvariable=self.main_side_status)
-        self.main_side_status.set("Yellow")
+        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.main_side_status)
+        self.main_side_status.set("Side")
         self.main_side_frame.pack(side="left")
 
         # main WIRE config
@@ -113,8 +113,8 @@ class App:
 
         # secondary SIDE config
         self.secondary_side_status = StringVar()
-        self.secondary_side_frame = Label(self.frame9, bg="yellow", height=1, width=9, font=("Helvetica", 25), textvariable=self.secondary_side_status)
-        self.secondary_side_status.set("Yellow")
+        self.secondary_side_frame = Label(self.frame9, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.secondary_side_status)
+        self.secondary_side_status.set("Side")
         self.secondary_side_frame.pack(side="left")
 
         # secondary WIRE config
@@ -158,10 +158,18 @@ class App:
 
         # --------------------------------------------------
 
-        # Experiment config
-        Label(self.frame3, bg="white", height=1, width=9, font=("Helvetica", 15), text="Experiment").pack(side="top")
+        # Experiment and TOTAL config
+
+        self.score_experiment = IntVar()
+        self.score_experiment.set(40)
+
+        self.score_total = IntVar()
+        self.score_total.set(self.score_experiment.get() + self.score_secondary.get())
+
+        Label(self.frame3, bg="white", height=1, width=9, font=("Helvetica", 15), text="Total").pack(side="top")
         Label(self.frame3, bg="white", height=1, width=4, font=("Helvetica", 15), text=" ").pack(side="top")
-        Label(self.frame3, bg="white", height=1, width=4, text="40", font=("Helvetica", 50)).pack(side="bottom")
+        # Label(self.frame3, bg="white", height=1, width=4, text="40", font=("Helvetica", 50)).pack(side="bottom")
+        Label(self.frame3, bg="white", height=1, width=4, textvariable=self.score_total, font=("Helvetica", 50)).pack(side="bottom")
 
         # TIME config
         self.time = Label(font=(None, 32), text="Timer: " + "100")
@@ -173,6 +181,8 @@ class App:
         self.frame4.after(0, self.update_main_coords)  # update coords after 2 sec
         self.frame5.after(0, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
         self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
+
+# ========================================================================
 
     def main_side_status_callback(self, data):
         if data.data == "1":
@@ -217,6 +227,7 @@ class App:
             self.secondary_start_status.set("GO!")
             self.secondary_wire_frame.config(bg="green")
 
+# ========================================================================
 
     def main_score_callback(self, data):
         """
@@ -228,6 +239,7 @@ class App:
         points = self.predict.get_points(data.data)
         print("points are: ", points)
         self.score_main.set(self.score_main.get() + int(points))
+        self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_secondary.get())
 
     def secondary_score_callback(self, data):
         """
@@ -240,12 +252,13 @@ class App:
             points = self.predict.get_points(data.data)
             print("points are: ", points)
             self.score_secondary.set(int(points))
+            self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_experiment.get())
         else:
             # rospy.loginfo(data)
             points = self.predict.get_points(data.data)
             print("points are: ", points)
             self.score_secondary.set(self.score_secondary.get() + int(points))
-
+            self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_secondary.get())
 
     def update_main_coords(self):
         try:
@@ -314,8 +327,8 @@ if __name__ == '__main__':
     rospy.Subscriber("/main_robot/stm/start_status", String, app.main_wire_status_callback)
     rospy.Subscriber("/main_robot/stm/side_status", String, app.main_side_status_callback)
 
-    rospy.Subscriber("/main_robot/stm/start_status", String, app.secondary_wire_status_callback)
-    rospy.Subscriber("/main_robot/stm/side_status", String, app.secondary_side_status_callback)
+    rospy.Subscriber("/secondary_robot/stm/start_status", String, app.secondary_wire_status_callback)
+    rospy.Subscriber("/secondary_robot/stm/side_status", String, app.secondary_side_status_callback)
 
     rate = rospy.Rate(100)
     rospy.loginfo("Start display")
