@@ -82,9 +82,9 @@ class MotionPlannerNode:
         self.path_left = 9999  # big initial value
         self.distance_map_frame = None
         self.stop_id = 0
-        self.obstacle_points_lidar = None
-        self.obstacle_points_sensor = None
-        self.obstacle_points = None
+        self.obstacle_points_lidar = np.zeros((0,2))
+        self.obstacle_points_sensor = np.zeros((0,2))
+        self.obstacle_points = np.zeros((0,2))
         self.sensor_coords = np.array([[-0.122, -0.05959, 2.0944], [0.0327, 0.14795, 2.0944], [0.105, 0.07032, 0],
         [0.105, -0.08249, 0], [0.01315, -0.13807, 4.19], [-0.13415, -0.05303, 4.19]])
         self.dist_to_obstacle = 100
@@ -100,12 +100,12 @@ class MotionPlannerNode:
         self.length_y = 200
         self.resolution = 0.01
         self.map = np.zeros((self.length_y, self.length_x))
-        self.map[149:200, 40:260] = 100
-        self.map[0:7, 50:250] = 100
-        self.map[197:200, 8:38] = 100
-        self.map[197:200, 262:293] = 100
-        self.map[134:200, 148:152] = 100
-        self.map[30:120, 255:300] = 100
+        self.map[144:200, 35:265] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 143:157] = 100
+        self.map[25:125, 250:300] = 100
 
 
     def get_points_outside_map(self, points):
@@ -123,7 +123,7 @@ class MotionPlannerNode:
         distances = (np.array((data.data.split())).astype(float))/100
         distances[np.where(distances == 0.5)] = 1
         distances[5] = 1
-        points = np.array([[0., 0.]])
+        points = np.zeros((0,2))
         for i in range(self.sensor_coords.shape[0]):
             #rospy.loginfo(i)
             #rospy.loginfo(points)
@@ -156,12 +156,14 @@ class MotionPlannerNode:
         landmarks = (np.array([x, y])).T
         landmarks = cvt_local2global(landmarks, self.coords)
         landmarks = self.get_landmarks_inside_table(landmarks)
+        self.obstacle_points_lidar = np.zeros((0,2))
             #rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
             #rospy.loginfo(landmarks)
         #rospy.loginfo(landmarks[np.argmin(np.linalg.norm(self.coords[:2] - landmarks))])
         #rospy.loginfo("NEAREST LANDMARK")
         #rospy.loginfo(np.linalg.norm(self.coords[:2] - landmarks, axis=1))
-        self.obstacle_points_lidar = landmarks
+        if landmakrs.size != 0:
+	        self.obstacle_points_lidar = landmarks
         #else:
         #   self.obstacle_points = np.array([100, 100])
 
@@ -219,7 +221,12 @@ class MotionPlannerNode:
             [self.coords[0], self.coords[1], self.coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
         #rospy.loginfo("Collision area")
         #rospy.loginfo(self.collision_area)
-        self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
+        #self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
+        self.obstacle_points = np.zeros((0,2))
+        if self.obstacle_points_lidar.size != 0:
+                self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_lidar, axis=0)
+        if self.obstacle_points_sensor.size != 0:
+                self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_sensor, axis=0)                    
         self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points)
         self.obstacle_points = self.get_points_outside_map(self.obstacle_points)
         self.obstacle_points = self.obstacle_points[self.get_points_inside_collision_area(self.obstacle_points)]
@@ -580,12 +587,11 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif self.get_collision_status():
+        elif 1 > 2: #self.get_collision_status():
             self.set_speed(np.zeros(3))
             self.prev_vel = np.zeros(3)
             self.prev_time = rospy.Time.now().to_sec()
             self.create_linear_path()
-
         elif self.current_state == "moving_backward":
             if self.is_robot_stopped:
                 self.set_speed(np.zeros(3))

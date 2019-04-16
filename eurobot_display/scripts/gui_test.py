@@ -46,8 +46,8 @@ class App:
     def __init__(self, master):
         self.master = master
         self.predict = Prediction()
-        # self.tfBuffer = tf2_ros.Buffer()
-        # self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.first_update = True
         self.main_coords_array = np.array([0, 0, 0])
         self.secondary_coords_array = np.array([0, 0, 0])
@@ -170,8 +170,8 @@ class App:
     # Timer
     def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        self.frame4.after(1000, self.update_main_coords)  # update coords after 2 sec
-        self.frame5.after(1000, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+        self.frame4.after(0, self.update_main_coords)  # update coords after 2 sec
+        self.frame5.after(0, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
         self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
     def main_side_status_callback(self, data):
@@ -293,7 +293,6 @@ class App:
                                     '%.2f' % self.secondary_coords_array[2]))
 
             rospy.loginfo(str(self.secondary_coords))
-            root.update()
             # return True
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:

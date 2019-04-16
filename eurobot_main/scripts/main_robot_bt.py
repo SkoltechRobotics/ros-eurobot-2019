@@ -125,7 +125,7 @@ class PurpleTactics(Tactics):
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
-    def __init__(self, side_status=SideStatus.YELLOW):  # fixme  YELLOW  PURPLE
+    def __init__(self, side_status=SideStatus.PURPLE):  # fixme  YELLOW  PURPLE
         self.robot_name = rospy.get_param("robot_name")
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -143,19 +143,19 @@ class MainRobotBT(object):
 
 
 
-        #self.purple_tactics = PurpleTactics()
-        self.yellow_tactics = YellowTactics() # fixme
+        self.purple_tactics = PurpleTactics()
+        # self.yellow_tactics = YellowTactics() # fixme
 
 
 
 
         self.side_status = side_status
         if self.side_status == SideStatus.PURPLE:
-            #self.tactics = self.purple_tactics
-            rospy.loginfo("Error")  # fixme
+            self.tactics = self.purple_tactics
+            # rospy.loginfo("Error")  # fixme
         elif self.side_status == SideStatus.YELLOW:
-            #rospy.loginfo("Error")
-            self.tactics = self.yellow_tactics
+            rospy.loginfo("Error")
+            # self.tactics = self.yellow_tactics
         else:
             self.tactics = None
 
@@ -300,10 +300,9 @@ class MainRobotBT(object):
                                             bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client")
                                         ], threshold=2)
                 
-        safely_finish_move_to_blunium = bt.ParallelWithMemoryNode([
-                                            bt_ros.SetManipulatortoUp("manipulator_client"),
+        safely_finish_move_to_blunium = bt.SequenceWithMemoryNode([
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client")
-                                    ], threshold=2)
+                                    ])
 
         start_collect_blunium = bt.ParallelWithMemoryNode([
                                     # bt_ros.MoveLineToPoint(self.tactics.blunium_push_PREpose, "move_client"),
@@ -332,8 +331,8 @@ class MainRobotBT(object):
 
         push_blunium = bt.SequenceWithMemoryNode([
                             # bt_ros.SetManipulatorToPushBlunium("manipulator_client"),
-                            bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose, "move_client"),
-                            bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose + np.array([0, 0.04, 0]), "move_client"),
+                            #bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose, "move_client"),
+                            #bt_ros.MoveLineToPoint(self.tactics.blunium_push_pose + np.array([0, 0.04, 0]), "move_client"),
                             bt_ros.MoveLineToPoint(self.tactics.accelerator_unloading_pos, "move_client"),
                             bt_ros.SetSpeedSTM([0, -0.1, 0], 1.3, "stm_client"),
                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
@@ -422,11 +421,11 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         if side == SideStatus.PURPLE:
-            # self.tactics = self.purple_tactics # FIXME
-            rospy.loginfo("Error 2")
-        elif side == SideStatus.YELLOW:
-            self.tactics = self.yellow_tactics
+            self.tactics = self.purple_tactics # FIXME
             # rospy.loginfo("Error 2")
+        elif side == SideStatus.YELLOW:
+            # self.tactics = self.yellow_tactics
+            rospy.loginfo("Error 2")
         else:
             self.tactics = None
 

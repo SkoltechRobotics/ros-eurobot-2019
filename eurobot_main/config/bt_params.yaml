@@ -83,7 +83,7 @@ purple_side:
   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
 
   blunium_collect_PREpos: [1.72, 0.45, -1.57]
-  blunium_collect_pos: [1.72, 0.25, -1.57]
+  blunium_collect_pos: [1.72, 0.24, -1.57]
   blunium_push_PREpose: [1.6, 0.163, 0.56] # 165 misses
   blunium_push_pose: [1.7, 0.16, 0.56]
 
@@ -92,7 +92,7 @@ purple_side:
 
   goldenium_first_PREgrab_pos: [1.89, 0.25, 0.56]
   goldenium_second_PREgrab_pos: [2.22, 0.35, -1.57]
-  goldenium_grab_pos: [2.225, 0.265, -1.57]
+  goldenium_grab_pos: [2.225, 0.245, -1.57]
 
   scales_goldenium_PREpos: [1.2, 0.6, 1.4]
   scales_goldenium_pos: [1.28, 1.4, 1.24]  # for main  # FIXME
