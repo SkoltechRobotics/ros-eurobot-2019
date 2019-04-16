@@ -188,8 +188,10 @@ class VovanStrategy(Strategy):
                     bt_ros.SetToWall_ifReachedGoal(self.first_puck + (0, -0.15, 0), "manipulator_client")
                 ], threshold=2),
                 bt_ros.StartPump("manipulator_client"),
-
-                bt_ros.MoveLineToPoint(self.first_puck, "move_client"), 
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.first_puck, "move_client"),
+                    bt_ros.CheckLimitSwitch("manipulator_client")
+                ], threshold=1),
                 bt_ros.TryToPumpWallPuck(self.first_puck),
                 # bt.ParallelWithMemoryNode([
                 #     bt_ros.TryToPumpWallPuck(self.first_puck),
@@ -223,7 +225,11 @@ class VovanStrategy(Strategy):
         second_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.second_puck, "move_client"), 
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.first_puck, "move_client"),
+                    bt_ros.CheckLimitSwitch("manipulator_client")
+                ], threshold=1),
+                # bt_ros.MoveLineToPoint(self.second_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.second_puck),
                 # bt.ParallelWithMemoryNode([
                 #     bt_ros.TryToPumpWallPuck(self.second_puck),

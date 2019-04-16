@@ -129,6 +129,8 @@ class Manipulator(object):
             return self.stepper_step_up()
         elif cmd == "get_limit_switch_status":
             return self.stepper_step_up()
+        elif cmd == "check_limit switch":
+            return self.check_status_infinitely()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -193,6 +195,17 @@ class Manipulator(object):
             if counter > 0:
                 return True
         return False
+
+    def check_status_infinitely(self, cmd):
+        counter = 0
+        # for i in range(15):
+        self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
+        if self.is_success_status(self.status_command):
+            counter += 1
+        if counter > 0:
+            return True
+        return False
+
 
     def calibrate(self):
         if self.robot_name == "main_robot":  # FIXME
