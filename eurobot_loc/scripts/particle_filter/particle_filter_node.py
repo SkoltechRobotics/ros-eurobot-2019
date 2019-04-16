@@ -38,18 +38,9 @@ class PFNode(object):
         self.beacons = []
         self.prev_side_status = None
         self.robot_name = rospy.get_param("robot_name")
-        rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
-        rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
-        self.color = "purple"
-
         # scan parameters
         self.scan_offset = float(rospy.get_param("~scan_offset", 0.05))
-
-        if self.color == "purple":
-            beacons = PURPLE_BEACONS
-        else:
-            self.color = "yellow"
-            beacons = YELLOW_BEACONS
+        self.color = None
         self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
         self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)
         self.tf_buffer = tf2_ros.Buffer()
@@ -78,23 +69,13 @@ class PFNode(object):
         self.laser_time = rospy.Time.now()
         self.cost_function = []
         self.world_beacons = []
-        if self.color == "purple":
-            init_start = np.array(rospy.get_param("start_purple"))
-        else:
-            init_start = np.array(rospy.get_param("start_yellow"))
-        self.world_beacons = beacons
-        self.robot_pf_point = init_start
-        #buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
-        #angles, distances = buf_pf.get_landmarks(self.scan)
-        #x = distances * np.cos(angles)
-        #y = distances * np.sin(angles)
-        #landmarks = (np.array([x, y])).T
-        #start_coords = find_position_triangulation(beacons, landmarks, init_start)
-        self.pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
+        self.pf = None
         self.last_odom = np.zeros(3)
         self.alpha = rospy.get_param("alpha")
+        self.timer = None
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)
-        rospy.Timer(rospy.Duration(1. / PF_RATE), self.localization)
+        rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
+        rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
 
     def callback_side(self, side):
         if self.prev_side_status != side.data:
@@ -108,14 +89,16 @@ class PFNode(object):
                 beacons = PURPLE_BEACONS
             self.world_beacons = beacons
             self.prev_side_status = side.data
-            buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
-            angles, distances = buf_pf.get_landmarks(self.scan, 3000)
-            x = distances * np.cos(angles)
-            y = distances * np.sin(angles)
-            landmarks = (np.array([x, y])).T
-            start_coords = find_position_triangulation(beacons, landmarks, init_start)
-            self.robot_pf_point = start_coords
-            self.pf = ParticleFilter(color=self.color, start_x=start_coords[0], start_y=start_coords[1], start_angle=start_coords[2])
+            #buf_pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
+            #angles, distances = buf_pf.get_landmarks(self.scan, 3000)
+            #x = distances * np.cos(angles)
+            #y = distances * np.sin(angles)
+            #landmarks = (np.array([x, y])).T
+            #start_coords = find_position_triangulation(beacons, landmarks, init_start)
+            self.robot_pf_point = init_start
+            self.pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1], start_angle=init_start[2])
+            if self.timer == None:
+                self.timer = rospy.Timer(rospy.Duration(1. / PF_RATE), self.localization)
         
 
 
@@ -132,7 +115,7 @@ class PFNode(object):
             intense = 4000
         rospy.loginfo("Distances to beacons " + str(distances))
         angles, ranges = self.pf.get_landmarks(self.scan, intense)
-        #ranges -=  self.scan_offset
+        ranges -=  self.scan_offset
         x = ranges * np.cos(angles)
         y = ranges * np.sin(angles)
         points = np.array([x, y]).T

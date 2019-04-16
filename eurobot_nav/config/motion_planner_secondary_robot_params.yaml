@@ -9,7 +9,7 @@ min_dist_to_goal_point: 0.15
 # max rate of the planner
 RATE: 15
 # goal tolerance
-XY_GOAL_TOLERANCE: 0.01
+XY_GOAL_TOLERANCE: 0.005
 YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
 V_MAX: 0.6

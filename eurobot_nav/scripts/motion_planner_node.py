@@ -82,9 +82,9 @@ class MotionPlannerNode:
         self.path_left = 9999  # big initial value
         self.distance_map_frame = None
         self.stop_id = 0
-        self.obstacle_points_lidar = None
-        self.obstacle_points_sensor = None
-        self.obstacle_points = None
+        self.obstacle_points_lidar = np.zeros((0,2))
+        self.obstacle_points_sensor = np.zeros((0,2))
+        self.obstacle_points = np.zeros((0,2))
         self.sensor_coords = np.array([[-0.131, 0, np.pi], [0.06568, 0.11377, np.pi/3], [0.06592, -0.11363, 5.21],
         [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0]])
         self.dist_to_obstacle = 100
@@ -100,13 +100,13 @@ class MotionPlannerNode:
         self.length_y = 200
         self.resolution = 0.01
         self.map = np.zeros((self.length_y, self.length_x))
-        self.map[149:200, 40:260] = 100
-        self.map[0:7, 50:250] = 100
-        self.map[197:200, 8:38] = 100
-        self.map[197:200, 262:293] = 100
-        self.map[134:200, 148:152] = 100
-        self.map[30:120, 255:300] = 100
-        self.map[30:120, 0:45] = 100
+        self.map[144:200, 35:265] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 143:157] = 100
+        self.map[25:125, 250:300] = 100
+        self.map[25:125, 0:50] = 100
 
 
     def get_points_outside_map(self, points):
@@ -124,7 +124,7 @@ class MotionPlannerNode:
         distances = (np.array((data.data.split())).astype(float))/100
         distances[np.where(distances == 0.5)] = 1
         distances[5] = 1
-        points = np.array([[0., 0.]])
+        points = np.zeros((0,2))
         for i in range(self.sensor_coords.shape[0]):
             #rospy.loginfo(i)
             #rospy.loginfo(points)
@@ -132,9 +132,8 @@ class MotionPlannerNode:
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             #rospy.loginfo(points_in_sensor_frame)
             points = np.append(points, points_in_sensor_frame, axis=0)
-            #points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ]), self.sensor_coords[i, :])])))
-            #points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ])), self.sensor_coords[i, :])]))
-        points = np.delete(points, 0, 0)
+            # points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ]), self.sensor_coords[i, :])])))
+            # points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ])), self.sensor_coords[i, :])]))
         self.obstacle_points_sensor = cvt_local2global(points, self.coords) 
         self.obstacle_points_sensor = self.get_landmarks_inside_table(self.obstacle_points_sensor)
 
@@ -154,15 +153,17 @@ class MotionPlannerNode:
         angles, distances = self.get_landmarks(self.scan)
         x = distances * np.cos(angles)
         y = distances * np.sin(angles)
+        self.obstacle_points_lidar = np.zeros((0,2))
         landmarks = (np.array([x, y])).T
-        landmarks = cvt_local2global(landmarks, self.coords)
-        landmarks = self.get_landmarks_inside_table(landmarks)
+        if landmarks.size > 0:
+            landmarks = cvt_local2global(landmarks, self.coords)
+            landmarks = self.get_landmarks_inside_table(landmarks)
             #rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
             #rospy.loginfo(landmarks)
         #rospy.loginfo(landmarks[np.argmin(np.linalg.norm(self.coords[:2] - landmarks))])
         #rospy.loginfo("NEAREST LANDMARK")
         #rospy.loginfo(np.linalg.norm(self.coords[:2] - landmarks, axis=1))
-        self.obstacle_points_lidar = landmarks 
+            self.obstacle_points_lidar = landmarks 
         #else:
         #   self.obstacle_points = np.array([100, 100])
 
@@ -437,9 +438,9 @@ class MotionPlannerNode:
         :return:
         """
 
-        # rospy.loginfo('---------------------------------------')
-        #rospy.loginfo('CURRENT STATUS')
-        #rospy.loginfo(self.current_state)
+        rospy.loginfo('---------------------------------------')
+        rospy.loginfo('CURRENT STATUS')
+        rospy.loginfo(self.current_state)
         #while not self.update_coords():
         #    rospy.sleep(0.05)
         if not self.update_coords():
@@ -460,6 +461,9 @@ class MotionPlannerNode:
         rospy.loginfo("Robot has stopped.")
         #rospy.loginfo(str(self.dist_to_obstacle))
         #rospy.sleep(1.0 / 40)
+        self.update_coords()
+        rospy.loginfo("GOAL POINT %s", self.goal)
+        rospy.loginfo("REACHED POINT %s", self.coords)
         answer = str(self.cmd_id) + " success"
         self.response_publisher.publish(answer)
 
