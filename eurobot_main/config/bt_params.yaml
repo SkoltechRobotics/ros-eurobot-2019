@@ -38,61 +38,57 @@ secondary_robot:
 
 #FIXME::CHANGE ZONE TO SIDE
 # Main robot
-yellow_zone:
+yellow_side:
   start_zone: [2, 0.45, -1.57]
 
   red_cell_puck: [2.5, 0.45]
   green_cell_puck: [2.5, 0.75]
   blue_cell_puck: [2.5, 1.05]
+
   third_puck_rotate_pose: [2.5, 1.05, -2.35]
+  third_puck_rotate_pose_end: [1.40, 0.28, -1.57]
 
   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+
+  # collect or push blunium
   blunium_collect_PREpos: [1.275, 0.35, -1.57]
   blunium_collect_pos: [1.29, 0.24, -1.57]
-
-  # blunium_rotate_PREpose: [1.295, 0.235, -0.78]
-  # blunium_rotate_pose: [1.295, 0.235, -1.57]
-
-  third_puck_rotate_pose_end: [1.40, 0.28, -1.57]
   blunium_push_PREpose: [1.40, 0.16, 0.56]  # 165 misses
-  # blunium_push_pose: [1.07, 0.163, 0.56]
   blunium_push_pose: [1.30, 0.16, 0.56]
+
+  # acc unload
   accelerator_unloading_pos: [1.07, 0.163, 0.56]
-
   accelerator_PREunloading_pos: [1.07, 0.2, 0.56]  # 0.525
-  # accelerator_unloading_pos_far: [1.06, 0.15, 0.56]
-  # chaos_push_pose: []
-  # chaos_in_red_zone: []
 
+  # collect goldenium
   goldenium_first_PREgrab_pos: [1.11, 0.25, 0.56]
   goldenium_second_PREgrab_pos: [0.78, 0.35, -1.57]
   goldenium_grab_pos: [0.775, 0.24, -1.57]
 
+  # unload goldenium
   scales_goldenium_PREpos: [1.8, 0.6, 1.4]
   scales_goldenium_pos: [1.72, 1.4, 1.9]
 
 #FIXME::CHANGE ZONE TO SIDE
-# can be reached using rospy.get_param("purple_zone/red_cell_puck"
-purple_zone:
+purple_side:
   start_zone: [1, 0.45, 0]
 
   red_cell_puck: [0.5, 0.45]
   green_cell_puck: [0.5, 0.75]
   blue_cell_puck: [0.5, 1.05]
+
   third_puck_rotate_pose: [0.5, 1.05, -0.78]
+  third_puck_rotate_pose_end: [1.6, 0.28, -1.57]
 
   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
 
   blunium_collect_PREpos: [1.72, 0.45, -1.57]
   blunium_collect_pos: [1.72, 0.25, -1.57]
-  third_puck_rotate_pose_end: [1.6, 0.28, -1.57]
   blunium_push_PREpose: [1.6, 0.163, 0.56] # 165 misses
-  # blunium_push_pose: [1.93, 0.163, 0.56]
   blunium_push_pose: [1.7, 0.16, 0.56]
-  accelerator_unloading_pos: [1.93, 0.16, 0.56]
 
+  accelerator_unloading_pos: [1.93, 0.16, 0.56]
   accelerator_PREunloading_pos: [1.93, 0.2, 0.56]
-  # accelerator_unloading_pos_far: [1.86, 0.16, 0.525]
 
   goldenium_first_PREgrab_pos: [1.89, 0.25, 0.56]
   goldenium_second_PREgrab_pos: [2.22, 0.35, -1.57]

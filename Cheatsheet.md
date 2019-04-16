@@ -440,11 +440,11 @@ ros-laser-scan-matcher
 sudo apt-get install ros-kinetic-laser-scan-matcher
 roslaunch polar_scan_matcher demo.launch
 
-cp -a .git .git-old1
+cp -a .git .git-old2
 
 git hash-object -w Cheatsheet.md
 
-
+cp -r /home/odroid/catkin_ws/src/temporary-ros/ros-eurobot-2019/.git /home/odroid/catkin_ws/src/ros-eurobot-2019
 
 
 
@@ -461,3 +461,12 @@ mv ~/.config/dconf.bak ~/.config/dconf/
 
 
 sudo mate-panel start
+
+cd ~/.ros/log/latest
+vim main_robot-behavior_tree-11.log
+
+sudo journalctl -f -u main_start.service
+sudo systemctl restart main_start
+sudo systemctl stop main_start
+sudo systemctl start main_start
+

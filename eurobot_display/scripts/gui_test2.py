@@ -183,7 +183,7 @@ class App:
             self.main_side_status.set("Purple")
             self.main_side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
-        self.frame4.after(1000, self.update_main_coords)  # start loop
+        # self.frame4.after(1000, self.update_main_coords)  # start loop
 
     def main_wire_status_callback(self, data):
         if data.data == "0":
@@ -207,7 +207,7 @@ class App:
             self.secondary_side_status.set("Purple")
             self.secondary_side_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[1]))
 
-        self.frame5.after(1000, self.update_secondary_coords)  # start loop
+        # self.frame5.after(1000, self.update_secondary_coords)  # start loop
 
     def secondary_wire_status_callback(self, data):
         if data.data == "0":
@@ -292,9 +292,9 @@ class App:
                                     '%.2f' % self.secondary_coords_array[1],
                                     '%.2f' % self.secondary_coords_array[2]))
 
-            rospy.loginfo(str(self.secondary_coords))
-            root.update()
-            # return True
+            # rospy.loginfo(str(self.secondary_coords))
+            # root.update()
+            return True
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
@@ -302,24 +302,24 @@ class App:
 
 
 if __name__ == '__main__':
-    rospy.init_node("display_node")
+    # rospy.init_node("display_node")
     root = Tk()
     root.title("Eurobot RESET")
-    root.geometry("750x450")
+    root.geometry("700x450")
 
     app = App(root)
 
-    rospy.Subscriber("/main_robot/score", String, app.main_score_callback)
-    rospy.Subscriber("/secondary_robot/score", String, app.secondary_score_callback)
-
-    rospy.Subscriber("/main_robot/stm/start_status", String, app.main_wire_status_callback)
-    rospy.Subscriber("/main_robot/stm/side_status", String, app.main_side_status_callback)
-
-    rospy.Subscriber("/main_robot/stm/start_status", String, app.secondary_wire_status_callback)
-    rospy.Subscriber("/main_robot/stm/side_status", String, app.secondary_side_status_callback)
-
-    rate = rospy.Rate(100)
-    rospy.loginfo("Start display")
+    # rospy.Subscriber("/main_robot/score", String, app.main_score_callback)
+    # rospy.Subscriber("/secondary_robot/score", String, app.secondary_score_callback)
+    #
+    # rospy.Subscriber("/main_robot/stm/start_status", String, app.main_wire_status_callback)
+    # rospy.Subscriber("/main_robot/stm/side_status", String, app.main_side_status_callback)
+    #
+    # rospy.Subscriber("/secondary_robot/stm/start_status", String, app.secondary_wire_status_callback)
+    # rospy.Subscriber("/secondary_robot/stm/side_status", String, app.secondary_side_status_callback)
+    #
+    # rate = rospy.Rate(100)
+    # rospy.loginfo("Start display")
 
     # def quit(event):
     #     print "you pressed control c"

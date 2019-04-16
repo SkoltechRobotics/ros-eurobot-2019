@@ -209,10 +209,10 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
-# class StartCollectBlunium(ActionClientNode):
-#     def __init__(self, action_client_id):
-#         cmd = "start_collect_blunium"
-#         super(StartCollectBlunium, self).__init__(cmd, action_client_id)
+class StartCollectBlunium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "start_collect_blunium"
+        super(StartCollectBlunium, self).__init__(cmd, action_client_id)
 
 
 class UnloadAccelerator(ActionClientNode):
