@@ -81,8 +81,7 @@ class MotionPlannerNode:
         self.obstacle_points_lidar = np.zeros((0,2))
         self.obstacle_points_sensor = np.zeros((0,2))
         self.obstacle_points = np.zeros((0,2))
-        self.sensor_coords = np.array([[-0.131, 0, np.pi], [0.06568, 0.11377, np.pi/3], [0.06592, -0.11363, 5.21],
-        [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0]])
+        self.sensor_coords = np.array(rospy.get_param("sensor_position"))
         self.dist_to_obstacle = 100
         self.timer = None
         self.buf_goal= None

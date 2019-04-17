@@ -1,6 +1,6 @@
 # initial coordinates (robot's, not LIDAR's coords!)
-start_purple: [0.2, 0.75, 1.57]
-start_yellow: [2.80, 0.75, 1.57]
+start_purple: [0.2, 0.75, 0.]
+start_yellow: [2.80, 0.75, 3.14]
 
 # LIDAR scanner coordinates in robot frame
 lidar_x: 0
