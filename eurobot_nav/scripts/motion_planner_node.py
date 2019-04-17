@@ -24,11 +24,7 @@ class MotionPlannerNode:
     def __init__(self):
         self.robot_name = rospy.get_param("robot_name")
         rospy.init_node("motion_planner", anonymous=True)
-        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
-        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
-        #rospy.Subscriber("/obstacle_point", MarkerArray, self.proximity_callback, queue_size=1)
-        rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.proximity_callback, queue_size=10)
         self.command_publisher = rospy.Publisher("/%s/stm/command"%self.robot_name, String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
@@ -85,8 +81,8 @@ class MotionPlannerNode:
         self.obstacle_points_lidar = np.zeros((0,2))
         self.obstacle_points_sensor = np.zeros((0,2))
         self.obstacle_points = np.zeros((0,2))
-        self.sensor_coords = np.array([[-0.122, -0.05959, 2.0944], [0.0327, 0.14795, 2.0944], [0.105, 0.07032, 0],
-        [0.105, -0.08249, 0], [0.01315, -0.13807, 4.19], [-0.13415, -0.05303, 4.19]])
+        self.sensor_coords = np.array([[-0.131, 0, np.pi], [0.06568, 0.11377, np.pi/3], [0.06592, -0.11363, 5.21],
+        [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0]])
         self.dist_to_obstacle = 100
         self.timer = None
         self.buf_goal= None
@@ -106,6 +102,14 @@ class MotionPlannerNode:
         self.map[192:200, 257:298] = 100
         self.map[129:200, 143:157] = 100
         self.map[25:125, 250:300] = 100
+        self.map[25:125, 0:50] = 100
+        while not self.update_coords():
+            rospy.sleep(1)
+        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
+        rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+        #rospy.Subscriber("/obstacle_point", MarkerArray, self.proximity_callback, queue_size=1)
+        rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.proximity_callback, queue_size=10)
+
 
 
     def get_points_outside_map(self, points):
@@ -131,10 +135,9 @@ class MotionPlannerNode:
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             #rospy.loginfo(points_in_sensor_frame)
             points = np.append(points, points_in_sensor_frame, axis=0)
-            #points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ]), self.sensor_coords[i, :])])))
-            #points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ])), self.sensor_coords[i, :])]))
-        points = np.delete(points, 0, 0)
-        self.obstacle_points_sensor = cvt_local2global(points, self.coords)
+            # points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ]), self.sensor_coords[i, :])])))
+            # points = np.append((points, np.array([cvt_local2global(np.array([distances[i], 0, ])), self.sensor_coords[i, :])]))
+        self.obstacle_points_sensor = cvt_local2global(points, self.coords) 
         self.obstacle_points_sensor = self.get_landmarks_inside_table(self.obstacle_points_sensor)
 
     def get_landmarks(self, scan):
@@ -153,17 +156,17 @@ class MotionPlannerNode:
         angles, distances = self.get_landmarks(self.scan)
         x = distances * np.cos(angles)
         y = distances * np.sin(angles)
-        landmarks = (np.array([x, y])).T
-        landmarks = cvt_local2global(landmarks, self.coords)
-        landmarks = self.get_landmarks_inside_table(landmarks)
         self.obstacle_points_lidar = np.zeros((0,2))
+        landmarks = (np.array([x, y])).T
+        if landmarks.size > 0:
+            landmarks = cvt_local2global(landmarks, self.coords)
+            landmarks = self.get_landmarks_inside_table(landmarks)
             #rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
             #rospy.loginfo(landmarks)
         #rospy.loginfo(landmarks[np.argmin(np.linalg.norm(self.coords[:2] - landmarks))])
         #rospy.loginfo("NEAREST LANDMARK")
         #rospy.loginfo(np.linalg.norm(self.coords[:2] - landmarks, axis=1))
-        if landmakrs.size != 0:
-	        self.obstacle_points_lidar = landmarks
+            self.obstacle_points_lidar = landmarks 
         #else:
         #   self.obstacle_points = np.array([100, 100])
 
@@ -194,10 +197,10 @@ class MotionPlannerNode:
             return False
 
     def get_points_inside_collision_area(self, points):
-        goal = cvt_global2local(self.goal, self.coords)
+	goal = cvt_global2local(self.goal, self.coords)
         angle = np.arctan2(goal[1], goal[0])
         index = np.ones(points.shape[0])
-        area = cvt_global2local(self.collision_area, np.array([self.coords[0], self.coords[1], wrap_angle(self.coords[2] + angle)]))
+	area = cvt_global2local(self.collision_area, np.array([self.coords[0], self.coords[1], wrap_angle(self.coords[2] + angle)]))
         obstacles = cvt_global2local(points,np.array([self.coords[0], self.coords[1], wrap_angle(self.coords[2] + angle)]))
         index *= obstacles[:, 0] > area[0,0]
         index *= obstacles[:, 0] < area[2,0]
@@ -205,6 +208,48 @@ class MotionPlannerNode:
         index *= obstacles[:, 1] < area[2,1]
         #rospy.loginfo(index)
         return np.where(index > 0)
+
+        '''
+	#rospy.loginfo(points)
+        def rotate(A,B,C):
+	    #rospy.loginfo("C")
+	    #rospy.loginfo(C)
+	    #rospy.loginfo(A)
+            #rospy.loginfo(B)
+            if len(C.shape) > 1:
+                return (B[0] - A[0]) * (C[:, 1] - B[1]) - (B[1] - A[1]) * (C[:, 0] - B[0])
+            return (B[0] - A[0]) * (C[1] - B[1]) - (B[1] - A[1]) * (C[0] - B[0])
+        def intersect(A,B,C,D):
+	    #rospy.loginfo((rotate(A,B,C)*rotate(A,B,D)<=0)) 
+            return ((rotate(A,B,C)*rotate(A,B,D)<=0))
+        center = np.array((self.collision_area[0, :] + self.collision_area[2,:])/2)
+        index = np.ones(points.shape[0])
+	rospy.loginfo("adsrtfyg")
+        index0 = intersect(self.collision_area[0,:], self.collision_area[1, :], points, center)
+	rospy.loginfo(index0)
+        index1 = intersect(self.collision_area[1,:], self.collision_area[2, :], points, center)
+        rospy.loginfo(index1)
+        index2 = intersect(self.collision_area[2,:], self.collision_area[3, :], points, center)
+        rospy.loginfo(index2)
+        index3 = intersect(self.collision_area[3,:], self.collision_area[4, :], points, center)
+        rospy.loginfo(index3)
+        #index4 = intersect(self.collision_area[4, :], self.collision_area[0, :], points, center)
+        #rospy.loginfo(index4)
+        return  np.where((index0 * index1 * index2 * index3) > 0)
+        '''
+   
+        def is_inside_rectangle(point):
+            c = 0
+            for i in range(4):
+                if (((self.collision_area[i, 0] <= point[0]) or (point[0] < self.collision_area[i-1, 0])) and \
+                    (point[0] > (self.collision_area[i-1, 1] - self.collision_area[i, 1]) * (point[0] - self.collision_area[i, 0])/
+                    ((self.collision_area[i-1, 0] - self.collision_area[i, 0]) + self.collision_area[i,  1]))):
+                    c = 1 - c 
+            return c
+        for point in points:
+            indexs = np.append(indexs, np.array([is_inside_rectangle(point)]), axis=0)
+        indexs = np.delete(indexs, 0, 0)
+        
 
     def get_collision_area(self):
         goal = cvt_global2local(self.goal, self.coords)
@@ -221,13 +266,8 @@ class MotionPlannerNode:
             [self.coords[0], self.coords[1], self.coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
         #rospy.loginfo("Collision area")
         #rospy.loginfo(self.collision_area)
-        #self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
-        self.obstacle_points = np.zeros((0,2))
-        if self.obstacle_points_lidar.size != 0:
-                self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_lidar, axis=0)
-        if self.obstacle_points_sensor.size != 0:
-                self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_sensor, axis=0)                    
-        self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points)
+        self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
+        self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points) 
         self.obstacle_points = self.get_points_outside_map(self.obstacle_points)
         self.obstacle_points = self.obstacle_points[self.get_points_inside_collision_area(self.obstacle_points)]
         #rospy.loginfo(self.obstacle_points)
@@ -268,6 +308,12 @@ class MotionPlannerNode:
             point.lifetime = rospy.Duration(0.7)
             marker.append(point)
         self.point_publisher.publish(marker)
+
+    def cvt_distances2points(self):
+        self.update_coords()
+        point_local = ((self.sensors_coords_vector.T) * (self.distances + self.r)).T
+        # self.obstacle_points = cvt_local2global(point_local, self.coords)
+        self.set_collision_point(cvt_local2global(point_local, self.coords))
 
     def distance_callback(self, data):
         self.distances = np.array(data.data.split()).astype(float)/100
@@ -395,9 +441,9 @@ class MotionPlannerNode:
         :return:
         """
 
-        # rospy.loginfo('---------------------------------------')
-        #rospy.loginfo('CURRENT STATUS')
-        #rospy.loginfo(self.current_state)
+        rospy.loginfo('---------------------------------------')
+        rospy.loginfo('CURRENT STATUS')
+        rospy.loginfo(self.current_state)
         #while not self.update_coords():
         #    rospy.sleep(0.05)
         if not self.update_coords():
@@ -418,6 +464,9 @@ class MotionPlannerNode:
         rospy.loginfo("Robot has stopped.")
         #rospy.loginfo(str(self.dist_to_obstacle))
         #rospy.sleep(1.0 / 40)
+        self.update_coords()
+        rospy.loginfo("GOAL POINT %s", self.goal)
+        rospy.loginfo("REACHED POINT %s", self.coords)
         answer = str(self.cmd_id) + " success"
         self.response_publisher.publish(answer)
 
@@ -430,6 +479,28 @@ class MotionPlannerNode:
         rospy.loginfo("PATH")
         rospy.loginfo(rospy.Time.now().to_sec())
         #self.pub_path()
+
+    def create_linear_path_forward_sensor(self):
+        self.update_coords()
+        goal = cvt_global2local(self.goal, self.coords)
+        rospy.loginfo(str(goal))
+        x = np.linspace(0., goal[0], self.num_points_in_path)
+        y = np.linspace(0., goal[1], self.num_points_in_path)
+        angles = np.arctan2(self.sensors_coords_vector[:, 1], self.sensors_coords_vector[:, 0])
+        trajectory_angle = np.arctan2(goal[1], goal[0])
+        rospy.loginfo("ANGLES %s", angles)
+        rospy.loginfo("TRAJECTORY ANGLE %s", trajectory_angle)
+        rospy.loginfo(np.linalg.norm(self.sensors_coords_vector - goal[:2], axis=1))
+        self.sensor_ind = np.argmin(np.linalg.norm(self.sensors_coords_vector - goal[:2], axis=1))
+        rospy.loginfo(self.sensor_ind)
+        rospy.loginfo(self.sensors_coords_vector[self.sensor_ind])
+        angle = angles[self.sensor_ind]
+        angle += trajectory_angle
+        rospy.loginfo("angle %s", angle)
+        theta = np.ones(self.num_points_in_path) * wrap_angle(angle)
+        theta[-1] = goal[2]
+        self.path = cvt_local2global(np.array([x, y, theta]).T, self.coords)
+        rospy.loginfo(self.path)
 
     def path_position_arg(self, path, point, r=0):
         path = path.copy()
@@ -539,6 +610,13 @@ class MotionPlannerNode:
         go to goal in one movement by arc path
         :return:
         """
+        try:
+            self.cvt_distances2points()
+        except:
+            pass
+        #rospy.loginfo("NEW ARC MOVEMENT")
+        #rospy.loginfo("Goal:\t" + str(self.goal))
+
         v = self.V_MAX
         if np.abs(self.theta_diff) < 1e-4:  # abs!!!!!!!!!!!!!
             w = 0
@@ -587,11 +665,12 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif 1 > 2: #self.get_collision_status():
+        elif self.get_collision_status():
             self.set_speed(np.zeros(3))
             self.prev_vel = np.zeros(3)
             self.prev_time = rospy.Time.now().to_sec()
             self.create_linear_path()
+
         elif self.current_state == "moving_backward":
             if self.is_robot_stopped:
                 self.set_speed(np.zeros(3))
@@ -647,7 +726,7 @@ class MotionPlannerNode:
             elif self.delta_dist >= self.min_dist_to_goal_point:
                 self.follow_path()
             else:
-                self.move_arc()
+		        self.move_arc()
 
     def get_collision_status(self):
         #rospy.loginfo("!!!!!!!COLLISION!!!!!!!")
@@ -668,7 +747,23 @@ class MotionPlannerNode:
                 return False
         else:
             return False
-
+        #rospy.loginfo(self.obstacle_points)
+        '''
+        if self.is_inside_collision_area(self.obstacle_points):
+            if (np.linalg.norm(self.coords[:2] - self.obstacle_points) < 0.5):
+                rospy.loginfo("TRUE COLLISION")
+                return True
+            else:
+                self.p = np.linalg.norm(self.coords[:2] - self.obstacle_points) / 0.7
+                if self.p > 1:
+                    self.p = 1
+                else:
+                    self.p *= 0.5
+                rospy.loginfo("P %s", self.p)
+        else:
+            self.obstacle_points = np.array([100, 100])
+        return False
+        '''
 
     def create_collision_path(self):
         self.buf_goal = self.goal.copy()
