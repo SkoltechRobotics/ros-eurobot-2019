@@ -24,11 +24,7 @@ class MotionPlannerNode:
     def __init__(self):
         self.robot_name = rospy.get_param("robot_name")
         rospy.init_node("motion_planner", anonymous=True)
-        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
-        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
-        #rospy.Subscriber("/obstacle_point", MarkerArray, self.proximity_callback, queue_size=1)
-        rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.proximity_callback, queue_size=10)
         self.command_publisher = rospy.Publisher("/%s/stm/command"%self.robot_name, String, queue_size=1)
         self.response_publisher = rospy.Publisher("response", String, queue_size=10)
         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
@@ -107,6 +103,13 @@ class MotionPlannerNode:
         self.map[129:200, 143:157] = 100
         self.map[25:125, 250:300] = 100
         self.map[25:125, 0:50] = 100
+        while not self.update_coords():
+            rospy.sleep(1)
+        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
+        rospy.Subscriber("/secondary_robot/scan", LaserScan, self.scan_callback, queue_size=1)
+        #rospy.Subscriber("/obstacle_point", MarkerArray, self.proximity_callback, queue_size=1)
+        rospy.Subscriber("/%s/stm/proximity_status"%self.robot_name, String, self.proximity_callback, queue_size=10)
+
 
 
     def get_points_outside_map(self, points):

@@ -128,7 +128,7 @@ class Manipulator(object):
         elif cmd == "stepper_step_up":
             return self.stepper_step_up()
         elif cmd == "get_limit_switch_status":
-            return self.stepper_step_up()
+            return self.check_status_inf()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -187,6 +187,17 @@ class Manipulator(object):
     def check_status(self, cmd):
         counter = 0
         for i in range(15):
+            self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
+            if self.is_success_status(self.status_command):
+                counter += 1
+            if counter > 0:
+                return True
+        return False
+
+    def check_status_inf(self):
+        cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        counter = 0
+        for i in range(20):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
