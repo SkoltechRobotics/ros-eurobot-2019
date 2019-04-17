@@ -7,6 +7,7 @@ import numpy as np
 import tf2_ros
 from tf.transformations import euler_from_quaternion
 
+
 class ActionClient(object):
 
     def __init__(self, cmd_publisher):
@@ -91,25 +92,87 @@ class SetManipulatortoUp(ActionClientNode):  # FIXME SetManipulatorUp
         cmd = "manipulator_up"
         super(SetManipulatortoUp, self).__init__(cmd, action_client_id)
 
+
 class SetManipulatortoGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "manipulator_ground"
         super(SetManipulatortoGround, self).__init__(cmd, action_client_id)
+
 
 class SetManipulatortoGroundDelay(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "manipulator_ground_delay"
         super(SetManipulatortoGroundDelay, self).__init__(cmd, action_client_id)
 
+
+class StepUp(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_step_up"
+        super(StepUp, self).__init__(cmd, action_client_id)
+
+
+class StepDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_step_down"
+        super(StepDown, self).__init__(cmd, action_client_id)
+
+# ===========================================================
+
+
+class MoveLineToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveLineToPoint, self).__init__(cmd, action_client_id)
+
+
+class SlowMoveLineToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "slow_move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(SlowMoveLineToPoint, self).__init__(cmd, action_client_id)
+
+
+class MoveArcToPoint(ActionClientNode):
+    def __init__(self, point, action_client_id):
+        cmd = "move_arc " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
+        super(MoveArcToPoint, self).__init__(cmd, action_client_id)
+
+
+class SetSpeedSTM(ActionClientNode):
+    def __init__(self, speed, time, action_client_id):
+        self.delay = time
+        self.speed = speed
+        cmd = "8 " + str(self.speed[0]) + " " + str(self.speed[1]) + " " + str(self.speed[2])
+        super(SetSpeedSTM, self).__init__(cmd, action_client_id)
+
+    def start_action(self):
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+        rospy.sleep(self.delay)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
+        # rospy.sleep(self.delay/2)
+        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
+        # rospy.sleep(self.delay*2)
+        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
+        # rospy.sleep(self.delay/2)
+
+    def action_status(self):
+        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
+        return bt.Status.SUCCESS
+
+# ===========================================================
+
+
 class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall"
         super(StartTakeWallPuck, self).__init__(cmd, action_client_id)
 
+
 class StartPump(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_pump"
         super(StartPump, self).__init__(cmd, action_client_id)
+
 
 class StopPump(ActionClientNode):
     def __init__(self, action_client_id):
@@ -121,6 +184,7 @@ class StartTakeWallPuckWithoutGrabber(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall_without_grabber"
         super(StartTakeWallPuckWithoutGrabber, self).__init__(cmd, action_client_id)
+
 
 class ReleaseFromManipulator(ActionClientNode):
     def __init__(self, action_client_id):
@@ -167,20 +231,28 @@ class CompleteCollectGround(ActionClientNode):
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
 
 
-# ===========================================================
-
-
 class StartCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_blunium"
         super(StartCollectBlunium, self).__init__(cmd, action_client_id)
 
 
-# Command to unload in Accelerator
+class FinishCollectBlunium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "finish_collect_blunium"
+        super(FinishCollectBlunium, self).__init__(cmd, action_client_id)
+
+
 class UnloadAccelerator(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_accelerator"
         super(UnloadAccelerator, self).__init__(cmd, action_client_id)
+
+
+class SetManipulatortoGoldenium(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_angle_to_grab_goldenium"
+        super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
 
 
 # Command to grab Goldenium, push up and hold it there
@@ -190,25 +262,97 @@ class GrabGoldeniumAndHoldUp(ActionClientNode):
         super(GrabGoldeniumAndHoldUp, self).__init__(cmd, action_client_id)
 
 
-# Command to unload Goldenium on Scales
 class UnloadGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
-
-class StepUp(ActionClientNode):
+# to push blunium in acc
+class SetManipulatorToPushBlunium(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "stepper_step_up"
-        super(StepUp, self).__init__(cmd, action_client_id)
+        cmd = "swing_puck"
+        super(SetManipulatorToPushBlunium, self).__init__(cmd, action_client_id)
 
 
-class SetManipulatortoGoldenium(ActionClientNode):
+class ReleaseInAccFirstMove(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "set_angle_to_grab_goldenium"
-        super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
+        cmd = "release_accelerator_first_move_when_full"
+        super(ReleaseInAccFirstMove, self).__init__(cmd, action_client_id)
+
+# ===========================================================
 
 #-------------
+
+class ReleaseSomePucks(ActionClientNode):
+    def __init__(self, pucks_inside, action_client_id):
+        self.pucks_inside = pucks_inside
+
+        cmd = "release_" + str(pucks_inside)
+        super(ReleaseSomePucks, self).__init__(cmd, action_client_id)
+
+    def start_action(self):
+        """
+        action_clients: {}
+
+        :return:
+        """
+
+        cmd = "release_" + str(len(self.pucks_inside))
+        self.cmd = bt.BTVariable(cmd)
+        print("Start BT Action: " + self.cmd.get())
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+
+class CompleteCollectLastWall(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_last_wall"
+        super(CompleteCollectLastWall, self).__init__(cmd, action_client_id)
+
+    def start_action(self):
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+
+class CompleteTakeWallPuck(ActionClientNode):
+    def __init__(self, pucks_inside, puck_type, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.puck_type = puck_type
+        cmd = "complete_collect_wall"
+        super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
+
+    def start_action(self):
+        """
+        action_clients: {}
+
+        :return:
+        """
+        print("Start BT Action: " + self.cmd.get())
+        print("add puck")
+        self.pucks_inside.append(self.puck_type)
+        print(self.pucks_inside)
+        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
+
+
+class ReleaseAndBack(bt.SequenceWithMemoryNode):
+    def __init__(self, pucks_inside, scales_zone, action_client_id):
+        self.pucks_inside = pucks_inside
+        self.scales_zone = scales_zone
+
+        super(ReleaseAndBack, self).__init__([
+            ReleaseSomePucks(self.pucks_inside, "manipulator_client"),
+            MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client")
+        ])
+
 
 class SetSpeedSTM(ActionClientNode):
     def __init__(self, speed, time, action_client_id):
@@ -314,6 +458,7 @@ class StepperUp(ActionClientNode):
         cmd = "stepper_up"
         super(StepperUp, self).__init__(cmd, action_client_id)
 
+
 class CompleteCollectLastWall(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_last_wall"
@@ -324,7 +469,7 @@ class CompleteTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_wall"
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
-        
+
 
 class ReleaseAndBack(bt.SequenceWithMemoryNode):
     def __init__(self, pucks_inside, scales_zone):
@@ -474,7 +619,6 @@ class PublishScore_ifReachedGoal(bt.SequenceNode):
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
-
 
 
 class MoveWaypoints(bt.FallbackNode):

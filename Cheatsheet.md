@@ -27,9 +27,12 @@ rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_mov
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
 
 ## to ride by odometry
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 8 0.2 0 0'" 
+rostopic pub -1 /main_robot/stm/command std_msgs/String "data: '1 8 0.2 0 0'" 
 
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
+
+rostopic pub -1 /main_robot/score std_msgs/String "data: '24'" 
+
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
 
@@ -75,9 +78,12 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57
 rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
+rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 rosrun eurobot_tactics imitate_cam.py -n 4
+
+rostopic pub -1 /main_robot/navigation/command std_msgs/String "data: '1 move_line 0.4 0.4 0'"
+
 
 rosrun rqt_graph rqt_graph
 
@@ -93,6 +99,7 @@ rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_acceler
 WE CHANGED TOPIC
 stm 1 0x11
 
+export DISPLAY=:0
 roslaunch eurobot_main main_robot_bt.launch 
 
 
@@ -177,10 +184,19 @@ git config --global http.sslverify false
 copy file or folder from other branch
 git checkout branchname path/to/file/file.py
 git checkout collect_chaos_pucks eurobot_tactics/notebooks
+git checkout behavior_tree_backend eurobot_nav/scripts
 
 
 To revert the previous commit (our merge commit), we do:
 git revert HEAD
+
+- to show last commits
+git reflog
+
+- to remove latest pull
+git reset --hard a0d3fe6, // where  a0d3fe6 - is a head id
+
+test3
 
 ## Team
 
@@ -201,8 +217,8 @@ rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and file
 
 chmod +x "filename"
 
-sudo pip install --target=/usr/local/lib/python2.7/dist-packages sympy
-sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages sympy
+sudo pip install --target=/usr/local/lib/python2.7/dist-packages shapely
+sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages shapely
 
 on odroid to show 
 ls -l /dev/tty*
@@ -254,7 +270,7 @@ http://wiki.ros.org/ROS/NetworkSetup
 
 
 # create new node
-catkin_create_pkg eurobot_tactics std_msgs rospy roscpp
+catkin_create_pkg eurobot_display std_msgs rospy roscpp
 
 # navigate to workspace/src to create a new package eurobot_core and eurobot_nav
 cd ~/catkin_ws/src
@@ -322,6 +338,48 @@ GOALS
 Вынести все параметры в yaml файл
 
 
+# Team
+Александр Соколовский - XL (54)
+Семен Лыхин - M
+Батыржан Алиханов - L
+Никита Горбадей - L
+Хуан Эредиа - L
+Эдгар Казиахмедов - L
+Антон Егоров - L
+Егор Пристанский - XXL
+Алексей Кашапов - L
+Николай Жердев - L
+Dzmitry Tsetserukou - XXL
+
+
+L - 8
+XL - 1
+XXL - 2
+
+Sergei Vostrikov - L
+Taras Melnik - L
+Andrew Chemikhin - M
+Evgeny Safronov - M
+Vladimir Karandaev - XL
+Mikhail Kurenkov - M
+
+
+Alexandr Kuleshov - XXL
+
+Optional:
+Evgeniy - L
+poc - L
+S - 1
+
+Поло и Худи
+S - 1
+M - 4
+L - 11 (9 + 2)
+XL - 2
+XXL - 3
+
+Поло + 2 спонсорам
+
 
 # BT
 - Action sets params - SET
@@ -376,4 +434,72 @@ sudo journalctl -f -u secondary_start.service   -  logs
 
 
 
+
+# NO RVIZ IN LAUNCH FILE
+
+#! /bin/bash
+
+source /opt/ros/kinetic/setup.bash
+source ~/catkin_ws/devel/setup.bash
+
+roslaunch eurobot main_robot.launch 
+
+
+
+To run this on boot you can create a simple systemd service. 
+Create mavros.service file in /lib/systemd/system with the following contents:
+
+[Unit]
+Description=eurobot 
+
+[Service]
+Type=forking
+ExecStart=/bin/bash -c "source /opt/ros/kinetic/setup.bash; /usr/bin/python /opt/ros/kinetic/bin/roslaunch mavros apm.launch"
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Then run:
+sudo systemctl daemon-reload
+And enable it on boot:
+sudo systemctl enable mavros.service
+
+
+        <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="screen"/>
+
+# required packages:
+ros-laser-scan-matcher
+>>>>>>> Stashed changes
+sudo apt-get install ros-kinetic-laser-scan-matcher
+roslaunch polar_scan_matcher demo.launch
+
+cp -a .git .git-old2
+
+git hash-object -w Cheatsheet.md
+
+cp -r /home/odroid/catkin_ws/src/temporary-ros/ros-eurobot-2019/.git /home/odroid/catkin_ws/src/ros-eurobot-2019
+
+
+
+15
+
+It seems that your ~/.config/dconf/user* files are corrupted. Try the following command, it should recreate a new one and allow you to store your settings persistently:
+
+mv ~/.config/dconf/ ~/.config/dconf.bak
+Note that you may loose some customization that you may have set on your system as all of them will be reset.
+
+If it does not solve your problem all you have to do is:
+
+mv ~/.config/dconf.bak ~/.config/dconf/ 
+
+
+sudo mate-panel start
+
+cd ~/.ros/log/latest
+vim main_robot-behavior_tree-11.log
+
+sudo journalctl -f -u main_start.service
+sudo systemctl restart main_start
+sudo systemctl stop main_start
+sudo systemctl start main_start
 

@@ -21,7 +21,7 @@ ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.15
 R_DECELERATION: 1
-exp_const: 0.1
+exp_const: 0.08
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
@@ -32,3 +32,4 @@ NUM_RANGEFINDERS: 16
 COLLISION_STOP_DISTANCE: 150
 COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
 COLLISION_GAMMA: 2
+min_dist_to_obstacle: 0.5

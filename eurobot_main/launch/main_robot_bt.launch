@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen"/>
-    <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen"/>
+    <node pkg="eurobot_display" name="display_node" type="gui_test.py" respawn="true" output="log"/>
+    <include file="$(find eurobot_main)/launch/main_robot_multimaster.launch" />
 
     <rosparam file="$(find eurobot_loc)/config/main_robot_localization_params.yaml" command="load" ns="main_robot"/>
     <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="main_robot"/>
@@ -10,12 +10,23 @@
 
     <group ns = "main_robot">
         <include file="$(find eurobot_nav)/launch/motion_planner_main_robot.launch"/>
-        <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="screen" respawn="true"/>
+        <node name="stm_node" pkg="eurobot_stm" type="STM.py" output="log" respawn="true" >
+            <param name="is_publish_tf" value="true"/>
+        </node>
         <node pkg="urg_node" name="lidar_node" type="urg_node" args="_ip_address:=192.168.0.10" respawn="true" output="log">
             <param name="frame_id" value="/main_robot_laser"/>
         </node>
         <node pkg="eurobot_loc" name="particle_filter_node" type="particle_filter_node.py" respawn="true" output="log"/>
+        <!--node pkg="laser_scan_matcher" type="laser_scan_matcher_node" name="laser_scan_matcher_node" output="log">
+            <param name="max_iterations" value="10"/>
+            <param name="fixed_frame" value="main_robot_odom"/>
+            <param name="base_frame" value="main_robot"/>
+            <param name="use_odom" value="true"/>
+            <param name="publish_tf" value="true"/>
+            <param name="publish_pose_stamped" value="true"/>
+        </node-->
         <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="log"/>
         <node pkg="eurobot_main" name="behavior_tree" type="main_robot_bt.py" respawn="true" output="log"/>
+        <!--  -->
     </group>
 </launch>
