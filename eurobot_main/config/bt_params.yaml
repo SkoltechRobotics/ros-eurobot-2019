@@ -37,64 +37,19 @@ secondary_robot:
     redium_zone_forth: [2.85, 0.6, -1.57]
 
 
+ground_spacing_dist: 0.3
 
-#FIXME::CHANGE ZONE TO SIDE
 # Main robot
 yellow_side:
-  start_zone: [2, 0.45, -1.57]
-
   red_cell_puck: [2.5, 0.45]
-  green_cell_puck: [2.5, 0.75]
-  blue_cell_puck: [2.5, 1.05]
-
-  third_puck_rotate_pose: [2.5, 1.05, -2.35]
-  third_puck_rotate_pose_end: [1.40, 0.28, -1.57]
-
+  blunium: [1.29, 0.025]  # outer side of the puck
   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+  goldenium: [0.775, 0.05]  # outer side of the puck
+  chaos_center: [2, 1.05]
 
-  # collect or push blunium
-  blunium_collect_PREpos: [1.275, 0.35, -1.57]
-  blunium_collect_pos: [1.29, 0.24, -1.57]
-  blunium_push_PREpose: [1.40, 0.16, 0.56]  # 165 misses
-  blunium_push_pose: [1.30, 0.16, 0.56]
-
-  # acc unload
-  accelerator_unloading_pos: [1.07, 0.163, 0.56]
-  accelerator_PREunloading_pos: [1.07, 0.2, 0.56]  # 0.525
-
-  # collect goldenium
-  goldenium_first_PREgrab_pos: [1.11, 0.25, 0.56]
-  goldenium_second_PREgrab_pos: [0.78, 0.35, -1.57]
-  goldenium_grab_pos: [0.775, 0.24, -1.57]
-
-  # unload goldenium
-  scales_goldenium_PREpos: [1.8, 0.6, 1.4]
-  scales_goldenium_pos: [1.72, 1.4, 1.9]
-
-#FIXME::CHANGE ZONE TO SIDE
 purple_side:
-  start_zone: [1, 0.45, 0]
-
   red_cell_puck: [0.5, 0.45]
-  green_cell_puck: [0.5, 0.75]
-  blue_cell_puck: [0.5, 1.05]
-
-  third_puck_rotate_pose: [0.5, 1.05, -0.78]
-  third_puck_rotate_pose_end: [1.6, 0.28, -1.57]
-
+  blunium: [1.71, 0.025]  # outer side of the puck
   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
-
-  blunium_collect_PREpos: [1.72, 0.45, -1.57]
-  blunium_collect_pos: [1.72, 0.24, -1.57]
-  blunium_push_PREpose: [1.6, 0.163, 0.56] # 165 misses
-  blunium_push_pose: [1.7, 0.16, 0.56]
-
-  accelerator_unloading_pos: [1.93, 0.16, 0.56]
-  accelerator_PREunloading_pos: [1.93, 0.2, 0.56]
-
-  goldenium_first_PREgrab_pos: [1.89, 0.25, 0.56]
-  goldenium_second_PREgrab_pos: [2.22, 0.35, -1.57]
-  goldenium_grab_pos: [2.225, 0.245, -1.57]
-
-  scales_goldenium_PREpos: [1.2, 0.6, 1.4]
-  scales_goldenium_pos: [1.28, 1.4, 1.24]  # for main  # FIXME
+  goldenium: [2.225, 0.05]  # outer side of the puck
+  chaos_center: [1, 1.05]

@@ -124,8 +124,8 @@ class Manipulator(object):
             return self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
             return self.release_goldenium_on_scales()
-        elif cmd == "set_angle_to_grab_goldenium":
-            return self.set_angle_to_grab_goldenium()
+        elif cmd == "start_collect_goldenium":
+            return self.start_collect_goldenium()
         elif cmd == "stepper_step_up":
             return self.stepper_step_up()
         elif cmd == "stepper_step_down":
@@ -296,7 +296,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
-    def set_angle_to_grab_goldenium(self):
+    def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
@@ -559,7 +559,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
-    def set_angle_to_grab_goldenium(self):
+    def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         return True
 
