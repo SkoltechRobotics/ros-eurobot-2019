@@ -664,11 +664,11 @@ class MotionPlannerNode:
         if self.current_state == "stop":
             self.is_robot_stopped = False
             self.terminate_moving()
-        elif self.get_collision_status():
-            self.set_speed(np.zeros(3))
-            self.prev_vel = np.zeros(3)
-            self.prev_time = rospy.Time.now().to_sec()
-            self.create_linear_path()
+        #elif self.get_collision_status():
+        #    self.set_speed(np.zeros(3))
+        #    self.prev_vel = np.zeros(3)
+        #    self.prev_time = rospy.Time.now().to_sec()
+        #    self.create_linear_path()
 
         elif self.current_state == "moving_backward":
             if self.is_robot_stopped:
