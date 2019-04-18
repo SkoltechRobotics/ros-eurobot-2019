@@ -503,3 +503,17 @@ sudo systemctl restart main_start
 sudo systemctl stop main_start
 sudo systemctl start main_start
 
+cd ~/.ros/log/latest
+
+#TROOBLESHOOTING
+- ubuntu can't log in
+https://askubuntu.com/questions/223501/ubuntu-gets-stuck-in-a-login-loop
+
+TL;DR, just try logging into the shell (Ctrl+Alt+F2 or whatever F between F1 and F6) and type
+
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+sudo apt install nvidia-367
+If it succeeds, reboot.
+
+sudo reboot
