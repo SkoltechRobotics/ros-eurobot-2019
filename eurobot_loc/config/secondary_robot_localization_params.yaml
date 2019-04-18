@@ -18,5 +18,5 @@ world_y: 2
 world_border: 0.022
 beac_l: 0.1
 beac_border: 0.022
-
+scan_offset: 0.05
 rate: 20

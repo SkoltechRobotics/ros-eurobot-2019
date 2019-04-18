@@ -39,7 +39,7 @@ class PFNode(object):
         self.prev_side_status = None
         self.robot_name = rospy.get_param("robot_name")
         # scan parameters
-        self.scan_offset = float(rospy.get_param("~scan_offset", 0.05))
+        self.scan_offset = float(rospy.get_param("scan_offset"))
         self.color = None
         self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
         self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)

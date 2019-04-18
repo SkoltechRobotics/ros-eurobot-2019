@@ -301,6 +301,7 @@ class MotionPlannerNode:
 
     def set_speed(self, v_cmd):
         v_cmd *= self.p
+        rospy.loginfo("Speed %s", v_cmd)
         cmd = str(self.cmd_id) + " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
         self.command_publisher.publish(cmd)
 
@@ -333,7 +334,7 @@ class MotionPlannerNode:
         deceleration_coefficient = self.get_deceleration_coefficient(distance)
         vx = v * np.cos(beta)
         vy = v * np.sin(beta)
-        vx, vy = cvt_global2local(np.array([vx, vy]), np.array([0., 0., -self.coords[2]]))
+        vx, vy = cvt_local2global(np.array([vx, vy]), np.array([0., 0., -self.coords[2]]))
         v_cmd = np.array([vx, vy, w])
         curr_time = rospy.Time.now().to_sec()
         dt = curr_time - self.prev_time
@@ -352,7 +353,9 @@ class MotionPlannerNode:
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
         self.create_linear_path()
-        self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords, self.goal)
+        self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        rospy.loginfo(self.is_collision)
+        rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
         if self.current_state == "stop":
             self.is_robot_stopped = False

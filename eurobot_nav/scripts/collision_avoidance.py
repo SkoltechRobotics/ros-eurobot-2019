@@ -6,6 +6,8 @@ import numpy as np
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
+from visualization_msgs.msg import MarkerArray, Marker
+from geometry_msgs.msg import PoseStamped, Point
 
 
 LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
@@ -39,6 +41,11 @@ class CollisionAvoidance(object):
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
+#       init publishers
+        self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
+        self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
+
+
 
     @staticmethod
     def filter_scan(scan):
@@ -87,6 +94,7 @@ class CollisionAvoidance(object):
 
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
+        rospy.loginfo(distances)
         distances[np.where(distances == 0.5)] = 1
         distances[5] = 1
         points = np.zeros((0, 2))
@@ -106,16 +114,23 @@ class CollisionAvoidance(object):
             self.obstacle_points_lidar = landmarks
 
     def get_collision_area(self, coords, goal):
-        goal = cvt_global2local(goal, coords)
+        rospy.loginfo("GOAL %s", goal)
+        rospy.loginfo("COORDS %s", coords)
+        goal_in_robot_frame = cvt_global2local(goal, coords)
+        rospy.loginfo("GOAL IN ROBOT FRAME %s", goal_in_robot_frame)
         dist_to_goal = np.linalg.norm(goal[:2] - coords[:2])
+        rospy.loginfo("DIST TO GOAL POINT %s", dist_to_goal)
         points = np.array([[-0.2, -0.2], [dist_to_goal+0.2, -0.2], [dist_to_goal+0.2, 0.2], [-0.2, 0.2], [-0.2, -0.2]])
         self.collision_area = cvt_local2global(points, np.array(
-            [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
+            [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
+        self.set_collision_area(self.collision_area)
         self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
         self.obstacle_points = cvt_local2global(self.obstacle_points, coords)
         self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points)
         self.obstacle_points = self.get_points_outside_map(self.obstacle_points)
         self.obstacle_points = self.obstacle_points[self.get_points_inside_collision_area(self.obstacle_points, coords, goal)]
+        self.set_collision_point(self.obstacle_points)
+
 
     def get_collision_status(self, coords, goal):
         self.p = 1
@@ -134,3 +149,54 @@ class CollisionAvoidance(object):
                 return False, self.p
         else:
             return False, self.p
+
+    def set_collision_point(self, positions):
+        marker = []
+        for i, position in enumerate(positions):
+            point = Marker()
+            point.header.stamp = rospy.Time.now()
+            point.header.frame_id = "map"
+            point.id = i
+            point.type = 1
+            point.ns = "obstacle"
+            #
+            #rospy.loginfo(position)
+            point.pose.position.x = position[0]
+            point.pose.position.y = position[1]
+            point.pose.position.z = 0
+            point.pose.orientation.w = 1
+            point.scale.x = 0.1
+            point.scale.y = 0.1
+            point.scale.z = 0.1
+            point.color.a = 1
+            point.color.r = 1
+            point.lifetime = rospy.Duration(0.7)
+            marker.append(point)
+        self.point_publisher.publish(marker)
+
+    def set_collision_area(self, points):
+        marker = Marker()
+        marker.type = marker.LINE_STRIP
+        marker.action = marker.ADD
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+        marker.color.a = 1
+        marker.color.g = 1
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        marker.pose.position.x = 0.0
+        marker.pose.position.y = 0.0
+        marker.pose.position.z = 0.1
+        for i, position in enumerate(points):
+            rospy.loginfo(position)
+            point = Point()
+            point.x = position[0]
+            point.y = position[1]
+            point.z = 0.2
+            marker.points.append(point)
+        self.collision_area_publisher.publish(marker)
