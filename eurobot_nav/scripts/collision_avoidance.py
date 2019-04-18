@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import rospy
+import numpy as np
+from core_functions import cvt_global2local, cvt_local2global, wrap_angle
+from std_msgs.msg import String
+from sensor_msgs.msg import LaserScan
+
+
+LIDAR_DELTA_ANGLE = (np.pi / 180) / 4
+LIDAR_START_ANGLE = -(np.pi / 2 + np.pi / 4)
+
+
+class CollisionAvoidance(object):
+    def __init__(self):
+        self.robot_name = rospy.get_param("robot_name")
+#       collision params
+        self.p = 1
+        self.sensor_coords = np.array(rospy.get_param("collision/sensor_position"))
+        self.min_dist_to_obstacle = rospy.get_param("collision/min_dist_to_obstacle")
+#       map params
+        self.length_x = 300
+        self.length_y = 200
+        self.resolution = 0.01
+        self.map = np.zeros((self.length_y, self.length_x))
+        self.map[144:200, 35:265] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 143:157] = 100
+        self.map[25:125, 250:300] = 100
+        self.map[25:125, 0:50] = 100
+#       set params to default
+        self.obstacle_points_lidar = np.zeros((0, 2))
+        self.obstacle_points_sensor = np.zeros((0, 2))
+        self.obstacle_points = np.zeros((0, 2))
+        self.collision_area = None
+#       init subscribers
+        rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+        rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
+
+    @staticmethod
+    def filter_scan(scan):
+        ranges = np.array(scan.ranges)
+        index0 = ranges < 2
+        index = index0
+        return np.where(index, ranges, 0)
+
+    def get_landmarks(self, scan):
+        """Returns filtrated lidar data"""
+        ranges = np.array(scan.ranges)
+        ind = self.filter_scan(scan)
+        final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
+        angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
+        distances = ranges[final_ind]
+        return angles, distances
+
+    @staticmethod
+    def get_landmarks_inside_table(landmarks):
+        landmarks = landmarks[np.where(landmarks[:, 0] > 0.15)]
+        landmarks = landmarks[np.where(landmarks[:, 0] < 2.85)]
+        landmarks = landmarks[np.where(landmarks[:, 1] > 0.15)]
+        landmarks = landmarks[np.where(landmarks[:, 1] < 1.85)]
+        return landmarks
+
+    def get_points_outside_map(self, points):
+        ind = np.array(points / self.resolution).astype(int)
+        final_points = np.array([[0., 0.]])
+        for i in range(points.shape[0]):
+            if self.map[ind[i, 1], ind[i, 0]] == 0:
+                final_points = np.append(final_points, np.array([points[i]]), axis=0)
+        final_points = np.delete(final_points, 0, 0)
+        return final_points
+
+    def get_points_inside_collision_area(self, points, coords, goal):
+        goal = cvt_global2local(goal, coords)
+        angle = np.arctan2(goal[1], goal[0])
+        index = np.ones(points.shape[0])
+        area = cvt_global2local(self.collision_area, np.array([coords[0], coords[1], wrap_angle(coords[2] + angle)]))
+        obstacles = cvt_global2local(points, np.array([coords[0], coords[1], wrap_angle(coords[2] + angle)]))
+        index *= obstacles[:, 0] > area[0, 0]
+        index *= obstacles[:, 0] < area[2, 0]
+        index *= obstacles[:, 1] > area[0, 1]
+        index *= obstacles[:, 1] < area[2, 1]
+        return np.where(index > 0)
+
+    def proximity_callback(self, data):
+        distances = (np.array((data.data.split())).astype(float))/100
+        distances[np.where(distances == 0.5)] = 1
+        distances[5] = 1
+        points = np.zeros((0, 2))
+        for i in range(self.sensor_coords.shape[0]):
+            points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
+            points = np.append(points, points_in_sensor_frame, axis=0)
+        self.obstacle_points_sensor = points
+
+    def scan_callback(self, scan):
+        scan = scan
+        angles, distances = self.get_landmarks(scan)
+        x = distances * np.cos(angles)
+        y = distances * np.sin(angles)
+        self.obstacle_points_lidar = np.zeros((0, 2))
+        landmarks = (np.array([x, y])).T
+        if landmarks.size > 0:
+            self.obstacle_points_lidar = landmarks
+
+    def get_collision_area(self, coords, goal):
+        goal = cvt_global2local(goal, coords)
+        dist_to_goal = np.linalg.norm(goal[:2] - coords[:2])
+        points = np.array([[-0.2, -0.2], [dist_to_goal+0.2, -0.2], [dist_to_goal+0.2, 0.2], [-0.2, 0.2], [-0.2, -0.2]])
+        self.collision_area = cvt_local2global(points, np.array(
+            [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal[1], goal[0]))]))
+        self.obstacle_points = np.concatenate((self.obstacle_points_lidar, self.obstacle_points_sensor), axis=0)
+        self.obstacle_points = cvt_local2global(self.obstacle_points, coords)
+        self.obstacle_points = self.get_landmarks_inside_table(self.obstacle_points)
+        self.obstacle_points = self.get_points_outside_map(self.obstacle_points)
+        self.obstacle_points = self.obstacle_points[self.get_points_inside_collision_area(self.obstacle_points, coords, goal)]
+
+    def get_collision_status(self, coords, goal):
+        self.p = 1
+        self.get_collision_area(coords, goal)
+        if self.obstacle_points.shape[0] > 0:
+            min_dist_to_obstacle = min(np.linalg.norm(coords[:2] - self.obstacle_points, axis=1))
+            rospy.loginfo(min_dist_to_obstacle)
+            if min_dist_to_obstacle < self.min_dist_to_obstacle:
+                rospy.loginfo("COLLISION")
+                return True, self.p
+            else:
+                if min_dist_to_obstacle > 0.7:
+                    self.p = 1
+                else:
+                    self.p = min_dist_to_obstacle/0.7
+                return False, self.p
+        else:
+            return False, self.p

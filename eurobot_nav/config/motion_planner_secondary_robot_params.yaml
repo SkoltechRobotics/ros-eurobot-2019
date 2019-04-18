@@ -28,74 +28,7 @@ GAMMA: 0.75
 XY_ACCURATE_GOAL_TOLERANCE: 0.01
 YAW_ACCURATE_GOAL_TOLERANCE: 0.05
 D_ACCURATE_DECELERATION: 0.20
-NUM_RANGEFINDERS: 16
-COLLISION_STOP_DISTANCE: 150
-COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
-COLLISION_GAMMA: 2
-min_dist_to_obstacle: 0.4
-sensor_position: [[-0.131, 0., 3.14159265359], [0.06568, 0.11377, 1.0471975512], [0.06592, -0.11363, 5.21],
-[-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0.]]
-
-
-
-
-
-# velocity_vector: [0.6, 0.6, 1.2]
-# robot_name: "secondary_robot"
-# num_points_in_path: 100
-# robot_radius: 0.1
-# k_linear_wp: 2.5
-# k_linear_vp: 1.5
-# k : 0.15
-# min_dist_to_goal_point: 0.2
-# # max rate of the planner
-# RATE: 10
-# # goal tolerance
-# XY_GOAL_TOLERANCE: 0.01
-# YAW_GOAL_TOLERANCE: 0.007
-# # maximum speed
-# V_MAX: 0.4
-# W_MAX: 1.5
-# AV_MAX: 0.5
-# AW_MAX: 2
-# # acceleration at beginning of movements
-# ACCELERATION: 1.0
-# # goal distance for deceleration
-# D_DECELERATION: 0.15
-# R_DECELERATION: 1
-# exp_const: 0.1
-# # power of deceleration factor
-# GAMMA: 0.75
-# # params for accurate movements to water towers or cube heaps
-# XY_ACCURATE_GOAL_TOLERANCE: 0.005
-# YAW_ACCURATE_GOAL_TOLERANCE: 0.05
-# D_ACCURATE_DECELERATION: 0.20
-# NUM_RANGEFINDERS: 16
-# COLLISION_STOP_DISTANCE: 150
-# COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
-# COLLISION_GAMMA: 2
-
-
-
-# # max rate of the planner
-# RATE: 25
-# # goal tolerance
-# XY_GOAL_TOLERANCE: 0.02
-# YAW_GOAL_TOLERANCE: 0.1
-# # maximum speed
-# V_MAX: 0.35
-# W_MAX: 1.5
-# # acceleration at beginning of movements
-# ACCELERATION: 1.0
-# # goal distance for deceleration
-# D_DECELERATION: 0.15
-# # power of deceleration factor
-# GAMMA: 0.75
-# # params for accurate movements to water towers or cube heaps
-# XY_ACCURATE_GOAL_TOLERANCE: 0.005
-# YAW_ACCURATE_GOAL_TOLERANCE: 0.05
-# D_ACCURATE_DECELERATION: 0.20
-# NUM_RANGEFINDERS: 16
-# COLLISION_STOP_DISTANCE: 150
-# COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
-# COLLISION_GAMMA: 2
+collision:
+    min_dist_to_obstacle: 0.4
+    sensor_position: [[-0.131, 0., 3.14159265359], [0.06568, 0.11377, 1.0471975512], [0.06592, -0.11363, 5.21],
+    [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0.]]
