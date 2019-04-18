@@ -178,8 +178,10 @@ class App:
     # Timer
     def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        self.frame4.after(0, self.update_main_coords)  # update coords after 2 sec
-        self.frame5.after(0, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+        
+        # self.frame4.after(0, self.update_main_coords)  # update coords after 2 sec
+        # self.frame5.after(0, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+        
         self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
 # ========================================================================
@@ -235,9 +237,8 @@ class App:
         :param data: REDIUM_ON_RED, BLUNIUM_ON_SCALES, UNLOCK_GOLDENIUM_BONUS
         :return:
         """
-        # rospy.loginfo(data)
         points = self.predict.get_points(data.data)
-        print("points are: ", points)
+        # print("points are: ", points)
         self.score_main.set(self.score_main.get() + int(points))
         self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_secondary.get())
 
@@ -250,13 +251,12 @@ class App:
         if self.first_update:
             self.first_update = False
             points = self.predict.get_points(data.data)
-            print("points are: ", points)
+            # print("points are: ", points)
             self.score_secondary.set(int(points))
             self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_experiment.get())
         else:
-            # rospy.loginfo(data)
             points = self.predict.get_points(data.data)
-            print("points are: ", points)
+            # print("points are: ", points)
             self.score_secondary.set(self.score_secondary.get() + int(points))
             self.score_total.set(self.score_experiment.get() + self.score_main.get() + self.score_secondary.get())
 
@@ -279,7 +279,7 @@ class App:
                                     '%.2f' % self.main_coords_array[1],
                                     '%.2f' % self.main_coords_array[2]))
 
-            rospy.loginfo(str(self.main_coords))
+            # rospy.loginfo(str(self.main_coords))
             # return True
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
@@ -305,7 +305,7 @@ class App:
                                     '%.2f' % self.secondary_coords_array[1],
                                     '%.2f' % self.secondary_coords_array[2]))
 
-            rospy.loginfo(str(self.secondary_coords))
+            # rospy.loginfo(str(self.secondary_coords))
             # return True
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
