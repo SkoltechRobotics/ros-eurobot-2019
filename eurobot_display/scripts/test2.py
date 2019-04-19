@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-import rospy
+# import rospy
 from std_msgs.msg import String
 import numpy as np
 from Tkinter import *
-import tf2_ros
-from tf.transformations import euler_from_quaternion
+# import tf2_ros
+# from tf.transformations import euler_from_quaternion
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
                         [255, 0, 255]])  # purple
@@ -56,9 +56,9 @@ class App:
         frame = Frame(master, bg="white", colormap="new")
         frame.pack()
 
-        # Block for side status and wire status
-        # self.frame0 = Frame(frame, bg="white", colormap="new")
-        # self.frame0.pack(side="top")
+        # Heartbeat
+        # self.frame0 = Frame(frame, bg="red", colormap="new")
+        # self.frame0.pack(side="left")
 
         # Score block
         # self.frame1 = Frame(frame, bg="white", colormap="new")
@@ -94,9 +94,13 @@ class App:
 
         # Time block
         self.frame2 = Frame(frame, bg="white", colormap="new")
-        self.frame2.pack(side="top")
+        self.frame2.pack(side="bottom")
 
         # --------------------------------------------------
+
+        # Heartbeat config
+        self.heartbeat = Label(self.frame3, bg="red", height=1, width=3, font=("Helvetica", 10))
+        self.heartbeat.pack(side="top")
 
         # main SIDE config
         self.main_side_status = StringVar()
@@ -167,11 +171,20 @@ class App:
         self.time = Label(font=(None, 32), text="Timer: " + "100")
         self.time.pack()
 
+    def heartbeat_loop(self):
+        if self.heartbeat["bg"] == "red":
+            self.heartbeat.config(bg="white")
+        else:
+            self.heartbeat.config(bg="red")
+        self.frame3.after(800, self.heartbeat_loop)  # call loop(n-1) in 0.5 seconds
+
+        # self.frame4.after(1000, self.update_main_coords)  # update coords after 2 sec
+        # self.frame5.after(1000, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+
     # Timer
     def countdown(self, n):
         self.time['text'] = str("Timer: ") + str(n)
-        self.frame4.after(1000, self.update_main_coords)  # update coords after 2 sec
-        self.frame5.after(1000, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
+
         self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
     def main_side_status_callback(self, data):
@@ -247,58 +260,58 @@ class App:
             self.score_secondary.set(self.score_secondary.get() + int(points))
 
 
-    def update_main_coords(self):
-        try:
-            trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))
+    # def update_main_coords(self):
+    #     try:
+    #         trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))
+    #
+    #         q_main = [trans_main.transform.rotation.x,
+    #                   trans_main.transform.rotation.y,
+    #                   trans_main.transform.rotation.z,
+    #                   trans_main.transform.rotation.w]
+    #
+    #         angle_main = euler_from_quaternion(q_main)[2] % (2 * np.pi)
+    #
+    #         self.main_coords_array = np.array([trans_main.transform.translation.x,
+    #                                 trans_main.transform.translation.y,
+    #                                 angle_main])
+    #
+    #         self.main_coords.set(('%.2f' % self.main_coords_array[0],
+    #                                 '%.2f' % self.main_coords_array[1],
+    #                                 '%.2f' % self.main_coords_array[2]))
+    #
+    #         rospy.loginfo(str(self.main_coords))
+    #         # return True
+    #
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+    #         rospy.logwarn(str(msg))
+    #         return False
 
-            q_main = [trans_main.transform.rotation.x,
-                      trans_main.transform.rotation.y,
-                      trans_main.transform.rotation.z,
-                      trans_main.transform.rotation.w]
-
-            angle_main = euler_from_quaternion(q_main)[2] % (2 * np.pi)
-
-            self.main_coords_array = np.array([trans_main.transform.translation.x,
-                                    trans_main.transform.translation.y,
-                                    angle_main])
-
-            self.main_coords.set(('%.2f' % self.main_coords_array[0],
-                                    '%.2f' % self.main_coords_array[1],
-                                    '%.2f' % self.main_coords_array[2]))
-
-            rospy.loginfo(str(self.main_coords))
-            # return True
-
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            # return False
-
-    def update_secondary_coords(self):
-        try:
-            trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time(0))
-
-            q_secondary = [trans_secondary.transform.rotation.x,
-                           trans_secondary.transform.rotation.y,
-                           trans_secondary.transform.rotation.z,
-                           trans_secondary.transform.rotation.w]
-
-            angle_secondary = euler_from_quaternion(q_secondary)[2] % (2 * np.pi)
-
-            self.secondary_coords_array = np.array([trans_secondary.transform.translation.x,
-                                              trans_secondary.transform.translation.y,
-                                              angle_secondary])
-
-            self.secondary_coords.set(('%.2f' % self.secondary_coords_array[0],
-                                    '%.2f' % self.secondary_coords_array[1],
-                                    '%.2f' % self.secondary_coords_array[2]))
-
-            # rospy.loginfo(str(self.secondary_coords))
-            # root.update()
-            return True
-
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            # return False
+    # def update_secondary_coords(self):
+    #     try:
+    #         trans_secondary = self.tfBuffer.lookup_transform('map', "secondary_robot", rospy.Time(0))
+    #
+    #         q_secondary = [trans_secondary.transform.rotation.x,
+    #                        trans_secondary.transform.rotation.y,
+    #                        trans_secondary.transform.rotation.z,
+    #                        trans_secondary.transform.rotation.w]
+    #
+    #         angle_secondary = euler_from_quaternion(q_secondary)[2] % (2 * np.pi)
+    #
+    #         self.secondary_coords_array = np.array([trans_secondary.transform.translation.x,
+    #                                           trans_secondary.transform.translation.y,
+    #                                           angle_secondary])
+    #
+    #         self.secondary_coords.set(('%.2f' % self.secondary_coords_array[0],
+    #                                 '%.2f' % self.secondary_coords_array[1],
+    #                                 '%.2f' % self.secondary_coords_array[2]))
+    #
+    #         # rospy.loginfo(str(self.secondary_coords))
+    #         # root.update()
+    #         return True
+    #
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+    #         rospy.logwarn(str(msg))
+    #         return False
 
 
 if __name__ == '__main__':
@@ -308,7 +321,7 @@ if __name__ == '__main__':
     root.geometry("700x450")
 
     app = App(root)
-
+    app.heartbeat_loop()
     # rospy.Subscriber("/main_robot/score", String, app.main_score_callback)
     # rospy.Subscriber("/secondary_robot/score", String, app.secondary_score_callback)
     #

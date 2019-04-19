@@ -207,7 +207,7 @@ class MainRobotBT(object):
 
         self.purple_tactics = PurpleTactics()
         self.yellow_tactics = YellowTactics()
-
+        self.tactics = None
         self.side_status = None
 
         self.bt = None
@@ -217,6 +217,7 @@ class MainRobotBT(object):
         # self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
         self.is_observed = bt.BTVariable(False)
+        self.is_secondary_working = False
 
         self.nearest_landing = None
         self.nearest_PRElanding = None
@@ -232,10 +233,10 @@ class MainRobotBT(object):
         self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
         self.approach_dist = np.array(self.approach_dist)
 
-        self.drive_back_dist = rospy.get_param("drive_back_dist")  # 0.04
+        self.drive_back_dist = rospy.get_param("drive_back_dist")
         self.drive_back_dist = np.array(self.drive_back_dist)
 
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])  # 0.11
+        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])
         self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
 
         # TODO: pucks in front of starting cells are random, so while we aren't using camera
@@ -422,11 +423,9 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         if side == SideStatus.PURPLE:
-            self.tactics = self.purple_tactics # FIXME
-            # rospy.loginfo("Error 2")
+            self.tactics = self.purple_tactics
         elif side == SideStatus.YELLOW:
             self.tactics = self.yellow_tactics
-            # rospy.loginfo("Error 2")
         else:
             self.tactics = None
         self.side_status = side

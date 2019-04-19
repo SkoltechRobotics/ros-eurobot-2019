@@ -288,7 +288,7 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
-        rospy.sleep(0.2)  # FIXME 0.2
+        rospy.sleep(0.2)
         return True
 
     def goldenium_up_and_hold(self):
