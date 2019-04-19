@@ -33,6 +33,11 @@ class YellowTactics(Tactics):
     def __init__(self):
         super(YellowTactics, self).__init__()
         self.red_cell_puck = rospy.get_param("yellow_side/red_cell_puck")
+        self.blunium = rospy.get_param("yellow_side/blunium")
+        self.goldenium = rospy.get_param("yellow_side/goldenium")
+        self.scales_area = rospy.get_param("yellow_side/scales_area")
+        self.scales_area = np.array(self.scales_area)
+        self.chaos_center = rospy.get_param("yellow_side/chaos_center")
 
         self.start_zone = np.array([self.red_cell_puck[0] + self.ground_spacing_dist,
                                     self.red_cell_puck[1],
@@ -54,15 +59,13 @@ class YellowTactics(Tactics):
                                                 self.third_puck_landing[1],
                                                 -2.35])
 
-        self.blunium = rospy.get_param("yellow_side/blunium_acc")
-
-        self.blunium_prepose = np.array([self.blunium[0],
-                                         self.blunium[1] + 0.3,
+        self.blunium_prepose = np.array([self.blunium[0] + 0.07,
+                                         self.blunium[1] + 0.35,
                                          -1.57])
 
-        self.blunium_start_push_pose = np.array([self.blunium[0] + 0.06,
-                                                 self.blunium[1] + self.robot_outer_radius + self.stick_len,
-                                                 -0.78])
+        self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
+                                                 self.blunium[1] + self.robot_outer_radius,
+                                                 -0.52])  # + self.stick_len
 
         self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] - 0.08,
                                                self.blunium_start_push_pose[1],
@@ -76,10 +79,8 @@ class YellowTactics(Tactics):
                                                        self.blunium_end_push_pose[1] - 0.05,
                                                        0.56])
 
-        self.goldenium = rospy.get_param("yellow_side/goldenium")
-
         self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.3,
+                                               self.goldenium[1] + 0.4,
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
@@ -87,24 +88,19 @@ class YellowTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.01,
+                                               self.goldenium_2_PREgrab_pos[1] - 0.1,
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
                                                  self.goldenium_grab_pos[1] + 0.06,
-                                                 3.14])
+                                                 1.57])
 
-        self.scales_area = rospy.get_param("yellow_side/scales_area")
-        self.scales_area = np.array(self.scales_area)
-
-        self.chaos_center = rospy.get_param("yellow_side/chaos_center")
-
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.4,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.3,
                                                     self.chaos_center[1],
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
-                                              self.scales_goldenium_PREpos[1] + 0.35,
+                                              self.scales_goldenium_PREpos[1] + 0.39,
                                               1.7])
 
 
@@ -113,6 +109,11 @@ class PurpleTactics(Tactics):
         super(PurpleTactics, self).__init__()
 
         self.red_cell_puck = rospy.get_param("purple_side/red_cell_puck")
+        self.scales_area = rospy.get_param("purple_side/scales_area")
+        self.scales_area = np.array(self.scales_area)
+        self.chaos_center = rospy.get_param("purple_side/chaos_center")
+        self.goldenium = rospy.get_param("purple_side/goldenium")
+        self.blunium = rospy.get_param("purple_side/blunium")
 
         self.start_zone = np.array([self.red_cell_puck[0] - self.ground_spacing_dist,
                                     self.red_cell_puck[1],
@@ -134,15 +135,13 @@ class PurpleTactics(Tactics):
                                                 self.third_puck_landing[1],
                                                 -2.35])
 
-        self.blunium = rospy.get_param("purple_side/blunium_acc")
-
-        self.blunium_prepose = np.array([self.blunium[0],
-                                         self.blunium[1] + 0.3,
+        self.blunium_prepose = np.array([self.blunium[0] + 0.07,
+                                         self.blunium[1] + 0.35,
                                          -1.57])
 
-        self.blunium_start_push_pose = np.array([self.blunium[0] - 0.06,
-                                                 self.blunium[1] + self.robot_outer_radius + self.stick_len,
-                                                 -0.78])
+        self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
+                                                 self.blunium[1] + self.robot_outer_radius,
+                                                 -0.52])  # + self.stick_len
 
         self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] + 0.08,
                                                self.blunium_start_push_pose[1],
@@ -156,10 +155,8 @@ class PurpleTactics(Tactics):
                                                        self.blunium_end_push_pose[1] - 0.05,
                                                        0.56])
 
-        self.goldenium = rospy.get_param("purple_side/goldenium")
-
         self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.3,
+                                               self.goldenium[1] + 0.35,
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
@@ -167,26 +164,20 @@ class PurpleTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.01,
+                                               self.goldenium_2_PREgrab_pos[1] - 0.1,
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
                                                  self.goldenium_grab_pos[1] + 0.06,
-                                                 3.14])
+                                                 1.57])
 
-        self.scales_area = rospy.get_param("purple_side/scales_area")
-        self.scales_area = np.array(self.scales_area)
-
-        self.chaos_center = rospy.get_param("purple_side/chaos_center")
-
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.4,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.3,
                                                     self.chaos_center[1],
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
-                                              self.scales_goldenium_PREpos[1] + 0.35,
+                                              self.scales_goldenium_PREpos[1] + 0.39,
                                               1.7])
-
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
@@ -294,7 +285,7 @@ class MainRobotBT(object):
         polygon = Polygon([area[0], area[1], area[2], area[3]])
 
         if not self.is_secondary_working:
-            rospy.sleep(10)
+            rospy.sleep(5)
             return bt.Status.SUCCESS
         else:
             print("got coords in condition:")
@@ -349,7 +340,7 @@ class MainRobotBT(object):
         approach_acc = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
                             bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
-                            bt_ros.SetSpeedSTM([0, -0.1, 0], 1.3, "stm_client"),
+                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.7, "stm_client"),
                         ])
 
         unload_first_in_acc = bt.SequenceWithMemoryNode([
@@ -372,10 +363,8 @@ class MainRobotBT(object):
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
-                                bt.ParallelWithMemoryNode([
-                                    bt_ros.StartCollectGoldenium("manipulator_client"),
-                                    bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
-                                ], threshold=2),
+                                bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
+                                bt_ros.StartCollectGoldenium("manipulator_client"),
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
                                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                 bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
@@ -390,6 +379,7 @@ class MainRobotBT(object):
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES"))

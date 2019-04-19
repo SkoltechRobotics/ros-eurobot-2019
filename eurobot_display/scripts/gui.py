@@ -331,6 +331,7 @@ if __name__ == '__main__':
     root.geometry("750x450")
 
     app = App(root)
+    app.heartbeat_loop()
 
     rospy.Subscriber("/main_robot/score", String, app.main_score_callback)
     rospy.Subscriber("/secondary_robot/score", String, app.secondary_score_callback)
