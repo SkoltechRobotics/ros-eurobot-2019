@@ -8,4 +8,4 @@ drive_back_dist: 0.04
 RATE: 10
 scale_factor: 10
 coords_threshold: 0.01
-stick_len: 0.03  # FIXME
+stick_len: 0.03

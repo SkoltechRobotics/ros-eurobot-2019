@@ -213,8 +213,8 @@ class MainRobotBT(object):
         self.bt = None
         self.bt_timer = None
 
-        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-        # self.sorted_chaos_landings = bt.BTVariable(np.array([]))
+        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
         self.is_observed = bt.BTVariable(False)
         self.is_secondary_working = False
@@ -411,6 +411,10 @@ class MainRobotBT(object):
                         ])
 
         return strategy
+
+    def test_collect_chaos(self):
+        # return strategy
+        pass
 
     def start(self):
 
