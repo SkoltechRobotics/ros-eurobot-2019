@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import numpy as np
 import behavior_tree as bt
 import bt_ros
 import tf2_ros
@@ -11,22 +12,22 @@ from core_functions import *
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from std_msgs.msg import String
-
-# from eurobot_main.scripts.in_progress.tactics_math import *
+from visualization_msgs.msg import MarkerArray
+from tactics_math import *
 
 
 class Tactics(object):
     def __init__(self):
-        self.tfBuffer = tf2_ros.Buffer()
-        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-        self.robot_coordinates = None
+        # self.tfBuffer = tf2_ros.Buffer()
+        # self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        # self.robot_coordinates = None
 
         self.approach_dist = rospy.get_param("approach_dist")  # 0.127 meters, distance from robot to puck where robot will try to grab it
         self.approach_dist = np.array(self.approach_dist)
         self.approach_vec = np.array([-1*self.approach_dist, 0, 0])
-        self.ground_spacing_dist = rospy.get_param("ground_spacing_dist")  # 0.3
+        self.ground_spacing_dist = rospy.get_param("ground_spacing_dist")
         self.robot_outer_radius = rospy.get_param("robot_outer_radius")  # FIXME
-        self.stick_len = rospy.get_param("stick_len")  # FIXME
+        self.stick_len = rospy.get_param("stick_len")
 
 
 class YellowTactics(Tactics):
@@ -179,6 +180,7 @@ class PurpleTactics(Tactics):
                                               self.scales_goldenium_PREpos[1] + 0.39,
                                               1.7])
 
+
 class MainRobotBT(object):
     # noinspection PyTypeChecker
     def __init__(self):  # fixme  YELLOW  PURPLE  side_status=SideStatus.PURPLE
@@ -204,10 +206,15 @@ class MainRobotBT(object):
         self.bt = None
         self.bt_timer = None
 
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
+        self.known_chaos_pucks = bt.BTVariable(np.array([[0.7, 0.8, 1, 1, 0, 0],
+                                                            [0.9, 0.9, 2, 0, 1, 0],
+                                                            [1.1, 0.85, 3, 0, 0, 1],
+                                                            [0.9, 1.1, 4, 1, 0, 0]]))  # (x, y, id, r, g, b)
+
         self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
-        self.is_observed = bt.BTVariable(False)
+        self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
         self.is_secondary_working = False
 
         self.nearest_landing = None
@@ -237,7 +244,7 @@ class MainRobotBT(object):
 
         # self.is_puck_grabbed = grab_status  TODO
         self.incoming_puck_color = None
-        self.collected_pucks = bt.BTVariable(np.array([]))  # FIXME change to np.array!
+        self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
 
         # self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
@@ -296,6 +303,134 @@ class MainRobotBT(object):
             else:
                 rospy.loginfo('Landing is free to go')
                 return bt.Status.SUCCESS
+
+    # def pucks_callback(self, data):
+    #     self.is_observed.set(True)
+    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+    #     # red (1, 0, 0)
+    #     # green (0, 1, 0)
+    #     # blue (0, 0, 1)
+    #
+    #     if self.known_chaos_pucks.get().size == 0:
+    #         try:
+    #             new_observation_pucks = [[marker.pose.position.x,
+    #                                       marker.pose.position.y,
+    #                                       marker.id,
+    #                                       marker.color.r,
+    #                                       marker.color.g,
+    #                                       marker.color.b] for marker in data.markers]
+    #
+    #             self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
+    #             rospy.loginfo("Got pucks observation:")
+    #             rospy.loginfo(self.known_chaos_pucks.get())
+    #             self.pucks_subscriber.unregister()
+    #
+    #         except Exception:  # FIXME
+    #             rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    def is_chaos_collected_completely(self):
+        if self.known_chaos_pucks.get().size == 0:
+            rospy.loginfo("Chaos collected completely")
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.FAILED
+
+    def is_chaos_collected_completely1(self):
+        if self.known_chaos_pucks.get().size == 0:
+            rospy.loginfo("Chaos collected completely")
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+    def is_chaos_observed(self):
+        if self.is_observed.get():
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+    def calculate_pucks_configuration(self):
+        """
+
+        :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
+        """
+        known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
+
+        self.known_chaos_pucks.set(known_chaos_pucks)
+
+        if self.known_chaos_pucks.get().size >= 3:
+            is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
+                                                                                                     self.known_chaos_pucks.get(),
+                                                                                                     self.critical_angle)
+            if is_hull_safe_to_approach:  # only sharp angles
+                rospy.loginfo("hull is SAFE to approach, sorted wrt robot")
+
+            if not is_hull_safe_to_approach:
+                self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
+                # known_chaos_pucks = coords_sorted_by_angle
+                rospy.loginfo("hull is not safe to approach, sorted by angle")
+
+        # when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
+        # if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
+        #     # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
+        #     rospy.loginfo("blue rolled")
+
+    def calculate_landings(self):
+        """
+
+        :return: [(x, y, theta), ...]
+        """
+        coords = self.known_chaos_pucks.get()[:, :2]
+        if coords.size == 1:
+            landings = calculate_closest_landing_to_point(self.main_coords, coords, self.approach_vec)
+            self.sorted_chaos_landings.set(landings)
+        else:
+            landings = unleash_power_of_geometry(coords, self.scale_factor, self.approach_dist)
+            self.sorted_chaos_landings.set(landings)
+
+    def choose_new_landing(self):
+        self.nearest_landing = self.sorted_chaos_landings.get()[0]
+        rospy.loginfo("Nearest landing chosen: " + str(self.nearest_landing))
+
+    def calculate_prelanding(self):
+        self.nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.nearest_landing)
+        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_landing))
+
+    def calculate_drive_back_point(self):
+        self.drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing)
+        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.drive_back_point))
+
+    def is_last_puck(self):
+        if self.known_chaos_pucks.get().size == 1:
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+    @staticmethod
+    def get_color(puck):
+        """
+        red (1, 0, 0)
+        green (0, 1, 0)
+        blue (0, 0, 1)
+        :param puck: (x, y, id, 0, 0, 1)
+        :return:
+        """
+        pucks_colors = {
+            (1, 0, 0): "REDIUM",
+            (0, 1, 0): "GREENIUM",
+            (0, 0, 1): "BLUNIUM"
+        }
+        color_key = puck[3:]
+        color_val = pucks_colors.get(color_key)
+        return color_val
+
+    def update_chaos_pucks(self):
+        """
+        delete taken puck from known on the field
+        get color of last taken puck
+        :return: None
+        """
+        self.incoming_puck_color = self.get_color(self.known_chaos_pucks.get()[0])
+        self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
 
     def strategy_msc(self):
         red_cell_puck = bt.SequenceWithMemoryNode([
@@ -386,18 +521,72 @@ class MainRobotBT(object):
                                 ])
                             ])
 
+        move_to_chaos = bt.SequenceWithMemoryNode([
+                            bt.ActionNode(self.update_main_coords),
+                            bt.ActionNode(self.calculate_pucks_configuration),
+                            bt.ActionNode(self.calculate_landings),
+                            bt.ActionNode(self.choose_new_landing),
+                            bt.ActionNode(self.calculate_prelanding),
+
+                            bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
+                            bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+                        ])
+
+        # TODO take into account, that when colecting 7 pucks, don't make step down
+        collect_chaos = bt.SequenceNode([
+                            bt.FallbackNode([
+                                # completely?
+                                bt.ConditionNode(self.is_chaos_collected_completely),
+
+                                # if last puck, just collect it, return success and get fuck out of here
+                                bt.SequenceWithMemoryNode([
+                                    bt.ConditionNode(self.is_last_puck),
+                                    bt.SequenceWithMemoryNode([
+                                        bt_ros.StartCollectGround("manipulator_client"),
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt.ActionNode(self.update_chaos_pucks),
+                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
+                                    ])
+                                ]),
+
+                                # calc config and start collect
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt.ActionNode(self.calculate_drive_back_point),
+                                    bt_ros.MoveLineToPoint(self.drive_back_point, "move_client"), # FIXME make it closer
+
+                                    # calc new landing
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.calculate_landings),
+
+                                    # drive back, collect and move to new prelanding
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt.ActionNode(self.update_chaos_pucks),
+                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color)),
+                                        bt_ros.MoveArcToPoint(self.nearest_PRElanding, "move_client"),
+                                    ], threshold=4),
+
+                                    bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+                                ]),
+                            ]),
+                            bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
+                        ])
+
         strategy = bt.SequenceWithMemoryNode([
-                        red_cell_puck,
-                        green_cell_puck,
-                        blue_cell_puck,
-                        start_move_to_blunium,
-                        finish_move_blunium_and_push,
-                        approach_acc,
-                        unload_first_in_acc,
-                        unload_acc,
-                        collect_goldenium,
+                        # red_cell_puck,
+                        # green_cell_puck,
+                        # blue_cell_puck,
+                        # start_move_to_blunium,
+                        # finish_move_blunium_and_push,
+                        # approach_acc,
+                        # unload_first_in_acc,
+                        # unload_acc,
+                        # collect_goldenium,
                         move_to_goldenium_prepose,
-                        unload_goldenium
+                        # unload_goldenium,
+                        move_to_chaos,
+                        collect_chaos
                         ])
 
         return strategy
