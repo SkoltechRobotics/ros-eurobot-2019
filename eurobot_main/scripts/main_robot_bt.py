@@ -217,9 +217,13 @@ class MainRobotBT(object):
         self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
         self.is_secondary_working = False
 
-        self.nearest_landing = np.zeros(3) # None
-        self.nearest_PRElanding = np.zeros(3)
-        self.drive_back_point = np.zeros(3)
+        # self.nearest_landing = np.zeros(3) # None
+        # self.nearest_PRElanding = np.zeros(3)
+        # self.drive_back_point = np.zeros(3)
+
+        self.nearest_landing = bt.BTVariable(np.array([])) # None
+        self.nearest_PRElanding = bt.BTVariable(np.array([]))
+        self.drive_back_point = bt.BTVariable(np.array([]))
 
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
@@ -379,7 +383,6 @@ class MainRobotBT(object):
 
         :return: [(x, y, theta), ...]
         """
-        print(self.sorted_chaos_landings.get())
         print "calculating landings"
         coords = self.known_chaos_pucks.get()[:, :2]
         if coords.size == 1:
@@ -392,20 +395,19 @@ class MainRobotBT(object):
         print(self.sorted_chaos_landings.get())
 
     def choose_new_landing(self):
-        print "choose new landing - error as well?"
-        self.nearest_landing = self.sorted_chaos_landings.get()[0]
-        print(self.nearest_landing)
-        rospy.loginfo("Nearest landing chosen: " + str(self.nearest_landing))
+        nearest_landing = self.sorted_chaos_landings.get()[0]
+        self.nearest_landing.set(nearest_landing)
+        rospy.loginfo("Nearest landing chosen: " + str(self.nearest_landing.get()))
 
     def calculate_prelanding(self):
-        print "here mistake?"
-        self.nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.nearest_landing)
-        print(self.nearest_PRElanding)
-        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding))
+        nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
+        self.nearest_PRElanding.set(nearest_PRElanding)
+        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding.get()))
 
     def calculate_drive_back_point(self):
-        self.drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing)
-        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.drive_back_point))
+        drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
+        self.drive_back_point.set(drive_back_point)
+        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.drive_back_point.get()))
 
     def is_last_puck(self):
         if self.known_chaos_pucks.get().size == 1:
@@ -535,8 +537,8 @@ class MainRobotBT(object):
                             bt.ActionNode(self.calculate_landings),
                             bt.ActionNode(self.choose_new_landing),
                             bt.ActionNode(self.calculate_prelanding),
-                            bt_ros.MoveLineToPoint(self.nearest_PRElanding, "move_client"),
-                            bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+                            bt_ros.MoveLineToPoint(self.nearest_PRElanding.get(), "move_client"),
+                            bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
                         ])
 
         # TODO take into account, that when colecting 7 pucks, don't make step down
@@ -560,7 +562,7 @@ class MainRobotBT(object):
                                 bt.SequenceWithMemoryNode([
                                     bt_ros.StartCollectGround("manipulator_client"),
                                     bt.ActionNode(self.calculate_drive_back_point),
-                                    bt_ros.MoveLineToPoint(self.drive_back_point, "move_client"), # FIXME make it closer
+                                    bt_ros.MoveLineToPoint(self.drive_back_point.get(), "move_client"), # FIXME make it closer
 
                                     # calc new landing
                                     bt.ActionNode(self.calculate_pucks_configuration),
@@ -571,10 +573,10 @@ class MainRobotBT(object):
                                         bt_ros.CompleteCollectGround("manipulator_client"),
                                         bt.ActionNode(self.update_chaos_pucks),
                                         bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color)),
-                                        bt_ros.MoveArcToPoint(self.nearest_PRElanding, "move_client"),
+                                        bt_ros.MoveArcToPoint(self.nearest_PRElanding.get(), "move_client"),
                                     ], threshold=4),
 
-                                    bt_ros.MoveLineToPoint(self.nearest_landing, "move_client"),
+                                    bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
                                 ]),
                             ]),
                             bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
