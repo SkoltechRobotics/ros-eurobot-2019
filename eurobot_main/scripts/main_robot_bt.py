@@ -207,10 +207,10 @@ class MainRobotBT(object):
         self.bt_timer = None
 
         # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
-        self.known_chaos_pucks = bt.BTVariable(np.array([[0.7, 0.8, 1, 1, 0, 0],
-                                                            [0.9, 0.9, 2, 0, 1, 0],
-                                                            [1.1, 0.85, 3, 0, 0, 1],
-                                                            [0.9, 1.1, 4, 1, 0, 0]]))  # (x, y, id, r, g, b)
+        self.known_chaos_pucks = bt.BTVariable(np.array([[1.7, 0.8, 1, 1, 0, 0],
+                                                            [1.9, 0.9, 2, 0, 1, 0],
+                                                            [2.1, 0.85, 3, 0, 0, 1],
+                                                            [1.9, 1.1, 4, 1, 0, 0]]))  # (x, y, id, r, g, b)
 
         self.sorted_chaos_landings = bt.BTVariable(np.array([]))
 
@@ -221,9 +221,18 @@ class MainRobotBT(object):
         # self.nearest_PRElanding = np.zeros(3)
         # self.drive_back_point = np.zeros(3)
 
-        self.nearest_landing = bt.BTVariable(np.array([])) # None
-        self.nearest_PRElanding = bt.BTVariable(np.array([]))
-        self.drive_back_point = bt.BTVariable(np.array([]))
+        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
+        # self.choose_new_landing_latch = bt.Latch(bt.ActionNode(self.choose_new_landing))
+        # self.calculate_prelanding_latch = bt.Latch(bt.ActionNode(self.calculate_prelanding))
+        # self.calculate_drive_back_point_latch = bt.Latch(bt.ActionNode(self.calculate_drive_back_point))
+
+        self.choose_new_landing_latch = bt.ActionNode(self.choose_new_landing)
+        self.calculate_prelanding_latch = bt.ActionNode(self.calculate_prelanding)
+        self.calculate_drive_back_point_latch = bt.ActionNode(self.calculate_drive_back_point)
+
+        self.nearest_landing = bt.BTVariable(np.array([1, 1, 1.57])) # None
+        # self.nearest_PRElanding = bt.BTVariable(np.array([1, 1, 3.14]))
+        # self.drive_back_point = bt.BTVariable(np.array([1, 1, 0]))
 
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
@@ -247,7 +256,7 @@ class MainRobotBT(object):
         # TODO: It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
         # self.is_puck_grabbed = grab_status  TODO
-        self.incoming_puck_color = None
+        self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
 
@@ -357,6 +366,7 @@ class MainRobotBT(object):
 
         :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
         """
+        self.update_main_coords()
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
 
         self.known_chaos_pucks.set(known_chaos_pucks)
@@ -394,20 +404,55 @@ class MainRobotBT(object):
         print("sorted landings")
         print(self.sorted_chaos_landings.get())
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     def choose_new_landing(self):
+        self.calculate_pucks_configuration()
+        self.calculate_landings()
+
         nearest_landing = self.sorted_chaos_landings.get()[0]
         self.nearest_landing.set(nearest_landing)
-        rospy.loginfo("Nearest landing chosen: " + str(self.nearest_landing.get()))
+        rospy.loginfo("Nearest landing chosen: " + str(nearest_landing))
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(nearest_landing))
 
     def calculate_prelanding(self):
-        nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
-        self.nearest_PRElanding.set(nearest_PRElanding)
-        rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding.get()))
+        self.calculate_pucks_configuration()
+        self.calculate_landings()
+
+        nearest_landing = self.sorted_chaos_landings.get()[0]
+        nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
+        rospy.loginfo("Nearest PRElanding calculated: " + str(nearest_PRElanding))
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(nearest_PRElanding))
 
     def calculate_drive_back_point(self):
         drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
-        self.drive_back_point.set(drive_back_point)
-        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.drive_back_point.get()))
+        rospy.loginfo("Nearest drive_back_point calculated: " + str(drive_back_point))
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(drive_back_point))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def is_last_puck(self):
         if self.known_chaos_pucks.get().size == 1:
@@ -439,7 +484,8 @@ class MainRobotBT(object):
         get color of last taken puck
         :return: None
         """
-        self.incoming_puck_color = self.get_color(self.known_chaos_pucks.get()[0])
+        incoming_puck_color = self.get_color(self.known_chaos_pucks.get()[0])
+        self.incoming_puck_color.set(incoming_puck_color)
         self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
 
     def strategy_msc(self):
@@ -516,10 +562,10 @@ class MainRobotBT(object):
         #                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
         #                     ])
 
-        move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
-                                        # bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
-                                    ])
+        # move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
+        #                                 # bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
+        #                                 bt_ros.MoveArcToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+        #                             ])
 
         # unload_goldenium = bt.SequenceWithMemoryNode([
         #                         bt.ConditionNode(self.is_scales_landing_free),
@@ -532,55 +578,53 @@ class MainRobotBT(object):
         #                     ])
 
         move_to_chaos = bt.SequenceWithMemoryNode([
-                            bt.ActionNode(self.update_main_coords),
-                            bt.ActionNode(self.calculate_pucks_configuration),
-                            bt.ActionNode(self.calculate_landings),
-                            bt.ActionNode(self.choose_new_landing),
-                            bt.ActionNode(self.calculate_prelanding),
-                            bt_ros.MoveLineToPoint(self.nearest_PRElanding.get(), "move_client"),
-                            bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
+                            self.calculate_prelanding_latch,
+                            self.move_to_waypoint_node,
+                            self.choose_new_landing_latch,
+                            self.move_to_waypoint_node,
                         ])
 
         # TODO take into account, that when colecting 7 pucks, don't make step down
-        collect_chaos = bt.SequenceNode([
-                            bt.FallbackNode([
-                                # completely?
-                                bt.ConditionNode(self.is_chaos_collected_completely),
+        # collect_chaos = bt.SequenceNode([
+        #                     bt.FallbackNode([
+        #                         # completely?
+        #                         bt.ConditionNode(self.is_chaos_collected_completely),
 
-                                # if last puck, just collect it, return success and get fuck out of here
-                                bt.SequenceWithMemoryNode([
-                                    bt.ConditionNode(self.is_last_puck),
-                                    bt.SequenceWithMemoryNode([
-                                        bt_ros.StartCollectGround("manipulator_client"),
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(self.update_chaos_pucks),
-                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
-                                    ])
-                                ]),
+        #                         # if last puck, just collect it, return success and get fuck out of here
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt.ConditionNode(self.is_last_puck),
+        #                             bt.SequenceWithMemoryNode([
+        #                                 bt_ros.StartCollectGround("manipulator_client"),
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
+        #                             ])
+        #                         ]),
 
-                                # calc config and start collect
-                                bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
-                                    bt.ActionNode(self.calculate_drive_back_point),
-                                    bt_ros.MoveLineToPoint(self.drive_back_point.get(), "move_client"), # FIXME make it closer
+        #                         # calc config and start collect
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt_ros.StartCollectGround("manipulator_client"),
+        #                             self.calculate_drive_back_point_latch,
+        #                             self.move_to_waypoint_node, # FIXME make it closer
 
-                                    # calc new landing
-                                    bt.ActionNode(self.calculate_pucks_configuration),
-                                    bt.ActionNode(self.calculate_landings),
+        #                             # calc new landing
+        #                             bt.ActionNode(self.calculate_pucks_configuration),
+        #                             bt.ActionNode(self.calculate_landings),
 
-                                    # drive back, collect and move to new prelanding
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(self.update_chaos_pucks),
-                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color)),
-                                        bt_ros.MoveArcToPoint(self.nearest_PRElanding.get(), "move_client"),
-                                    ], threshold=4),
+        #                             # drive back, collect and move to new prelanding
+        #                             bt.ParallelWithMemoryNode([
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+        #                                 self.calculate_prelanding_latch,
+        #                                 self.move_to_waypoint_node,
+        #                             ], threshold=5),
 
-                                    bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
-                                ]),
-                            ]),
-                            bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
-                        ])
+        #                             bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
+        #                         ]),
+        #                     ]),
+        #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
+        #                 ])
 
         strategy = bt.SequenceWithMemoryNode([
                         # red_cell_puck,
@@ -592,10 +636,10 @@ class MainRobotBT(object):
                         # unload_first_in_acc,
                         # unload_acc,
                         # collect_goldenium,
-                        move_to_goldenium_prepose,
+                        # move_to_goldenium_prepose,
                         # unload_goldenium,
                         move_to_chaos,
-                        collect_chaos
+                        # collect_chaos
                         ])
 
         return strategy
