@@ -424,6 +424,8 @@ class MotionPlannerNode:
                 self.follow_path()
             else:
                 self.move_arc()
+        elif self.current_state == "move_arc":
+            move_arc()
 
     def create_collision_path(self):
         self.buf_goal = self.goal.copy()
