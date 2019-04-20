@@ -26,7 +26,7 @@
             <param name="publish_pose_stamped" value="true"/>
         </node-->
         <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="log"/>
-        <node pkg="eurobot_main" name="behavior_tree" type="main_robot_bt.py" respawn="true" output="log"/>
+        <node pkg="eurobot_main" name="behavior_tree" type="main_robot_bt.py" respawn="true" output="screen"/>
         <!--  -->
     </group>
 </launch>

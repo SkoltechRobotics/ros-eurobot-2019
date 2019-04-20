@@ -121,6 +121,7 @@ class StepDown(ActionClientNode):
 
 class MoveLineToPoint(ActionClientNode):
     def __init__(self, point, action_client_id):
+        rospy.loginfo(point)
         cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
         super(MoveLineToPoint, self).__init__(cmd, action_client_id)
 
@@ -196,12 +197,6 @@ class CompleteCollectLastPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_last_puck"
         super(CompleteCollectLastPuck, self).__init__(cmd, action_client_id)
-
-
-class MoveLineToPoint(ActionClientNode):
-    def __init__(self, point, action_client_id):
-        cmd = "move_line " + str(point[0]) + " " + str(point[1]) + " " + str(point[2])
-        super(MoveLineToPoint, self).__init__(cmd, action_client_id)
 
 
 class MoveArcToPoint(ActionClientNode):
