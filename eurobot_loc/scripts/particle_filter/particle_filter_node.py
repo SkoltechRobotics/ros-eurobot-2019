@@ -6,14 +6,13 @@ from sensor_msgs.msg import LaserScan
 import numpy as np
 from core_functions import cvt_global2local, cvt_local2global, find_src, wrap_angle
 from np_particle import ParticleFilter
-from np_triangulation import find_position_triangulation
 from std_msgs.msg import String
 import tf2_ros
 import tf_conversions
 import matplotlib as mpl
 import scipy.optimize
 import tf2_geometry_msgs
-PF_RATE = 25
+PF_RATE = rospy.get_param("rate")
 BEAC_R = rospy.get_param("beacons_radius")
 WORLD_X = rospy.get_param("world_x")
 WORLD_Y = rospy.get_param("world_y")
@@ -39,7 +38,7 @@ class PFNode(object):
         self.prev_side_status = None
         self.robot_name = rospy.get_param("robot_name")
         # scan parameters
-        self.scan_offset = rospy.get_param("scan_offset")
+        self.scan_offset = float(rospy.get_param("scan_offset"))
         self.color = None
         self.beacons_publisher = rospy.Publisher("beacons", MarkerArray, queue_size=2)
         self.landmark_publisher = rospy.Publisher("landmarks", MarkerArray, queue_size=2)
