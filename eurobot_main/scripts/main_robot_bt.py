@@ -217,11 +217,15 @@ class MainRobotBT(object):
         self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
         self.is_secondary_working = False
 
-        # self.nearest_landing = np.zeros(3) # None
-        # self.nearest_PRElanding = np.zeros(3)
-        # self.drive_back_point = np.zeros(3)
 
-        self.move_to_waypoint_node = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
+
+
+        self.move_to_waypoint_node1 = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
+        self.move_to_waypoint_node2 = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
+
+
+
+
         # self.choose_new_landing_latch = bt.Latch(bt.ActionNode(self.choose_new_landing))
         # self.calculate_prelanding_latch = bt.Latch(bt.ActionNode(self.calculate_prelanding))
         # self.calculate_drive_back_point_latch = bt.Latch(bt.ActionNode(self.calculate_drive_back_point))
@@ -424,7 +428,7 @@ class MainRobotBT(object):
         nearest_landing = self.sorted_chaos_landings.get()[0]
         self.nearest_landing.set(nearest_landing)
         rospy.loginfo("Nearest landing chosen: " + str(nearest_landing))
-        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(nearest_landing))
+        self.move_to_waypoint_node2.cmd.set("move_line %f %f %f" % tuple(nearest_landing))
 
     def calculate_prelanding(self):
         self.calculate_pucks_configuration()
@@ -433,7 +437,7 @@ class MainRobotBT(object):
         nearest_landing = self.sorted_chaos_landings.get()[0]
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
         rospy.loginfo("Nearest PRElanding calculated: " + str(nearest_PRElanding))
-        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(nearest_PRElanding))
+        self.move_to_waypoint_node1.cmd.set("move_line %f %f %f" % tuple(nearest_PRElanding))
 
     def calculate_drive_back_point(self):
         drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
@@ -579,9 +583,10 @@ class MainRobotBT(object):
 
         move_to_chaos = bt.SequenceWithMemoryNode([
                             self.calculate_prelanding_latch,
-                            self.move_to_waypoint_node,
+                            self.move_to_waypoint_node1,
+
                             self.choose_new_landing_latch,
-                            self.move_to_waypoint_node,
+                            self.move_to_waypoint_node2,
                         ])
 
         # TODO take into account, that when colecting 7 pucks, don't make step down
