@@ -12,7 +12,7 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from std_msgs.msg import String
 
-from eurobot_main.scripts.in_progress.tactics_math import *
+# from eurobot_main.scripts.in_progress.tactics_math import *
 
 
 class Tactics(object):
