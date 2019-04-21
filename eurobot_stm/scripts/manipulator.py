@@ -230,19 +230,15 @@ class Manipulator(object):
 
     def start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_WALL"])  # FIXME need to remove?
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
-        self.send_command(self.protocol["SET_WALL"])  # FIXME remove this step?
         return True
 
     def complete_collect_ground(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["SET_PLATFORM"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
-        # self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         rospy.sleep(0.2)  # FIXME 0.2

@@ -98,13 +98,13 @@ class YellowTactics(Tactics):
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
                                                  self.goldenium_grab_pos[1] + 0.06,
-                                                 1.57])
+                                                 1])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.21,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.25,
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] - 0.1,
+        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] - 0.07,
                                               self.scales_goldenium_PREpos[1] + 0.55,
                                               1.75])
 
@@ -178,13 +178,13 @@ class PurpleTactics(Tactics):
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
                                                  self.goldenium_grab_pos[1] + 0.06,
-                                                 1.57])
+                                                 2])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.21,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.1,
+        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.07,
                                               self.scales_goldenium_PREpos[1] + 0.55,
                                               1.65])
 
