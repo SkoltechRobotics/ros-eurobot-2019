@@ -530,7 +530,7 @@ class MainRobotBT(object):
                                 ], threshold=2)
 
         finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
-                                            bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
+                                            # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
                                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
@@ -540,8 +540,8 @@ class MainRobotBT(object):
 
         approach_acc = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
-                            bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),
-                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.7, "stm_client"),
+                            bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
+                            bt_ros.SetSpeedSTM([0, -0.1, 0], 0.6, "stm_client"),
                         ])
 
         unload_first_in_acc = bt.SequenceWithMemoryNode([
@@ -580,7 +580,7 @@ class MainRobotBT(object):
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos - np.array([0, -0.05, 0]), "move_client"),
+                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.05, 0]), "move_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),

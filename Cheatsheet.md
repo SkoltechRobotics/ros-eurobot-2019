@@ -517,3 +517,5 @@ sudo apt install nvidia-367
 If it succeeds, reboot.
 
 sudo reboot
+
+rosclean purge
