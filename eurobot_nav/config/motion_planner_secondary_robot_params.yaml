@@ -12,7 +12,7 @@ RATE: 15
 XY_GOAL_TOLERANCE: 0.005
 YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
-V_MAX: 0.6
+V_MAX: 0.7
 W_MAX: 1.2
 AV_MAX: 0.9
 AW_MAX: 1.5
@@ -25,8 +25,8 @@ exp_const: 0.15
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
-XY_ACCURATE_GOAL_TOLERANCE: 0.01
-YAW_ACCURATE_GOAL_TOLERANCE: 0.05
+XY_ACCURATE_GOAL_TOLERANCE: 0.005
+YAW_ACCURATE_GOAL_TOLERANCE: 0.01
 D_ACCURATE_DECELERATION: 0.20
 collision:
     min_dist_to_obstacle: 0.4

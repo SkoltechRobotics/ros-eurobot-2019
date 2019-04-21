@@ -348,11 +348,11 @@ class MotionPlannerNode:
 
     def move(self):
         self.update_coords()
-        #self.create_linear_path()
-        delta_coords = self.coords - self.goal
+        delta_coords = self.coords - self.path[-1, :]
         delta_coords[2] = wrap_angle(delta_coords[2])
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
+        #self.create_linear_path()
         self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
@@ -425,9 +425,6 @@ class MotionPlannerNode:
             else:
                 self.move_arc()
         elif self.current_state == "move_arc":
-            if self.is_robot_stopped:
-                self.is_robot_stopped = False
-                self.terminate_moving()
             self.move_arc()
 
     def create_collision_path(self):
