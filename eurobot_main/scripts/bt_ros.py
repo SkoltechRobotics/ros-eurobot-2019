@@ -162,6 +162,12 @@ class SetSpeedSTM(ActionClientNode):
 # ===========================================================
 
 
+class CheckLimitSwitchInf(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "get_limit_switch_status"
+        super(CheckLimitSwitchInf, self).__init__(cmd, action_client_id)
+
+
 class StartTakeWallPuck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_wall"
