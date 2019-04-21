@@ -348,8 +348,8 @@ class MotionPlannerNode:
 
     def move(self):
         self.update_coords()
-        self.create_linear_path()
-        delta_coords = self.coords - self.path[-1, :]
+        #self.create_linear_path()
+        delta_coords = self.coords - self.goal
         delta_coords[2] = wrap_angle(delta_coords[2])
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)

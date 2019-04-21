@@ -104,9 +104,9 @@ class YellowTactics(Tactics):
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] - 0.07,
-                                              self.scales_goldenium_PREpos[1] + 0.55,
-                                              1.75])
+        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] - 0.05,
+                                              self.scales_goldenium_PREpos[1] + 0.51,
+                                              1.83])
 
 
 class PurpleTactics(Tactics):
@@ -184,9 +184,9 @@ class PurpleTactics(Tactics):
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
-        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.07,
-                                              self.scales_goldenium_PREpos[1] + 0.55,
-                                              1.65])
+        self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.05,
+                                              self.scales_goldenium_PREpos[1] + 0.51,
+                                              1.57])
 
 
 class MainRobotBT(object):
@@ -545,7 +545,7 @@ class MainRobotBT(object):
                         ])
 
         unload_first_in_acc = bt.SequenceWithMemoryNode([
-                                    bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                                    bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
