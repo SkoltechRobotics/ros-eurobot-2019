@@ -48,6 +48,10 @@ class YellowTactics(Tactics):
                                            self.red_cell_puck[1],
                                            3.14])
 
+        self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
+                                                    self.red_cell_puck[1] - 0.04,
+                                                    1.57])
+
         self.second_puck_landing = np.array([self.red_cell_puck[0],
                                             self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist,
                                             1.57])
@@ -96,13 +100,13 @@ class YellowTactics(Tactics):
                                                  self.goldenium_grab_pos[1] + 0.06,
                                                  1.57])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.3,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.31,
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
-                                              self.scales_goldenium_PREpos[1] + 0.39,
-                                              1.7])
+                                              self.scales_goldenium_PREpos[1] + 0.555,
+                                              1.75])
 
 
 class PurpleTactics(Tactics):
@@ -123,6 +127,10 @@ class PurpleTactics(Tactics):
         self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist,
                                            self.red_cell_puck[1],
                                            3.14])
+
+        self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
+                                                    self.red_cell_puck[1] - 0.04,
+                                                    1.57])
 
         self.second_puck_landing = np.array([self.red_cell_puck[0],
                                             self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist,
@@ -172,13 +180,13 @@ class PurpleTactics(Tactics):
                                                  self.goldenium_grab_pos[1] + 0.06,
                                                  1.57])
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.3,
+        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.31,
                                                     self.chaos_center[1] - 0.15,
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
-                                              self.scales_goldenium_PREpos[1] + 0.39,
-                                              1.7])
+                                              self.scales_goldenium_PREpos[1] + 0.555,
+                                              1.65])
 
 
 class MainRobotBT(object):
@@ -500,8 +508,9 @@ class MainRobotBT(object):
         green_cell_puck = bt.SequenceWithMemoryNode([
                             bt.ParallelWithMemoryNode([
                                 bt_ros.CompleteCollectGround("manipulator_client"),
-                                bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
+                                bt_ros.MoveLineToPoint(self.tactics.first_puck_landing_finish, "move_client"),
                             ], threshold=2),
+                            bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
                             bt_ros.StartCollectGround("manipulator_client"),
                             bt.ActionNode(lambda: self.score_master.add("REDIUM"))
                         ])
@@ -571,6 +580,7 @@ class MainRobotBT(object):
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
+                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos - np.array([0, -0.05, 0]), "move_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
