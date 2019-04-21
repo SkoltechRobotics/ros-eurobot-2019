@@ -161,10 +161,7 @@ class SetSpeedSTM(ActionClientNode):
 # ===========================================================
 
 
-class CheckLimitSwitchInf(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "check_limit switch_infinitely"
-        super(CheckLimitSwitchInf, self).__init__(cmd, action_client_id)
+
 
 
 class StartTakeWallPuck(ActionClientNode):
@@ -286,7 +283,7 @@ class TryToPumpWallPuck(bt.FallbackWithMemoryNode):
                 StartTakeWallPuck("manipulator_client"),
                 bt.SequenceWithMemoryNode([
                     MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
-                    MoveLineToPoint(puck_coordinates + (0, 0.02, 0), "move_client"),
+                    MoveLineToPoint(puck_coordinates + (0, 0.015, 0), "move_client"),
                     StartTakeWallPuck("manipulator_client"),
                 ])
             ])
@@ -298,7 +295,7 @@ class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
             StartTakeWallPuckWithoutGrabber("manipulator_client"),
             bt.SequenceWithMemoryNode([
                 MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
-                MoveLineToPoint(puck_coordinates + (0, 0.02, 0), "move_client"),
+                MoveLineToPoint(puck_coordinates + (0, 0.015, 0), "move_client"),
                 StartTakeWallPuckWithoutGrabber("manipulator_client"),
             ])
         ])
@@ -316,10 +313,10 @@ class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
         ])
 
 
-class CheckLimitSwitch(ActionClientNode):
+class CheckLimitSwitchInf(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "check_limit_switch_inf"
-        super(CheckLimitSwitch, self).__init__(cmd, action_client_id)
+        cmd = "check_limit switch_infinitely"
+        super(CheckLimitSwitchInf, self).__init__(cmd, action_client_id)
 
 
 class ReleaseOnePuck(ActionClientNode):

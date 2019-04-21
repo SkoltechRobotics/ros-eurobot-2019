@@ -196,7 +196,7 @@ class Manipulator(object):
     def check_status_infinitely(self):
         cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
         counter = 0
-        for i in range(25):
+        while True:
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1

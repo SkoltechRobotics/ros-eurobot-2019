@@ -425,7 +425,11 @@ class MotionPlannerNode:
             else:
                 self.move_arc()
         elif self.current_state == "move_arc":
-            move_arc()
+            if self.is_robot_stopped:       
+                self.terminate_moving()
+                self.is_robot_stopped = False
+            else:
+               self. move_arc()
 
     def create_collision_path(self):
         self.buf_goal = self.goal.copy()
