@@ -304,7 +304,6 @@ class Manipulator(object):
         return True
 
     def release_goldenium_on_scales(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["SET_PLATFORM"])
         return True

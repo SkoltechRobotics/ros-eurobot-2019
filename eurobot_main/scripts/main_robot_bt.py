@@ -62,11 +62,11 @@ class YellowTactics(Tactics):
 
         self.blunium_prepose = np.array([self.blunium[0] + 0.07,
                                          self.blunium[1] + 0.35,
-                                         -1.57])
+                                         -0.52])
 
         self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
                                                  self.blunium[1] + self.robot_outer_radius,
-                                                 -0.52])  # + self.stick_len
+                                                 self.blunium_prepose[2]])  # + self.stick_len
 
         self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] - 0.08,
                                                self.blunium_start_push_pose[1],
@@ -97,7 +97,7 @@ class YellowTactics(Tactics):
                                                  1.57])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.3,
-                                                    self.chaos_center[1],
+                                                    self.chaos_center[1] - 0.15,
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
@@ -138,11 +138,11 @@ class PurpleTactics(Tactics):
 
         self.blunium_prepose = np.array([self.blunium[0] + 0.07,
                                          self.blunium[1] + 0.35,
-                                         -1.57])
+                                         -0.52])
 
         self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
                                                  self.blunium[1] + self.robot_outer_radius,
-                                                 -0.52])  # + self.stick_len
+                                                 self.blunium_prepose[2]])  # + self.stick_len
 
         self.blunium_end_push_pose = np.array([self.blunium_start_push_pose[0] + 0.08,
                                                self.blunium_start_push_pose[1],
@@ -173,7 +173,7 @@ class PurpleTactics(Tactics):
                                                  1.57])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.3,
-                                                    self.chaos_center[1],
+                                                    self.chaos_center[1] - 0.15,
                                                     1.4])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0],
