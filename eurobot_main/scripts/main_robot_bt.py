@@ -57,7 +57,7 @@ class YellowTactics(Tactics):
                                            1.57])
 
         self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
-                                                self.third_puck_landing[1],
+                                                self.third_puck_landing[1] - 0.05,
                                                 -2.35])
 
         self.blunium_prepose = np.array([self.blunium[0] + 0.07,
@@ -133,7 +133,7 @@ class PurpleTactics(Tactics):
                                            1.57])
 
         self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
-                                                self.third_puck_landing[1],
+                                                self.third_puck_landing[1] - 0.05,
                                                 -2.35])
 
         self.blunium_prepose = np.array([self.blunium[0] + 0.07,
