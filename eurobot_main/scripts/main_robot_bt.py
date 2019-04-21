@@ -536,8 +536,8 @@ class MainRobotBT(object):
                         ])
 
         unload_first_in_acc = bt.SequenceWithMemoryNode([
-                                    bt_ros.StepUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
-                                    bt_ros.UnloadAccelerator("manipulator_client"),
+                                    bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                                    bt_ros.UnloadAccelerator("manipulator_client"),  # TODO not stepup, but STEPPER NOW
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                                 ])
