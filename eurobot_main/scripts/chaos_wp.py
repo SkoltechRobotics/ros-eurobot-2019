@@ -66,7 +66,7 @@ class CollectChaos(bt.FallbackNode):
 
     def is_chaos_empty(self):
         # print self.known_chaos_pucks.get()
-        if self.known_chaos_pucks.get().size > 0:
+        if len(self.known_chaos_pucks.get()) > 0:
             return bt.Status.FAILED
         else:
             return bt.Status.SUCCESS
@@ -121,8 +121,8 @@ class CollectChaos(bt.FallbackNode):
         print "sorted"
         self.known_chaos_pucks.set(known_chaos_pucks)
         print "size of pucks left. If 1, than next print shouldn't be ALALALALAL"
-        print self.known_chaos_pucks.get().size
-        if self.known_chaos_pucks.get().size >= 3:
+        print len(self.known_chaos_pucks.get())
+        if len(self.known_chaos_pucks.get()) >= 3:
             print "ALALALALALAL"
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks.get(),
@@ -141,7 +141,7 @@ class CollectChaos(bt.FallbackNode):
 
         :return: [(x, y, theta), ...]
         """
-        if self.known_chaos_pucks.get().size == 1:
+        if len(self.known_chaos_pucks.get()) == 1:
             landings = calculate_closest_landing_to_point(self.main_coords,
                                                           self.known_chaos_pucks.get()[:, :2],
                                                           self.approach_vec)
@@ -205,24 +205,34 @@ class MainRobotBT(object):
         # rospy.init_node("test_bt_node")
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.move_client = bt_ros.ActionClient(self.move_publisher)
-        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
+        self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
+        self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
-        self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
-                                            [1.9, 0.9, 2, 0, 1, 0],
-                                            [2.1, 0.85, 3, 0, 0, 1],
-                                            [1.9, 1.1, 4, 1, 0, 0]])
+        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
+        rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
+
+        # self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
+        #                                     [1.9, 0.9, 2, 0, 1, 0],
+        #                                     [2.1, 0.85, 3, 0, 0, 1],
+        #                                     [1.9, 1.1, 4, 1, 0, 0]])
+
+        self.known_chaos_pucks = np.array([[1.95, 1.05, 1, 1, 0, 0],
+                                            [2, 1.1, 2, 0, 1, 0],
+                                            [2, 1, 3, 0, 0, 1],
+                                            [2.05, 1.05, 4, 1, 0, 0]])
 
         rospy.sleep(1)
         self.bt = bt.Root(
                     CollectChaos(self.known_chaos_pucks,
-                        "move_client"), action_clients={"move_client": self.move_client})
+                        "move_client"), action_clients={"move_client": self.move_client,
+                                                        "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def timer_callback(self, event):
         status = self.bt.tick()
         if status != bt.Status.RUNNING:
             self.bt_timer.shutdown()
-        print("============== BT LOG ================")
+        # print("============== BT LOG ================")
         self.bt.log(0)
 
 
