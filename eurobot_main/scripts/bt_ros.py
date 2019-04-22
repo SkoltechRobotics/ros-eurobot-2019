@@ -317,10 +317,10 @@ class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
         ])
 
 
-class CheckLimitSwitch(ActionClientNode):
-    def __init__(self, action_client_id):
-        cmd = "check_limit_switch_inf"
-        super(CheckLimitSwitch, self).__init__(cmd, action_client_id)
+# class CheckLimitSwitch(ActionClientNode):
+#     def __init__(self, action_client_id):
+#         cmd = "check_limit_switch_inf"
+#         super(CheckLimitSwitch, self).__init__(cmd, action_client_id)
 
 
 class ReleaseOnePuck(ActionClientNode):
