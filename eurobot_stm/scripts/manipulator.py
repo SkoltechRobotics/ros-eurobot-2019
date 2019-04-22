@@ -296,6 +296,7 @@ class Manipulator(object):
 
     def release_goldenium_on_scales(self):
         self.send_command(self.protocol["STOP_PUMP"])
+        rospy.sleep(0.3)
         self.send_command(self.protocol["SET_PLATFORM"])
         return True
 

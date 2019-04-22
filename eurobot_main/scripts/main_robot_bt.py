@@ -126,7 +126,7 @@ class PurpleTactics(Tactics):
 
         self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist,
                                            self.red_cell_puck[1],
-                                           3.14])
+                                           0])
 
         self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
                                                     self.red_cell_puck[1] - 0.04,
@@ -142,9 +142,9 @@ class PurpleTactics(Tactics):
 
         self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
                                                 self.third_puck_landing[1] - 0.05,
-                                                -2.35])
+                                                -0.78])
 
-        self.blunium_prepose = np.array([self.blunium[0] + 0.07,
+        self.blunium_prepose = np.array([self.blunium[0] - 0.07,
                                          self.blunium[1] + 0.35,
                                          -0.52])
 
@@ -182,11 +182,11 @@ class PurpleTactics(Tactics):
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,
                                                     self.chaos_center[1] - 0.15,
-                                                    1.4])
+                                                    1.7])
 
         self.scales_goldenium_pos = np.array([self.scales_goldenium_PREpos[0] + 0.05,
                                               self.scales_goldenium_PREpos[1] + 0.51,
-                                              1.57])
+                                              1.31])
 
 
 class MainRobotBT(object):
