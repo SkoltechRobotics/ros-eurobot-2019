@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="log"/>
+    <!--     <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="log"/>
+ -->
     <include file="$(find eurobot_main)/launch/main_robot_multimaster.launch" />
 
     <rosparam file="$(find eurobot_loc)/config/main_robot_localization_params.yaml" command="load" ns="main_robot"/>
