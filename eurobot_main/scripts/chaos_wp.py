@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 import numpy as np
 import behavior_tree as bt
@@ -14,8 +16,10 @@ class CollectChaos(bt.FallbackNode):
         # Init parameters
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        self.main_coords = None
+        self.known_chaos_pucks = bt.BTVariable(np.array([]))
+        self.known_chaos_pucks.set(known_chaos_pucks)
 
-        self.known_chaos_pucks = bt.BTVariable(known_chaos_pucks)
         self.waypoints = bt.BTVariable(np.array([]))
         self.incoming_puck_color = bt.BTVariable(None)
         self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
@@ -61,7 +65,8 @@ class CollectChaos(bt.FallbackNode):
         ])
 
     def is_chaos_empty(self):
-        if len(self.known_chaos_pucks.get()) > 0:
+        print self.known_chaos_pucks.get()
+        if self.known_chaos_pucks.get().size > 0:
             return bt.Status.FAILED
         else:
             return bt.Status.SUCCESS
@@ -100,7 +105,15 @@ class CollectChaos(bt.FallbackNode):
 
         :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
         """
-        self.update_main_coords()
+        while not self.update_main_coords():
+            print "no coords available"
+            rospy.sleep(1)
+
+        print " "
+        print "self.main_coords"
+        print self.main_coords
+        print self.known_chaos_pucks.get()
+
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
 
         self.known_chaos_pucks.set(known_chaos_pucks)
@@ -131,13 +144,21 @@ class CollectChaos(bt.FallbackNode):
                                                  self.scale_factor,
                                                  self.approach_dist)
 
-        self.waypoints.set(landings[0])
+        self.waypoints.set(np.array([landings[0]]))
         rospy.loginfo("Inside calculate_closest_landing, waypoints are : " + str(self.waypoints.get()))
 
     def calculate_prelanding(self):
         nearest_landing = self.waypoints.get()[0]
+
+        print ""
+        print "inside calculate_prelanding"
+        print "self.drive_back_vec"
+        print self.drive_back_vec.shape
+        print nearest_landing.shape
+
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
-        self.waypoints.set(np.concatenate(nearest_PRElanding, self.waypoints.get()))
+
+        self.waypoints.set(np.concatenate((nearest_PRElanding, self.waypoints.get()), axis=0))
         rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
 
     def calculate_drive_back_point(self):
@@ -166,23 +187,23 @@ class CollectChaos(bt.FallbackNode):
                                          trans_main.transform.translation.y,
                                          angle_main])
             rospy.loginfo("main coords: " + str(self.main_coords))
-            # return True
+            return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
-            # return False
+            return False
 
 
 class MainRobotBT(object):
     def __init__(self):
-        rospy.init_node("test_bt_node")
+        # rospy.init_node("test_bt_node")
         self.move_publisher = rospy.Publisher("/navigation/move_command", String, queue_size=100)
         self.move_client = bt_ros.ActionClient(self.move_publisher)
         rospy.Subscriber("/response", String, self.move_client.response_callback)
 
-        self.known_chaos_pucks = bt.BTVariable(np.array([[1.7, 0.8, 1, 1, 0, 0],
-                                                            [1.9, 0.9, 2, 0, 1, 0],
-                                                            [2.1, 0.85, 3, 0, 0, 1],
-                                                            [1.9, 1.1, 4, 1, 0, 0]]))
+        self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
+                                            [1.9, 0.9, 2, 0, 1, 0],
+                                            [2.1, 0.85, 3, 0, 0, 1],
+                                            [1.9, 1.1, 4, 1, 0, 0]])
 
         rospy.sleep(1)
         self.bt = bt.Root(
