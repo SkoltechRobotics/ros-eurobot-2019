@@ -33,7 +33,8 @@ COLLISION_STOP_DISTANCE: 150
 COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
 COLLISION_GAMMA: 2
 collision:
-    min_dist_to_obstacle: 0.5
+    min_dist_to_obstacle_lidar: 0.4
+    min_dist_to_obstacle_sensor: 0.3
     sensor_position: [[-0.122, -0.05959, 2.0944], [0.0327, 0.14795, 2.0944], [-0.1643, 0., 3.1415], [0.01315, -0.13807, 4.19],
 [-0.13415, -0.05303, 4.19], [0.105, 0.07032, 0.]]
 
