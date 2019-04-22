@@ -9,6 +9,7 @@ from tf.transformations import euler_from_quaternion
 from core_functions import *
 from std_msgs.msg import String
 from tactics_math import *
+from score_controller import ScoreController
 
 
 class CollectChaos(bt.FallbackNode):
@@ -19,6 +20,9 @@ class CollectChaos(bt.FallbackNode):
         self.main_coords = None
         self.known_chaos_pucks = bt.BTVariable(np.array([]))
         self.known_chaos_pucks.set(known_chaos_pucks)
+
+        self.collected_pucks = bt.BTVariable(np.array([]))
+        self.score_master = ScoreController(self.collected_pucks)
 
         self.waypoints = bt.BTVariable(np.array([]))
         self.incoming_puck_color = bt.BTVariable(None)
@@ -46,7 +50,6 @@ class CollectChaos(bt.FallbackNode):
                     bt.ActionNode(self.calculate_pucks_configuration),
                     bt.ActionNode(self.calculate_closest_landing),
                     bt.ActionNode(self.calculate_prelanding),
-                    # bt.ActionNode(self.calculate_drive_back_point),
 
                     bt.FallbackNode([
                         bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
@@ -58,29 +61,18 @@ class CollectChaos(bt.FallbackNode):
                             bt.ConditionNode(lambda: bt.Status.RUNNING)
                         ])
                     ]),
+                    bt_ros.BlindStartCollectGround("manipulator_client"),
+                    bt.ActionNode(self.update_chaos_pucks),
+                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+
+
                 ]),
-                bt_ros.SetManipulatortoWall("manipulator_client"),
-                bt_ros.SetManipulatortoUp("manipulator_client"),
-                bt.ActionNode(self.calculate_drive_back_point),
+                # bt_ros.SetManipulatortoWall("manipulator_client"),
+                # bt_ros.SetManipulatortoUp("manipulator_client"),
+                # # bt.ActionNode(self.calculate_drive_back_point),
 
-                bt.ActionNode(self.update_chaos_pucks),
-
-
-
-                bt.FallbackNode([
-                    bt.SequenceWithMemoryNode([
-                        bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 1 else bt.Status.SUCCESS),
-                        # bt_ros.StartCollectGround("manipulator_client"),
-                        # bt.ActionNode(self.update_chaos_pucks),
-                        # bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),  # FIXME: color is undetermined without camera!
-                        # bt_ros.CompleteCollectGround("manipulator_client"),
-                    ]),
-                    bt.ConditionNode(lambda: bt.Status.SUCCESS)
-                ]),
-
-
-
-
+                # bt.ActionNode(self.update_chaos_pucks),
 
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
             ])

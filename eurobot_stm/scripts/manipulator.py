@@ -95,6 +95,8 @@ class Manipulator(object):
         # --- main_robot
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
+        elif cmd == "blind_start_collect_ground":
+            return self.blind_start_collect_ground()
         elif cmd == "complete_collect_ground":
             return self.complete_collect_ground()
         elif cmd == "release_accelerator":
@@ -217,6 +219,13 @@ class Manipulator(object):
             self.send_command(self.protocol["SET_PLATFORM"])
             self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
             return True
+
+    def blind_start_collect_ground(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.2)
+        return True
 
     def start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
