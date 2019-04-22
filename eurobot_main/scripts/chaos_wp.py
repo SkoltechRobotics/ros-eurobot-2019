@@ -46,7 +46,7 @@ class CollectChaos(bt.FallbackNode):
                     bt.ActionNode(self.calculate_pucks_configuration),
                     bt.ActionNode(self.calculate_closest_landing),
                     bt.ActionNode(self.calculate_prelanding),
-                    bt.ActionNode(self.calculate_drive_back_point),
+                    # bt.ActionNode(self.calculate_drive_back_point),
 
                     bt.FallbackNode([
                         bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
@@ -59,7 +59,29 @@ class CollectChaos(bt.FallbackNode):
                         ])
                     ]),
                 ]),
+                bt_ros.SetManipulatortoWall("manipulator_client"),
+                bt_ros.SetManipulatortoUp("manipulator_client"),
+                bt.ActionNode(self.calculate_drive_back_point),
+
                 bt.ActionNode(self.update_chaos_pucks),
+
+
+
+                bt.FallbackNode([
+                    bt.SequenceWithMemoryNode([
+                        bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 1 else bt.Status.SUCCESS),
+                        # bt_ros.StartCollectGround("manipulator_client"),
+                        # bt.ActionNode(self.update_chaos_pucks),
+                        # bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),  # FIXME: color is undetermined without camera!
+                        # bt_ros.CompleteCollectGround("manipulator_client"),
+                    ]),
+                    bt.ConditionNode(lambda: bt.Status.SUCCESS)
+                ]),
+
+
+
+
+
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
             ])
         ])
@@ -165,19 +187,18 @@ class CollectChaos(bt.FallbackNode):
         print " "
 
     def calculate_drive_back_point(self):
-        nearest_landing = self.waypoints.get()[-1]
-        drive_back_point = cvt_local2global(self.drive_back_vec, nearest_landing)
-        self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
-        rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
+        # nearest_landing = self.waypoints.get()[-1]
+        self.update_main_coords()
+        drive_back_point = cvt_local2global(self.drive_back_vec, self.main_coords)
+        self.waypoints.set(drive_back_point)
+        # self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
+        rospy.loginfo("Inside calculate_drive_back_point, drive_back_point is : ")
         print self.waypoints.get()
-        rospy.loginfo("Nearest drive_back_point calculated: ")
-        print self.waypoints.get()[-1]
-        print " "
 
     def choose_new_waypoint(self):
         current_waypoint = self.waypoints.get()[0]
         rospy.loginfo("current_waypoint: " + str(current_waypoint))
-        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))  # FIXME arc
 
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])

@@ -45,15 +45,15 @@ class BTNode(object):
         return self.status
 
     def log(self, level, prefix=""):
-        # colors = {Status.SUCCESS: "green",
-        #           Status.FAILED: "red",
-        #           Status.RUNNING: "blue",
-        #           }
-        # if self.name is None:
-        #     name = self.__class__.__name__
-        # else:
-        #     name = self.name
-        # print  level * "    " + prefix + name + " ---> " + colored(str(self.status), colors[self.status])
+        colors = {Status.SUCCESS: "green",
+                  Status.FAILED: "red",
+                  Status.RUNNING: "blue",
+                  }
+        if self.name is None:
+            name = self.__class__.__name__
+        else:
+            name = self.name
+        print  level * "    " + prefix + name + " ---> " + colored(str(self.status), colors[self.status])
         pass
 
 
