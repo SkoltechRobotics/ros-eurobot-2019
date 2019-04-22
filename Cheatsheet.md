@@ -503,6 +503,8 @@ sudo systemctl restart main_start
 sudo systemctl stop main_start
 sudo systemctl start main_start
 
+rosbag record -a
+
 cd ~/.ros/log/latest
 
 #TROOBLESHOOTING

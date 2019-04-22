@@ -38,31 +38,26 @@ class CollectChaos(bt.FallbackNode):
         super(CollectChaos, self).__init__([
             bt.ConditionNode(self.is_chaos_empty),
             bt.SequenceNode([
-                bt.ActionNode(self.calculate_pucks_configuration),
-                bt.ActionNode(self.calculate_closest_landing),
-                bt.ActionNode(self.calculate_prelanding),
-                bt.ActionNode(self.calculate_drive_back_point),
+                bt.SequenceWithMemoryNode([
+                    bt.ActionNode(self.calculate_pucks_configuration),
+                    bt.ActionNode(self.calculate_closest_landing),
+                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.calculate_drive_back_point),
 
-                # to prelanding
-                self.choose_new_waypoint_latch,
-                self.move_to_waypoint_node,
-                bt.ActionNode(self.remove_waypoint),
-                bt.ActionNode(self.choose_new_waypoint_latch.reset),
-
-                # to landing
-                self.choose_new_waypoint_latch,
-                self.move_to_waypoint_node,
-                bt.ActionNode(self.remove_waypoint),
-                bt.ActionNode(self.choose_new_waypoint_latch.reset),
+                    bt.FallbackNode([
+                        bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
+                        bt.SequenceNode([
+                            self.choose_new_waypoint_latch,
+                            self.move_to_waypoint_node,
+                            bt.ActionNode(self.remove_waypoint),
+                            bt.ActionNode(self.choose_new_waypoint_latch.reset),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)
+                        ])
+                    ]),
+                ]),
                 bt.ActionNode(self.update_chaos_pucks),
-
-                # drive back
-                self.choose_new_waypoint_latch,
-                self.move_to_waypoint_node,
-                bt.ActionNode(self.remove_waypoint),
-                bt.ActionNode(self.choose_new_waypoint_latch.reset),
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
-            ]),
+            ])
         ])
 
     def is_chaos_empty(self):
@@ -137,16 +132,7 @@ class CollectChaos(bt.FallbackNode):
                                                  self.approach_dist)
 
         self.waypoints.set(landings[0])
-        print("Inside calculating landings: waypoints")
-        print(self.waypoints.get())
-
-    # def choose_new_landing(self):
-    #     self.calculate_pucks_configuration()
-    #     self.calculate_landings()
-    #
-    #     nearest_landing = self.sorted_chaos_landings.get()[0]
-    #     self.nearest_landing.set(nearest_landing)
-    #     rospy.loginfo("Nearest landing chosen: " + str(nearest_landing))
+        rospy.loginfo("Inside calculate_closest_landing, waypoints are : " + str(self.waypoints.get()))
 
     def calculate_prelanding(self):
         nearest_landing = self.waypoints.get()[0]
