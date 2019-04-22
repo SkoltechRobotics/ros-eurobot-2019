@@ -507,6 +507,9 @@ rosbag record -a
 
 cd ~/.ros/log/latest
 
+roslaunch eurobot_main chaos_bt.launch
+
+
 #TROOBLESHOOTING
 - ubuntu can't log in
 https://askubuntu.com/questions/223501/ubuntu-gets-stuck-in-a-login-loop
