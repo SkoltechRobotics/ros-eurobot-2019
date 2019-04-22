@@ -65,7 +65,7 @@ class CollectChaos(bt.FallbackNode):
         ])
 
     def is_chaos_empty(self):
-        print self.known_chaos_pucks.get()
+        # print self.known_chaos_pucks.get()
         if self.known_chaos_pucks.get().size > 0:
             return bt.Status.FAILED
         else:
@@ -86,7 +86,14 @@ class CollectChaos(bt.FallbackNode):
             (0, 0, 1): "BLUNIUM"
         }
         color_key = puck[3:]
-        color_val = pucks_colors.get(color_key)
+        print color_key
+        if all(color_key == np.array([1, 0, 0])):
+            color_val = "REDIUM"
+        elif all(color_key == np.array([0, 1, 0])):
+            color_val = "GREENIUM"
+        elif all(color_key == np.array([0, 0, 1])):
+            color_val = "BLUNIUM"
+        # color_val = pucks_colors.get(color_key)
         return color_val
 
     def update_chaos_pucks(self):
@@ -99,6 +106,7 @@ class CollectChaos(bt.FallbackNode):
         self.incoming_puck_color.set(incoming_puck_color)
         rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
         self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
+        rospy.loginfo("Known pucks after removing: " + str(self.known_chaos_pucks.get()))
 
     def calculate_pucks_configuration(self):
         """
@@ -107,18 +115,15 @@ class CollectChaos(bt.FallbackNode):
         """
         while not self.update_main_coords():
             print "no coords available"
-            rospy.sleep(1)
-
-        # print " "
-        # print "self.main_coords"
-        # print self.main_coords
-        # print self.known_chaos_pucks.get()
+            rospy.sleep(0.5)
 
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
-
+        print "sorted"
         self.known_chaos_pucks.set(known_chaos_pucks)
-
+        print "size of pucks left. If 1, than next print shouldn't be ALALALALAL"
+        print self.known_chaos_pucks.get().size
         if self.known_chaos_pucks.get().size >= 3:
+            print "ALALALALALAL"
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks.get(),
                                                                                                      self.critical_angle)
@@ -126,9 +131,10 @@ class CollectChaos(bt.FallbackNode):
             if not is_hull_safe_to_approach:
                 self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
                 rospy.loginfo("hull is not safe to approach, sorted by angle")
-
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
+        rospy.loginfo("Known pucks sorted: " + str(self.known_chaos_pucks.get()))
+
 
     def calculate_closest_landing(self):
         """
@@ -145,42 +151,28 @@ class CollectChaos(bt.FallbackNode):
                                                  self.approach_dist)
 
         self.waypoints.set(landings[0])
-        rospy.loginfo("Inside calculate_closest_landing, waypoints are : " + str(self.waypoints.get()))
+        rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
+        print self.waypoints.get()
+        print " "
 
     def calculate_prelanding(self):
         nearest_landing = self.waypoints.get()
-
-        # print ""
-        # print "inside calculate_prelanding"
-        # print "self.drive_back_vec"
-        # print self.drive_back_vec.shape
-        # print nearest_landing.shape
-
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
-        print self.waypoints.get()
-        print self.waypoints.get().shape
         self.waypoints.set(np.stack((nearest_PRElanding, self.waypoints.get())))
         # rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
-        rospy.loginfo("Waypoints after concatenation: " + str(self.waypoints.get()))
+        rospy.loginfo("Waypoints after concatenation: ")
+        print self.waypoints.get()
+        print " "
 
     def calculate_drive_back_point(self):
         nearest_landing = self.waypoints.get()[-1]
-
         drive_back_point = cvt_local2global(self.drive_back_vec, nearest_landing)
-
-        # print ""
-        # print "calculate_drive_back_point"
-        # print "drive_back_point"
-        # print drive_back_point
-
-        # print "nearest_landing"
-        # print nearest_landing
-
-        # print self.waypoints.get()
-        # print self.waypoints.get().shape
-
         self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
-        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.waypoints.get()[-1]))
+        rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
+        print self.waypoints.get()
+        rospy.loginfo("Nearest drive_back_point calculated: ")
+        print self.waypoints.get()[-1]
+        print " "
 
     def choose_new_waypoint(self):
         current_waypoint = self.waypoints.get()[0]
