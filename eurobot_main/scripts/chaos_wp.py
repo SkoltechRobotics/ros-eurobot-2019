@@ -109,10 +109,10 @@ class CollectChaos(bt.FallbackNode):
             print "no coords available"
             rospy.sleep(1)
 
-        print " "
-        print "self.main_coords"
-        print self.main_coords
-        print self.known_chaos_pucks.get()
+        # print " "
+        # print "self.main_coords"
+        # print self.main_coords
+        # print self.known_chaos_pucks.get()
 
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
 
@@ -144,27 +144,42 @@ class CollectChaos(bt.FallbackNode):
                                                  self.scale_factor,
                                                  self.approach_dist)
 
-        self.waypoints.set(np.array([landings[0]]))
+        self.waypoints.set(landings[0])
         rospy.loginfo("Inside calculate_closest_landing, waypoints are : " + str(self.waypoints.get()))
 
     def calculate_prelanding(self):
-        nearest_landing = self.waypoints.get()[0]
+        nearest_landing = self.waypoints.get()
 
-        print ""
-        print "inside calculate_prelanding"
-        print "self.drive_back_vec"
-        print self.drive_back_vec.shape
-        print nearest_landing.shape
+        # print ""
+        # print "inside calculate_prelanding"
+        # print "self.drive_back_vec"
+        # print self.drive_back_vec.shape
+        # print nearest_landing.shape
 
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
-
-        self.waypoints.set(np.concatenate((nearest_PRElanding, self.waypoints.get()), axis=0))
-        rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
+        print self.waypoints.get()
+        print self.waypoints.get().shape
+        self.waypoints.set(np.stack((nearest_PRElanding, self.waypoints.get())))
+        # rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
+        rospy.loginfo("Waypoints after concatenation: " + str(self.waypoints.get()))
 
     def calculate_drive_back_point(self):
         nearest_landing = self.waypoints.get()[-1]
+
         drive_back_point = cvt_local2global(self.drive_back_vec, nearest_landing)
-        self.waypoints.set(np.append(self.waypoints.get(), drive_back_point))
+
+        # print ""
+        # print "calculate_drive_back_point"
+        # print "drive_back_point"
+        # print drive_back_point
+
+        # print "nearest_landing"
+        # print nearest_landing
+
+        # print self.waypoints.get()
+        # print self.waypoints.get().shape
+
+        self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
         rospy.loginfo("Nearest drive_back_point calculated: " + str(self.waypoints.get()[-1]))
 
     def choose_new_waypoint(self):
@@ -196,9 +211,9 @@ class CollectChaos(bt.FallbackNode):
 class MainRobotBT(object):
     def __init__(self):
         # rospy.init_node("test_bt_node")
-        self.move_publisher = rospy.Publisher("/navigation/move_command", String, queue_size=100)
+        self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.move_client = bt_ros.ActionClient(self.move_publisher)
-        rospy.Subscriber("/response", String, self.move_client.response_callback)
+        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
 
         self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
                                             [1.9, 0.9, 2, 0, 1, 0],
