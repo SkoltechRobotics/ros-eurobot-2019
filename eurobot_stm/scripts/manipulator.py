@@ -222,7 +222,12 @@ class Manipulator(object):
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
-        return True
+        rospy.sleep(0.2)
+        result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        if result:
+            return True
+        else:
+            return False
 
     def complete_collect_ground(self):
         self.send_command(self.protocol["SET_PLATFORM"])
