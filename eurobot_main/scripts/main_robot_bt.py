@@ -498,15 +498,18 @@ class MainRobotBT(object):
                                     ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
-                                    bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                    bt_ros.SetManipulatortoUp("manipulator_client"),  # FIXME when adding chaos
                                     bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
                                 ], threshold=2),
                             ])
                         ])
 
         finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
+                                            bt.ParallelWithMemoryNode([
+                                                bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+                                                bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                            ], threshold=2),
                                             # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
-                                            bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
                                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
@@ -561,57 +564,6 @@ class MainRobotBT(object):
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES"))
                                 ])
                             ])
-
-
-        # move_to_chaos = bt.SequenceWithMemoryNode([
-        #                     self.calculate_prelanding_latch,
-        #                     self.move_to_waypoint_node1,
-        #
-        #                     self.choose_new_landing_latch,
-        #                     self.move_to_waypoint_node2,
-        #                 ])
-
-        # TODO take into account, that when colecting 7 pucks, don't make step down
-        # collect_chaos = bt.SequenceNode([
-        #                     bt.FallbackNode([
-        #                         # completely?
-        #                         bt.ConditionNode(self.is_chaos_collected_completely),
-
-        #                         # if last puck, just collect it, return success and get fuck out of here
-        #                         bt.SequenceWithMemoryNode([
-        #                             bt.ConditionNode(self.is_last_puck),
-        #                             bt.SequenceWithMemoryNode([
-        #                                 bt_ros.StartCollectGround("manipulator_client"),
-        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                 bt.ActionNode(self.update_chaos_pucks),
-        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
-        #                             ])
-        #                         ]),
-
-        #                         # calc config and start collect
-        #                         bt.SequenceWithMemoryNode([
-        #                             bt_ros.StartCollectGround("manipulator_client"),
-        #                             self.calculate_drive_back_point_latch,
-        #                             self.move_to_waypoint_node, # FIXME make it closer
-
-        #                             # calc new landing
-        #                             bt.ActionNode(self.calculate_pucks_configuration),
-        #                             bt.ActionNode(self.calculate_landings),
-
-        #                             # drive back, collect and move to new prelanding
-        #                             bt.ParallelWithMemoryNode([
-        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                 bt.ActionNode(self.update_chaos_pucks),
-        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-        #                                 self.calculate_prelanding_latch,
-        #                                 self.move_to_waypoint_node,
-        #                             ], threshold=5),
-
-        #                             bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
-        #                         ]),
-        #                     ]),
-        #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
-        #                 ])
 
         strategy = bt.SequenceWithMemoryNode([
                         red_cell_puck,

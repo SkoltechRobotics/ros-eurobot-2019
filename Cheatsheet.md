@@ -524,3 +524,16 @@ If it succeeds, reboot.
 sudo reboot
 
 rosclean purge
+
+
+                bt.SequenceNode([
+                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                    bt_ros.SetManipulatortoUp("manipulator_client"),
+                    bt.ActionNode(self.calculate_drive_back_point),
+                    self.choose_new_waypoint_latch,
+                    self.move_to_waypoint_node,
+                    bt.ActionNode(self.remove_waypoint),
+                    bt.ActionNode(self.choose_new_waypoint_latch.reset),
+
+                    bt.ActionNode(self.update_chaos_pucks),
+                ])
