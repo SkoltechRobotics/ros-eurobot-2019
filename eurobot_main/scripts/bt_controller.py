@@ -4,6 +4,8 @@ from std_msgs.msg import String
 
 from termcolor import colored, cprint
 
+import requests
+
 
 class SideStatus(enum.Enum):
     YELLOW = 1
@@ -17,6 +19,9 @@ class BTController(object):
 
         self.start_counter = 0
         self.behavior_tree = behavior_tree
+
+        self.experiment_init = False
+        self.experiment_start = False
 
     def side_status_callback(self, data):
             if self.behavior_tree.side_status is None:
@@ -35,7 +40,19 @@ class BTController(object):
                 self.behavior_tree.change_side(SideStatus.PURPLE)
 
     def start_status_callback(self, data):
+        if not self.experiment_init:
+            r = requests.get('http://192.168.88.220/INIT')
+            if r == 200:
+                self.experiment_init = True
+
         if data.data == "1":
             self.behavior_tree.start()
+            if self.experiment_init:
+                for i in range(50):
+                    r = requests.get('http://192.168.88.220/START')
+                    if r == 200:
+                        self.experiment_start = True
+
+
             self.start_status_subscriber.unregister()
             self.side_status_subscriber.unregister()
