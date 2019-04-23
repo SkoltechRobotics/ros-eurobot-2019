@@ -9,6 +9,7 @@ from tf.transformations import euler_from_quaternion
 from core_functions import *
 from std_msgs.msg import String
 from tactics_math import *
+from score_controller import ScoreController
 
 
 class CollectChaos(bt.FallbackNode):
@@ -19,6 +20,9 @@ class CollectChaos(bt.FallbackNode):
         self.main_coords = None
         self.known_chaos_pucks = bt.BTVariable(np.array([]))
         self.known_chaos_pucks.set(known_chaos_pucks)
+
+        self.collected_pucks = bt.BTVariable(np.array([]))
+        self.score_master = ScoreController(self.collected_pucks)
 
         self.waypoints = bt.BTVariable(np.array([]))
         self.incoming_puck_color = bt.BTVariable(None)
@@ -46,7 +50,6 @@ class CollectChaos(bt.FallbackNode):
                     bt.ActionNode(self.calculate_pucks_configuration),
                     bt.ActionNode(self.calculate_closest_landing),
                     bt.ActionNode(self.calculate_prelanding),
-                    bt.ActionNode(self.calculate_drive_back_point),
 
                     bt.FallbackNode([
                         bt.ConditionNode(lambda: bt.Status.FAILED if len(self.waypoints.get()) > 0 else bt.Status.SUCCESS),
@@ -58,15 +61,26 @@ class CollectChaos(bt.FallbackNode):
                             bt.ConditionNode(lambda: bt.Status.RUNNING)
                         ])
                     ]),
+                    bt_ros.BlindStartCollectGround("manipulator_client"),
+                    bt.ActionNode(self.update_chaos_pucks),
+                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                    bt_ros.CompleteCollectGround("manipulator_client"),
+
+
                 ]),
-                bt.ActionNode(self.update_chaos_pucks),
+                # bt_ros.SetManipulatortoWall("manipulator_client"),
+                # bt_ros.SetManipulatortoUp("manipulator_client"),
+                # # bt.ActionNode(self.calculate_drive_back_point),
+
+                # bt.ActionNode(self.update_chaos_pucks),
+
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
             ])
         ])
 
     def is_chaos_empty(self):
-        print self.known_chaos_pucks.get()
-        if self.known_chaos_pucks.get().size > 0:
+        # print self.known_chaos_pucks.get()
+        if len(self.known_chaos_pucks.get()) > 0:
             return bt.Status.FAILED
         else:
             return bt.Status.SUCCESS
@@ -86,7 +100,14 @@ class CollectChaos(bt.FallbackNode):
             (0, 0, 1): "BLUNIUM"
         }
         color_key = puck[3:]
-        color_val = pucks_colors.get(color_key)
+        print color_key
+        if all(color_key == np.array([1, 0, 0])):
+            color_val = "REDIUM"
+        elif all(color_key == np.array([0, 1, 0])):
+            color_val = "GREENIUM"
+        elif all(color_key == np.array([0, 0, 1])):
+            color_val = "BLUNIUM"
+        # color_val = pucks_colors.get(color_key)
         return color_val
 
     def update_chaos_pucks(self):
@@ -99,6 +120,7 @@ class CollectChaos(bt.FallbackNode):
         self.incoming_puck_color.set(incoming_puck_color)
         rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
         self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
+        rospy.loginfo("Known pucks after removing: " + str(self.known_chaos_pucks.get()))
 
     def calculate_pucks_configuration(self):
         """
@@ -107,18 +129,15 @@ class CollectChaos(bt.FallbackNode):
         """
         while not self.update_main_coords():
             print "no coords available"
-            rospy.sleep(1)
-
-        print " "
-        print "self.main_coords"
-        print self.main_coords
-        print self.known_chaos_pucks.get()
+            rospy.sleep(0.5)
 
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
-
+        print "sorted"
         self.known_chaos_pucks.set(known_chaos_pucks)
-
-        if self.known_chaos_pucks.get().size >= 3:
+        print "size of pucks left. If 1, than next print shouldn't be ALALALALAL"
+        print len(self.known_chaos_pucks.get())
+        if len(self.known_chaos_pucks.get()) >= 3:
+            print "ALALALALALAL"
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks.get(),
                                                                                                      self.critical_angle)
@@ -126,16 +145,17 @@ class CollectChaos(bt.FallbackNode):
             if not is_hull_safe_to_approach:
                 self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
                 rospy.loginfo("hull is not safe to approach, sorted by angle")
-
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
+        rospy.loginfo("Known pucks sorted: " + str(self.known_chaos_pucks.get()))
+
 
     def calculate_closest_landing(self):
         """
 
         :return: [(x, y, theta), ...]
         """
-        if self.known_chaos_pucks.get().size == 1:
+        if len(self.known_chaos_pucks.get()) == 1:
             landings = calculate_closest_landing_to_point(self.main_coords,
                                                           self.known_chaos_pucks.get()[:, :2],
                                                           self.approach_vec)
@@ -144,33 +164,33 @@ class CollectChaos(bt.FallbackNode):
                                                  self.scale_factor,
                                                  self.approach_dist)
 
-        self.waypoints.set(np.array([landings[0]]))
-        rospy.loginfo("Inside calculate_closest_landing, waypoints are : " + str(self.waypoints.get()))
+        self.waypoints.set(landings[0])
+        rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
+        print self.waypoints.get()
+        print " "
 
     def calculate_prelanding(self):
-        nearest_landing = self.waypoints.get()[0]
-
-        print ""
-        print "inside calculate_prelanding"
-        print "self.drive_back_vec"
-        print self.drive_back_vec.shape
-        print nearest_landing.shape
-
+        nearest_landing = self.waypoints.get()
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
-
-        self.waypoints.set(np.concatenate((nearest_PRElanding, self.waypoints.get()), axis=0))
-        rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
+        self.waypoints.set(np.stack((nearest_PRElanding, self.waypoints.get())))
+        # rospy.loginfo("Nearest PRElanding calculated: " + str(self.waypoints.get()[0]))
+        rospy.loginfo("Waypoints after concatenation: ")
+        print self.waypoints.get()
+        print " "
 
     def calculate_drive_back_point(self):
-        nearest_landing = self.waypoints.get()[-1]
-        drive_back_point = cvt_local2global(self.drive_back_vec, nearest_landing)
-        self.waypoints.set(np.append(self.waypoints.get(), drive_back_point))
-        rospy.loginfo("Nearest drive_back_point calculated: " + str(self.waypoints.get()[-1]))
+        # nearest_landing = self.waypoints.get()[-1]
+        self.update_main_coords()
+        drive_back_point = cvt_local2global(self.drive_back_vec, self.main_coords)
+        self.waypoints.set(drive_back_point)
+        # self.waypoints.set(np.concatenate((self.waypoints.get(), drive_back_point[np.newaxis, :]), axis=0))
+        rospy.loginfo("Inside calculate_drive_back_point, drive_back_point is : ")
+        print self.waypoints.get()
 
     def choose_new_waypoint(self):
         current_waypoint = self.waypoints.get()[0]
         rospy.loginfo("current_waypoint: " + str(current_waypoint))
-        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(current_waypoint))  # FIXME arc
 
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])
@@ -196,26 +216,36 @@ class CollectChaos(bt.FallbackNode):
 class MainRobotBT(object):
     def __init__(self):
         # rospy.init_node("test_bt_node")
-        self.move_publisher = rospy.Publisher("/navigation/move_command", String, queue_size=100)
+        self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.move_client = bt_ros.ActionClient(self.move_publisher)
-        rospy.Subscriber("/response", String, self.move_client.response_callback)
+        self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
+        self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
-        self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
-                                            [1.9, 0.9, 2, 0, 1, 0],
-                                            [2.1, 0.85, 3, 0, 0, 1],
-                                            [1.9, 1.1, 4, 1, 0, 0]])
+        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
+        rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
+
+        # self.known_chaos_pucks = np.array([[1.7, 0.8, 1, 1, 0, 0],
+        #                                     [1.9, 0.9, 2, 0, 1, 0],
+        #                                     [2.1, 0.85, 3, 0, 0, 1],
+        #                                     [1.9, 1.1, 4, 1, 0, 0]])
+
+        self.known_chaos_pucks = np.array([[1.95, 1.05, 1, 1, 0, 0],
+                                            [2, 1.1, 2, 0, 1, 0],
+                                            [2, 1, 3, 0, 0, 1],
+                                            [2.05, 1.05, 4, 1, 0, 0]])
 
         rospy.sleep(1)
         self.bt = bt.Root(
                     CollectChaos(self.known_chaos_pucks,
-                        "move_client"), action_clients={"move_client": self.move_client})
+                        "move_client"), action_clients={"move_client": self.move_client,
+                                                        "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def timer_callback(self, event):
         status = self.bt.tick()
         if status != bt.Status.RUNNING:
             self.bt_timer.shutdown()
-        print("============== BT LOG ================")
+        # print("============== BT LOG ================")
         self.bt.log(0)
 
 

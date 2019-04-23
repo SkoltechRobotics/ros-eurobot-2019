@@ -341,7 +341,7 @@ class MainRobotBT(object):
     #     # green (0, 1, 0)
     #     # blue (0, 0, 1)
     #
-    #     if self.known_chaos_pucks.get().size == 0:
+    #     if len(self.known_chaos_pucks.get()) == 0:
     #         try:
     #             new_observation_pucks = [[marker.pose.position.x,
     #                                       marker.pose.position.y,
@@ -359,14 +359,14 @@ class MainRobotBT(object):
     #             rospy.loginfo("list index out of range - no visible pucks on the field ")
 
     def is_chaos_collected_completely(self):
-        if self.known_chaos_pucks.get().size == 0:
+        if len(self.known_chaos_pucks.get()) == 0:
             rospy.loginfo("Chaos collected completely")
             return bt.Status.SUCCESS
         else:
             return bt.Status.FAILED
 
     def is_chaos_collected_completely1(self):
-        if self.known_chaos_pucks.get().size == 0:
+        if len(self.known_chaos_pucks.get()) == 0:
             rospy.loginfo("Chaos collected completely")
             return bt.Status.SUCCESS
         else:
@@ -388,7 +388,7 @@ class MainRobotBT(object):
 
         self.known_chaos_pucks.set(known_chaos_pucks)
 
-        if self.known_chaos_pucks.get().size >= 3:
+        if len(self.known_chaos_pucks.get()) >= 3:
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks.get(),
                                                                                                      self.critical_angle)
@@ -405,61 +405,6 @@ class MainRobotBT(object):
         #     # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
         #     rospy.loginfo("blue rolled")
 
-    def calculate_landings(self):
-        """
-
-        :return: [(x, y, theta), ...]
-        """
-        print "calculating landings"
-        coords = self.known_chaos_pucks.get()[:, :2]
-        if coords.size == 1:
-            landings = calculate_closest_landing_to_point(self.main_coords, coords, self.approach_vec)
-            self.sorted_chaos_landings.set(landings)
-        else:
-            landings = unleash_power_of_geometry(coords, self.scale_factor, self.approach_dist)
-            self.sorted_chaos_landings.set(landings)
-        print("sorted landings")
-        print(self.sorted_chaos_landings.get())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def choose_new_landing(self):
-    #     self.calculate_pucks_configuration()
-    #     self.calculate_landings()
-    #
-    #     nearest_landing = self.sorted_chaos_landings.get()[0]
-    #     self.nearest_landing.set(nearest_landing)
-    #     rospy.loginfo("Nearest landing chosen: " + str(nearest_landing))
-    #     self.move_to_waypoint_node2.cmd.set("move_line %f %f %f" % tuple(nearest_landing))
-    #
-    # def calculate_prelanding(self):
-    #     self.calculate_pucks_configuration()
-    #     self.calculate_landings()
-    #
-    #     nearest_landing = self.sorted_chaos_landings.get()[0]
-    #     nearest_PRElanding = cvt_local2global(self.drive_back_vec, nearest_landing)
-    #     rospy.loginfo("Nearest PRElanding calculated: " + str(nearest_PRElanding))
-    #     self.move_to_waypoint_node1.cmd.set("move_line %f %f %f" % tuple(nearest_PRElanding))
-    #
-    # def calculate_drive_back_point(self):
-    #     drive_back_point = cvt_local2global(self.drive_back_vec, self.nearest_landing.get())
-    #     rospy.loginfo("Nearest drive_back_point calculated: " + str(drive_back_point))
-    #     self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(drive_back_point))
-
-
-
-
 
 
 
@@ -472,7 +417,7 @@ class MainRobotBT(object):
 
 
     def is_last_puck(self):
-        if self.known_chaos_pucks.get().size == 1:
+        if len(self.known_chaos_pucks.get()) == 1:
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
