@@ -455,7 +455,7 @@ class MainRobotBT(object):
                             bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
                             bt.FallbackWithMemoryNode([
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -473,7 +473,7 @@ class MainRobotBT(object):
                             bt_ros.MoveLineToPoint(self.tactics.second_puck_landing, "move_client"),
                             bt.FallbackWithMemoryNode([
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -490,7 +490,7 @@ class MainRobotBT(object):
         blue_cell_puck = bt.SequenceWithMemoryNode([
                             bt.FallbackWithMemoryNode([
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -498,7 +498,7 @@ class MainRobotBT(object):
                                     ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
-                                    bt_ros.SetManipulatortoUp("manipulator_client"),
+                                    bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
                                     bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
                                 ], threshold=2),
                             ])
