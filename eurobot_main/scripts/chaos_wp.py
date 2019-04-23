@@ -10,6 +10,7 @@ from core_functions import *
 from std_msgs.msg import String
 from tactics_math import *
 from score_controller import ScoreController
+from visualization_msgs.msg import MarkerArray
 
 
 class CollectChaos(bt.FallbackNode):
@@ -99,9 +100,12 @@ class CollectChaos(bt.FallbackNode):
                     bt_ros.BlindStartCollectGround("manipulator_client"),
                     bt.ActionNode(self.update_chaos_pucks),
                     bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                    bt.ActionNode(self.calculate_drive_back_point),
+                    self.choose_new_waypoint_latch,
+                    self.move_to_waypoint_node,
+                    bt.ActionNode(self.clear_waypoints),
+                    bt.ActionNode(self.choose_new_waypoint_latch.reset),
                     bt_ros.CompleteCollectGround("manipulator_client"),
-
-
                 ]),
 
                 bt.ConditionNode(lambda: bt.Status.RUNNING)
@@ -110,62 +114,61 @@ class CollectChaos(bt.FallbackNode):
 
 
         # when list of known already updated
-        bt.SequenceWithMemoryNode([
-            bt.ConditionNode(self.is_not_first),
-            bt.ActionNode(self.calculate_drive_back_point),
-            bt.ActionNode(self.calculate_closest_landing),
-            bt.ActionNode(self.calculate_prelanding),
-
-
-        ])
-
-        bt.ParallelWithMemoryNode([
-            self.move_to_waypoint_node,
-
-        ])
+        # bt.SequenceWithMemoryNode([
+        #     bt.ConditionNode(self.is_not_first),
+        #     bt.ActionNode(self.calculate_drive_back_point),
+        #     bt.ActionNode(self.calculate_closest_landing),
+        #     bt.ActionNode(self.calculate_prelanding),
+        #
+        #
+        # ])
+        #
+        # bt.ParallelWithMemoryNode([
+        #     self.move_to_waypoint_node,
+        #
+        # ])
 
         # TODO take into account, that when colecting 7 pucks, don't make step down
-        collect_chaos = bt.SequenceNode([
-                            bt.FallbackNode([
-                                # completely?
-                                bt.ConditionNode(self.is_chaos_collected_completely),
-
-                                # if last puck, just collect it, return success and get fuck out of here
-                                bt.SequenceWithMemoryNode([
-                                    bt.ConditionNode(self.is_last_puck),
-                                    bt.SequenceWithMemoryNode([
-                                        bt_ros.StartCollectGround("manipulator_client"),
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(self.update_chaos_pucks),
-                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
-                                    ])
-                                ]),
-
-                                # calc config and start collect
-                                bt.SequenceWithMemoryNode([
-                                    bt_ros.StartCollectGround("manipulator_client"),
-                                    self.calculate_drive_back_point_latch,
-                                    self.move_to_waypoint_node, # FIXME make it closer
-
-                                    # calc new landing
-                                    bt.ActionNode(self.calculate_pucks_configuration),
-                                    bt.ActionNode(self.calculate_landings),
-
-                                    # drive back, collect and move to new prelanding
-                                    bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt.ActionNode(self.update_chaos_pucks),
-                                        bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                                        self.calculate_prelanding_latch,
-                                        self.move_to_waypoint_node,
-                                    ], threshold=5),
-
-                                    bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
-                                ]),
-                            ]),
-                            bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
-                        ])
-
+        # collect_chaos = bt.SequenceNode([
+        #                     bt.FallbackNode([
+        #                         # completely?
+        #                         bt.ConditionNode(self.is_chaos_collected_completely),
+        #
+        #                         # if last puck, just collect it, return success and get fuck out of here
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt.ConditionNode(self.is_last_puck),
+        #                             bt.SequenceWithMemoryNode([
+        #                                 bt_ros.StartCollectGround("manipulator_client"),
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color))
+        #                             ])
+        #                         ]),
+        #
+        #                         # calc config and start collect
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt_ros.StartCollectGround("manipulator_client"),
+        #                             self.calculate_drive_back_point_latch,
+        #                             self.move_to_waypoint_node, # FIXME make it closer
+        #
+        #                             # calc new landing
+        #                             bt.ActionNode(self.calculate_pucks_configuration),
+        #                             bt.ActionNode(self.calculate_landings),
+        #
+        #                             # drive back, collect and move to new prelanding
+        #                             bt.ParallelWithMemoryNode([
+        #                                 bt_ros.CompleteCollectGround("manipulator_client"),
+        #                                 bt.ActionNode(self.update_chaos_pucks),
+        #                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+        #                                 self.calculate_prelanding_latch,
+        #                                 self.move_to_waypoint_node,
+        #                             ], threshold=5),
+        #
+        #                             bt_ros.MoveLineToPoint(self.nearest_landing.get(), "move_client"),
+        #                         ]),
+        #                     ]),
+        #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
+        #                 ])
 
 
     def is_chaos_empty(self):
@@ -189,6 +192,7 @@ class CollectChaos(bt.FallbackNode):
             (0, 1, 0): "GREENIUM",
             (0, 0, 1): "BLUNIUM"
         }
+        color_val = None
         color_key = puck[3:]
         print color_key
         if all(color_key == np.array([1, 0, 0])):
@@ -285,6 +289,9 @@ class CollectChaos(bt.FallbackNode):
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])
 
+    def clear_waypoints(self):
+        self.waypoints.set(np.array([]))
+
     def update_main_coords(self):
         try:
             trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))  # 0 means last measurment
@@ -311,6 +318,10 @@ class MainRobotBT(object):
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
 
+        self.is_observed = bt.BTVariable(False)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
+        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
+
+        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
@@ -324,12 +335,38 @@ class MainRobotBT(object):
                                             [2, 1, 3, 0, 0, 1],
                                             [2.05, 1.05, 4, 1, 0, 0]])
 
+        self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
+
         rospy.sleep(1)
         self.bt = bt.Root(
                     CollectChaos(self.known_chaos_pucks,
                         "move_client"), action_clients={"move_client": self.move_client,
                                                         "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
+
+    def pucks_callback(self, data):
+        self.is_observed.set(True)
+        # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+        # red (1, 0, 0)
+        # green (0, 1, 0)
+        # blue (0, 0, 1)
+
+        if len(self.known_chaos_pucks.get()) == 0:
+            try:
+                new_observation_pucks = [[marker.pose.position.x,
+                                          marker.pose.position.y,
+                                          marker.id,
+                                          marker.color.r,
+                                          marker.color.g,
+                                          marker.color.b] for marker in data.markers]
+
+                self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
+                rospy.loginfo("Got pucks observation:")
+                rospy.loginfo(self.known_chaos_pucks.get())
+                self.pucks_subscriber.unregister()
+
+            except Exception:  # FIXME
+                rospy.loginfo("list index out of range - no visible pucks on the field ")
 
     def timer_callback(self, event):
         status = self.bt.tick()

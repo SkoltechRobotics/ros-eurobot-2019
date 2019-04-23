@@ -216,34 +216,10 @@ class MainRobotBT(object):
         self.bt = None
         self.bt_timer = None
 
-        # self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
-        self.known_chaos_pucks = bt.BTVariable(np.array([[1.7, 0.8, 1, 1, 0, 0],
-                                                            [1.9, 0.9, 2, 0, 1, 0],
-                                                            [2.1, 0.85, 3, 0, 0, 1],
-                                                            [1.9, 1.1, 4, 1, 0, 0]]))  # (x, y, id, r, g, b)
-
-        self.sorted_chaos_landings = bt.BTVariable(np.array([]))
+        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)  # FIXME
 
         self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
         self.is_secondary_working = False
-
-
-
-
-        self.move_to_waypoint_node1 = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
-        self.move_to_waypoint_node2 = bt_ros.ActionClientNode("move 0 0 0", "move_client", name="move_to_waypoint")
-        # self.choose_new_landing_latch = bt.ActionNode(self.choose_new_landing)
-        # self.calculate_prelanding_latch = bt.ActionNode(self.calculate_prelanding)
-        # self.calculate_drive_back_point_latch = bt.ActionNode(self.calculate_drive_back_point)
-
-
-        # self.choose_new_landing_latch = bt.Latch(bt.ActionNode(self.choose_new_landing))
-        # self.calculate_prelanding_latch = bt.Latch(bt.ActionNode(self.calculate_prelanding))
-        # self.calculate_drive_back_point_latch = bt.Latch(bt.ActionNode(self.calculate_drive_back_point))
-
-        self.nearest_landing = bt.BTVariable(np.array([1, 1, 1.57])) # None
-        # self.nearest_PRElanding = bt.BTVariable(np.array([1, 1, 3.14]))
-        # self.drive_back_point = bt.BTVariable(np.array([1, 1, 0]))
 
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
@@ -266,7 +242,6 @@ class MainRobotBT(object):
 
         # TODO: It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
-        # self.is_puck_grabbed = bt.BTVariable(False)
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
@@ -274,12 +249,6 @@ class MainRobotBT(object):
         # self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
-
-    # def is_puck_grabbed(self):
-    #     if manipulator.check_status_infinitely():
-    #         return bt.Status.SUCCESS
-    #     else:
-    #         return bt.Status.FAILED
 
     def is_robot_empty(self):
         rospy.loginfo("pucks inside")
@@ -378,42 +347,35 @@ class MainRobotBT(object):
         else:
             return bt.Status.RUNNING
 
-    def calculate_pucks_configuration(self):
-        """
-
-        :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
-        """
-        self.update_main_coords()
-        known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
-
-        self.known_chaos_pucks.set(known_chaos_pucks)
-
-        if len(self.known_chaos_pucks.get()) >= 3:
-            is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
-                                                                                                     self.known_chaos_pucks.get(),
-                                                                                                     self.critical_angle)
-            if is_hull_safe_to_approach:  # only sharp angles
-                rospy.loginfo("hull is SAFE to approach, sorted wrt robot")
-
-            if not is_hull_safe_to_approach:
-                self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
-                # known_chaos_pucks = coords_sorted_by_angle
-                rospy.loginfo("hull is not safe to approach, sorted by angle")
-
-        # when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
-        # if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
-        #     # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
-        #     rospy.loginfo("blue rolled")
+    # def calculate_pucks_configuration(self):
+    #     """
+    #
+    #     :return: # [(0.95, 1.1, 3, 0, 0, 1), ...]
+    #     """
+    #     self.update_main_coords()
+    #     known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
+    #
+    #     self.known_chaos_pucks.set(known_chaos_pucks)
+    #
+    #     if len(self.known_chaos_pucks.get()) >= 3:
+    #         is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
+    #                                                                                                  self.known_chaos_pucks.get(),
+    #                                                                                                  self.critical_angle)
+    #         if is_hull_safe_to_approach:  # only sharp angles
+    #             rospy.loginfo("hull is SAFE to approach, sorted wrt robot")
+    #
+    #         if not is_hull_safe_to_approach:
+    #             self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
+    #             # known_chaos_pucks = coords_sorted_by_angle
+    #             rospy.loginfo("hull is not safe to approach, sorted by angle")
+    #
 
 
 
-
-
-
-
-
-
-
+    #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
+    #     if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
+    #         # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
+    #         rospy.loginfo("blue rolled")
 
 
     def is_last_puck(self):
@@ -504,24 +466,12 @@ class MainRobotBT(object):
                             ])
                         ])
 
-        # finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
-        #                                     bt.ParallelWithMemoryNode([
-        #                                         bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
-        #                                         bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-        #                                     ], threshold=2),
-        #                                     # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
-        #                                     bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
-        #                                     bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-        #                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
-        #                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-        #                                 ])
-
         finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
-                                            bt.ParallelWithMemoryNode([
-                                                bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
-                                                bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-                                            ], threshold=2),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+                                            bt.ParallelWithMemoryNode([
+                                                bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                                bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+                                            ], threshold=2),
                                             # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
                                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
