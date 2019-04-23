@@ -504,18 +504,31 @@ class MainRobotBT(object):
                             ])
                         ])
 
+        # finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
+        #                                     bt.ParallelWithMemoryNode([
+        #                                         bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+        #                                         bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+        #                                     ], threshold=2),
+        #                                     # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
+        #                                     bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
+        #                                     bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+        #                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
+        #                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
+        #                                 ])
+
         finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
-                                                bt_ros.SetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
+                                                bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
                                             ], threshold=2),
+                                            bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
                                             # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
                                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
                                         ])
-        
+
         approach_acc = bt.SequenceWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
                             bt_ros.MoveLineToPoint(self.tactics.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc

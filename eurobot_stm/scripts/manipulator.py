@@ -115,6 +115,8 @@ class Manipulator(object):
             return self.release_accelerator_first_move_when_full()
         elif cmd == "finish_collect_blunium":
             return self.finish_collect_blunium()
+        elif cmd == "set_manipulator_ground_main":
+            return self.set_manipulator_ground_main()
         # --- secondary robot
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
@@ -311,6 +313,10 @@ class Manipulator(object):
 
     def set_manipulator_ground(self):
         self.send_command(self.protocol["SET PUMP TO THE MOVING STATE"])
+        return True
+
+    def set_manipulator_ground_main(self):
+        self.send_command(self.protocol["SET_GROUND"])
         return True
 
     def set_manipulator_wall(self):
