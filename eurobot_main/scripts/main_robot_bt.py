@@ -101,7 +101,7 @@ class YellowTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.08,  # 0.1
+                                               self.goldenium_2_PREgrab_pos[1] - 0.095,  # 0.1
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
@@ -190,7 +190,7 @@ class PurpleTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.08,  # 0.1
+                                               self.goldenium_2_PREgrab_pos[1] - 0.095,  # 0.1
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
