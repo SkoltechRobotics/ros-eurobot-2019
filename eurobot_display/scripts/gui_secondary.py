@@ -7,7 +7,8 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
-                        [255, 0, 255]])  # purple
+                        [255, 0, 255],  # purple
+                        [124, 252, 0]])  # green
 
 
 class Prediction:
@@ -131,7 +132,7 @@ class App:
             self.secondary_wire_frame.config(bg="red")
         elif data.data == "1":
             self.secondary_start_status.set("GO!")
-            self.secondary_wire_frame.config(bg="green")
+            self.secondary_wire_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]))
 
     def secondary_score_callback(self, data):
         """

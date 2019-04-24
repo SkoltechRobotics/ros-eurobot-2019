@@ -7,7 +7,8 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion
 
 SIDE_COLORS = np.array([[255, 255, 0],  # yellow
-                        [255, 0, 255]])  # purple
+                        [255, 0, 255],  # purple
+                        [124, 252, 0]])  # green
 
 
 class Prediction:
@@ -78,14 +79,14 @@ class App:
 
         # main SIDE config
         self.main_side_status = StringVar()
-        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.main_side_status)
+        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=9, font=("Helvetica", 30), textvariable=self.main_side_status)
         self.main_side_status.set("Side")
         self.main_side_frame.pack(side="left")
 
         # main WIRE config
         self.main_start_status = StringVar()
         self.main_start_status.set("Waiting")
-        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.main_start_status)
+        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 30), textvariable=self.main_start_status)
         self.main_wire_frame.pack(side="right")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
@@ -98,17 +99,14 @@ class App:
         self.score_main = IntVar()
         self.score_main.set(0)
 
-        Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 25), text="Main").pack(side="top")
+        Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 30), text="Main").pack(side="top")
         self.main_coords_frame = Label(self.frame5, bg="white", height=1, width=13, font=("Helvetica", 50),
                                         textvariable=self.main_coords)
         self.main_coords_frame.pack(side="top")
 
         # Experiment and TOTAL config
-        self.score_experiment = IntVar()
-        self.score_experiment.set(40)
-
         self.score_main_and_exp = IntVar()
-        self.score_main_and_exp.set(self.score_experiment.get())
+        self.score_main_and_exp.set(40)
 
         Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_main_and_exp, font=("Helvetica", 100)).pack(side="bottom")
 
@@ -140,7 +138,7 @@ class App:
             self.main_wire_frame.config(bg="red")
         elif data.data == "1":
             self.main_start_status.set("GO!")
-            self.main_wire_frame.config(bg="green")
+            self.main_wire_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]))
 
     def main_score_callback(self, data):
         """
@@ -149,7 +147,8 @@ class App:
         :return:
         """
         points = self.predict.get_points(data.data)
-        self.score_main_and_exp.set(self.score_experiment.get() + self.score_main.get() + int(points))
+        print points
+        self.score_main_and_exp.set(self.score_main_and_exp.get() + int(points))
 
     def update_main_coords(self):
         try:

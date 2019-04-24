@@ -92,6 +92,8 @@ class Manipulator(object):
             return self.moving_default()
         elif cmd == "stepper_up":
             return self.stepper_up()
+        elif cmd == "delay_500":
+            return self.delay_500()
         # --- main_robot
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
@@ -283,7 +285,6 @@ class Manipulator(object):
         return True
 
     def finish_collect_blunium(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["SET_PLATFORM"])
         rospy.sleep(0.1)
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
@@ -291,6 +292,7 @@ class Manipulator(object):
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         rospy.sleep(0.2)
+        self.send_command(self.protocol["SET_GROUND"])
         return True
 
     def goldenium_up_and_hold(self):
@@ -308,7 +310,8 @@ class Manipulator(object):
     def release_goldenium_on_scales(self):
         self.send_command(self.protocol["STOP_PUMP"])
         rospy.sleep(0.3)
-        self.send_command(self.protocol["SET_PLATFORM"])
+        # self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["SET_WALL"])
         return True
 
     def set_manipulator_ground(self):
@@ -343,6 +346,10 @@ class Manipulator(object):
 
     def stepper_up(self):
         self.send_command(self.protocol["MAKE_STEP_UP"])
+        return True
+
+    def delay_500(self):
+        rospy.sleep(0.5)
         return True
 
     def start_collect_wall(self):

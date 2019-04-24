@@ -117,6 +117,12 @@ class StopPump(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stop_pump"
         super(StopPump, self).__init__(cmd, action_client_id)
+
+class Delay500(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_500"
+        super(Delay500, self).__init__(cmd, action_client_id)
+
 # ===========================================================
 class MovingDefault(ActionClientNode):
     def __init__(self, action_client_id):

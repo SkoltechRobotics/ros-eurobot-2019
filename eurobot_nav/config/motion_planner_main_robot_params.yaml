@@ -1,4 +1,4 @@
-velocity_vector: [0.6, 0.6, 1.5]
+velocity_vector: [0.6, 0.6, 1.2]
 robot_name: "main_robot"
 num_points_in_path: 100
 robot_radius: 0.1
@@ -13,9 +13,9 @@ XY_GOAL_TOLERANCE: 0.005
 YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
 V_MAX: 0.5
-W_MAX: 1.5
+W_MAX: 1.2
 AV_MAX: 1
-AW_MAX: 1.5
+AW_MAX: 0.8
 # acceleration at beginning of movements
 ACCELERATION: 1.0
 # goal distance for deceleration
