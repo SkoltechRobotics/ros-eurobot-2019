@@ -8,12 +8,16 @@ from core_functions import *
 
 
 class ScoreController(object):
-    def __init__(self, collected_pucks):
+    def __init__(self, collected_pucks, robot_name):
         self.collected_pucks = collected_pucks
         self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
         self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES", "OTHER"]
         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
-        self.score_publisher = rospy.Publisher("score", String, queue_size=100)
+        self.robot_name = robot_name
+        if self.robot_name == "main_robot":
+            self.score_publisher = rospy.Publisher("/main_robot/score", String, queue_size=100)
+        elif self.robot_name == "secondary_robot":
+            self.score_publisher = rospy.Publisher("/secondary_robot/score", String, queue_size=100)
 
     def reward(self, bonus):
         assert bonus in self.bonuses

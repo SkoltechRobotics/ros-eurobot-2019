@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <!--     <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="log"/>
+    <!--     <node pkg="eurobot_display" name="display_node" type="gui_main.py" respawn="true" output="log"/>
  -->
     <include file="$(find eurobot_main)/launch/main_robot_multimaster.launch" />
 

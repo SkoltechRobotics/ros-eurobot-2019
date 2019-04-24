@@ -44,7 +44,7 @@ class YellowTactics(Tactics):
         #                             self.red_cell_puck[1],
         #                             -1.57])
 
-        self.first_puck_landing = np.array([self.red_cell_puck[0] + self.approach_dist + np.array([-2, 0, 0]),
+        self.first_puck_landing = np.array([self.red_cell_puck[0] + self.approach_dist - 0.02,
                                            self.red_cell_puck[1],
                                            3.14])
 
@@ -132,7 +132,7 @@ class PurpleTactics(Tactics):
         #                             self.red_cell_puck[1],
         #                             -1.57])
 
-        self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist + np.array([2, 0, 0]),
+        self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist + 0.02,
                                            self.red_cell_puck[1],
                                            0])
 
@@ -258,7 +258,7 @@ class MainRobotBT(object):
 
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
-        self.score_master = ScoreController(self.collected_pucks)
+        self.score_master = ScoreController(self.collected_pucks, self.robot_name)
 
         # self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
