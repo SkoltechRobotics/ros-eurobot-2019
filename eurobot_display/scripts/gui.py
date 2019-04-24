@@ -93,8 +93,8 @@ class App:
         self.frame9.pack(side="top")
 
         # Time block
-        self.frame2 = Frame(frame, bg="white", colormap="new")
-        self.frame2.pack(side="top")
+        # self.frame2 = Frame(frame, bg="white", colormap="new")
+        # self.frame2.pack(side="top")
 
         # --------------------------------------------------
 
@@ -186,9 +186,9 @@ class App:
         self.frame3.after(800, self.heartbeat_loop)  # call loop(n-1) in 0.5 seconds
 
     # Timer
-    def countdown(self, n):
-        self.time['text'] = str("Timer: ") + str(n)
-        self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
+    # def countdown(self, n):
+    #     self.time['text'] = str("Timer: ") + str(n)
+    #     self.frame2.after(1000, self.countdown, n - 1)  # call loop(n-1) in 1 seconds
 
 # ========================================================================
 
@@ -211,13 +211,8 @@ class App:
             self.main_start_status.set("GO!")
             self.main_wire_frame.config(bg="green")
 
-            self.frame2.after(0, self.countdown, 99)  # start timer countdown
-            self.frame2.after(100000, self.frame2.destroy)  # quit in 100 seconds
-
-
-                    # self.frame4.after(0, self.update_main_coords)  # update coords after 2 sec
-        # self.frame5.after(0, self.update_secondary_coords)  # update coords 5 time/second, (200 ms delay)
-
+            # self.frame2.after(0, self.countdown, 99)  # start timer countdown
+            # self.frame2.after(100000, self.frame2.destroy)  # quit in 100 seconds
 
 # ========================================================================
 

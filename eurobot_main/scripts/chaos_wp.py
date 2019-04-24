@@ -22,6 +22,8 @@ class CollectChaos(bt.FallbackNode):
         self.known_chaos_pucks = bt.BTVariable(np.array([]))
         self.known_chaos_pucks.set(known_chaos_pucks)
 
+        self.is_observed = bt.BTVariable(True)  # FIXME to FALSE!!!!!!!!!!!!!!!!!!
+
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks)
 
@@ -171,6 +173,56 @@ class CollectChaos(bt.FallbackNode):
         #                 ])
 
 
+    # def pucks_callback(self, data):
+    #     self.is_observed.set(True)
+    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+    #     # red (1, 0, 0)
+    #     # green (0, 1, 0)
+    #     # blue (0, 0, 1)
+    #
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         try:
+    #             new_observation_pucks = [[marker.pose.position.x,
+    #                                       marker.pose.position.y,
+    #                                       marker.id,
+    #                                       marker.color.r,
+    #                                       marker.color.g,
+    #                                       marker.color.b] for marker in data.markers]
+    #
+    #             self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
+    #             rospy.loginfo("Got pucks observation:")
+    #             rospy.loginfo(self.known_chaos_pucks.get())
+    #             self.pucks_subscriber.unregister()
+    #
+    #         except Exception:  # FIXME
+    #             rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    # def is_chaos_collected_completely(self):
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         rospy.loginfo("Chaos collected completely")
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.FAILED
+    #
+    # def is_chaos_collected_completely1(self):
+    #     if len(self.known_chaos_pucks.get()) == 0:
+    #         rospy.loginfo("Chaos collected completely")
+    #         return bt.Status.SUCCESS
+    #     else:
+    #         return bt.Status.RUNNING
+
+    def is_last_puck(self):
+        if len(self.known_chaos_pucks.get()) == 1:
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+    def is_chaos_observed(self):
+        if self.is_observed.get():
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
     def is_chaos_empty(self):
         # print self.known_chaos_pucks.get()
         if len(self.known_chaos_pucks.get()) > 0:
@@ -228,10 +280,7 @@ class CollectChaos(bt.FallbackNode):
         known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
         print "sorted"
         self.known_chaos_pucks.set(known_chaos_pucks)
-        print "size of pucks left. If 1, than next print shouldn't be ALALALALAL"
-        print len(self.known_chaos_pucks.get())
         if len(self.known_chaos_pucks.get()) >= 3:
-            print "ALALALALALAL"
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
                                                                                                      self.known_chaos_pucks.get(),
                                                                                                      self.critical_angle)
@@ -243,6 +292,10 @@ class CollectChaos(bt.FallbackNode):
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
         rospy.loginfo("Known pucks sorted: " + str(self.known_chaos_pucks.get()))
 
+    #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
+    #     if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
+    #         # self.known_chaos_pucks.set(np.roll(self.known_chaos_pucks.get(), -1, axis=0))
+    #         rospy.loginfo("blue rolled")
 
     def calculate_closest_landing(self):
         """
@@ -360,7 +413,9 @@ class MainRobotBT(object):
                                           marker.color.g,
                                           marker.color.b] for marker in data.markers]
 
-                self.known_chaos_pucks.set(np.append(self.known_chaos_pucks.get(), new_observation_pucks))  # Action
+                new_observation_pucks = np.array(new_observation_pucks)
+
+                self.known_chaos_pucks.set(new_observation_pucks)
                 rospy.loginfo("Got pucks observation:")
                 rospy.loginfo(self.known_chaos_pucks.get())
                 self.pucks_subscriber.unregister()
