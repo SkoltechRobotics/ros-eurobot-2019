@@ -611,7 +611,7 @@ class MainRobotBT(object):
 
     def start(self):
 
-        self.bt = bt.Root(self.strategy_msc(),
+        self.bt = bt.Root(self.strategy_rus(),
                           action_clients={"move_client": self.move_client,
                                           "manipulator_client": self.manipulator_client,
                                           "stm_client": self.stm_client})
