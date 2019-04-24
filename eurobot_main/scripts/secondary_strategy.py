@@ -17,7 +17,7 @@ class Strategy(object):
         self.robot_name = rospy.get_param("robot_name")
         self.robot_coordinates = None
         self.collected_pucks = bt.BTVariable([])
-        self.score_master = ScoreController(self.collected_pucks)
+        self.score_master = ScoreController(self.collected_pucks, self.robot_name)
 
     def update_coordinates(self):
         try:

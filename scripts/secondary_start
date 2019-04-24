@@ -8,5 +8,6 @@ export PATH="${PATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/scripts"
 source /home/odroid/catkin_ws/devel/setup.bash
 
 sleep 5s
+export DISPLAY=:0
 
 roslaunch eurobot_main secondary_robot_bt.launch

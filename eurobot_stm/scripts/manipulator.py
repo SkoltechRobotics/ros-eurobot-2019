@@ -92,9 +92,13 @@ class Manipulator(object):
             return self.moving_default()
         elif cmd == "stepper_up":
             return self.stepper_up()
-        #--- main_robot
+        elif cmd == "delay_500":
+            return self.delay_500()
+        # --- main_robot
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
+        elif cmd == "blind_start_collect_ground":
+            return self.blind_start_collect_ground()
         elif cmd == "complete_collect_ground":
             return self.complete_collect_ground()
         elif cmd == "release_accelerator":
@@ -105,15 +109,17 @@ class Manipulator(object):
             return self.goldenium_up_and_hold()
         elif cmd == "release_goldenium_on_scales":
             return self.release_goldenium_on_scales()
-        elif cmd == "set_angle_to_grab_goldenium":
-            return self.set_angle_to_grab_goldenium()
+        elif cmd == "start_collect_goldenium":
+            return self.start_collect_goldenium()
         elif cmd == "swing_puck":
             return self.swing_puck()
         elif cmd == "release_accelerator_first_move_when_full":
             return self.release_accelerator_first_move_when_full()
         elif cmd == "finish_collect_blunium":
             return self.finish_collect_blunium()
-        #--- secondary robot
+        elif cmd == "set_manipulator_ground_main":
+            return self.set_manipulator_ground_main()
+        # --- secondary robot
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
         elif cmd == "start_collect_wall_without_grabber":
@@ -165,7 +171,6 @@ class Manipulator(object):
             self.stm_publisher.publish(String(message))
             if self.is_okay_answer(self.id_command):
                 return True
-
 
     def is_success_status(self, id_command):
         rospy.sleep(0.05)
@@ -219,21 +224,29 @@ class Manipulator(object):
             self.send_command(self.protocol["RELEASER_DEFAULT_SECONDARY"])
             return True
 
-    def start_collect_ground(self):
+    def blind_start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_WALL"])  # FIXME need to remove?
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
-        self.send_command(self.protocol["SET_WALL"])  # FIXME remove this step?
+        rospy.sleep(0.2)
         return True
 
+    def start_collect_ground(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.2)
+        result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        if result:
+            return True
+        else:
+            return False
+
     def complete_collect_ground(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["SET_PLATFORM"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
-        # self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
         rospy.sleep(0.2)  # FIXME 0.2
@@ -272,14 +285,14 @@ class Manipulator(object):
         return True
 
     def finish_collect_blunium(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["SET_PLATFORM"])
         rospy.sleep(0.1)
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
-        rospy.sleep(0.2)  # FIXME 0.2
+        rospy.sleep(0.2)
+        self.send_command(self.protocol["SET_GROUND"])
         return True
 
     def goldenium_up_and_hold(self):
@@ -287,7 +300,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
         return True
 
-    def set_angle_to_grab_goldenium(self):
+    def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
@@ -295,13 +308,18 @@ class Manipulator(object):
         return True
 
     def release_goldenium_on_scales(self):
-        self.send_command(self.protocol["SET_WALL"])
         self.send_command(self.protocol["STOP_PUMP"])
-        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.3)
+        # self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["SET_WALL"])
         return True
 
     def set_manipulator_ground(self):
         self.send_command(self.protocol["SET PUMP TO THE MOVING STATE"])
+        return True
+
+    def set_manipulator_ground_main(self):
+        self.send_command(self.protocol["SET_GROUND"])
         return True
 
     def set_manipulator_wall(self):
@@ -330,6 +348,9 @@ class Manipulator(object):
         self.send_command(self.protocol["MAKE_STEP_UP"])
         return True
 
+    def delay_500(self):
+        rospy.sleep(0.5)
+        return True
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
@@ -382,9 +403,7 @@ class Manipulator(object):
             self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
             return True
 
-
     def release_from_manipulator(self):
-        # self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["STOP_PUMP"])
         rospy.sleep(0.5)
         self.send_command(self.protocol["SET_PLATFORM"])

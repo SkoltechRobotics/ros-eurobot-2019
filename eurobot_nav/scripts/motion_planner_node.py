@@ -196,6 +196,7 @@ class MotionPlannerNode:
         if self.current_cmd == "move_line":
             self.create_linear_path()
         elif self.current_cmd == "move_arc":
+            self.create_linear_path()  # FIXME  Nick added me
             self.current_state = "move_arc"
         rospy.loginfo(rospy.Time.now().to_sec())
         rospy.loginfo('----------------------!!!!!------------')
@@ -352,7 +353,6 @@ class MotionPlannerNode:
         delta_coords[2] = wrap_angle(delta_coords[2])
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
-        #self.create_linear_path()
         self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
@@ -425,7 +425,7 @@ class MotionPlannerNode:
             else:
                 self.move_arc()
         elif self.current_state == "move_arc":
-            if self.is_robot_stopped:       
+            if self.is_robot_stopped:
                 self.terminate_moving()
                 self.is_robot_stopped = False
             else:

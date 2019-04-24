@@ -101,6 +101,12 @@ class SetManipulatortoGround(ActionClientNode):
         super(SetManipulatortoGround, self).__init__(cmd, action_client_id)
 
 
+class MainSetManipulatortoGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_manipulator_ground_main"
+        super(MainSetManipulatortoGround, self).__init__(cmd, action_client_id)
+
+
 class StartPump(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_pump"
@@ -111,6 +117,12 @@ class StopPump(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stop_pump"
         super(StopPump, self).__init__(cmd, action_client_id)
+
+class Delay500(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_500"
+        super(Delay500, self).__init__(cmd, action_client_id)
+
 # ===========================================================
 class MovingDefault(ActionClientNode):
     def __init__(self, action_client_id):
@@ -195,6 +207,12 @@ class StartCollectGround(ActionClientNode):
         super(StartCollectGround, self).__init__(cmd, action_client_id)
 
 
+class BlindStartCollectGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "blind_start_collect_ground"
+        super(BlindStartCollectGround, self).__init__(cmd, action_client_id)
+
+
 class CompleteCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_ground"
@@ -219,10 +237,10 @@ class UnloadAccelerator(ActionClientNode):
         super(UnloadAccelerator, self).__init__(cmd, action_client_id)
 
 
-class SetManipulatortoGoldenium(ActionClientNode):
+class StartCollectGoldenium(ActionClientNode):
     def __init__(self, action_client_id):
-        cmd = "set_angle_to_grab_goldenium"
-        super(SetManipulatortoGoldenium, self).__init__(cmd, action_client_id)
+        cmd = "start_collect_goldenium"
+        super(StartCollectGoldenium, self).__init__(cmd, action_client_id)
 
 
 # Command to grab Goldenium, push up and hold it there
