@@ -407,30 +407,30 @@ class MainRobotBT(object):
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
         
-        # collect_goldenium = bt.SequenceWithMemoryNode([
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
-        #                         bt_ros.StartCollectGoldenium("manipulator_client"),
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
-        #                         bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-        #                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
-        #                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-        #                     ])
-
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
                                 bt_ros.StartCollectGoldenium("manipulator_client"),
-
-                                bt.ParallelWithMemoryNode([
-                                    bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
-                                    bt_ros.CheckLimitSwitchInf("manipulator_client")
-                                ], threshold=1),
-
+                                bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
                                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                 bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
                                 bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
                             ])
+
+        # collect_goldenium = bt.SequenceWithMemoryNode([
+        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
+        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
+        #                         bt_ros.StartCollectGoldenium("manipulator_client"),
+
+        #                         bt.ParallelWithMemoryNode([
+        #                             bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
+        #                             bt_ros.CheckLimitSwitchInf("manipulator_client")
+        #                         ], threshold=1),
+
+        #                         bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+        #                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+        #                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+        #                     ])
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
                                         bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
@@ -611,7 +611,7 @@ class MainRobotBT(object):
 
     def start(self):
 
-        self.bt = bt.Root(self.strategy_rus(),
+        self.bt = bt.Root(self.strategy_msc(),
                           action_clients={"move_client": self.move_client,
                                           "manipulator_client": self.manipulator_client,
                                           "stm_client": self.stm_client})
