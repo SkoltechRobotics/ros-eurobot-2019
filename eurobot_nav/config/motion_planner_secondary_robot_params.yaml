@@ -1,4 +1,4 @@
-velocity_vector: [0.6, 0.6, 1.2]
+velocity_vector: [0.7, 0.7, 1.2]
 robot_name: "secondary_robot"
 num_points_in_path: 100
 robot_radius: 0.1
@@ -12,7 +12,7 @@ RATE: 15
 XY_GOAL_TOLERANCE: 0.005
 YAW_GOAL_TOLERANCE: 0.01
 # maximum speed
-V_MAX: 0.6
+V_MAX: 0.7
 W_MAX: 1.2
 AV_MAX: 0.9
 AW_MAX: 1.5
@@ -21,15 +21,16 @@ ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.15
 R_DECELERATION: 1
-exp_const: 0.15
+exp_const: 0.13
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
-XY_ACCURATE_GOAL_TOLERANCE: 0.01
-YAW_ACCURATE_GOAL_TOLERANCE: 0.05
+XY_ACCURATE_GOAL_TOLERANCE: 0.005
+YAW_ACCURATE_GOAL_TOLERANCE: 0.01
 D_ACCURATE_DECELERATION: 0.20
 collision:
-    min_dist_to_obstacle: 0.4
+    min_dist_to_obstacle_lidar: 0.5
+    min_dist_to_obstacle_sensor: 0.2
     sensor_position: [[-0.131, 0., 3.14159265359], [0.06568, 0.11377, 1.0471975512], [0.06592, -0.11363, 5.21],
     [-0.04221, -0.0751, 4.19], [-0.02999, 0.08194, 2.08], [0.06634, -0.00163, 0.]]
     angle_sensor: 0.

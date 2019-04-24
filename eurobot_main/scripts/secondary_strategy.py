@@ -17,7 +17,7 @@ class Strategy(object):
         self.robot_name = rospy.get_param("robot_name")
         self.robot_coordinates = None
         self.collected_pucks = bt.BTVariable([])
-        self.score_master = ScoreController(self.collected_pucks)
+        self.score_master = ScoreController(self.collected_pucks, self.robot_name)
 
     def update_coordinates(self):
         try:
@@ -378,7 +378,7 @@ class VovanStrategy(Strategy):
                     bt_ros.MoveLineToPoint(self.redium_zone_first, "move_client"),
                     bt_ros.SetToGround_ifReachedGoal(self.sixth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
                     # bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
-                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
+                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_first, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
                 bt.ParallelWithMemoryNode([
@@ -409,7 +409,7 @@ class VovanStrategy(Strategy):
                     bt_ros.MoveLineToPoint(self.redium_zone_second, "move_client"),
                     bt_ros.SetToGround_ifReachedGoal(self.seventh_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
                     # bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
-                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
+                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_second, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
                 bt.ParallelWithMemoryNode([
@@ -440,7 +440,7 @@ class VovanStrategy(Strategy):
                     bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
                     bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
                     # bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
-                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
+                    bt_ros.PublishScore_ifReachedGoal(self.redium_zone_third, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
                 bt.ParallelWithMemoryNode([
@@ -478,7 +478,7 @@ class VovanStrategy(Strategy):
                 bt_ros.MoveLineToPoint(self.redium_zone_forth, "move_client"),
                 bt_ros.SetToGround_ifReachedGoal(self.nineth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
                 # bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
-                bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
+                bt_ros.PublishScore_ifReachedGoal(self.redium_zone_forth, self.score_master, "RED")
             ], threshold=3),
             bt_ros.ReleaseFromManipulator("manipulator_client"),
             bt.ActionNode(lambda: self.score_master.unload("RED")),

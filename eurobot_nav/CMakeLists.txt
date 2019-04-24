@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 project(eurobot_nav)
 add_compile_options(-std=c++11)
 
+set (OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1-dev/)
+
+
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   roscpp

@@ -503,3 +503,37 @@ sudo systemctl restart main_start
 sudo systemctl stop main_start
 sudo systemctl start main_start
 
+rosbag record -a
+
+cd ~/.ros/log/latest
+
+roslaunch eurobot_main chaos_bt.launch
+
+
+#TROOBLESHOOTING
+- ubuntu can't log in
+https://askubuntu.com/questions/223501/ubuntu-gets-stuck-in-a-login-loop
+
+TL;DR, just try logging into the shell (Ctrl+Alt+F2 or whatever F between F1 and F6) and type
+
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+sudo apt install nvidia-367
+If it succeeds, reboot.
+
+sudo reboot
+
+rosclean purge
+
+
+                bt.SequenceNode([
+                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                    bt_ros.SetManipulatortoUp("manipulator_client"),
+                    bt.ActionNode(self.calculate_drive_back_point),
+                    self.choose_new_waypoint_latch,
+                    self.move_to_waypoint_node,
+                    bt.ActionNode(self.remove_waypoint),
+                    bt.ActionNode(self.choose_new_waypoint_latch.reset),
+
+                    bt.ActionNode(self.update_chaos_pucks),
+                ])
