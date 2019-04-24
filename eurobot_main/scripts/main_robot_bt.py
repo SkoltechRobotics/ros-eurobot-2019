@@ -97,15 +97,15 @@ class YellowTactics(Tactics):
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_1_PREgrab_pos[1] - 0.07,
+                                               self.goldenium[1] + 0.29,
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.095,  # 0.1
+                                               self.goldenium[1] + 0.2,
                                                self.goldenium_2_PREgrab_pos[2]])
 
-        self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
-                                                 self.goldenium_grab_pos[1] + 0.08,  # 0.06
+        self.goldenium_back_rot_pose = np.array([self.goldenium[0],
+                                                 self.goldenium[1] + 0.09,
                                                  1])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.25,
@@ -186,15 +186,15 @@ class PurpleTactics(Tactics):
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_1_PREgrab_pos[1] - 0.07,
+                                               self.goldenium[1] + 0.28,
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.095,  # 0.1
+                                               self.goldenium[1] + 0.2,  # 0.1
                                                self.goldenium_2_PREgrab_pos[2]])
 
-        self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
-                                                 self.goldenium_grab_pos[1] + 0.08,  # 0.06
+        self.goldenium_back_rot_pose = np.array([self.goldenium[0],
+                                                 self.goldenium_grab_pos[1] + 0.09,
                                                  2])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,

@@ -102,7 +102,7 @@ class CollisionAvoidance(object):
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             points = np.append(points, points_in_sensor_frame, axis=0)
-        self.obstacle_points_sensor = points[2]
+        self.obstacle_points_sensor = np.array([points[2]])
 
     def scan_callback(self, scan):
         scan = scan
