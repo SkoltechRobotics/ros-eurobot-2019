@@ -41,18 +41,20 @@ class BTController(object):
 
     def start_status_callback(self, data):
         if not self.experiment_init:
-            r = requests.get('http://192.168.88.220/INIT')
-            if r == 200:
-                self.experiment_init = True
+            try:
+                r = requests.get('http://192.168.88.220/init')
+                if r.status_code == 200:
+                    self.experiment_init = True
+            except requests.exceptions.RequestException as e:
+                pass
 
         if data.data == "1":
             self.behavior_tree.start()
             if self.experiment_init:
                 for i in range(50):
-                    r = requests.get('http://192.168.88.220/START')
-                    if r == 200:
+                    r = requests.get('http://192.168.88.220/start')
+                    if r.status_code == 200:
                         self.experiment_start = True
-
 
             self.start_status_subscriber.unregister()
             self.side_status_subscriber.unregister()

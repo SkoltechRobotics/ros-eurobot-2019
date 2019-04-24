@@ -460,7 +460,7 @@ class VovanStrategy(Strategy):
         ])
 
         nineth_puck = bt.SequenceWithMemoryNode([
-            # bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
+            bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
             bt_ros.StartPump("manipulator_client"),
             bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
