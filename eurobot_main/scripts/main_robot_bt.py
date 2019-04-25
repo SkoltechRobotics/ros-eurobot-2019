@@ -603,8 +603,6 @@ class MainRobotBT(object):
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                                    bt_ros.SetManipulatortoWall("manipulator_client"),
-                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
                                 ])
