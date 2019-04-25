@@ -81,13 +81,13 @@ class App:
         # secondary WIRE config
         self.secondary_start_status = StringVar()
         self.secondary_start_status.set("Waiting")
-        self.secondary_wire_frame = Label(self.frame8, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.secondary_start_status)
+        self.secondary_wire_frame = Label(self.frame8, bg="gray", height=2, width=13, font=("Helvetica", 40), textvariable=self.secondary_start_status)
         self.secondary_wire_frame.pack(side="right")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
         # secondary SIDE config
         self.secondary_side_status = StringVar()
-        self.secondary_side_frame = Label(self.frame9, bg="gray", height=1, width=9, font=("Helvetica", 25), textvariable=self.secondary_side_status)
+        self.secondary_side_frame = Label(self.frame9, bg="gray", height=2, width=13, font=("Helvetica", 40), textvariable=self.secondary_side_status)
         self.secondary_side_status.set("Side")
         self.secondary_side_frame.pack(side="left")
 
@@ -98,11 +98,11 @@ class App:
         self.score_secondary = IntVar()
         self.score_secondary.set(0)
 
-        Label(self.frame5, bg="white", height=1, width=13, font=("Helvetica", 25), text="Secondary").pack(side="top")
-        self.secondary_coords_frame = Label(self.frame6, bg="white", height=1, width=16, font=("Helvetica", 50),
+        # Label(frame, bg="white", height=2, width=13, font=("Helvetica", 60), text="Secondary").pack(side="top")
+        self.secondary_coords_frame = Label(self.frame6, bg="white", height=1, width=16, font=("Helvetica", 80),
                                             textvariable=self.secondary_coords)
         self.secondary_coords_frame.pack(side="top")
-        Label(self.frame6, bg="white", height=1, width=4, textvariable=self.score_secondary, font=("Helvetica", 100)).pack(side="top")
+        Label(self.frame6, bg="white", height=2, width=4, textvariable=self.score_secondary, font=("Helvetica", 150)).pack(side="top")
 
 # ========================================================================
 

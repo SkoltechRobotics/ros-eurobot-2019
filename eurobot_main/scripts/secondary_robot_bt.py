@@ -9,6 +9,7 @@ import bt_ros
 import behavior_tree as bt
 import secondary_strategy
 from bt_controller import SideStatus, BTController
+from experiment_controller import ExperimentController
 
 from core_functions import *
 

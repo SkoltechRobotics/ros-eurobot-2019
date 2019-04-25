@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="log"/>
-    <node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="log"/>
+    <include file="$(find eurobot_main)/launch/secondary_robot_multimaster.launch" />
 
     <rosparam file="$(find eurobot_loc)/config/secondary_robot_localization_params.yaml" command="load" ns="secondary_robot"/>
     <rosparam file="$(find eurobot_stm)/config/stm.yaml" command="load" ns="secondary_robot"/>
@@ -28,6 +27,7 @@
         </node-->
         <node pkg="eurobot_stm" name="manipulator_node" type="manipulator.py" respawn="true" output="log"/>
         <node pkg="eurobot_main" name="behavior_tree" type="secondary_robot_bt.py" respawn="true" output="screen"/>
+        <node pkg="eurobot_main" name="experiment_controller" type="experiment_controller.py" respawn="true" output="screen"/>
         <node pkg="eurobot_display" name="display_node" type="gui_secondary.py" respawn="true" output="log"/>
     </group>
 </launch>
