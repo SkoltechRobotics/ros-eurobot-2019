@@ -119,6 +119,8 @@ class Manipulator(object):
             return self.finish_collect_blunium()
         elif cmd == "set_manipulator_ground_main":
             return self.set_manipulator_ground_main()
+        # elif cmd == "long_check_limit_switch_infinitely":
+        #     return self.long_check_limit_switch_infinitely()
         # --- secondary robot
         elif cmd == "start_collect_wall":
             return self.start_collect_wall()
@@ -201,7 +203,7 @@ class Manipulator(object):
     def check_status_infinitely(self):
         cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
         counter = 0
-        while True:
+        for i in range(50):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
@@ -308,10 +310,8 @@ class Manipulator(object):
         return True
 
     def release_goldenium_on_scales(self):
-        self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.3)
-        # self.send_command(self.protocol["SET_PLATFORM"])
         self.send_command(self.protocol["SET_WALL"])
+        self.send_command(self.protocol["STOP_PUMP"])
         return True
 
     def set_manipulator_ground(self):

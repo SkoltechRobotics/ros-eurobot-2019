@@ -97,15 +97,20 @@ class YellowTactics(Tactics):
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_1_PREgrab_pos[1] - 0.07,
+                                               self.goldenium[1] + 0.29,
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.08,  # 0.1
+                                               self.goldenium[1] + 0.2,
                                                self.goldenium_2_PREgrab_pos[2]])
 
-        self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
-                                                 self.goldenium_grab_pos[1] + 0.08,  # 0.06
+
+        self.goldenium_back_pose = np.array([self.goldenium[0],
+                                            self.goldenium_grab_pos[1] + 0.09,
+                                            self.goldenium_2_PREgrab_pos[2]])
+
+        self.goldenium_back_rot_pose = np.array([self.goldenium[0],
+                                                 self.goldenium_back_pose[1],
                                                  1])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - 0.25,
@@ -186,15 +191,19 @@ class PurpleTactics(Tactics):
                                                self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_1_PREgrab_pos[1] - 0.07,
+                                               self.goldenium[1] + 0.28,
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium_2_PREgrab_pos[1] - 0.08,  # 0.1
+                                               self.goldenium[1] + 0.2,  # 0.1
                                                self.goldenium_2_PREgrab_pos[2]])
 
-        self.goldenium_back_rot_pose = np.array([self.goldenium_grab_pos[0],
-                                                 self.goldenium_grab_pos[1] + 0.08,  # 0.06
+        self.goldenium_back_pose = np.array([self.goldenium[0],
+                                            self.goldenium_grab_pos[1] + 0.09,
+                                            self.goldenium_2_PREgrab_pos[2]])
+
+        self.goldenium_back_rot_pose = np.array([self.goldenium[0],
+                                                 self.goldenium_back_pose[1],
                                                  2])
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] + 0.25,
@@ -580,6 +589,7 @@ class MainRobotBT(object):
                             ])
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
+                                        bt_ros.MoveLineToPoint(self.tactics.goldenium_back_pose, "move_client"),
                                         bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
                                         bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
                                     ])
@@ -589,6 +599,8 @@ class MainRobotBT(object):
                                 bt.SequenceWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.05, 0]), "move_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES")),
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),

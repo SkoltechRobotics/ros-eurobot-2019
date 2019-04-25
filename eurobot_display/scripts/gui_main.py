@@ -79,15 +79,15 @@ class App:
 
         # main SIDE config
         self.main_side_status = StringVar()
-        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=9, font=("Helvetica", 30), textvariable=self.main_side_status)
+        self.main_side_frame = Label(self.frame7, bg="gray", height=1, width=10, font=("Helvetica", 60), textvariable=self.main_side_status)
         self.main_side_status.set("Side")
         self.main_side_frame.pack(side="left")
 
         # main WIRE config
         self.main_start_status = StringVar()
         self.main_start_status.set("Waiting")
-        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 30), textvariable=self.main_start_status)
-        self.main_wire_frame.pack(side="right")
+        self.main_wire_frame = Label(self.frame6, bg="gray", height=1, width=9, font=("Helvetica", 60), textvariable=self.main_start_status)
+        self.main_wire_frame.pack(side="left")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
         # --------------------------------------------------
@@ -99,7 +99,7 @@ class App:
         self.score_main = IntVar()
         self.score_main.set(0)
 
-        Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 30), text="Main").pack(side="top")
+        # Label(self.frame4, bg="white", height=1, width=13, font=("Helvetica", 30), text="Main").pack(side="top")
         self.main_coords_frame = Label(self.frame5, bg="white", height=1, width=13, font=("Helvetica", 50),
                                         textvariable=self.main_coords)
         self.main_coords_frame.pack(side="top")
@@ -108,7 +108,7 @@ class App:
         self.score_main_and_exp = IntVar()
         self.score_main_and_exp.set(40)
 
-        Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_main_and_exp, font=("Helvetica", 100)).pack(side="bottom")
+        Label(self.frame5, bg="white", height=1, width=4, textvariable=self.score_main_and_exp, font=("Helvetica", 120)).pack(side="bottom")
 
     def heartbeat_loop(self):
         if self.heartbeat["bg"] == "red":
