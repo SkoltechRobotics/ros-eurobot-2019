@@ -308,7 +308,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             points = np.append(points, points_in_sensor_frame, axis=0)
-        self.obstacle_points_sensor = points
+        self.obstacle_points_sensor = points[[0,3,4]]
 
     def scan_callback(self, scan):
         scan = scan
@@ -331,8 +331,9 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.collision_area = cvt_local2global(points, np.array(
             [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
         self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
-        self.obstacle_points = self.filter_points(self.obstacle_points.copy())
-        self.set_collision_point(self.obstacle_points)
+        rospy.loginfo("FILTR")
+        self.obstacle_points = self.filter_points(self.obstacle_points.copy(), coords.copy(), goal.copy())
+        #self.set_collision_point(self.obstacle_points)
 
     def filter_points(self, points, coords, goal):
         filtered_points = cvt_local2global(points.copy(), coords.copy())
@@ -344,6 +345,7 @@ class CollisionAvoidanceSecondaryRobot(object):
     def get_collision_status(self, coords, goal):
         self.p = 1
         self.get_collision_area(coords, goal)
+        rospy.loginfo("SEC r")
         if self.obstacle_points.shape[0] > 0:
             min_dist_to_obstacle = min(np.linalg.norm(coords[:2] - self.obstacle_points, axis=1))
             rospy.loginfo("Lidar dist %s", min_dist_to_obstacle)
@@ -355,7 +357,9 @@ class CollisionAvoidanceSecondaryRobot(object):
                     self.p = 1
                 else:
                     self.p = min_dist_to_obstacle/0.7
-                return False, self.p
+            return False, self.p
+        else:
+            return False, self.p
 
     def set_collision_point(self, positions):
         marker = []

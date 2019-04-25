@@ -81,13 +81,14 @@ class MotionPlannerNode:
         self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
-#       init rospy subscribers
-        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
 #       init collision avoidance
         if self.robot_name == "secondary_robot":
             self.collision_avoidance = CollisionAvoidanceSecondaryRobot()
         elif self.robot_name == "main_robot":
             self.collision_avoidance = CollisionAvoidanceMainRobot()
+#       init rospy subscribers
+        rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
+
 
 
     # noinspection PyTypeChecker
