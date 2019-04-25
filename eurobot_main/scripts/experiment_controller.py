@@ -11,13 +11,16 @@ class ExperimentController(object):
         self.experiment_init = False
         self.experiment_start = False
 
-    def start_status_callback(self, data):
-        if not self.experiment_init:
-            self.init_experiment()
+        self.init_timer = rospy.Timer(rospy.Duration(1), self.timer_callback)
 
+    def start_status_callback(self, data):
         if data.data == "1":
             if self.experiment_init:
                 self.start_experiment()
+
+    def timer_callback(self, event):
+        if not self.experiment_init:
+            self.init_experiment()
 
     def init_experiment(self):
         try:
@@ -28,13 +31,14 @@ class ExperimentController(object):
             rospy.loginfo("Can't connect to the experiment!!!")
 
     def start_experiment(self):
-        try:
-            for i in range(50):
+        for i in range(50):
+            try:
                 r = requests.get('http://192.168.88.220/start')
                 if r.status_code == 200:
                     self.experiment_start = True
-        except requests.exceptions.RequestException as e:
-            rospy.loginfo("Can't connect to the experiment!!!")
+                    return True
+            except requests.exceptions.RequestException as e:
+                rospy.loginfo("Can't connect to the experiment!!!")
 
 if __name__ == '__main__':
     try:
