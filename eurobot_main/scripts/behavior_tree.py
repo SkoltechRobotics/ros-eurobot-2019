@@ -54,7 +54,7 @@ class BTNode(object):
         else:
             name = self.name
         print  level * "    " + prefix + name + " ---> " + colored(str(self.status), colors[self.status])
-        # pass
+        pass
 
 
 class ControlNode(BTNode):

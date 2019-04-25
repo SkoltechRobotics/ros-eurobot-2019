@@ -36,7 +36,7 @@ secondary_robot:
     redium_zone_third: [2.75, 0.75, -1.5]
     redium_zone_forth: [2.85, 0.75, -1.57]
 
-
+approach_delta: 0.02
 ground_spacing_dist: 0.3
 
 # Main robot

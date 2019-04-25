@@ -13,7 +13,7 @@ from geometry_msgs.msg import Twist
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance, cvt_ros_scan2points
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
-from collision_avoidance import CollisionAvoidance
+from collision_avoidance import CollisionAvoidanceMainRobot, CollisionAvoidanceSecondaryRobot
 
 
 class MotionPlannerNode:
@@ -84,7 +84,10 @@ class MotionPlannerNode:
 #       init rospy subscribers
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
 #       init collision avoidance
-        self.collision_avoidance = CollisionAvoidance()
+        if self.robot_name == "secondary_robot":
+            self.collision_avoidance = CollisionAvoidanceSecondaryRobot()
+        elif self.robot_name == "main_robot":
+            self.collision_avoidance = CollisionAvoidanceMainRobot()
 
 
     # noinspection PyTypeChecker
@@ -354,6 +357,7 @@ class MotionPlannerNode:
         delta_coords[2] *= self.r
         self.delta_dist = np.linalg.norm(delta_coords[:2], axis=0)
         self.is_collision, self.p = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        #self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
         rospy.loginfo("DIST %s", self.delta_dist)
