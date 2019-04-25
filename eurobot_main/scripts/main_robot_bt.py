@@ -28,6 +28,7 @@ class Tactics(object):
         self.ground_spacing_dist = rospy.get_param("ground_spacing_dist")
         self.robot_outer_radius = rospy.get_param("robot_outer_radius")  # FIXME
         self.stick_len = rospy.get_param("stick_len")
+        self.delta = rospy.get_param("approach_delta")
 
 
 class YellowTactics(Tactics):
@@ -44,7 +45,7 @@ class YellowTactics(Tactics):
         #                             self.red_cell_puck[1],
         #                             -1.57])
 
-        self.first_puck_landing = np.array([self.red_cell_puck[0] + self.approach_dist - 0.02,
+        self.first_puck_landing = np.array([self.red_cell_puck[0] + self.approach_dist - self.delta,
                                            self.red_cell_puck[1],
                                            3.14])
 
@@ -53,11 +54,11 @@ class YellowTactics(Tactics):
                                                     1.57])
 
         self.second_puck_landing = np.array([self.red_cell_puck[0],
-                                            self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist,
+                                            self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist + self.delta,
                                             1.57])
 
         self.third_puck_landing = np.array([self.red_cell_puck[0],
-                                           self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist,
+                                           self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist + self.delta,
                                            1.57])
 
         self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
@@ -73,7 +74,7 @@ class YellowTactics(Tactics):
                                                 -1.57])
 
         self.blunium_collect_pos = np.array([self.blunium[0],
-                                            self.blunium[1] + 0.21,  # 0.225
+                                            self.blunium[1] + 0.2,
                                             self.blunium_collect_PREpos[2]])
 
         self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
@@ -103,7 +104,6 @@ class YellowTactics(Tactics):
         self.goldenium_grab_pos = np.array([self.goldenium[0],
                                                self.goldenium[1] + 0.2,
                                                self.goldenium_2_PREgrab_pos[2]])
-
 
         self.goldenium_back_pose = np.array([self.goldenium[0],
                                             self.goldenium_grab_pos[1] + 0.09,
@@ -137,7 +137,7 @@ class PurpleTactics(Tactics):
         #                             self.red_cell_puck[1],
         #                             -1.57])
 
-        self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist + 0.02,
+        self.first_puck_landing = np.array([self.red_cell_puck[0] - self.approach_dist + self.delta,
                                            self.red_cell_puck[1],
                                            0])
 
@@ -146,11 +146,11 @@ class PurpleTactics(Tactics):
                                                     1.57])
 
         self.second_puck_landing = np.array([self.red_cell_puck[0],
-                                            self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist,
+                                            self.red_cell_puck[1] + self.ground_spacing_dist - self.approach_dist + self.delta,
                                             1.57])
 
         self.third_puck_landing = np.array([self.red_cell_puck[0],
-                                           self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist,
+                                           self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist + self.delta,
                                            1.57])
 
         self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
@@ -167,7 +167,7 @@ class PurpleTactics(Tactics):
                                                 -1.57])
 
         self.blunium_collect_pos = np.array([self.blunium[0],
-                                            self.blunium[1] + 0.21,
+                                            self.blunium[1] + 0.20,
                                             self.blunium_collect_PREpos[2]])
 
         self.blunium_start_push_pose = np.array([self.blunium_prepose[0],
@@ -195,7 +195,7 @@ class PurpleTactics(Tactics):
                                                -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.2,  # 0.1
+                                               self.goldenium[1] + 0.2,
                                                self.goldenium_2_PREgrab_pos[2]])
 
         self.goldenium_back_pose = np.array([self.goldenium[0],
@@ -531,11 +531,11 @@ class MainRobotBT(object):
                                         bt_ros.StartCollectBlunium("manipulator_client"),
                                         bt.ParallelWithMemoryNode([
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
-                                            bt_ros.CheckLimitSwitchInf("manipulator_client")  # FIXME
+                                            bt_ros.CheckLimitSwitchInfLong("manipulator_client")  # FIXME
                                         ], threshold=1),
+                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
                                         bt_ros.FinishCollectBlunium("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
                                     ])
 
         approach_acc = bt.SequenceWithMemoryNode([
@@ -580,7 +580,7 @@ class MainRobotBT(object):
 
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
-                                    bt_ros.CheckLimitSwitchInf("manipulator_client")
+                                    bt_ros.CheckLimitSwitchInfLong("manipulator_client")
                                 ], threshold=1),
 
                                 bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
