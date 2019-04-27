@@ -40,6 +40,7 @@ class YellowTactics(Tactics):
         self.scales_area = rospy.get_param("yellow_side/scales_area")
         self.scales_area = np.array(self.scales_area)
         self.chaos_center = rospy.get_param("yellow_side/chaos_center")
+        self.eighth_puck = rospy.get_param("yellow_side/eighth_puck")
 
         # self.start_zone = np.array([self.red_cell_puck[0] + self.ground_spacing_dist,
         #                             self.red_cell_puck[1],
@@ -60,6 +61,10 @@ class YellowTactics(Tactics):
         self.third_puck_landing = np.array([self.red_cell_puck[0],
                                            self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist + self.delta,
                                            1.57])
+
+        self.eighth_puck_landing = np.array([self.eighth_puck[0],
+                                            self.eighth_puck[1] - 0.185,
+                                            1.57])
 
         # self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
         #                                         self.third_puck_landing[1] - 0.05,
@@ -141,6 +146,7 @@ class PurpleTactics(Tactics):
         self.chaos_center = rospy.get_param("purple_side/chaos_center")
         self.goldenium = rospy.get_param("purple_side/goldenium")
         self.blunium = rospy.get_param("purple_side/blunium")
+        self.eighth_puck = rospy.get_param("purple_side/eighth_puck")
 
         # self.start_zone = np.array([self.red_cell_puck[0] - self.ground_spacing_dist,
         #                             self.red_cell_puck[1],
@@ -161,6 +167,10 @@ class PurpleTactics(Tactics):
         self.third_puck_landing = np.array([self.red_cell_puck[0],
                                            self.red_cell_puck[1] + 2*self.ground_spacing_dist - self.approach_dist + self.delta,
                                            1.57])
+
+        self.eighth_puck_landing = np.array([self.eighth_puck[0],
+                                            self.eighth_puck[1] - 0.185,
+                                            1.57])
 
         # self.third_puck_rotate_pose = np.array([self.third_puck_landing[0],
         #                                         self.third_puck_landing[1] - 0.05,
@@ -532,8 +542,15 @@ class MainRobotBT(object):
                                     bt_ros.BlindStartCollectGround("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.add("GREENIUM")),  # FIXME: color is undetermined without camera!
                                     bt.ParallelWithMemoryNode([
-                                        bt_ros.CompleteCollectGround("manipulator_client"),
-                                        bt_ros.MoveLineToPoint(self.tactics.third_puck_rotate_pose, "move_client"),
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt_ros.StartTakeWallPuck("manipulator_client")
+                                        ]),
+                                        bt_ros.MoveLineToPoint(self.tactics.eighth_puck_landing, "move_client"),
+                                        # bt.ParallelWithMemoryNode([
+                                        #     bt_ros.MoveLineToPoint(self.tactics.eighth_puck_landing, "move_client"),
+                                        #     bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                        # ], threshold=1),
                                     ], threshold=2),
                                 ]),
                                 bt.ParallelWithMemoryNode([
@@ -543,15 +560,51 @@ class MainRobotBT(object):
                             ])
                         ])
 
+        # move_through_chaos = bt.SequenceWithMemoryNode([])
+
+
+
+        # eighth_puck = bt.FallbackWithMemoryNode([
+        #     bt.SequenceWithMemoryNode([
+        #         bt_ros.StartPump("manipulator_client"),
+        #         bt.ParallelWithMemoryNode([
+        #             bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
+        #             bt_ros.CheckLimitSwitchInf("manipulator_client")
+        #         ], threshold=1),
+        #         # bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
+        #         bt_ros.TryToPumpWallPuckWithoutGrabber(self.eighth_puck),
+        #         # bt.ParallelWithMemoryNode([
+        #         #     bt_ros.TryToPumpWallPuckWithoutGrabber(self.eighth_puck),
+        #         #     bt_ros.SetSpeedSTM([0.1, 0, 0], 0.8, "stm_client")
+        #         #     # bt_ros.MoveLineToPoint(self.first_puck, "move_client"),
+        #         # ],threshold=1),
+        #         bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+        #         bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
+        #         bt.ParallelWithMemoryNode([
+        #             bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
+        #             bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+        #             # bt_ros.SetManipulatortoGroundDelay("manipulator_client"),
+        #             bt_ros.PublishScore_ifReachedGoal(self.redium_zone_third, self.score_master, "RED")
+        #         ], threshold=3),
+        #         bt_ros.ReleaseFromManipulator("manipulator_client"),
+        #         bt_ros.SetManipulatortoUp("manipulator_client")
+
+
+
         move_and_collect_blunium = bt.SequenceWithMemoryNode([
-                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.FinishCollectBlunium("manipulator_client"),  # this is not blunium, but red in 6_wall
+                                            bt.ActionNode(lambda: self.score_master.add("REDIUM")),
+                                            bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+                                        ], threshold=3),
+
                                         bt_ros.StartCollectBlunium("manipulator_client"),
                                         bt.ParallelWithMemoryNode([
                                             bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
                                             bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-                                        ], threshold=1),  # CheckLimitSwitchInf
-                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos_side, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),  # FIXME
+                                        ], threshold=1),
+                                        # bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos_side, "move_client"),
+                                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos + np.array([0, 0.04, 0]), "move_client"),
                                         bt_ros.FinishCollectBlunium("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                         bt_ros.MainSetManipulatortoGround("manipulator_client")
@@ -564,7 +617,7 @@ class MainRobotBT(object):
                         ])
 
         collect_unload_first_in_acc = bt.SequenceWithMemoryNode([
-                                    bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
+                                    # bt_ros.StepperUp("manipulator_client"),  # FIXME do we need to do that? NO if all 7 pucks inside
                                     bt_ros.UnloadAccelerator("manipulator_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("ACC")),
                                     bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS"))
@@ -581,19 +634,9 @@ class MainRobotBT(object):
                         bt.ConditionNode(self.is_robot_empty_1)
                     ])
 
-        # collect_goldenium = bt.SequenceWithMemoryNode([
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
-        #                         bt_ros.StartCollectGoldenium("manipulator_client"),
-        #                         bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
-        #                         bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-        #                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
-        #                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-        #                     ])
-
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.Delay500("manipulator_client"),
-                                bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
+                                # bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),  CHECK
                                 bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
                                 bt_ros.StartCollectGoldenium("manipulator_client"),
 
@@ -605,24 +648,25 @@ class MainRobotBT(object):
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
                                         bt_ros.MoveLineToPoint(self.tactics.goldenium_back_pose, "move_client"),
-                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
                                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-
-                                        bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                            bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client")
+                                        ], threshold=2)
                                     ])
 
         unload_goldenium = bt.SequenceWithMemoryNode([
                                 bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
-                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
+                                    # bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos + np.array([0, -0.01, 0]), "move_client"),
+                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt.ActionNode(lambda: self.score_master.unload("SCALES")),
                                     bt_ros.SetManipulatortoWall("manipulator_client"),
                                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                                    bt_ros.SetManipulatortoWall("manipulator_client"),
-                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                                    bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
+                                    # bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    # bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                    # bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
                                     bt_ros.UnloadGoldenium("manipulator_client"),
                                     bt_ros.SetManipulatortoUp("manipulator_client")
                                 ])

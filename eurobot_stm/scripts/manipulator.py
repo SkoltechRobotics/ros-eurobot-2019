@@ -262,7 +262,7 @@ class Manipulator(object):
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
-        rospy.sleep(0.2)  # FIXME 0.2
+        # rospy.sleep(0.2)  # CHECK
         return True
 
     def release_accelerator_first_move_when_full(self):
@@ -283,7 +283,7 @@ class Manipulator(object):
         self.send_command(self.protocol["GET_STEP_MOTOR_STATUS"])
         self.send_command(self.protocol["UNLOAD_PUCK_TOP_MAIN"])
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
-        rospy.sleep(0.5)
+        # rospy.sleep(0.1)
         return True
 
     def swing_puck(self):
@@ -303,7 +303,7 @@ class Manipulator(object):
         self.send_command(self.protocol["PROP_PUCK_GRABBER"])
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
-        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        # self.send_command(self.protocol["MAKE_STEP_DOWN"])
         rospy.sleep(0.2)
         return True
 
@@ -314,7 +314,6 @@ class Manipulator(object):
 
     def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
-        rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(0.5)
         return True
@@ -364,7 +363,10 @@ class Manipulator(object):
 
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
-            pass
+            self.send_command(self.protocol["OPEN_GRABBER"])
+            self.send_command(self.protocol["SET_WALL"])
+            self.send_command(self.protocol["START_PUMP"])
+            return True
         if self.robot_name == "secondary_robot":
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["SET_WALL"])

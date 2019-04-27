@@ -76,6 +76,7 @@ yellow_side:
   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
   goldenium: [0.775, 0.05]  # outer side of the puck
   chaos_center: [2.0, 1.05]
+  eighth_puck: [2.485, 1.54]
 
 purple_side:
   red_cell_puck: [0.50, 0.445]
@@ -83,3 +84,4 @@ purple_side:
   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
   goldenium: [2.22, 0.05]  # outer side of the puck
   chaos_center: [1, 1.05]
+  eighth_puck: [0.485, 1.54]
