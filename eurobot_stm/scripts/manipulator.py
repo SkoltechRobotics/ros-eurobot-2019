@@ -415,8 +415,7 @@ class Manipulator(object):
 
     def release_from_manipulator(self):
         self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.5)
-        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.4)
         return True
 
     def secondary_release_puck(self):
