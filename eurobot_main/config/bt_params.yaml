@@ -1,7 +1,7 @@
 secondary_robot:
   purple_side:
     first_puck_zone: [0.225, 1.81, 1.57]
-    second_puck_zone: [0.125, 1.81, 1.57]
+    second_puck_zone: [0.125, 1.81, 1.65]
     third_puck_zone: [0.6, 1.36, 1.57]
     forth_puck_zone: [0.8, 1.36, 1.57]
     fifth_puck_zone: [1.0, 1.36, 1.57]
