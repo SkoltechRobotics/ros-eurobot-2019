@@ -294,6 +294,11 @@ class MainRobotBT(object):
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
+        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+        self.starting_point_chaos = np.array([0.5, 1, 0]) #yelloo
+        self.chaos_center = np.array([1,1,0])
+        self.next_chaos_puck = bt.BTVariable()
+
     def is_robot_empty(self):
         rospy.loginfo("pucks inside")
         rospy.loginfo(self.collected_pucks.get())
@@ -647,9 +652,44 @@ class MainRobotBT(object):
 
         return strategy
 
+
+    def get_closest_in_chaos(self, pucks, me):
+        pucks = filter(lambda p: np.linalg.norm(p - self.chaos_center) < 0.3, pucks)
+        closest_puck = np.array([-1,-1,0])
+        if len(pucks) > 0:
+            closest_puck = pucks[np.argmin(np.linalg.norm(pucks-self.starting_point_chaos))]
+            diff = closest_puck - self.starting_point_chaos
+            closest_puck[2] = np.arctan2(diff[0], diff[1])
+        return closest_puck
+
+    def pucks_callback(self, msg):
+        data = msg.data
+        if len(self.known_chaos_pucks.get()) == 0:
+            try:
+                new_observation_pucks = [[marker.pose.position.x,
+                                          marker.pose.position.y,
+                                          0] for marker in data.markers]
+
+                new_observation_pucks = np.array(new_observation_pucks)
+                self.next_chaos_puck.set(self.get_closest_in_chaos(new_observation_pucks, self.starting_point_chaos))
+
+            except Exception:  # FIXME
+                rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    def strategy_chaos(self):
+        return bt.FallbackWithMemoryNode([
+            bt.SequenceWithMemoryNode([
+                bt_ros.MoveLineToPoint(self.starting_point, "move_client"),
+                bt_ros.MoveToVariable(self.next_chaos_puck, "move_client"),
+                bt_ros.BlindStartCollectGround("manipulator_client"),
+                bt_ros.CompleteCollectGround("manipulator_client")
+            ]),
+            bt.ConditionNode(lambda: bt.Status.SUCCESS)
+        ])
+
     def start(self):
 
-        self.bt = bt.Root(self.strategy_rus(),
+        self.bt = bt.Root(self.strategy_chaos(),
                           action_clients={"move_client": self.move_client,
                                           "manipulator_client": self.manipulator_client,
                                           "stm_client": self.stm_client})

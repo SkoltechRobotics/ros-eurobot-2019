@@ -50,7 +50,7 @@ class ActionClientNode(bt.SequenceNode):
         self.start_node = bt.Latch(bt.ActionNode(self.start_action))
         bt.SequenceNode.__init__(self, [self.start_node, bt.ConditionNode(self.action_status)], **kwargs)
 
-    def start_action(self): 
+    def start_action(self):
         """
         action_clients: {}
 
@@ -74,7 +74,8 @@ class ActionClientNode(bt.SequenceNode):
     def log(self, level, prefix=""):
         bt.BTNode.log(self, level, prefix)
 
-#-----------------------------
+
+# -----------------------------
 
 
 class Calibrate(ActionClientNode):
@@ -118,10 +119,12 @@ class StopPump(ActionClientNode):
         cmd = "stop_pump"
         super(StopPump, self).__init__(cmd, action_client_id)
 
+
 class Delay500(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "delay_500"
         super(Delay500, self).__init__(cmd, action_client_id)
+
 
 # ===========================================================
 class MovingDefault(ActionClientNode):
@@ -170,10 +173,8 @@ class SetSpeedSTM(ActionClientNode):
         status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
         return bt.Status.SUCCESS
 
+
 # ===========================================================
-
-
-
 
 
 class StartTakeWallPuck(ActionClientNode):
@@ -198,6 +199,7 @@ class ReleaseFromManipulator(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_from_manipulator"
         super(ReleaseFromManipulator, self).__init__(cmd, action_client_id)
+
 
 # ===========================================================
 # Commands for collecting ground pucks
@@ -255,6 +257,7 @@ class UnloadGoldenium(ActionClientNode):
         cmd = "release_goldenium_on_scales"
         super(UnloadGoldenium, self).__init__(cmd, action_client_id)
 
+
 # to push blunium in acc
 class SetManipulatorToPushBlunium(ActionClientNode):
     def __init__(self, action_client_id):
@@ -266,8 +269,10 @@ class ReleaseInAccFirstMove(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "release_accelerator_first_move_when_full"
         super(ReleaseInAccFirstMove, self).__init__(cmd, action_client_id)
+
+
 # ===========================================================
-#-------------
+# -------------
 class CompleteTakePuckAndMoveToNext(bt.ParallelWithMemoryNode):
     def __init__(self, current_puck_coordinates, next_puck_coordinates, score_master, puck_type):
         super(CompleteTakePuckAndMoveToNext, self).__init__([
@@ -290,21 +295,21 @@ class MoveToNextPuckIfFailedToScales(bt.SequenceWithMemoryNode):
             bt.ParallelWithMemoryNode([
                 MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client"),
                 SetToWall_ifReachedGoal(next_puck_coordinates + (0, -0.15, 0), "manipulator_client")
-            ], threshold = 2)
+            ], threshold=2)
 
         ])
 
 
 class TryToPumpWallPuck(bt.FallbackWithMemoryNode):
-        def __init__(self, puck_coordinates):
-            super(TryToPumpWallPuck, self).__init__([
+    def __init__(self, puck_coordinates):
+        super(TryToPumpWallPuck, self).__init__([
+            StartTakeWallPuck("manipulator_client"),
+            bt.SequenceWithMemoryNode([
+                MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
+                MoveLineToPoint(puck_coordinates + (0, 0.015, 0), "move_client"),
                 StartTakeWallPuck("manipulator_client"),
-                bt.SequenceWithMemoryNode([
-                    MoveLineToPoint(puck_coordinates + (0, -0.05, 0), "move_client"),
-                    MoveLineToPoint(puck_coordinates + (0, 0.015, 0), "move_client"),
-                    StartTakeWallPuck("manipulator_client"),
-                ])
             ])
+        ])
 
 
 class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
@@ -322,12 +327,12 @@ class TryToPumpWallPuckWithoutGrabber(bt.FallbackWithMemoryNode):
 class MoveToNextPuckIfFailedToStartZone(bt.SequenceWithMemoryNode):
     def __init__(self, current_puck_coordinates, next_puck_coordinates):
         super(MoveToNextPuckIfFailedToStartZone, self).__init__([
-                    StopPump("manipulator_client"),
-                    MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
-                    bt.ParallelWithMemoryNode([
-                        MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client"),
-                        SetToWall_ifReachedGoal(next_puck_coordinates, "manipulator_client")
-                    ], threshold=2)
+            StopPump("manipulator_client"),
+            MoveLineToPoint(current_puck_coordinates + (0, -0.05, 0), "move_client"),
+            bt.ParallelWithMemoryNode([
+                MoveLineToPoint(next_puck_coordinates + (0, -0.05, 0), "move_client"),
+                SetToWall_ifReachedGoal(next_puck_coordinates, "manipulator_client")
+            ], threshold=2)
         ])
 
 
@@ -464,7 +469,7 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
 
 
 class PublishScore_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, score_controller, unload_zone ,threshold=0.15):
+    def __init__(self, goal, score_controller, unload_zone, threshold=0.15):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
@@ -566,3 +571,19 @@ class MoveWaypoints(bt.FallbackNode):
 
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])
+
+
+class MoveToVariable(bt.SequenceNode):
+    def __init__(self, bt_var, action_client_id):
+        self.goal = bt_var
+        self.move_to_waypoint_node = ActionClientNode("move_line 0 0 0", action_client_id, name="move_to_waypoint")
+        self.set_command_latch = bt.Latch(bt.ActionNode(self.set_command))
+
+        super(MoveToVariable, self).__init__([
+            bt.ConditionNode(lambda: bt.Status.SUCCESS if np.all(self.goal.get()[:2] >= 0) else bt.Status.FAILED),
+            self.set_command_latch,
+            self.move_to_waypoint_node
+        ])
+
+    def set_command(self):
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(self.goal.get()))
