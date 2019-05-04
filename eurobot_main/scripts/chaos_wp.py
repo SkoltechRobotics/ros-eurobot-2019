@@ -172,7 +172,6 @@ class CollectChaos(bt.FallbackNode):
         #                     bt.ConditionNode(lambda: self.is_chaos_collected_completely1())
         #                 ])
 
-
     # def pucks_callback(self, data):
     #     self.is_observed.set(True)
     #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
@@ -230,39 +229,13 @@ class CollectChaos(bt.FallbackNode):
         else:
             return bt.Status.SUCCESS
 
-    @staticmethod
-    def get_color(puck):
-        """
-        red (1, 0, 0)
-        green (0, 1, 0)
-        blue (0, 0, 1)
-        :param puck: (x, y, id, 0, 0, 1)
-        :return:
-        """
-        pucks_colors = {
-            (1, 0, 0): "REDIUM",
-            (0, 1, 0): "GREENIUM",
-            (0, 0, 1): "BLUNIUM"
-        }
-        color_val = None
-        color_key = puck[3:]
-        print color_key
-        if all(color_key == np.array([1, 0, 0])):
-            color_val = "REDIUM"
-        elif all(color_key == np.array([0, 1, 0])):
-            color_val = "GREENIUM"
-        elif all(color_key == np.array([0, 0, 1])):
-            color_val = "BLUNIUM"
-        # color_val = pucks_colors.get(color_key)
-        return color_val
-
     def update_chaos_pucks(self):
         """
         delete taken puck from known on the field
         get color of last taken puck
         :return: None
         """
-        incoming_puck_color = self.get_color(self.known_chaos_pucks.get()[0])
+        incoming_puck_color = get_color(self.known_chaos_pucks.get()[0])
         self.incoming_puck_color.set(incoming_puck_color)
         rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
         self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
@@ -389,6 +362,11 @@ class MainRobotBT(object):
                                             [2.05, 1.05, 4, 1, 0, 0]])
 
         self.known_chaos_pucks = bt.BTVariable(self.known_chaos_pucks)
+
+        self.starting_point_chaos = np.array([0.65, 1, 0])  # yelloo
+        self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
+        self.chaos_center = np.array([1, 1, 0])
+        self.next_chaos_puck = bt.BTVariable()
 
         rospy.sleep(1)
         self.bt = bt.Root(
