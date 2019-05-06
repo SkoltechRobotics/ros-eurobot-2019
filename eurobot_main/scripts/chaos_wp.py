@@ -13,16 +13,14 @@ from score_controller import ScoreController
 from visualization_msgs.msg import MarkerArray
 
 
-class CollectChaos(bt.FallbackNode):
+class CollectChaos(bt.SequenceWithMemoryNode):
     def __init__(self, known_chaos_pucks, action_client_id):
         # Init parameters
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.main_coords = None
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))
+        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.known_chaos_pucks.set(known_chaos_pucks)
-
-        # self.is_observed = bt.BTVariable(False)
 
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.score_master = ScoreController(self.collected_pucks, "main_robot")
@@ -41,9 +39,6 @@ class CollectChaos(bt.FallbackNode):
         self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
         self.scale_factor = np.array(self.scale_factor)
 
-        self.starting_point_chaos = np.array([0.65, 1, 0]) #yelloo
-        self.starting_point_var = bt.BTVariable(self.starting_point_chaos)
-
         self.starting_pos = np.array([0.3, 0.45, 0])
         self.starting_pos_var = bt.BTVariable(self.starting_pos)
 
@@ -51,8 +46,6 @@ class CollectChaos(bt.FallbackNode):
         self.nearest_PRElanding = bt.BTVariable()
 
         super(CollectChaos, self).__init__([
-            bt.ConditionNode(self.is_observed)
-            bt.SequenceWithMemoryNode([
                 # 1st
                 bt.ActionNode(self.calculate_pucks_configuration),
                 bt.ActionNode(self.calculate_closest_landing),
@@ -110,12 +103,11 @@ class CollectChaos(bt.FallbackNode):
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
 
-                #back_to_start
-
+                # back_to_start
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
-		                bt_ros.StepperUp("manipulator_client"),
+                        bt_ros.StepperUp("manipulator_client"),
                         bt_ros.MainSetManipulatortoGround("manipulator_client")
                     ]),
                     bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
@@ -130,17 +122,6 @@ class CollectChaos(bt.FallbackNode):
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC"))  # COMAAAA
             ])
-	    ])
-
-    def is_observed(self):
-        rospy.loginfo("is observed?")
-        rospy.loginfo(self.collected_pucks.get())
-        if len(self.collected_pucks.get()) == 0:
-            rospy.loginfo('All pucks unloaded')
-            return bt.Status.SUCCESS
-        else:
-            rospy.loginfo('Pucks inside: ' + str(len(self.collected_pucks.get())))
-            return bt.Status.FAILED
 
     @staticmethod
     def get_color(puck):
@@ -261,10 +242,10 @@ class MainRobotBT(object):
         self.move_client = bt_ros.ActionClient(self.move_publisher)
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
-
-        self.is_observed = bt.BTVariable(False)
+        self.is_observed_flag = bt.BTVariable(False)
         self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-        self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+
+        self.pucks_subscriber = rospy.Subscriber("pucks", MarkerArray, self.pucks_callback, queue_size=1)  # add /
         rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
@@ -287,9 +268,15 @@ class MainRobotBT(object):
 
         rospy.sleep(1)
         self.bt = bt.Root(
-                    CollectChaos(self.known_chaos_pucks.get(),
-                        "move_client"), action_clients={"move_client": self.move_client,
-                                                        "manipulator_client": self.manipulator_client})
+                    bt.FallbackWithMemoryNode([
+                        bt.SequenceNode([
+                            bt.ConditionNode(self.is_observed),
+                            CollectChaos(self.known_chaos_pucks.get(), "move_client")
+                        ]),
+                        bt.ConditionNode(lambda: bt.Status.RUNNING)
+                    ]),
+                    action_clients={"move_client": self.move_client,
+                                    "manipulator_client": self.manipulator_client})
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def pucks_callback(self, data):
@@ -311,17 +298,23 @@ class MainRobotBT(object):
                     new_observation_pucks = np.array(new_observation_pucks)
 
                     self.known_chaos_pucks.set(new_observation_pucks)
-                    # self.is_observed.set(True)
-
-                    # self.collect_chaos.is_observed.set(True)  # find out if possible to do like this FIXME
-
-
+                    self.is_observed_flag.set(True)
                     rospy.loginfo("Got pucks observation:")
                     rospy.loginfo(self.known_chaos_pucks.get())
                     self.pucks_subscriber.unregister()
 
             except Exception:  # FIXME
                 rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    def is_observed(self):
+        rospy.loginfo("is observed?")
+        rospy.loginfo(self.is_observed_flag.get())
+        if self.is_observed_flag.get():
+            rospy.loginfo('Got all pucks coords')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.known_chaos_pucks.get())))
+            return bt.Status.FAILED
 
     def timer_callback(self, event):
         status = self.bt.tick()
