@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load" ns="secondary_robot"/>
+    <param name = "field/color" value = "orange"/>
+
+    <group ns = "secondary_robot">
+        <node pkg="eurobot_nav" name="motion_planner_node" type="motion_planner_node.py" respawn="true" output="log"/>
+        <node pkg="eurobot_tactics" name="tactics_node" type="tactics_node.py" respawn="true" output="screen"/>
+        <node pkg="eurobot_sim" name="simulation" type="stm_node.py" respawn="true" output="log"/>
+        <!-- Robot model -->
+        <param name="description" command="cat $(find eurobot_loc)/models/secondary_robot.urdf" />
+        <param name="description_semantic" command="cat $(find eurobot_loc)/models/secondary_robot.urdf" />
+    </group>
+
+    <group ns="visualization">
+        <node pkg="rviz" name="$(anon rviz-1)" type="rviz"  args="-d $(find eurobot_loc)/config/visualization.rviz" output="screen"/>
+        <param name="field_description" textfile="$(find eurobot_loc)/models/field.urdf" />
+        <param name="field_description_semantic" textfile="$(find eurobot_loc)/models/field.urdf" /> 
+    </group>
+
+    <group ns="main_robot">
+    <!-- Robot model -->
+        <param name="description" command="cat $(find eurobot_loc)/models/main_robot.urdf" />
+        <param name="description_semantic" command="cat $(find eurobot_loc)/models/main_robot.urdf" />
+    </group>
+</launch>

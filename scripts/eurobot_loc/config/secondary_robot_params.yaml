@@ -1,0 +1,25 @@
+# initial coordinates (robot's, not LIDAR's coords!)
+start_purple: [0.3, 0.6, 0]
+start_yellow: [2.880, 0.525, 2]
+
+# LIDAR scanner coordinates in robot frame
+robot_name: "main_robot"
+
+lidar_x: -0.04
+lidar_y: -0.06
+lidar_a: 0
+
+beacons_radius: 0.048
+beacon_range: 0.2
+min_range: 0.05
+alpha: 1
+min_point_per_beacon: 3
+
+world_x: 3
+world_y: 2
+world_border: 0.022
+beac_l: 0.1
+beac_border: 0.022
+
+rate: 20
+
