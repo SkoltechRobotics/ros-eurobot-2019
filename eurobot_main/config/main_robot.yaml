@@ -1,0 +1,11 @@
+robot_name: "main_robot"
+start_side: "yellow"
+
+critical_angle: 2.09
+approach_dist: 0.123  # chaos and table pucks, from center o frobot to center of puck
+robot_outer_radius: 0.165  # FIXME
+drive_back_dist: 0.04
+RATE: 10
+scale_factor: 10
+coords_threshold: 0.01
+stick_len: 0.03
