@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <param name = "field/color" value = "orange"/>
-    <group ns="secondary_robot">
-        <include file="$(find eurobot_loc)/launch/localization.launch"/>
-        <rosparam file="$(find eurobot_loc)/launch/secondary_robot_params.yaml" command="load"/>
-    </group>
-</launch>

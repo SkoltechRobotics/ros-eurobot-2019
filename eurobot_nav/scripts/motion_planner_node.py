@@ -107,7 +107,6 @@ class MotionPlannerNode:
         self.obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         self.collision_avoidance.set_collision_area(self.obstacle_polygon)
         self.obstacle_polygon = [self.obstacle_polygon]
-        print (self.obstacle_polygon)
 
     def pub_path(self):
         path = Path()
@@ -183,6 +182,7 @@ class MotionPlannerNode:
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
             self.create_path_from_way_points()
             self.pub_path()
+            goal = self.way_points[1, :]
             self.start_moving(goal, cmd_id, cmd_type)
             self.timer = rospy.Timer(rospy.Duration(1. / self.RATE), self.timer_callback)
         elif cmd_type == "stop":
