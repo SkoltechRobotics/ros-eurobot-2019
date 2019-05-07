@@ -308,7 +308,6 @@ class MainRobotBT(object):
 
     def is_observed(self):
         rospy.loginfo("is observed?")
-        rospy.loginfo(self.is_observed_flag.get())
         if self.is_observed_flag.get():
             rospy.loginfo('Got all pucks coords')
             return bt.Status.SUCCESS
