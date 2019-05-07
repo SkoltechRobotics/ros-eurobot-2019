@@ -44,6 +44,7 @@ class MotionPlannerNode:
         self.path = np.zeros((0, 3))
         self.obstacle_polygon = []
         self.way_points = None
+        self.way_point_ind = 0
         self.buf_path = self.path
         self.global_goal = None
         self.prev_vel = np.array([0., 0., 0.])
@@ -180,6 +181,8 @@ class MotionPlannerNode:
             goal[2] %= (2 * np.pi)
             self.goal = goal
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
+            self.way_points[:-1, 2] = self.coords[2]
+            self.way_points[-1, 2] = self.goal[2]
             self.create_path_from_way_points()
             self.pub_path()
             goal = self.way_points[1, :]
@@ -206,6 +209,10 @@ class MotionPlannerNode:
         elif self.current_cmd == "move_arc":
             self.path = self.create_linear_path(self.coords, self.goal)
             self.current_state = "move_arc"
+        elif self.current_cmd == "move_to_point":
+            self.current_state = "move_to_point"
+            self.way_point_ind = 1
+            self.path = self.create_linear_path(self.coords, self.way_points[self.way_point_ind, :])
         rospy.loginfo(rospy.Time.now().to_sec())
         rospy.loginfo('----------------------!!!!!------------')
 
@@ -268,6 +275,7 @@ class MotionPlannerNode:
             delta_next_point = p[path_point + 1] - p[path_point]
             delta_next_point[2] = wrap_angle(delta_next_point[2])
             t = max(np.abs(delta_next_point / self.velocity_vector))
+        rospy.loginfo("T %s", t)
         delta_path_point = p[path_point] - point
         delta_path_point[2] = wrap_angle(delta_path_point[2])
         ref_vel = delta_next_point / t
@@ -356,6 +364,7 @@ class MotionPlannerNode:
 
     def move(self):
         self.update_coords()
+        rospy.loginfo(self.path[-1, :])
         delta_coords = self.coords - self.path[-1, :]
         delta_coords[2] = wrap_angle(delta_coords[2])
         delta_coords[2] *= self.robot_radius
@@ -432,6 +441,25 @@ class MotionPlannerNode:
                 self.follow_path()
             else:
                 self.move_arc()
+
+        elif self.current_state == "move_to_point":
+            rospy.loginfo("GOAL POINT MOVE TO POINT %s", self.goal)
+            rospy.loginfo(len(self.way_points))
+            if self.is_robot_stopped:
+                self. is_robot_stopped = False
+                if self.way_point_ind == len(self.way_points) - 2:
+                    self.way_point_ind = 1
+                    self.goal = self.way_points[-1]
+                    self.current_state = "following"
+                else:
+                    self.way_point_ind += 1
+                    self.goal = self.way_points[self.way_point_ind]
+                self.path = self.create_linear_path(self.coords, self.goal)
+            elif self.delta_dist >= self.min_dist_to_goal_point:
+                self.follow_path()
+            else:
+                self.move_arc()
+
         elif self.current_state == "move_arc":
             if self.is_robot_stopped:
                 self.terminate_moving()
