@@ -9,7 +9,7 @@ with open(word_params_config_file_path, 'r') as params:
     world_params = yaml.load(params)
 with open(particle_filter_config_path, 'r') as params:
     pf_params = yaml.load(params)
-# Dimensions of the playing field
+
 WORLD_X = world_params["world_x"]
 WORLD_Y = world_params["world_y"]
 WORLD_BORDER = world_params["world_border"]
