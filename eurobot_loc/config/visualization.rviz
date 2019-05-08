@@ -598,6 +598,14 @@ Visualization Manager:
       Marker Topic: /navigation/collision_area
       Name: Marker
       Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /navigation/world
+      Name: MarkerArray
+      Namespaces:
         {}
       Queue Size: 100
       Value: true

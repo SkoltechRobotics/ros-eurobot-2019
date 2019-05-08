@@ -19,6 +19,9 @@ class SimplePathPlannerTest(object):
         self.world_border_left = np.array([[0., 0.], [0., 2.], [self.robot_radius, 2.], [self.robot_radius, 0.]])
         self.world_border_top = np.array([[0.1, 1.9], [3., 1.9], [3., 2. - self.robot_radius], [0.1, 2. - self.robot_radius]])
         self.world_border_right = np.array([[3., 0.], [3., 2.], [3. - self.robot_radius, 2.], [3. - self.robot_radius, 0.]])
+        self.scales = np.array([[0.45 - self.robot_radius, 2.8], [0.45 - self.robot_radius, 0.1543 - self.robot_radius],
+                                [0.255 + self.robot_radius, 0.1543 - self.robot_radius],
+                                [0.255 + self.robot_radius, 2.8], [0.45 - self.robot_radius, 2.8]])
         self.obstacle_polygon = []
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
         self.collision_area = rospy.Publisher('polygons', Marker, queue_size=1)

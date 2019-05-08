@@ -5,14 +5,14 @@ import rospy
 import numpy as np
 import tf2_ros
 from tf.transformations import euler_from_quaternion
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 # from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from threading import Lock
 from geometry_msgs.msg import Twist
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from collision_avoidance import CollisionAvoidanceMainRobot, CollisionAvoidanceSecondaryRobot
 from path_planner import PathPlanning
 
@@ -36,6 +36,16 @@ class MotionPlannerNode:
         self.XY_GOAL_TOLERANCE = rospy.get_param("XY_GOAL_TOLERANCE")
         self.YAW_GOAL_TOLERANCE = rospy.get_param("YAW_GOAL_TOLERANCE")
         self.robot_radius = rospy.get_param("robot_radius")
+#       init world borders, playing elements, playing area
+        self.world_border_bottom = np.array([[0.1, 0.], [0.1, self.robot_radius], [2.9, self.robot_radius], [2.9, 0.]])
+        self.world_border_left = np.array([[0., 0.], [0., 2.], [self.robot_radius, 2.], [self.robot_radius, 0.]])
+        self.world_border_top = np.array([[0.1, 1.9], [3., 1.9], [3., 2. - self.robot_radius],
+                                          [0.1, 2. - self.robot_radius]])
+        self.world_border_right = np.array([[3., 0.], [3., 2.], [3. - self.robot_radius, 2.],
+                                            [3. - self.robot_radius, 0.]])
+        self.scales = np.array([[0.45 - self.robot_radius, 2], [0.45 - self.robot_radius, 1.543 - self.robot_radius],
+                                [2.55 + self.robot_radius, 1.543 - self.robot_radius],
+                                [2.55 + self.robot_radius, 2], [0.45 - self.robot_radius, 2]])
 #       set values to default
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
@@ -85,6 +95,7 @@ class MotionPlannerNode:
         # self.point_publisher = rospy.Publisher("obstacle", MarkerArray, queue_size=10)
         self.twist_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.path_publisher = rospy.Publisher('path', Path, queue_size=10)
+        self.world_publisher = rospy.Publisher("world", MarkerArray, queue_size=1)
 #       init rospy subscribers
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         rospy.Subscriber("obstacle", String, self.obstacle_callback, queue_size=1)
@@ -94,7 +105,42 @@ class MotionPlannerNode:
         elif self.robot_name == "main_robot":
             self.collision_avoidance = CollisionAvoidanceMainRobot()
 #       init path planner
+        rospy.sleep(3)
+        self.publish_world(np.array([self.world_border_bottom, self.world_border_top, self.world_border_left, self.world_border_right, self.scales]))
         self.path_planner = PathPlanning()
+
+    def publish_world(self, world):
+        markers = []
+        i = 0
+        for element in world:
+            i += 1
+            marker = Marker()
+            marker.type = marker.LINE_STRIP
+            marker.action = marker.ADD
+            marker.ns = "world"
+            marker.scale.x = 0.05
+            marker.scale.y = 0.05
+            marker.scale.z = 0.05
+            marker.color.a = 1
+            marker.color.g = 1
+            marker.id = i
+            marker.header.frame_id = "map"
+            marker.header.stamp = rospy.Time.now()
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.pose.position.x = 0.0
+            marker.pose.position.y = 0.0
+            marker.pose.position.z = 0.1
+            for point_ in element:
+                point = Point()
+                point.x = point_[0]
+                point.y = point_[1]
+                point.z = 0.2
+                marker.points.append(point)
+            markers.append(marker)
+            self.world_publisher.publish(markers)
 
     def get_polygon_from_point(self, point):
         return np.array([[point[0] - self.robot_radius, point[1] - self.robot_radius],
@@ -445,6 +491,10 @@ class MotionPlannerNode:
         elif self.current_state == "move_to_point":
             rospy.loginfo("GOAL POINT MOVE TO POINT %s", self.goal)
             rospy.loginfo(len(self.way_points))
+            # if 3 < 2:
+            #     self.goal = self.way_points[-1]
+            #     self.current_state = "following"
+            #     self.path = self.create_linear_path(self.coords, self.goal)
             if self.is_robot_stopped:
                 self. is_robot_stopped = False
                 if self.way_point_ind == len(self.way_points) - 2:
