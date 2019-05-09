@@ -25,8 +25,12 @@ class MainRobotBT(object):
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
         self.strategy = None
-        self.purple_strategy = OptimalStrategy(SideStatus.PURPLE)
-        self.yellow_strategy = OptimalStrategy(SideStatus.YELLOW)
+        # self.purple_strategy = OptimalStrategy(SideStatus.PURPLE)
+        # self.yellow_strategy = OptimalStrategy(SideStatus.YELLOW)
+
+        self.purple_strategy = BlindStrategy(SideStatus.PURPLE)
+        self.yellow_strategy = BlindStrategy(SideStatus.YELLOW)
+
         self.side_status = None
 
         self.bt = None

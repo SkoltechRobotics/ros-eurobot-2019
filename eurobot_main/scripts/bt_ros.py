@@ -367,6 +367,7 @@ class CompleteTakeWallPuck(ActionClientNode):
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
 
 
+# FIXME
 class SetToGround_ifReachedGoal(bt.SequenceNode):
     def __init__(self, goal, action_client_id, threshold=0.2):
         self.tfBuffer = tf2_ros.Buffer()
@@ -507,29 +508,6 @@ class PublishScore_ifReachedGoal(bt.SequenceNode):
             return bt.Status.SUCCESS
         else:
             return bt.Status.RUNNING
-
-
-class SetSpeedSTM(ActionClientNode):
-    def __init__(self, speed, time, action_client_id):
-        self.delay = time
-        self.speed = speed
-        cmd = "8 " + str(self.speed[0]) + " " + str(self.speed[1]) + " " + str(self.speed[2])
-        super(SetSpeedSTM, self).__init__(cmd, action_client_id)
-
-    def start_action(self):
-        print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-        rospy.sleep(self.delay)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
-        # rospy.sleep(self.delay*2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
-
-    def action_status(self):
-        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
-        return bt.Status.SUCCESS
 
 
 class MoveWaypoints(bt.FallbackNode):
