@@ -8,6 +8,32 @@ from core_functions import wrap_back
 from core_functions import cvt_local2global
 
 
+def get_color(puck):
+    """
+    red (1, 0, 0)
+    green (0, 1, 0)
+    blue (0, 0, 1)
+    :param puck: (x, y, id, 0, 0, 1)
+    :return:
+    """
+    # pucks_colors = {
+    #     (1, 0, 0): "REDIUM",
+    #     (0, 1, 0): "GREENIUM",
+    #     (0, 0, 1): "BLUNIUM"
+    # }
+    # color_val = pucks_colors.get(color_key)
+
+    color_val = None
+    color_key = puck[3:]
+    print color_key
+    if all(color_key == np.array([1, 0, 0])):
+        color_val = "REDIUM"
+    elif all(color_key == np.array([0, 1, 0])):
+        color_val = "GREENIUM"
+    elif all(color_key == np.array([0, 0, 1])):
+        color_val = "BLUNIUM"
+    return color_val
+
 def calc_inner_angles(coords):
     is_line = polygon_area(coords)  # returns area
     if is_line == 0:

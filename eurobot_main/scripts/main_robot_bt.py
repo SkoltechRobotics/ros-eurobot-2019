@@ -7,17 +7,14 @@ import bt_ros
 import tf2_ros
 from bt_controller import SideStatus, BTController
 from std_msgs.msg import String
-import main_strategies
+from main_strategies import OptimalStrategy, GreedyStrategy, BlindStrategy
 
 
 class MainRobotBT(object):
     # noinspection PyTypeChecker
     def __init__(self):
-        self.robot_name = rospy.get_param("robot_name")
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-        self.secondary_coords = np.array([0, 0, 0])
-        self.main_coords = None
 
         self.move_publisher = rospy.Publisher("navigation/command", String, queue_size=100)
         self.manipulator_publisher = rospy.Publisher("manipulator/command", String, queue_size=100)
@@ -27,9 +24,9 @@ class MainRobotBT(object):
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
-        self.purple_strategy = main_strategies.OptimalStrategy(SideStatus.PURPLE)  # PurpleTactics()
-        self.yellow_strategy = main_strategies.OptimalStrategy(SideStatus.YELLOW)  # YellowTactics()
         self.strategy = None
+        self.purple_strategy = OptimalStrategy(SideStatus.PURPLE)
+        self.yellow_strategy = OptimalStrategy(SideStatus.YELLOW)
         self.side_status = None
 
         self.bt = None
