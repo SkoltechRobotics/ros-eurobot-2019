@@ -74,10 +74,12 @@ class CollectChaos(bt.SequenceWithMemoryNode):
 
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                        bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                    ])
                 ], threshold=2),
 
-                bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
@@ -90,10 +92,12 @@ class CollectChaos(bt.SequenceWithMemoryNode):
 
                 bt.ParallelWithMemoryNode([
                     bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                        bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                    ])
                 ], threshold=2),
 
-                bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
@@ -129,9 +133,8 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                 bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.UnloadAccelerator("manipulator_client"),
-                bt.ActionNode(lambda: self.score_master.unload("ACC")),  # COMAAAA
+                bt.ActionNode(lambda: self.score_master.unload("ACC")),
                 bt_ros.SetManipulatortoUp("manipulator_client")
-
             ])
 
     def update_chaos_pucks(self):
@@ -190,10 +193,8 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                                                  self.approach_dist)
 
         self.closest_landing.set(landings[0])
-        # self.waypoints.set(landings[0])
         rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
         print(self.closest_landing.get())
-        # print self.waypoints.get()
         print " "
 
     def calculate_prelanding(self):
