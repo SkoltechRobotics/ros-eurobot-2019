@@ -3,7 +3,7 @@
 
   <!--include file="$(find eurobot)/launch/params.launch"/-->
   <rosparam param="/use_sim_time">true</rosparam>
-  <node pkg="rosbag" type="play" name="player" args="--clock /home/egorpristanskiy/2016-02-11-19-29-11.bag" output="screen"/>
+<!--  <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/egorpristanskiy/2016-02-11-19-29-11.bag" output="screen"/>-->
   <group ns="visualization">
     
     <node pkg="rviz" name="$(anon rviz-1)" type="rviz"  args="-d $(find eurobot_loc)/config/visualization.rviz" output="screen"/>
