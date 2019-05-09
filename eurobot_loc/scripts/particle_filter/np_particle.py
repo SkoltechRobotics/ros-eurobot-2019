@@ -3,8 +3,8 @@ from core_functions import *
 import numpy as np
 import yaml
 
-word_params_config_file_path = "/home/odroid/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/world_params.yaml"
-particle_filter_config_path = "/home/odroid/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/particle_filter_params.yaml"
+word_params_config_file_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/world_params.yaml"
+particle_filter_config_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/particle_filter_params.yaml"
 with open(word_params_config_file_path, 'r') as params:
     world_params = yaml.load(params)
 with open(particle_filter_config_path, 'r') as params:
@@ -89,9 +89,12 @@ class ParticleFilter:
 
     def measurement_model(self, particles, beacons):
         self.landmarks = beacons
-        particles_measurement_model = self.get_particle_measurement_model(beacons)
-        if beacons.shape[0] > 0:
-            particles = np.concatenate((particles[:(self.particles_num - self.particles_num_from_measurement_model)], particles_measurement_model), axis=0)
+        # particles_measurement_model = self.get_particle_measurement_model(beacons)
+        # print "Particles shape", particles.shape
+        # print "meas particles ", particles_measurement_model.shape
+        # if beacons.shape[0] > 0:
+        #     particles = np.concatenate((particles[:(self.particles_num - self.particles_num_from_measurement_model)], particles_measurement_model), axis=0)
+        # print "Particles shape", particles.shape
         weights = self.weights(beacons, particles)
         inds = self.resample(weights, self.particles_num)
         # self.min_cost_function = np.mean(self.cost_function)
@@ -179,18 +182,21 @@ class ParticleFilter:
         """Calculate particle weights based on their pose and landmarks"""
         if landmarks.shape[0] != 0:
             beacons = cvt_global2local(self.beacons[np.newaxis, :], particles[:, np.newaxis])
-            buf_beacons = beacons[0, :]
-            distance_landmark_beacons = np.sqrt((landmarks[np.newaxis, np.newaxis, :, 0].T - buf_beacons[:, 0])**2 +
-                                                (landmarks[np.newaxis, np.newaxis, :, 1].T - buf_beacons[:, 1])**2)
+            distance_landmark_beacons = np.linalg.norm(beacons[:, np.newaxis, :, :] -
+                                                       landmarks[np.newaxis, :, np.newaxis, :], axis=3)
+            # print distance_landmark_beacons
             # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4 * BEAC_R)]
-            landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
-            self.beacon_ind = np.argpartition(distance_landmark_beacons[:, 0, :], 2)[:, 0]
-            self.beacon_ind = self.beacon_ind[np.where(distance_landmark_beacons < 8*BEAC_R)[0]]
+            # landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
+            # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
+            self.beacon_ind = np.argmin(distance_landmark_beacons, axis=2)
+            # print self.beacon_ind
+            # print beacons.shape
+            beacons = beacons[np.arange(beacons.shape[0])[:, np.newaxis], self.beacon_ind]
             r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
             phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
             phi = wrap_angle(phi).T
-            self.r_lid = (np.sqrt(((beacons[:, self.beacon_ind, 1])**2 + (beacons[:, self.beacon_ind, 0])**2))).T
-            self.phi_lid = (np.arctan2(beacons[:, self.beacon_ind, 1], beacons[:, self.beacon_ind, 0])).T
+            self.r_lid = (np.sqrt(((beacons[:, :, 1])**2 + (beacons[:, :, 0])**2))).T
+            self.phi_lid = (np.arctan2(beacons[:, :, 1], beacons[:, :, 0])).T
             self.phi_lid = wrap_angle(self.phi_lid)
             weights = self.gaus(r - self.r_lid, mu=0, sigma=self.sigma_r) * self.gaus(wrap_angle(phi - self.phi_lid), mu=0, sigma=self.sigma_phi)
             weights = (np.product(weights, axis=0))
