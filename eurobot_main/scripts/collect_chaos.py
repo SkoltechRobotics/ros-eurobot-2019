@@ -4,46 +4,34 @@ import rospy
 import numpy as np
 import behavior_tree as bt
 import bt_ros
-import tf2_ros
+# import tf2_ros
 from tf.transformations import euler_from_quaternion
 from core_functions import *
-from std_msgs.msg import String
+# from std_msgs.msg import String
 from tactics_math import *
-from score_controller import ScoreController
-from visualization_msgs.msg import MarkerArray
+# from score_controller import ScoreController
+# from visualization_msgs.msg import MarkerArray
+from main_strategies import Strategy
 
 
-class CollectChaos(bt.SequenceWithMemoryNode):
+class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
     def __init__(self, known_chaos_pucks, action_client_id):
-        # Init parameters
-        self.tfBuffer = tf2_ros.Buffer()
-        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-        self.main_coords = None
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
-        self.known_chaos_pucks.set(known_chaos_pucks)
-
-        self.collected_pucks = bt.BTVariable(np.array([]))
-        self.score_master = ScoreController(self.collected_pucks, "main_robot")
-
-        self.waypoints = bt.BTVariable(np.array([]))
+        super(CollectChaos, self).__init__()
         self.incoming_puck_color = bt.BTVariable(None)
-        self.approach_dist = rospy.get_param("approach_dist")  # meters, distance from robot to puck where robot will try to grab it
-        self.approach_dist = np.array(self.approach_dist)
-        self.critical_angle = np.pi * 2/3
-
-        self.drive_back_dist = rospy.get_param("drive_back_dist")
-        self.drive_back_dist = np.array(self.drive_back_dist)
-
-        self.approach_vec = np.array([-1*self.approach_dist, 0, 0])
+        self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
+        # self.critical_angle = np.pi * 2/3
+        self.critical_angle = rospy.get_param("critical_angle")
+        self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
+        self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))  # FIXME
         self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
-        self.scale_factor = rospy.get_param("scale_factor")  # used in calculating outer bissectrisa for hull's angles
-        self.scale_factor = np.array(self.scale_factor)
 
-        self.starting_pos = np.array([0.3, 0.45, 0])
-        self.starting_pos_var = bt.BTVariable(self.starting_pos)
+        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] + self.sign * 0.4,
+                                                         self.chaos_center[1] - 0.4,
+                                                         1.57 + self.sign * 0.785]))  # FIXME change to another angle and loc
 
-        self.guard_chaos_point = np.array([0.6, 0.6, 0.78])  # FIXME move to get_param
-        self.guard_chaos_point = bt.BTVariable(self.guard_chaos_point)
+        self.starting_pos_var = bt.BTVariable(np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
+                                                        0.45,
+                                                        1.57 + self.sign * 1.57]))  # y/p 3.14 / 0
 
         self.closest_landing = bt.BTVariable()
         self.nearest_PRElanding = bt.BTVariable()
@@ -59,7 +47,7 @@ class CollectChaos(bt.SequenceWithMemoryNode):
                 #     bt_ros.MoveToVariable(self.guard_chaos_point, "move_client")
                 # ], threshold=2),
 
-                bt_ros.MoveToVariable(self.guard_chaos_point, "move_client"),
+                bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
                 bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                 bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
                 bt_ros.BlindStartCollectGround("manipulator_client"),
@@ -190,10 +178,10 @@ class CollectChaos(bt.SequenceWithMemoryNode):
         else:
             landings = unleash_power_of_geometry(self.known_chaos_pucks.get()[:, :2],
                                                  self.scale_factor,
-                                                 self.approach_dist)
+                                                 self.HPAD)
 
         self.closest_landing.set(landings[0])
-        rospy.loginfo("Inside calculate_closest_landing, waypoints are : ")
+        rospy.loginfo("Inside calculate_closest_landing, closest_landing is : ")
         print(self.closest_landing.get())
         print " "
 
@@ -203,19 +191,19 @@ class CollectChaos(bt.SequenceWithMemoryNode):
         rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding.get()))
         print " "
 
-    def update_main_coords(self):
-        try:
-            trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))  # 0 means last measurment
-            q_main = [trans_main.transform.rotation.x,
-                      trans_main.transform.rotation.y,
-                      trans_main.transform.rotation.z,
-                      trans_main.transform.rotation.w]
-            angle_main = euler_from_quaternion(q_main)[2] % (2 * np.pi)
-            self.main_coords = np.array([trans_main.transform.translation.x,
-                                         trans_main.transform.translation.y,
-                                         angle_main])
-            rospy.loginfo("main coords: " + str(self.main_coords))
-            return True
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
-            rospy.logwarn(str(msg))
-            return False
+    # def update_main_coords(self):
+    #     try:
+    #         trans_main = self.tfBuffer.lookup_transform('map', "main_robot", rospy.Time(0))  # 0 means last measurment
+    #         q_main = [trans_main.transform.rotation.x,
+    #                   trans_main.transform.rotation.y,
+    #                   trans_main.transform.rotation.z,
+    #                   trans_main.transform.rotation.w]
+    #         angle_main = euler_from_quaternion(q_main)[2] % (2 * np.pi)
+    #         self.main_coords = np.array([trans_main.transform.translation.x,
+    #                                      trans_main.transform.translation.y,
+    #                                      angle_main])
+    #         rospy.loginfo("main coords: " + str(self.main_coords))
+    #         return True
+    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+    #         rospy.logwarn(str(msg))
+    #         return False

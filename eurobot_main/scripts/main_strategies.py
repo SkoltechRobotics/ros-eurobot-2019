@@ -21,6 +21,7 @@ from shapely.geometry.polygon import Polygon
 class Strategy(MainRobotBT):
     def __init__(self):
         super(Strategy, self).__init__()
+
         self.robot_name = rospy.get_param("robot_name")
         self.sign = 1
         self.param = rospy.get_param("start_side")
@@ -28,17 +29,10 @@ class Strategy(MainRobotBT):
         self.VPAD = rospy.get_param("vertical_pucks_approach_dist")
         self.HPAD = np.array(rospy.get_param("horiz_pucks_approach_dist"))  # 0.127 meters, distance from robot to puck where robot will try to grab it
         self.delta = rospy.get_param("approach_delta")  # FIXME
-        self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
-        self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))  # FIXME
-        self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
 
         self.gnd_spacing = rospy.get_param("ground_spacing_dist")
         self.robot_outer_radius = rospy.get_param("robot_outer_radius")
         self.stick_len = rospy.get_param("stick_len")
-
-        self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
-        # self.critical_angle = np.pi * 2/3
-        self.critical_angle = rospy.get_param("critical_angle")
 
         self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.incoming_puck_color = bt.BTVariable(None)
@@ -57,7 +51,7 @@ class Strategy(MainRobotBT):
 
         self.first_puck_landing = np.array([self.red_cell_puck[0] + self.sign * self.HPAD - self.sign * self.delta,
                                             self.red_cell_puck[1],
-                                            1.57 + self.sign * 1.57])  # 3.14 / 0
+                                            1.57 + self.sign * 1.57])  # y/p 3.14 / 0
 
         self.first_puck_landing_finish = np.array([self.red_cell_puck[0],
                                                     self.red_cell_puck[1] - 0.04,
@@ -73,7 +67,7 @@ class Strategy(MainRobotBT):
 
         self.third_puck_rotate_pose = np.array([self.chaos_center[0],
                                                 self.chaos_center[1] - 0.3,
-                                                -1.57 - self.sign * 0.785])  # -2.35 / -0.78
+                                                -1.57 - self.sign * 0.785])  # y/p -2.35 / -0.78
 
         self.blunium_prepose = np.array([self.blunium[0] + self.sign * 0.07,
                                          self.blunium[1] + 0.35,
@@ -125,23 +119,23 @@ class Strategy(MainRobotBT):
 
         self.goldenium_back_rot_pose = np.array([self.goldenium[0],
                                                  self.goldenium_back_pose[1],
-                                                 1.57 - self.sign * 0.5])  # 1.07 / 2.07
+                                                 1.57 - self.sign * 0.5])  # y/p 1.07 / 2.07
 
         self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - self.sign * 0.1,
                                                  self.chaos_center[1] - 0.6,
-                                                 1.57 - self.sign * 0.17])  # 1.4 / 1.74
+                                                 1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
 
         self.scales_goldenium_pos = np.array([self.chaos_center[0] - self.sign * 0.3,
                                               self.chaos_center[1] + 0.37,
-                                              1.57 + self.sign * 0.26])  # 1.83 / 1.31
+                                              1.57 + self.sign * 0.26])  # y/p 1.83 / 1.31
 
         # TODO: pucks in front of starting cells are random, so while we aren't using camera
         #       will call them REDIUM  (it doesn't matter, because in this strategy we move them all to acc)
         #       It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-        rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
-        rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
+        # rospy.Subscriber("navigation/response", String, self.move_client.response_callback)
+        # rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
     def pucks_callback(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
@@ -245,10 +239,10 @@ class Strategy(MainRobotBT):
                                          trans_main.transform.translation.y,
                                          angle_main])
             rospy.loginfo("main coords: " + str(self.main_coords))
-            # return True
+            return True  # return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
-            # return False
+            return False  # return False
 
     def update_secondary_coords(self):
         try:
@@ -426,6 +420,7 @@ class Strategy(MainRobotBT):
 #                                                 unload_goldenium,
 #                                                 ])
 #
+
 
 class BlindStrategy(Strategy):
     def __init__(self, side):
