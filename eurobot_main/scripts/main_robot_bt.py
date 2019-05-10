@@ -643,9 +643,29 @@ class MainRobotBT(object):
 
         return strategy
 
+    def testing_movements_egor(self):
+
+        strategy = bt.SequenceWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.first_puck_landing_finish, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.third_puck_landing, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_PREpos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_collect_pos_side, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.blunium_get_back_pose, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_PREpos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.goldenium_2_PREgrab_pos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.goldenium_grab_pos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.goldenium_back_pose, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.scales_goldenium_pos, "move_client"),
+                        bt_ros.MoveLineToPoint(self.tactics.first_puck_landing, "move_client")
+        ])
+
+        return strategy
+
     def start(self):
 
-        self.bt = bt.Root(self.strategy_rus(),
+        self.bt = bt.Root(self.testing_movements_egor(),
                           action_clients={"move_client": self.move_client,
                                           "manipulator_client": self.manipulator_client,
                                           "stm_client": self.stm_client})
