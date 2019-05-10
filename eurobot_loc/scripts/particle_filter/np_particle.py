@@ -184,14 +184,18 @@ class ParticleFilter:
             beacons = cvt_global2local(self.beacons[np.newaxis, :], particles[:, np.newaxis])
             distance_landmark_beacons = np.linalg.norm(beacons[:, np.newaxis, :, :] -
                                                        landmarks[np.newaxis, :, np.newaxis, :], axis=3)
-            # print distance_landmark_beacons
-            # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4 * BEAC_R)]
-            # landmarks = landmarks[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
-            # distance_landmark_beacons = distance_landmark_beacons[np.where(distance_landmark_beacons < 4*BEAC_R)[0]]
             self.beacon_ind = np.argmin(distance_landmark_beacons, axis=2)
-            # print self.beacon_ind
-            # print beacons.shape
             beacons = beacons[np.arange(beacons.shape[0])[:, np.newaxis], self.beacon_ind]
+            dist_from_closest_beacon_landmark = np.linalg.norm(beacons - landmarks[np.newaxis, :, :2], axis=2)
+            # print dist_from_closest_beacon_landmark
+            print landmarks.shape
+            landmarks = landmarks[np.where(dist_from_closest_beacon_landmark[0, :] < 4*BEAC_R)[0], :]
+            beacons = beacons[:, np.where(dist_from_closest_beacon_landmark[0, :] < 4*BEAC_R)[0], :]
+            print landmarks.shape
+            print beacons.shape
+            # print landmarks[:, np.where(dist_from_closest_beacon_landmark < 4 * BEAC_R)[1]]
+            # landmarks = landmarks[:, np.where(dist_from_closest_beacon_landmark < 4*BEAC_R)[1]]
+            # print dist_from_closest_beacon_landmark[np.where(dist_from_closest_beacon_landmark < 4*BEAC_R)]
             r = (np.sqrt((landmarks[np.newaxis, :,   1])**2 + (landmarks[np.newaxis, :, 0])**2)).T + self.sigma_r**2
             phi = np.arctan2(landmarks[np.newaxis, :, 1], landmarks[np.newaxis, :, 0]) + self.sigma_phi**2
             phi = wrap_angle(phi).T
