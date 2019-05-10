@@ -454,7 +454,7 @@ class MotionPlannerNode:
 
     def update_coords(self):
         try:
-            trans = self.tfBuffer.lookup_transform('main_robot_odom', self.robot_name, rospy.Time(0))
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
             q = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z,
                  trans.transform.rotation.w]
             angle = euler_from_quaternion(q)[2] % (2 * np.pi)

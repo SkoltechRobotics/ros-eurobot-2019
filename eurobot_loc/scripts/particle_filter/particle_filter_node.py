@@ -35,7 +35,7 @@ class PFNode(object):
         # Init params
         self.beacons = []
         self.prev_side_status = None
-        self.robot_name = "secondary_robot" #rospy.get_param("robot_name")
+        self.robot_name = rospy.get_param("robot_name")
         # scan parameters
         self.scan_offset = float(rospy.get_param("scan_offset"))
         self.color = None

@@ -3,8 +3,8 @@ from core_functions import *
 import numpy as np
 import yaml
 
-word_params_config_file_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/world_params.yaml"
-particle_filter_config_path = "/home/egorpristanskiy/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/particle_filter_params.yaml"
+word_params_config_file_path = "/home/odroid/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/world_params.yaml"
+particle_filter_config_path = "/home/odroid/catkin_ws/src/ros-eurobot-2019/eurobot_loc/config/particle_filter_params.yaml"
 with open(word_params_config_file_path, 'r') as params:
     world_params = yaml.load(params)
 with open(particle_filter_config_path, 'r') as params:
