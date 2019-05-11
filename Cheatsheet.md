@@ -84,7 +84,7 @@ rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0
 
 # use sim to collect chaos
 roslaunch eurobot_tactics tactics_sim.launch 
-rosrun eurobot_tactics imitate_cam.py -n 5
+rosrun eurobot_main imitate_cam.py -n 5
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 
 rostopic pub -1 /main_robot/navigation/command std_msgs/String "data: '1 move_line 0.4 0.4 0'"

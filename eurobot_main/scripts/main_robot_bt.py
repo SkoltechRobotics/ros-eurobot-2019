@@ -319,6 +319,8 @@ class CollectChaos(Strategy):
         self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
         self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))  # FIXME
         self.drive_back_vec = np.array([-1*self.drive_back_dist, 0, 0])
+        self.closest_landing = bt.BTVariable()
+        self.nearest_PRElanding = bt.BTVariable()
 
         self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] + self.sign * 0.4,
                                                          self.chaos_center[1] - 0.4,
@@ -328,20 +330,12 @@ class CollectChaos(Strategy):
                                                         0.45,
                                                         1.57 + self.sign * 1.57]))  # y/p 3.14 / 0
 
-        self.closest_landing = bt.BTVariable()
-        self.nearest_PRElanding = bt.BTVariable()
-
         # super(CollectChaos, self).__init__([
         self.tree = bt.SequenceWithMemoryNode([
                         # 1st
                         bt.ActionNode(self.calculate_pucks_configuration),
                         bt.ActionNode(self.calculate_closest_landing),
                         bt.ActionNode(self.calculate_prelanding),
-
-                        # bt.ParallelWithMemoryNode([
-                        #     bt_ros.SetManipulatortoUp("manipulator_client"),
-                        #     bt_ros.MoveToVariable(self.guard_chaos_point, "move_client")
-                        # ], threshold=2),
 
                         bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
                         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
