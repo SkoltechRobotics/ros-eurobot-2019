@@ -28,7 +28,6 @@ class MainRobotBT(object):
         self.manipulator_client = bt_ros.ActionClient(self.manipulator_publisher)
         self.stm_client = bt_ros.ActionClient(self.stm_publisher)
 
-        self.strategy_config = None
         self.side_status = None
         self.strategy = None
 
@@ -48,20 +47,12 @@ class MainRobotBT(object):
         self.bt_timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
     def change_side(self, side):
-        # if side == SideStatus.PURPLE:
-        #     self.strategy_config = Strategy(SideStatus.PURPLE)
-        # elif side == SideStatus.YELLOW:
-        #     self.strategy_config = Strategy(SideStatus.YELLOW)
-        # else:
-        #     self.strategy_config = None
-        
         self.side_status = side
+        self.strategy = CollectChaos(self.side_status)
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
-        self.strategy = CollectChaos(self.side_status)
 
     def timer_callback(self, event):
-
         status = self.bt.tick()
         if status != bt.Status.RUNNING:
             self.bt_timer.shutdown()
@@ -76,9 +67,6 @@ class Strategy(object):
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
         self.robot_name = rospy.get_param("robot_name")
-
-        # self.sign = 1
-        # self.color_side = rospy.get_param("start_side")
 
         if side == SideStatus.PURPLE:
             self.color_side = "purple_side"
@@ -324,11 +312,9 @@ class Strategy(object):
 
 
 class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
-    def __init__(self, known_chaos_pucks, action_client_id):
-        super(CollectChaos, self).__init__()
-        self.incoming_puck_color = bt.BTVariable(None)
+    def __init__(self, side):  # action_client_id
+        super(CollectChaos, self).__init__(side)
         self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
-        # self.critical_angle = np.pi * 2/3
         self.critical_angle = rospy.get_param("critical_angle")
         self.approach_vec = np.array([-1 * self.HPAD, 0, 0])
         self.drive_back_dist = np.array(rospy.get_param("drive_back_dist"))  # FIXME

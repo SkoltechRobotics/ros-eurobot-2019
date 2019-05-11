@@ -15,9 +15,8 @@ from main_strategies import Strategy
 
 
 class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
-    def __init__(self, known_chaos_pucks, action_client_id):
-        super(CollectChaos, self).__init__()
-        self.incoming_puck_color = bt.BTVariable(None)
+    def __init__(self, side):  # action_client_id
+        super(CollectChaos, self).__init__(side)
         self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
         # self.critical_angle = np.pi * 2/3
         self.critical_angle = rospy.get_param("critical_angle")
