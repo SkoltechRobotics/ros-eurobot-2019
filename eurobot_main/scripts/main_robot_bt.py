@@ -48,7 +48,8 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         self.side_status = side
-        self.strategy = CollectChaos(self.side_status)
+        # self.strategy = CollectChaos(self.side_status)
+        self.strategy = Combobombo(self.side_status)
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
 
@@ -90,6 +91,7 @@ class Strategy(object):
         self.is_secondary_responding = False
         self.secondary_coords = np.array([0, 0, 0])
         self.main_coords = None
+
         self.score_master = ScoreController(self.collected_pucks, self.robot_name)
 
         self.red_cell_puck = rospy.get_param(self.robot_name + "/" + self.color_side + "/red_cell_puck")
@@ -330,8 +332,13 @@ class CollectChaos(Strategy):
                                                         0.45,
                                                         1.57 + self.sign * 1.57]))  # y/p 3.14 / 0
 
+        # TODO: add checking if all received coords lie inside chaos zone
+
+        #  self.tree = bt.SequenceWithMemoryNode([
+
+    def tree(self):
         # super(CollectChaos, self).__init__([
-        self.tree = bt.SequenceWithMemoryNode([
+        strategy = bt.SequenceWithMemoryNode([
                         # 1st
                         bt.ActionNode(self.calculate_pucks_configuration),
                         bt.ActionNode(self.calculate_closest_landing),
@@ -414,6 +421,7 @@ class CollectChaos(Strategy):
                         bt.ActionNode(lambda: self.score_master.unload("ACC")),
                         bt_ros.SetManipulatortoUp("manipulator_client")
         ])
+        return strategy
 
     def update_chaos_pucks(self):
         """
@@ -480,6 +488,61 @@ class CollectChaos(Strategy):
         self.nearest_PRElanding.set(nearest_PRElanding)
         rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding.get()))
         print " "
+
+
+class Combobombo(Strategy):
+    def __init__(self, side):
+        super(Combobombo, self).__init__(side)
+
+        red_cell_puck = bt.SequenceWithMemoryNode([
+                            bt_ros.MoveLineToPoint(self.first_puck_landing, "move_client"),
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt_ros.MoveLineToPoint(self.first_puck_landing_finish, "move_client"),
+                                    ], threshold=2),
+                                ]),
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt_ros.MoveLineToPoint(self.first_puck_landing_finish, "move_client"),
+                                ], threshold=2)
+                            ]),
+                        ])
+
+        green_cell_puck = bt.SequenceWithMemoryNode([
+                            bt_ros.MoveLineToPoint(self.second_puck_landing, "move_client"),
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.BlindStartCollectGround("manipulator_client"),
+                                    bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
+                                    ], threshold=2),
+                                ]),
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt_ros.MoveLineToPoint(self.third_puck_landing, "move_client"),
+                                ], threshold=2)
+                            ])
+                        ])
+
+        self.tree = bt.SequenceWithMemoryNode([
+                        red_cell_puck,
+
+                        green_cell_puck,
+
+                        bt.FallbackWithMemoryNode([
+                            bt.SequenceNode([
+                                bt.ConditionNode(self.is_observed),
+                                CollectChaos.tree
+                            ]),
+                            bt.ConditionNode(lambda: bt.Status.RUNNING)
+                        ])
+                    ])
 
 
 class BlindStrategy(Strategy):
@@ -615,17 +678,17 @@ class BlindStrategy(Strategy):
                             ])
 
         self.tree = bt.SequenceWithMemoryNode([
-                                                red_cell_puck,
-                                                green_cell_puck,
-                                                blue_cell_puck,
-                                                move_and_collect_blunium,
-                                                approach_acc,
-                                                collect_unload_first_in_acc,
-                                                unload_acc,
-                                                collect_goldenium,
-                                                move_to_goldenium_prepose,
-                                                unload_goldenium,
-                                                ])
+                        red_cell_puck,
+                        green_cell_puck,
+                        blue_cell_puck,
+                        move_and_collect_blunium,
+                        approach_acc,
+                        collect_unload_first_in_acc,
+                        unload_acc,
+                        collect_goldenium,
+                        move_to_goldenium_prepose,
+                        unload_goldenium,
+                        ])
 
 
 if __name__ == '__main__':
