@@ -2,6 +2,7 @@
 start_purple: [0.2, 0.75, 0.]
 start_yellow: [2.80, 0.75, 3.14]
 
+robot_name: "secondary_robot"
 # LIDAR scanner coordinates in robot frame
 lidar_x: 0
 lidar_y: 0
@@ -18,5 +19,5 @@ world_y: 2
 world_border: 0.022
 beac_l: 0.1
 beac_border: 0.022
-scan_offset: 0.05
+scan_offset: 0.00
 rate: 20

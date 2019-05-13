@@ -40,19 +40,19 @@ approach_delta: 0.02
 ground_spacing_dist: 0.3
 
 # Main robot - lab
-# yellow_side:
-#   red_cell_puck: [2.51, 0.45]
-#   blunium: [1.29, 0.025]  # outer side of the puck
-#   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
-#   goldenium: [0.77, 0.05]  # outer side of the puck
-#   chaos_center: [2.01, 1.05]
+yellow_side:
+  red_cell_puck: [2.51, 0.45]
+  blunium: [1.29, 0.025]  # outer side of the puck
+  scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+  goldenium: [0.77, 0.05]  # outer side of the puck
+  chaos_center: [2.01, 1.05]
 
-# purple_side:
-#   red_cell_puck: [0.5, 0.45]
-#   blunium: [1.71, 0.025]  # outer side of the puck
-#   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
-#   goldenium: [2.22, 0.05]  # outer side of the puck
-#   chaos_center: [1, 1.05]
+purple_side:
+  red_cell_puck: [0.5, 0.45]
+  blunium: [1.71, 0.025]  # outer side of the puck
+  scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
+  goldenium: [2.22, 0.05]  # outer side of the puck
+  chaos_center: [1, 1.05]
 
 # trener
 # yellow_side:
@@ -70,16 +70,16 @@ ground_spacing_dist: 0.3
 #   chaos_center: [1, 1.05]
 
 # left
-yellow_side:
-  red_cell_puck: [2.495, 0.445]
-  blunium: [1.295, 0.03]  # outer side of the puck
-  scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
-  goldenium: [0.775, 0.05]  # outer side of the puck
-  chaos_center: [2.0, 1.05]
+# yellow_side:
+#   red_cell_puck: [2.495, 0.445]
+#   blunium: [1.295, 0.03]  # outer side of the puck
+#   scales_area: [[1.4, 1], [1.4, 1.6], [2.3, 1.6], [2.3, 1.]]
+#   goldenium: [0.775, 0.05]  # outer side of the puck
+#   chaos_center: [2.0, 1.05]
 
-purple_side:
-  red_cell_puck: [0.50, 0.445]
-  blunium: [1.71, 0.03]  # outer side of the puck
-  scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
-  goldenium: [2.22, 0.05]  # outer side of the puck
-  chaos_center: [1, 1.05]
+# purple_side:
+#   red_cell_puck: [0.50, 0.445]
+#   blunium: [1.71, 0.03]  # outer side of the puck
+#   scales_area: [[1.4, 1.2], [1.4, 1.6], [0.7, 1.6], [0.7, 1.2]]
+#   goldenium: [2.22, 0.05]  # outer side of the puck
+#   chaos_center: [1, 1.05]

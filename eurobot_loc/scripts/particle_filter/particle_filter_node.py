@@ -35,7 +35,7 @@ class PFNode(object):
         # Init params
         self.beacons = []
         self.prev_side_status = None
-        self.robot_name = rospy.get_param("robot_name")
+        self.robot_name = "secondary_robot" #rospy.get_param("robot_name")
         # scan parameters
         self.scan_offset = float(rospy.get_param("scan_offset"))
         self.color = None
@@ -74,6 +74,16 @@ class PFNode(object):
         rospy.Subscriber("/tf", TransformStamped, self.callback_frame, queue_size=1)
         rospy.Subscriber("stm/side_status", String, self.callback_side, queue_size=1)
         rospy.Subscriber("/%s/scan"%self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+#       just for sim test
+        init_start = np.array(rospy.get_param("start_purple"))
+        self.color = "purple"
+        self.robot_pf_point = init_start
+        beacons = PURPLE_BEACONS
+        self.world_beacons = beacons
+        self.pf = ParticleFilter(color=self.color, start_x=init_start[0], start_y=init_start[1],
+                                 start_angle=init_start[2])
+
+        self.timer = rospy.Timer(rospy.Duration(1. / PF_RATE), self.localization)
 
     def callback_side(self, side):
         if self.prev_side_status != side.data:
@@ -102,9 +112,9 @@ class PFNode(object):
         distances = np.linalg.norm(self.robot_pf_point[:2] - self.world_beacons, axis=1)
         min_dist_to_beacon = min(distances)
         if min_dist_to_beacon < 0.4:
-            intense = 2200
+            intense = 3000
         else:
-            intense = 4000
+            intense = 3000
         rospy.loginfo("Distances to beacons " + str(distances))
         angles, ranges = self.pf.get_landmarks(self.scan, intense)
         ranges -= self.scan_offset
@@ -250,6 +260,7 @@ class PFNode(object):
         rospy.loginfo("===========Start localization=============")
         header = self.scan.header
         points = self.point_cloud_from_scan()
+        rospy.loginfo
         #self.publish_landmarks(points, header)
         beacons, color = self.beacons_detection(points)
         self.publish_beacons(beacons, header, color)
@@ -269,7 +280,7 @@ class PFNode(object):
             self.robot_pf_point = find_src(lidar_pf_point, self.lidar_point)
             rospy.loginfo("Robot particle filter point is " + str(self.robot_pf_point))
             self.publish_pf(self.get_odom_frame(self.robot_pf_point, robot_odom_point))
-            #self.publish_particles()
+            self.publish_particles()
 
     def get_odom(self):
         try:

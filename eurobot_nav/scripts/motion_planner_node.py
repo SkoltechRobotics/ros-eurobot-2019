@@ -308,6 +308,7 @@ class MotionPlannerNode:
         v_cmd *= self.p
         rospy.loginfo("Speed %s", v_cmd)
         cmd = str(self.cmd_id) + " 8 " + str(v_cmd[0]) + " " + str(v_cmd[1]) + " " + str(v_cmd[2])
+        self.set_speed_simulation(v_cmd[0], v_cmd[1], v_cmd[2])
         self.command_publisher.publish(cmd)
 
     def get_deceleration_coefficient(self, distance):
