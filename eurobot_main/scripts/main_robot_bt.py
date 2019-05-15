@@ -68,12 +68,19 @@ class Strategy(object):
 
         self.robot_name = rospy.get_param("robot_name")
 
+        self.purple_chaos_center = rospy.get_param(self.robot_name + "/" + "purple_side" + "/chaos_center")
+        self.yellow_chaos_center = rospy.get_param(self.robot_name + "/" + "yellow_side" + "/chaos_center")
+
         if side == SideStatus.PURPLE:
             self.color_side = "purple_side"
             self.sign = -1
+            self.our_chaos_center = self.purple_chaos_center
+            self.opponent_chaos_center = self.yellow_chaos_center
         elif side == SideStatus.YELLOW:
             self.color_side = "yellow_side"
             self.sign = 1
+            self.our_chaos_center = self.yellow_chaos_center
+            self.opponent_chaos_center = self.purple_chaos_center
 
         self.VPAD = rospy.get_param("vertical_pucks_approach_dist")
         self.HPAD = np.array(rospy.get_param("horiz_pucks_approach_dist"))  # 0.127 meters, distance from robot to puck where robot will try to grab it
@@ -83,7 +90,10 @@ class Strategy(object):
         self.robot_outer_radius = rospy.get_param("robot_outer_radius")
         self.stick_len = rospy.get_param("stick_len")
 
-        self.known_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.our_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.opponent_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.our_pucks_rgb = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
         self.is_observed_flag = bt.BTVariable(False)
@@ -97,7 +107,10 @@ class Strategy(object):
         self.blunium = rospy.get_param(self.robot_name + "/" + self.color_side + "/blunium")
         self.goldenium = rospy.get_param(self.robot_name + "/" + self.color_side + "/goldenium")
         self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.color_side + "/scales_area"))
-        self.chaos_center = rospy.get_param(self.robot_name + "/" + self.color_side + "/chaos_center")
+        self.chaos_radius = rospy.get_param("chaos_radius")
+
+        self.purple_cells_area = rospy.get_param(self.robot_name + "/" + "purple_side" + "/purple_cells_area")
+        self.yellow_cells_area = rospy.get_param(self.robot_name + "/" + "purple_side" + "/yellow_cells_area")
 
         self.green_cell_puck = np.array([self.red_cell_puck[0], self.red_cell_puck[1] + self.gnd_spacing])
         self.blue_cell_puck = np.array([self.red_cell_puck[0], self.red_cell_puck[1] + 2 * self.gnd_spacing])
@@ -118,8 +131,8 @@ class Strategy(object):
                                             self.red_cell_puck[1] + 2 * self.gnd_spacing - self.HPAD + self.delta,
                                             1.57])
 
-        self.third_puck_rotate_pose = np.array([self.chaos_center[0],
-                                                self.chaos_center[1] - 0.3,
+        self.third_puck_rotate_pose = np.array([self.our_chaos_center[0],
+                                                self.our_chaos_center[1] - 0.3,
                                                 -1.57 - self.sign * 0.785])  # y/p -2.35 / -0.78
 
         self.blunium_prepose = np.array([self.blunium[0] + self.sign * 0.07,
@@ -174,15 +187,13 @@ class Strategy(object):
                                                  self.goldenium_back_pose[1],
                                                  1.57 - self.sign * 0.5])  # y/p 1.07 / 2.07
 
-        self.scales_goldenium_PREpos = np.array([self.chaos_center[0] - self.sign * 0.1,
-                                                 self.chaos_center[1] - 0.6,
+        self.scales_goldenium_PREpos = np.array([self.our_chaos_center[0] - self.sign * 0.1,
+                                                 self.our_chaos_center[1] - 0.6,
                                                  1.57 - self.sign * 0.17])  # y/p 1.4 / 1.74
 
-        self.scales_goldenium_pos = np.array([self.chaos_center[0] - self.sign * 0.3,
-                                              self.chaos_center[1] + 0.37,
+        self.scales_goldenium_pos = np.array([self.our_chaos_center[0] - self.sign * 0.3,
+                                              self.our_chaos_center[1] + 0.37,
                                               1.57 + self.sign * 0.26])  # y/p 1.83 / 1.31
-
-
 
         self.scale_factor = np.array(rospy.get_param("scale_factor"))  # used in calculating outer bissectrisa for hull's angles
         self.critical_angle = rospy.get_param("critical_angle")
@@ -193,9 +204,9 @@ class Strategy(object):
         self.nearest_PRElanding = bt.BTVariable()
         self.next_landing_var = bt.BTVariable()
 
-        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.chaos_center[0] - self.sign * 0.05,
-                                                         self.chaos_center[1] - 0.3,
-                                                         1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
+        self.guard_chaos_loc_var = bt.BTVariable(np.array([self.our_chaos_center[0] - self.sign * 0.05,
+                                                           self.our_chaos_center[1] - 0.3,
+                                                           1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
 
         self.starting_pos_var = bt.BTVariable(np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                                         0.45,
@@ -214,28 +225,91 @@ class Strategy(object):
         # red (1, 0, 0)
         # green (0, 1, 0)
         # blue (0, 0, 1)
-        #rospy.loginfo(data)
+        # rospy.loginfo(data)
 
-        if len(self.known_chaos_pucks.get()) == 0:
-            try:
-                new_observation_pucks = [[marker.pose.position.x,
-                                          marker.pose.position.y,
-                                          marker.id,
-                                          marker.color.r,
-                                          marker.color.g,
-                                          marker.color.b] for marker in data.markers]
+        try:
+            new_observation_pucks = [[marker.pose.position.x,
+                                      marker.pose.position.y,
+                                      marker.id,
+                                      marker.color.r,
+                                      marker.color.g,
+                                      marker.color.b] for marker in data.markers]
 
-                if len(new_observation_pucks) == 4:
-                    new_observation_pucks = np.array(new_observation_pucks)
+            purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = self.parse_pucks(new_observation_pucks,
+                                                                                                          self.purple_chaos_center,
+                                                                                                          self.yellow_chaos_center,
+                                                                                                          self.chaos_radius,
+                                                                                                          self.purple_cells_area,
+                                                                                                          self.yellow_cells_area)
 
-                    self.known_chaos_pucks.set(new_observation_pucks)
-                    self.is_observed_flag.set(True)
-                    rospy.loginfo("Got pucks observation:")
-                    rospy.loginfo(self.known_chaos_pucks.get())
-                    self.pucks_subscriber.unregister()
+            if self.color_side == "purple_side":
+                self.our_chaos_pucks.set(purple_chaos_pucks)
+                self.opponent_chaos_pucks.set(yellow_chaos_pucks)
+                self.our_pucks_rgb.set(purple_pucks_rgb)
+            elif self.color_side == "yellow_side":
+                self.our_chaos_pucks.set(yellow_chaos_pucks)
+                self.opponent_chaos_pucks.set(purple_chaos_pucks)
+                self.our_pucks_rgb.set(yellow_pucks_rgb)
 
-            except Exception:  # FIXME
-                rospy.loginfo("list index out of range - no visible pucks on the field ")
+            if len(self.our_chaos_pucks.get()) == 4:
+                self.is_observed_flag.set(True)
+                rospy.loginfo("Got pucks observation:")
+                rospy.loginfo(self.our_chaos_pucks.get())
+                self.pucks_subscriber.unregister()
+
+        except Exception:  # FIXME
+            rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    @staticmethod
+    def parse_pucks(observation, pcc, ycc, chaos_radius, pca, yca):
+        """
+
+        :param observation: [[x, y, id, r, g, b], [x, y, id, r, g, b]...]
+        :param pcc: purple_chaos_center (x, y)
+        :param ycc: yellow_chaos_center (x, y)
+        :param chaos_radius: const
+        :param pca: purple_cells_area
+        :param yca: yellow_cells_area
+        :return: [[x, y, id, r, g, b], [x, y, id, r, g, b]...] format for each of chaoses and for  pucks_rgb
+                (red cell puck, green cell puck, blue cell puck)
+        """
+
+        purple_chaos_pucks = []
+        yellow_chaos_pucks = []
+        purple_pucks_rgb = []
+        yellow_pucks_rgb = []
+        offset = 0.03
+
+        purple_chaos_center_point = Point(pcc[0], pcc[1])
+        yellow_chaos_center_point = Point(ycc[0], ycc[1])
+
+        # create circle buffer from the points
+        purple_chaos_buffer = purple_chaos_center_point.buffer(chaos_radius + offset)
+        yellow_chaos_buffer = yellow_chaos_center_point.buffer(chaos_radius + offset)
+
+        purple_cell_buffer = Polygon([pca[0], pca[1], pca[2], pca[3]])
+        yellow_cell_buffer = Polygon([yca[0], yca[1], yca[2], yca[3]])
+
+        # checkk if the other point lies within
+        for puck in observation:
+            current_puck = Point(puck[0], puck[1])
+            if current_puck.within(purple_chaos_buffer):
+                purple_chaos_pucks.append(puck)
+            elif current_puck.within(yellow_chaos_buffer):
+                yellow_chaos_pucks.append(puck)
+            elif purple_cell_buffer.contains(current_puck):
+                purple_pucks_rgb.append(puck)
+            elif yellow_cell_buffer.contains(current_puck):
+                yellow_pucks_rgb.append(puck)
+
+        purple_chaos_pucks = np.array(purple_chaos_pucks)
+        yellow_chaos_pucks = np.array(yellow_chaos_pucks)
+        purple_pucks_rgb.sort(key=lambda t: t[1])
+        yellow_pucks_rgb.sort(key=lambda t: t[1])
+        purple_pucks_rgb = np.array(purple_pucks_rgb)
+        yellow_pucks_rgb = np.array(yellow_pucks_rgb)
+
+        return purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb
 
     def is_observed(self):
         # rospy.loginfo("is observed?")
@@ -243,7 +317,7 @@ class Strategy(object):
             # rospy.loginfo('YES! Got all pucks coords')
             return bt.Status.SUCCESS
         else:
-            rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.known_chaos_pucks.get())))
+            rospy.loginfo('Still waiting for the cam, known: ' + str(len(self.our_chaos_pucks.get())))
             return bt.Status.FAILED
 
     # FIXME move to math
@@ -322,11 +396,11 @@ class Strategy(object):
         get color of last taken puck
         :return: None
         """
-        incoming_puck_color = get_color(self.known_chaos_pucks.get()[0])
+        incoming_puck_color = get_color(self.our_chaos_pucks.get()[0])
         self.incoming_puck_color.set(incoming_puck_color)
         rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
-        self.known_chaos_pucks.set(np.delete(self.known_chaos_pucks.get(), 0, axis=0))
-        rospy.loginfo("Known pucks after removing: " + str(self.known_chaos_pucks.get()))
+        self.our_chaos_pucks.set(np.delete(self.our_chaos_pucks.get(), 0, axis=0))
+        rospy.loginfo("Known pucks after removing: " + str(self.our_chaos_pucks.get()))
 
     def calculate_pucks_configuration(self):
         """
@@ -337,20 +411,20 @@ class Strategy(object):
             print "no coords available"
             rospy.sleep(0.5)
 
-        known_chaos_pucks = sort_wrt_robot(self.main_coords, self.known_chaos_pucks.get())
+        known_chaos_pucks = sort_wrt_robot(self.main_coords, self.our_chaos_pucks.get())
         print "sorted"
-        self.known_chaos_pucks.set(known_chaos_pucks)
-        if len(self.known_chaos_pucks.get()) >= 3:
+        self.our_chaos_pucks.set(known_chaos_pucks)
+        if len(self.our_chaos_pucks.get()) >= 3:
             is_hull_safe_to_approach, coords_sorted_by_angle = sort_by_inner_angle_and_check_if_safe(self.main_coords,
-                                                                                                     self.known_chaos_pucks.get(),
+                                                                                                     self.our_chaos_pucks.get(),
                                                                                                      self.critical_angle)
 
             if not is_hull_safe_to_approach:
-                self.known_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
+                self.our_chaos_pucks.set(coords_sorted_by_angle)  # calc vert-angle, sort by angle, return vertices (sorted)
                 rospy.loginfo("hull is not safe to approach, sorted by angle")
             else:  # only sharp angles
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
-        rospy.loginfo("Known pucks sorted: " + str(self.known_chaos_pucks.get()))
+        rospy.loginfo("Known pucks sorted: " + str(self.our_chaos_pucks.get()))
 
     #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
     #     if self.known_chaos_pucks.get().size > 1 and all(self.known_chaos_pucks.get()[0][3:6] == [0, 0, 1]):
@@ -362,12 +436,12 @@ class Strategy(object):
 
         :return: [(x, y, theta), ...]
         """
-        if len(self.known_chaos_pucks.get()) == 1:
+        if len(self.our_chaos_pucks.get()) == 1:
             landings = calculate_closest_landing_to_point(self.main_coords,
-                                                          self.known_chaos_pucks.get()[:, :2],
+                                                          self.our_chaos_pucks.get()[:, :2],
                                                           self.approach_vec)
         else:
-            landings = unleash_power_of_geometry(self.known_chaos_pucks.get()[:, :2],
+            landings = unleash_power_of_geometry(self.our_chaos_pucks.get()[:, :2],
                                                  self.scale_factor,
                                                  self.HPAD)
 
