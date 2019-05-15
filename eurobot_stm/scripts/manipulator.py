@@ -101,6 +101,8 @@ class Manipulator(object):
             return self.blind_start_collect_ground()
         elif cmd == "complete_collect_ground":
             return self.complete_collect_ground()
+        elif cmd == "complete_collect_ground_when_full":
+            return self.complete_collect_ground_when_full()
         elif cmd == "release_accelerator":
             return self.release_accelerator()
         elif cmd == "start_collect_blunium":
@@ -117,6 +119,8 @@ class Manipulator(object):
             return self.release_accelerator_first_move_when_full()
         elif cmd == "finish_collect_blunium":
             return self.finish_collect_blunium()
+        elif cmd == "finish_collect_blunium_when_full":
+            return self.finish_collect_blunium_when_full()
         elif cmd == "set_manipulator_ground_main":
             return self.set_manipulator_ground_main()
         elif cmd == "long_check_limit_switch_infinitely":
@@ -265,6 +269,15 @@ class Manipulator(object):
         rospy.sleep(0.2)  # FIXME 0.2
         return True
 
+    def complete_collect_ground_when_full(self):
+        self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        rospy.sleep(0.2)  # FIXME 0.2
+        return True
+
     def release_accelerator_first_move_when_full(self):
         # this func is for case when we got all 7 pucks inside
         # FIRST move without making step up
@@ -304,6 +317,15 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        rospy.sleep(0.2)
+        return True
+
+    def finish_collect_blunium_when_full(self):
+        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.1)
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         rospy.sleep(0.2)
         return True
 
