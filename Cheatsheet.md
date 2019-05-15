@@ -529,6 +529,7 @@ cd ~/.ros/log/latest
 
 roslaunch eurobot_main chaos_bt.launch
 
+fuck
 
 #TROOBLESHOOTING
 - ubuntu can't log in
