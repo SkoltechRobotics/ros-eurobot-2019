@@ -448,10 +448,13 @@ class Strategy(object):
             landings = calculate_closest_landing_to_point(self.main_coords,
                                                           self.our_chaos_pucks.get()[:, :2],
                                                           self.approach_vec)
+
         else:
             landings = unleash_power_of_geometry(self.our_chaos_pucks.get()[:, :2],
                                                  self.scale_factor,
                                                  self.HPAD)
+            if len(self.our_chaos_pucks.get()) == 2:
+                landings.sort(key=lambda t: t[1])
 
         self.closest_landing.set(landings[0])
         rospy.loginfo("Inside calculate_closest_landing, closest_landing is : ")
