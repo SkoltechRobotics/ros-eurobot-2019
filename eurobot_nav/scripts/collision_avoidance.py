@@ -338,11 +338,12 @@ class CollisionAvoidanceSecondaryRobot(object):
         rospy.loginfo("GOAL IN ROBOT FRAME %s", goal_in_robot_frame)
         dist_to_goal = np.linalg.norm(goal[:2] - coords[:2])
         rospy.loginfo("DIST TO GOAL POINT %s", dist_to_goal)
-        points = np.array([[-0.2, -0.2], [dist_to_goal+0.2, -0.2], [dist_to_goal+0.2, 0.2], [-0.2, 0.2], [-0.2, -0.2]])
+        points = np.array([[-0.1, -0.1], [dist_to_goal+0.1, -0.1], [dist_to_goal+0.1, 0.1], [-0.1, 0.1], [-0.1, -0.1]])
         self.collision_area = cvt_local2global(points, np.array(
             [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
-        self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
-        self.obstacle_points = self.filter_points(self.obstacle_points.copy(), coords.copy(), goal.copy())
+        self.set_collision_area(self.collision_area)
+        # self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
+        # self.obstacle_points = self.filter_points(self.obstacle_points.copy(), coords.copy(), goal.copy())
         # self.set_collision_point(self.obstacle_points)
 
     def filter_points(self, points, coords, goal):

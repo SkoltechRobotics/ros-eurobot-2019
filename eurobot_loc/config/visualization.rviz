@@ -9,6 +9,7 @@ Panels:
         - /SecondaryLaserScan1
         - /PoseArray1
         - /MarkerArray3
+        - /MarkerArray4
         - /Path1
       Splitter Ratio: 0.592190862
     Tree Height: 590
@@ -89,9 +90,19 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        main_robot:
+          Value: true
+        main_robot_laser:
+          Value: true
+        main_robot_odom:
+          Value: true
         map:
           Value: true
         secondary_robot:
+          Value: true
+        secondary_robot_laser:
+          Value: true
+        secondary_robot_odom:
           Value: true
       Marker Scale: 0.400000006
       Name: TF
@@ -100,8 +111,14 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          secondary_robot:
-            {}
+          main_robot_odom:
+            main_robot:
+              main_robot_laser:
+                {}
+          secondary_robot_odom:
+            secondary_robot:
+              secondary_robot_laser:
+                {}
       Update Interval: 0
       Value: true
     - Attached Body Color: 150; 50; 150
@@ -532,13 +549,13 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /main_robot/beacons
       Name: MarkerArray
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -606,7 +623,7 @@ Visualization Manager:
       Marker Topic: /navigation/world
       Name: MarkerArray
       Namespaces:
-        world: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -642,7 +659,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 4.20958948
+      Distance: 4.8574667
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1

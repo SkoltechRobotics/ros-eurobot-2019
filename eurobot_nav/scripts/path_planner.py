@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import visilibity as vg
 import numpy as np
-
+from polygon_conversions import list_from_polygon, list_from_polygon_array, polygon_list_from_numpy, get_map
 
 class PathPlanning(object):
     def __init__(self):
