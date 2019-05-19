@@ -75,11 +75,13 @@ class StrategyConfig(object):
 
         if side == SideStatus.PURPLE:
             self.color_side = "purple_side"
+            self.opponent_side = "yellow_side"
             self.sign = -1
             self.our_chaos_center = self.purple_chaos_center
             self.opponent_chaos_center = self.yellow_chaos_center
         elif side == SideStatus.YELLOW:
             self.color_side = "yellow_side"
+            self.opponent_side = "purple_side"
             self.sign = 1
             self.our_chaos_center = self.yellow_chaos_center
             self.opponent_chaos_center = self.purple_chaos_center
@@ -95,6 +97,7 @@ class StrategyConfig(object):
         self.my_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.opponent_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.our_pucks_rgb = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.my_collected_chaos = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
@@ -115,6 +118,9 @@ class StrategyConfig(object):
         self.goldenium = rospy.get_param(self.robot_name + "/" + self.color_side + "/goldenium")
         self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.color_side + "/scales_area"))
         self.chaos_radius = rospy.get_param("chaos_radius")
+
+        self.my_chaos_area = rospy.get_param(self.robot_name + "/" + self.color_side + "/area_to_search_chaos")
+        self.opponent_chaos_area = rospy.get_param(self.robot_name + "/" + self.opponent_side + "/area_to_search_chaos")
 
         self.purple_cells_area = rospy.get_param(self.robot_name + "/" + "purple_side" + "/purple_cells_area")
         self.yellow_cells_area = rospy.get_param(self.robot_name + "/" + "yellow_side" + "/yellow_cells_area")
@@ -346,58 +352,70 @@ class StrategyConfig(object):
         - it is not visible (but it's still there) either because of robot in the line of view or light conditions
         - it was collected by opponent robot (and it's not there anymore)
 
+        Updating procedure for my chaos:
+        1) Parsing pucks to chaos collections
+        if we see every puck left in our chaos than simply update all
+        if we see less than calculated, than update only green and blue.
+        If we see only one red, it's hard to say which particularly it is, so update red pucks only if both are observed
+
         :param new_observation: [(x, y, id, r, g, b), ...]
         :return: [(x, y, id, r, g, b), ...]
         """
 
-        # known_pucks = self.known_chaos_pucks
-        # for puck in observation:
-        #     puck_id = puck[0]
-        #     if puck_id in known_ids:
-        #         ind = known_ids.index(puck_id)  # correct? FIXME
-        #         x_new, y_new = puck[1], puck[2]
-        #         x_old, y_old = known_pucks[1], known_pucks[2]
-        #         if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > coords_threshold:
-        #             self.known_chaos_pucks[ind][1:] = puck[1:]
-        #     else:
-        #         # wtf happened? blink from sun? wasn't recognised at first time?
-        #         self.known_chaos_pucks = np.stack((self.known_chaos_pucks, puck), axis=0)
-        #         # self.known_coords_of_pucks.append(puck)
-
         my_chaos_new = self.my_chaos_pucks.get().copy()
         opp_chaos_new = self.opponent_chaos_pucks.get().copy()
-        my_chaos_area
-        opponent_chaos_area
+
+        observed_my_chaos_collection = []
+        observed_opponent_chaos_collection = []
+        other_pucks = []
+        colors = []
+
+        my_chaos_area = Polygon([self.my_chaos_area[0],
+                                 self.my_chaos_area[1],
+                                 self.my_chaos_area[2],
+                                 self.my_chaos_area[3]])
+
+        opponent_chaos_area = Polygon([self.opponent_chaos_area[0],
+                                       self.opponent_chaos_area[1],
+                                       self.opponent_chaos_area[2],
+                                       self.opponent_chaos_area[3]])
 
         for puck in new_observation:
-            current_puck = Point(puck[0], puck[1])
+            unknown_puck = Point(puck[0], puck[1])
+            if unknown_puck.within(my_chaos_area):
+                observed_my_chaos_collection.append(puck)
+            elif unknown_puck.within(opponent_chaos_area):
+                observed_opponent_chaos_collection.append(puck)
+            else:
+                other_pucks.append(puck)
 
-            if current_puck.within(my_chaos_area):
-                id_of_closest_in_old = self.find_previous_pos(puck, my_chaos_new)
-                if id_of_closest_in_old is not None:
-                    my_chaos_new = np.delete(my_chaos_new, id_of_closest_in_old)  # FIXME
-                    my_chaos_new = np.stack(my_chaos_new, puck)
+        if len(observed_my_chaos_collection) == len(self.my_chaos_pucks.get()) - len(self.my_collected_chaos.get()):
+            my_chaos_new = observed_my_chaos_collection
+        else:
+            for puck in observed_my_chaos_collection:
+                puck_color = get_color(puck)
+                colors.append(puck_color)
+            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new, colors)
 
-        # and need to delete that referenced puck, so not to compare with it again
+        # for opponent's chaos
+        # if len(observed_opponent_chaos_collection) == 4:
+        #     opp_chaos_new = observed_opponent_chaos_collection
+        # else:
 
+        # id_of_past_entity = self.find_past_entity(puck, my_chaos_new)
+        # if id_of_past_entity is not None:
+        #     my_chaos_new = np.delete(my_chaos_new, id_of_past_entity)  # FIXME
+        #     my_chaos_new = np.stack((my_chaos_new, puck), axis=0)
 
         return my_chaos_new, opp_chaos_new
 
     @staticmethod
-    def find_previous_pos(puck, pucks):
-        """
-        TODO: Utilize knowledge of puck's color!
+    def parse_by_color(new_obs, known, colors):
 
-        TODO: using puck location we can say where to search!
-        :param puck:
-        :param pucks:
-        :return:
-        """
-        puck_id = None
-        puck_color = puck[4:]
-        
+        if two_pucks in observed_my_chaos_collection:
+            update_both_red_in_final
 
-        return puck_id
+        return list_of_pucks
 
     # def is_chaos_available(self, side):
     #
@@ -500,6 +518,7 @@ class StrategyConfig(object):
         incoming_puck_color = get_color(self.my_chaos_pucks.get()[0])
         self.incoming_puck_color.set(incoming_puck_color)
         rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
+        self.my_collected_chaos.set(self.my_chaos_pucks.get()[0])
         self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
         rospy.loginfo("Known pucks after removing: " + str(self.my_chaos_pucks.get()))
 

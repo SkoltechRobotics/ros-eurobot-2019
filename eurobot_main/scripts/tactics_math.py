@@ -9,6 +9,7 @@ from core_functions import cvt_local2global
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
+
 def get_color(puck):
     """
     red (1, 0, 0)
@@ -34,6 +35,7 @@ def get_color(puck):
     elif all(color_key == np.array([0, 0, 1])):
         color_val = "BLUNIUM"
     return color_val
+
 
 def calc_inner_angles(coords):
     is_line = polygon_area(coords)  # returns area
