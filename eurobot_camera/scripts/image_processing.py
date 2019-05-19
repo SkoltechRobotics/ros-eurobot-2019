@@ -110,6 +110,4 @@ def watersherd(img):
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    cv2.imwrite("./data/images/image_gray.png", img)
-
     return img

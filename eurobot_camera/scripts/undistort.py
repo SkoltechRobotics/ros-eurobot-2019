@@ -142,40 +142,28 @@ class CameraUndistortNode():
             # image = image_processing.equalize_histogram(image)
 
             image = image_processing.crop_image(image)
-            # image = image_processing.increase_saturation_3(image)
             image_p = predict.find_pucks(image)
+            image_thresh = image_p
 
-            image_gray = image_processing.watersherd(image_p)
-
-            # Find all contours on the image
-            # image_gray = image_p #cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-            # image_gray = image_processing.watersherd(image_gray)
-            image_thresh = self.contour.find(image_gray)
-            image_contours = copy.copy(image)
-            image_contours = self.contour.draw(image_contours, self.contour.all_contours)
-
-            # Filter contours
-            contours_filtered = self.contour.filter(3000, 100, 100)
-            image_filter_contours = copy.copy(image)
-            image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
+            image_gray = image_p
 
             # Find pucks coordinates
             image_pucks = copy.copy(image)
-            coordinates = self.contour.find_pucks_coordinates()
-            # Detect contours colors
-            colors = self.contour.detect_color(contours_filtered, image)
-            # colors = []
-            # Draw ellipse contours around pucks
-            image_pucks = self.contour.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
+
+            # coordinates = self.contour.find_pucks_coordinates()
+            circles = self.contour.hough_detect_pucks(image_gray)
+            coordinates = self.contour.find_pucks_coordinates_hough(circles)
+            colors = self.contour.detect_color_pucks_hough(image, circles)
+
+            image_pucks = self.contour.draw_ellipse(image_pucks, circles, coordinates, colors)
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
             # cv2.imwrite("./data/images/undistorted_image_" + str(self.counter) + ".png", image)
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
             self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresh))
-            self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
-            self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
+            # self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
+            # self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
             # cv2.imwrite("./data/images/image_pucks_" + str(self.counter) + ".png", image_pucks)
 
