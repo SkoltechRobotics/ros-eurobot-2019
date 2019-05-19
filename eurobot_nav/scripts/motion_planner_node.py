@@ -109,7 +109,15 @@ class MotionPlannerNode:
             self.collision_avoidance = CollisionAvoidanceMainRobot()
 #       init path planner
         rospy.sleep(3)
-        self.publish_world(np.array([self.world_border_bottom, self.world_border_top, self.world_border_left, self.world_border_right, self.scales]))
+        self.world = np.array([[self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],
+                               [3. - self.robot_radius, 2. - self.robot_radius],
+                               [2.55 + self.robot_radius, 2. - self.robot_radius],
+                               [2.55 + self.robot_radius, 1.543 - self.robot_radius],
+                               [0.45 - self.robot_radius, 1.543 - self.robot_radius],
+                               [0.45 - self.robot_radius, 2. - self.robot_radius],
+                               [self.robot_radius, 2. - self.robot_radius],
+                               [self.robot_radius, self.robot_radius]])
+        self.publish_world(np.array([self.world]))
         self.path_planner = PathPlanning()
 
     def publish_world(self, world):
@@ -121,9 +129,9 @@ class MotionPlannerNode:
             marker.type = marker.LINE_STRIP
             marker.action = marker.ADD
             marker.ns = "world"
-            marker.scale.x = 0.05
-            marker.scale.y = 0.05
-            marker.scale.z = 0.05
+            marker.scale.x = 0.02
+            marker.scale.y = 0.02
+            marker.scale.z = 0.02
             marker.color.a = 1
             marker.color.g = 1
             marker.id = i
@@ -135,12 +143,12 @@ class MotionPlannerNode:
             marker.pose.orientation.w = 1.0
             marker.pose.position.x = 0.0
             marker.pose.position.y = 0.0
-            marker.pose.position.z = 0.1
+            marker.pose.position.z = 0.
             for point_ in element:
                 point = Point()
                 point.x = point_[0]
                 point.y = point_[1]
-                point.z = 0.2
+                point.z = 0.
                 marker.points.append(point)
             markers.append(marker)
             self.world_publisher.publish(markers)
@@ -155,7 +163,7 @@ class MotionPlannerNode:
         obstacle_point = np.array(obstacle.data.split()).astype(float)
         self.obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         self.collision_avoidance.set_collision_area(self.obstacle_polygon)
-        self.obstacle_polygon = self.obstacle_polygon
+
 
     def pub_path(self):
         path = Path()
@@ -229,6 +237,8 @@ class MotionPlannerNode:
             goal[2] %= (2 * np.pi)
             self.goal = goal
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
+            # self.publish_world(np.array([world]))
+            # self.collision_avoidance.set_collision_point([self.world[1, :]])
             self.way_points[:-1, 2] = self.coords[2]
             self.way_points[-1, 2] = self.goal[2]
             self.create_path_from_way_points()
@@ -425,7 +435,7 @@ class MotionPlannerNode:
         rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
         self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
         obstacle_polygon = self.get_polygon_from_point(obstacle_point)
-        self.collision_avoidance.set_collision_area(obstacle_polygon)
+        # self.collision_avoidance.set_collision_area(obstacle_polygon)
         # self.is_collision = False
         rospy.loginfo(self.is_collision)
         rospy.loginfo(self.p)
