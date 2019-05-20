@@ -40,7 +40,7 @@ class Contour():
     def find(self, image_gray):
         # th = cv2.adaptiveThreshold(image_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY, 25, 0)
         # ret, th = cv2.threshold(image_gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        ret, th = cv2.threshold(image_gray, 127, 255, 0)
+        ret, th = cv2.threshold(image_gray, 103, 255, 0)
 
         # kernel = np.ones((3,3), np.uint8)
         # res = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel)

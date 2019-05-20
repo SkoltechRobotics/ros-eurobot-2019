@@ -10,7 +10,7 @@ from model import UNet
 
 def find_pucks(image):
     # Prepare the network
-    net = UNet(weights='/home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/scripts/weights/fedge_detector_nuc_resize.pth.tar')
+    net = UNet(weights='/home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/scripts/weights/fedge_detector_nuc_unet.pth.tar')
 
     # Load image from arguments
     image = TF.to_tensor(image).float().unsqueeze_(0)
