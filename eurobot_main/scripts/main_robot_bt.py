@@ -368,7 +368,10 @@ class StrategyConfig(object):
         observed_my_chaos_collection = []
         observed_opponent_chaos_collection = []
         other_pucks = []
-        colors = []
+        ref_colors = ['BLUNIUM', 'GREENIUM', 'REDIUM', 'REDIUM']
+        colors_of_my_observed_chaos = []
+        colors_of_opp_observed = []
+        colors_of_my_collected_chaos = []
 
         my_chaos_area = Polygon([self.my_chaos_area[0],
                                  self.my_chaos_area[1],
@@ -379,6 +382,10 @@ class StrategyConfig(object):
                                        self.opponent_chaos_area[1],
                                        self.opponent_chaos_area[2],
                                        self.opponent_chaos_area[3]])
+
+        for puck in self.my_collected_chaos.get():
+            colors_of_my_collected_chaos.append(get_color(puck))
+            print colors_of_my_collected_chaos
 
         for puck in new_observation:
             unknown_puck = Point(puck[0], puck[1])
@@ -392,29 +399,97 @@ class StrategyConfig(object):
         if len(observed_my_chaos_collection) == len(self.my_chaos_pucks.get()) - len(self.my_collected_chaos.get()):
             my_chaos_new = observed_my_chaos_collection
         else:
-            for puck in observed_my_chaos_collection:
-                puck_color = get_color(puck)
-                colors.append(puck_color)
-            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new, colors)
+            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
 
-        # for opponent's chaos
-        # if len(observed_opponent_chaos_collection) == 4:
+        comparison = colors_of_my_observed_chaos[:]
+        comparison.extend(colors_of_my_collected_chaos)
+        print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
+
+        if sorted(colors_of_my_observed_chaos) == ref_colors:
+            print "equal"
+            my_chaos_new = observed_my_chaos_collection
+        else:
+            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
+            print "need to parse!"
+
+        # if len(observed_opponent_chaos_collection) == 4:  # TODO or if we started collecting it?
         #     opp_chaos_new = observed_opponent_chaos_collection
         # else:
+        #     opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
 
-        # id_of_past_entity = self.find_past_entity(puck, my_chaos_new)
-        # if id_of_past_entity is not None:
-        #     my_chaos_new = np.delete(my_chaos_new, id_of_past_entity)  # FIXME
-        #     my_chaos_new = np.stack((my_chaos_new, puck), axis=0)
+        my_chaos_new = np.array(my_chaos_new)
+        opp_chaos_new = np.array(opp_chaos_new)
 
         return my_chaos_new, opp_chaos_new
 
     @staticmethod
-    def parse_by_color(new_obs, known, colors):
+    def parse_by_color(new_obs, known):
 
-        if two_pucks in observed_my_chaos_collection:
-            update_both_red_in_final
+        known = known.tolist()
+        colors_in_new_obs = []
+        colors_in_known = []
+        list_of_pucks = []
 
+        for puck in new_obs:
+            puck_color = get_color(puck)
+            colors_in_new_obs.append(puck_color)
+
+        for puck in known:
+            puck_color = get_color(puck)
+            colors_in_known.append(puck_color)
+
+        if colors_in_new_obs.count("BLUNIUM") == 1:
+            ind = colors_in_new_obs.index("BLUNIUM")
+            colors_in_new_obs.remove("BLUNIUM")
+            list_of_pucks.append(new_obs.pop(ind))
+            try:
+                ind_old = colors_in_known.index("BLUNIUM")
+                colors_in_known.remove("BLUNIUM")
+                del known[ind_old]
+            except ValueError as Error:
+                print Error
+
+        if colors_in_new_obs.count("GREENIUM") == 1:
+            ind = colors_in_new_obs.index("GREENIUM")
+            colors_in_new_obs.remove("GREENIUM")
+            list_of_pucks.append(new_obs.pop(ind))
+            try:
+                ind_old = colors_in_known.index("GREENIUM")
+                colors_in_known.remove("GREENIUM")
+                del known[ind_old]
+            except ValueError as Error:
+                print Error
+
+        if colors_in_new_obs.count('REDIUM') == 2:
+            print "TWO REDIUMS, add them!"
+            ind = colors_in_new_obs.index('REDIUM')
+            colors_in_new_obs.remove('REDIUM')
+            list_of_pucks.append(new_obs.pop(ind))
+            try:
+                ind_old = colors_in_known.index('REDIUM')
+                colors_in_known.remove('REDIUM')
+                print "old after deleting", colors_in_known
+                del known[ind_old]
+            except ValueError as Error:
+                print Error
+
+            ind = colors_in_new_obs.index('REDIUM')
+            colors_in_new_obs.remove('REDIUM')
+            list_of_pucks.append(new_obs.pop(ind))
+            try:
+                ind_old = colors_in_known.index('REDIUM')
+                colors_in_known.remove('REDIUM')
+                del known[ind_old]
+            except ValueError as Error:
+                print Error
+
+            print "known"
+            print known
+            list_of_pucks.extend(known)
+
+        elif colors_in_new_obs.count("REDIUM") < 2:
+            # get coords of red in known and append them
+            list_of_pucks.extend(known)
         return list_of_pucks
 
     # def is_chaos_available(self, side):
