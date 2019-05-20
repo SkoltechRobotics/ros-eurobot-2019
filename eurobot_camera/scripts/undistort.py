@@ -79,6 +79,7 @@ class CameraUndistortNode():
         elif self.mode == "horizontal":
             self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                                self.__callback_horizontal, queue_size=1)
+
     def publish_pucks(self, coordinates, colors):
         markers = []
         for i in range(len(coordinates)):
@@ -122,9 +123,6 @@ class CameraUndistortNode():
 
         rospy.loginfo(rospy.get_caller_id())
 
-        # Process image
-        # TODO:: ADD cropping the image to
-
 
         rotated_image = image_processing.rotate_image(image, 180)
         # cv2.imwrite("./data/images/rotated_image_" + str(self.counter) + ".png", rotated_image)
@@ -142,28 +140,40 @@ class CameraUndistortNode():
             # image = image_processing.equalize_histogram(image)
 
             image = image_processing.crop_image(image)
+            # image = image_processing.increase_saturation_3(image)
             image_p = predict.find_pucks(image)
-            image_thresh = image_p
 
-            image_gray = image_p
+            image_gray = image_processing.watersherd(image_p)
+
+            # Find all contours on the image
+            # image_gray = image_p #cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+            # image_gray = image_processing.watersherd(image_gray)
+            image_thresh = self.contour.find(image_gray)
+            image_contours = copy.copy(image)
+            image_contours = self.contour.draw(image_contours, self.contour.all_contours)
+
+            # Filter contours
+            contours_filtered = self.contour.filter(600, 100, 100)
+            image_filter_contours = copy.copy(image)
+            image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
 
             # Find pucks coordinates
             image_pucks = copy.copy(image)
-
-            # coordinates = self.contour.find_pucks_coordinates()
-            circles = self.contour.hough_detect_pucks(image_gray)
-            coordinates = self.contour.find_pucks_coordinates_hough(circles)
-            colors = self.contour.detect_color_pucks_hough(image, circles)
-
-            image_pucks = self.contour.draw_ellipse(image_pucks, circles, coordinates, colors)
+            coordinates = self.contour.find_pucks_coordinates()
+            # Detect contours colors
+            colors = self.contour.detect_color(contours_filtered, image)
+            # colors = []
+            # Draw ellipse contours around pucks
+            image_pucks = self.contour.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
 
             # Publish all images to topics
             self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
             # cv2.imwrite("./data/images/undistorted_image_" + str(self.counter) + ".png", image)
             self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
             self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresh))
-            # self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
-            # self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
+            self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
+            self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
             self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
             # cv2.imwrite("./data/images/image_pucks_" + str(self.counter) + ".png", image_pucks)
 
@@ -174,6 +184,70 @@ class CameraUndistortNode():
 
             res_time = time.time() - start_time
             rospy.loginfo("RESULT TIME = " + str(res_time))
+
+    # def __callback_vertical(self, data):
+    #     start_time = time.time()
+    #     image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+    #
+    #     rospy.loginfo(rospy.get_caller_id())
+    #
+    #     rotated_image = image_processing.rotate_image(image, 180)
+    #     # cv2.imwrite("./data/images/rotated_image_" + str(self.counter) + ".png", rotated_image)
+    #     # rotated_image = image_processing.increase_saturation_3(image)
+    #     undistorted_image = self.camera.undistort(rotated_image)
+    #     image = undistorted_image
+    #     # image = image_processing.crop_immage_1(image)
+    #     # cv2.imwrite("./data/images/image" + str(self.counter) + ".png", image)
+    #     image = image_processing.equalize_histogram(image)
+    #
+    #     # Align image using field template
+    #     if self.camera.align_image(image, self.templ_path):
+    #         # image = image_processing.decrease_noise(image, 5, 100, 100)
+    #         # image = image_processing.equalize_histogram(image)
+    #
+    #         # image = image_processin g.increase_saturation_3(image)
+    #
+    #         # Find all contours on the image
+    #         image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #
+    #         # image_gray = image_processing.watersherd(image_gray)
+    #         image_thresh = self.contour.find(image_gray)
+    #         image_contours = copy.copy(image)
+    #         image_contours = self.contour.draw(image_contours, self.contour.all_contours)
+    #
+    #         # Filter contours
+    #         contours_filtered = self.contour.filter(600, 100, 100)
+    #         image_filter_contours = copy.copy(image)
+    #         image_filter_contours = self.contour.draw(image_filter_contours, contours_filtered)
+    #
+    #         # Find pucks coordinates
+    #         image_pucks = copy.copy(image)
+    #         coordinates = self.contour.find_pucks_coordinates()
+    #         # Detect contours colors
+    #         colors = self.contour.detect_color(contours_filtered, image)
+    #         # colors = []
+    #         # Draw ellipse contours around pucks
+    #         image_pucks = self.contour.draw_ellipse(image_pucks, contours_filtered, coordinates, colors)
+    #
+    #         # Publish all images to topics
+    #         self.publisher_undistorted.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
+    #         # cv2.imwrite("./data/images/undistorted_image_" + str(self.counter) + ".png", image)
+    #         self.publisher_gray.publish(self.bridge.cv2_to_imgmsg(image_gray))
+    #         self.publisher_thresh.publish(self.bridge.cv2_to_imgmsg(image_thresh))
+    #         self.publisher_contours.publish(self.bridge.cv2_to_imgmsg(image_contours, "bgr8"))
+    #         self.publisher_filter_contours.publish(self.bridge.cv2_to_imgmsg(image_filter_contours, "bgr8"))
+    #         self.publisher.publish(self.bridge.cv2_to_imgmsg(image_pucks, "bgr8"))
+    #         # cv2.imwrite("./data/images/image_pucks_" + str(self.counter) + ".png", image_pucks)
+    #
+    #         # Publish pucks coordinates
+    #         self.publish_pucks(coordinates, colors)
+    #
+    #         self.counter += 1
+    #
+    #         res_time = time.time() - start_time
+    #         rospy.loginfo("RESULT TIME = " + str(res_time))
+
+
 
 if __name__ == '__main__':
     sys.argv = rospy.myargv()

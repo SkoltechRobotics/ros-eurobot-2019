@@ -59,7 +59,6 @@ class Contour():
         for cnt in self.all_contours:
             perimeter = cv2.arcLength(cnt, True)
 
-            self.filtered_contours.append(cnt)
             # radius = perimeter/(2*np.pi)
             # area = np.pi*radius*radius
 
@@ -73,9 +72,9 @@ class Contour():
             #         perimeter >= (2 * np.pi * PUCK_RADIUS_pixel_x - perimeter_epsilon) and \
             #         self.is_contour_circle(cnt, radius_epsilon) and \
             #         self.is_contour_puck(cnt):
-            # if area <= (np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y + area_epsilon) and \
-            #          area >= (np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y - area_epsilon):
-            #     self.filtered_contours.append(cnt)
+            if area <= (np.pi*PUCK_RADIUS_pixel_x*PUCK_RADIUS_pixel_y + area_epsilon) and \
+                     area >= (np.pi *PUCK_RADIUS_pixel_x *PUCK_RADIUS_pixel_y - area_epsilon):
+                self.filtered_contours.append(cnt)
         return self.filtered_contours
 
     def draw(self, image, contours):
@@ -88,31 +87,26 @@ class Contour():
         # cv2.drawContours(image, hull, i, color, 1, 8)
         return cv2.drawContours(image, contours, -1, (255, 0, 0), 3)
 
-    def draw_ellipse(self, image, circles, coordinates, colors):
+    def draw_ellipse(self, image, contours, coordinates, colors):
         print (image.shape)
-        print ("________", coordinates)
-        for coord, color in zip(coordinates, colors):
+        for cnt, coord, color in zip(contours, coordinates, colors):
             # (x, y), radius = cv2.minEnclosingCircle(cnt)
             # center = (int(x), int(y))
             # radius = int(radius)
             # cv2.circle(image, center, radius, (0, 255, 0), 2)
 
-            # ellipse  = cv2.fitEllipse(cnt)
+            ellipse  = cv2.fitEllipse(cnt)
             # area = cv2.contourArea(ellipse)
-            # image = cv2.ellipse(image,ellipse,(0,255,0),2)
+            image = cv2.ellipse(image,ellipse,(0,255,0),2)
 
-            for i in circles[0, :]:
-                # draw the outer circle
-                cv2.circle(image, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                # draw the center of the circle
-                cv2.circle(image, (i[0], i[1]), 2, (0, 0, 255), 3)
-
-            print ("________", coord)
             cx = coord[0]
             cy = coord[1]
 
             cx_1 = cx*pixel_scale_x/2-100
             cy_1 = (2-cy)*pixel_scale_y/2-106
+
+            image = cv2.circle(image,(int(cx_1),int(cy_1)), 2, (0, 0, 255), 3)
+
             print ("cx_1=",cx_1)
             print ("cy_1=", cy_1)
             # Cx = cx/pixel_scale_x
@@ -123,9 +117,8 @@ class Contour():
                                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                                 fontScale=1,
                                 color=(255,255,255),
-                                thickness=2,
+                                thickness=1,
                                 lineType=4)
-
         return image
 
     def find_pucks_coordinates(self):
@@ -218,6 +211,9 @@ class Contour():
         for cnt in contours:
             mask = np.zeros(image.shape[:2], np.uint8)
             cv2.drawContours(mask,[cnt],0,255,-1)
+
+            cv2.imwrite("./data/images/mask.png", mask)
+
             mean_val = cv2.mean(image, mask)
             MEAN_COLORS = np.array((mean_val[0],mean_val[1],mean_val[2]), dtype=np.uint8)
             LAB_MEAN_COLORS = skimage.color.rgb2lab(MEAN_COLORS[np.newaxis,np.newaxis,:])
