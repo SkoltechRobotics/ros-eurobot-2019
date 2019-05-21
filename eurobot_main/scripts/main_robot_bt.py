@@ -98,6 +98,7 @@ class StrategyConfig(object):
         self.opponent_chaos_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.our_pucks_rgb = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.my_collected_chaos = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.opp_chaos_collected_me = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
@@ -372,6 +373,7 @@ class StrategyConfig(object):
         colors_of_my_observed_chaos = []
         colors_of_opp_observed = []
         colors_of_my_collected_chaos = []
+        colors_of_opp_chaos_collected_by_me = []
 
         my_chaos_area = Polygon([self.my_chaos_area[0],
                                  self.my_chaos_area[1],
@@ -383,39 +385,47 @@ class StrategyConfig(object):
                                        self.opponent_chaos_area[2],
                                        self.opponent_chaos_area[3]])
 
+        # TODO change to list comprehension
         for puck in self.my_collected_chaos.get():
             colors_of_my_collected_chaos.append(get_color(puck))
-            print colors_of_my_collected_chaos
+
+        # TODO change to list comprehension
+        for puck in self.opp_chaos_collected_me.get():
+            colors_of_opp_chaos_collected_by_me.append(get_color(puck))
 
         for puck in new_observation:
             unknown_puck = Point(puck[0], puck[1])
             if unknown_puck.within(my_chaos_area):
                 observed_my_chaos_collection.append(puck)
+                colors_of_my_observed_chaos.append(get_color(puck))
             elif unknown_puck.within(opponent_chaos_area):
                 observed_opponent_chaos_collection.append(puck)
+                colors_of_opp_observed.append(get_color(puck))
             else:
                 other_pucks.append(puck)
 
-        if len(observed_my_chaos_collection) == len(self.my_chaos_pucks.get()) - len(self.my_collected_chaos.get()):
-            my_chaos_new = observed_my_chaos_collection
-        else:
-            my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
+        comparison_our = colors_of_my_observed_chaos[:]
+        comparison_our.extend(colors_of_my_collected_chaos)
 
-        comparison = colors_of_my_observed_chaos[:]
-        comparison.extend(colors_of_my_collected_chaos)
+        comparison_opponent = colors_of_opp_observed[:]
+        comparison_opponent.extend(colors_of_opp_chaos_collected_by_me)
+
         print "colors_of_my_observed_chaos", sorted(colors_of_my_observed_chaos)
+        print "colors_of_opp_observed", sorted(colors_of_opp_observed)
 
-        if sorted(colors_of_my_observed_chaos) == ref_colors:
+        if sorted(comparison_our) == ref_colors:
             print "equal"
             my_chaos_new = observed_my_chaos_collection
         else:
             my_chaos_new = self.parse_by_color(observed_my_chaos_collection, my_chaos_new)
             print "need to parse!"
 
-        # if len(observed_opponent_chaos_collection) == 4:  # TODO or if we started collecting it?
-        #     opp_chaos_new = observed_opponent_chaos_collection
-        # else:
-        #     opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
+        if sorted(comparison_opponent) == ref_colors:
+            print "equal"
+            opp_chaos_new = observed_opponent_chaos_collection
+        else:
+            opp_chaos_new = self.parse_by_color(observed_opponent_chaos_collection, opp_chaos_new)
+            print "need to parse!"
 
         my_chaos_new = np.array(my_chaos_new)
         opp_chaos_new = np.array(opp_chaos_new)
@@ -425,6 +435,7 @@ class StrategyConfig(object):
     @staticmethod
     def parse_by_color(new_obs, known):
 
+        colors = ['BLUNIUM', 'GREENIUM', 'REDIUM']
         known = known.tolist()
         colors_in_new_obs = []
         colors_in_known = []
@@ -439,6 +450,7 @@ class StrategyConfig(object):
             colors_in_known.append(puck_color)
 
         if colors_in_new_obs.count("BLUNIUM") == 1:
+
             ind = colors_in_new_obs.index("BLUNIUM")
             colors_in_new_obs.remove("BLUNIUM")
             list_of_pucks.append(new_obs.pop(ind))
@@ -450,6 +462,7 @@ class StrategyConfig(object):
                 print Error
 
         if colors_in_new_obs.count("GREENIUM") == 1:
+
             ind = colors_in_new_obs.index("GREENIUM")
             colors_in_new_obs.remove("GREENIUM")
             list_of_pucks.append(new_obs.pop(ind))
@@ -461,7 +474,7 @@ class StrategyConfig(object):
                 print Error
 
         if colors_in_new_obs.count('REDIUM') == 2:
-            print "TWO REDIUMS, add them!"
+
             ind = colors_in_new_obs.index('REDIUM')
             colors_in_new_obs.remove('REDIUM')
             list_of_pucks.append(new_obs.pop(ind))
