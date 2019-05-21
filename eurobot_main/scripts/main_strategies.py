@@ -320,13 +320,13 @@ from shapely.geometry.polygon import Polygon
 #                         ])
 #
 #         finish_move_blunium_and_push = bt.SequenceWithMemoryNode([
-#                                             bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+#                                             bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
 #                                             bt.ParallelWithMemoryNode([
 #                                                 bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-#                                                 bt_ros.MoveLineToPoint(self.tactics.blunium_start_push_pose, "move_client"),
+#                                                 bt_ros.MoveLineToPoint(self.blunium_start_push_pose, "move_client"),
 #                                             ], threshold=2),
-#                                             # bt_ros.MoveLineToPoint(self.tactics.blunium_prepose, "move_client"),
-#                                             bt_ros.MoveLineToPoint(self.tactics.blunium_end_push_pose, "move_client"),
+#                                             # bt_ros.MoveLineToPoint(self.blunium_prepose, "move_client"),
+#                                             bt_ros.MoveLineToPoint(self.blunium_end_push_pose, "move_client"),
 #                                             bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
 #                                             bt.ActionNode(lambda: self.score_master.unload("ACC")),
 #                                             bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
