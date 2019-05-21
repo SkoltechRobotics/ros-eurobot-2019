@@ -2,16 +2,16 @@
 
 import rospy
 import numpy as np
-import behavior_tree as bt
-import bt_ros
+import eurobot_main.scripts.behavior_tree as bt
+import eurobot_main.scripts.bt_ros
 # import tf2_ros
 from tf.transformations import euler_from_quaternion
 from core_functions import *
 # from std_msgs.msg import String
-from tactics_math import *
+from eurobot_main.scripts.tactics_math import *
 # from score_controller import ScoreController
 # from visualization_msgs.msg import MarkerArray
-from main_strategies import Strategy
+from eurobot_main.scripts.main_strategies import Strategy
 
 
 class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
@@ -46,13 +46,13 @@ class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
                 #     bt_ros.MoveToVariable(self.guard_chaos_point, "move_client")
                 # ], threshold=2),
 
-                bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-                bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
-                bt_ros.BlindStartCollectGround("manipulator_client"),
+                eurobot_main.scripts.bt_ros.MoveToVariable(self.guard_chaos_loc_var, "move_client"),
+                eurobot_main.scripts.bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                eurobot_main.scripts.bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
+                eurobot_main.scripts.bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                eurobot_main.scripts.bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
 
                 # 2nd
                 bt.ActionNode(self.calculate_pucks_configuration),
@@ -60,17 +60,17 @@ class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
                 bt.ActionNode(self.calculate_prelanding),
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    eurobot_main.scripts.bt_ros.CompleteCollectGround("manipulator_client"),
                     bt.SequenceWithMemoryNode([
-                        bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
-                        bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                        eurobot_main.scripts.bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                        eurobot_main.scripts.bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                     ])
                 ], threshold=2),
 
-                bt_ros.BlindStartCollectGround("manipulator_client"),
+                eurobot_main.scripts.bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                eurobot_main.scripts.bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
 
                 # 3rd
                 bt.ActionNode(self.calculate_pucks_configuration),
@@ -78,50 +78,50 @@ class CollectChaos(Strategy, bt.SequenceWithMemoryNode):
                 bt.ActionNode(self.calculate_prelanding),
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.CompleteCollectGround("manipulator_client"),
+                    eurobot_main.scripts.bt_ros.CompleteCollectGround("manipulator_client"),
                     bt.SequenceWithMemoryNode([
-                        bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
-                        bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                        eurobot_main.scripts.bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
+                        eurobot_main.scripts.bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                     ])
                 ], threshold=2),
 
-                bt_ros.BlindStartCollectGround("manipulator_client"),
+                eurobot_main.scripts.bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                eurobot_main.scripts.bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
 
                 # 4th
                 bt.ActionNode(self.calculate_pucks_configuration),
                 bt.ActionNode(self.calculate_closest_landing),
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.CompleteCollectGround("manipulator_client"),
-                    bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                    eurobot_main.scripts.bt_ros.CompleteCollectGround("manipulator_client"),
+                    eurobot_main.scripts.bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                 ], threshold=2),
 
-                bt_ros.BlindStartCollectGround("manipulator_client"),
+                eurobot_main.scripts.bt_ros.BlindStartCollectGround("manipulator_client"),
                 bt.ActionNode(self.update_chaos_pucks),
                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
 
                 # back_to_start
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt_ros.StepperUp("manipulator_client"),
-                        bt_ros.MainSetManipulatortoGround("manipulator_client")
+                        eurobot_main.scripts.bt_ros.CompleteCollectGround("manipulator_client"),
+                        eurobot_main.scripts.bt_ros.StepperUp("manipulator_client"),
+                        eurobot_main.scripts.bt_ros.MainSetManipulatortoGround("manipulator_client")
                     ]),
-                    bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
+                    eurobot_main.scripts.bt_ros.MoveToVariable(self.starting_pos_var, "move_client"),
                 ], threshold=2),
 
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                eurobot_main.scripts.bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                eurobot_main.scripts.bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                eurobot_main.scripts.bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.UnloadAccelerator("manipulator_client"),
+                eurobot_main.scripts.bt_ros.UnloadAccelerator("manipulator_client"),
                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                bt_ros.SetManipulatortoUp("manipulator_client")
+                eurobot_main.scripts.bt_ros.SetManipulatortoUp("manipulator_client")
             ])
 
     def update_chaos_pucks(self):

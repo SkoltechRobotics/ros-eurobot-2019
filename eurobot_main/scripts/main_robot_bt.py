@@ -176,11 +176,11 @@ class StrategyConfig(object):
 
         self.blunium_nose_start_push_pose = np.array([self.blunium[0] + self.sign * 0.11,
                                                      self.blunium[1] + self.robot_outer_radius - 0.04,
-                                                     0.56])
+                                                     0.7])  # 0.56 both
 
         self.blunium_nose_end_push_pose = np.array([self.blunium_end_push_pose[0] - self.sign * 0.22,  # 0.22
                                                    self.blunium[1] + 0.13,
-                                                   0.56])
+                                                   0.7])  # 0.56 both.   0.7 only purple FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         self.blunium_get_back_pose = np.array([self.blunium_end_push_pose[0],
                                                self.blunium_end_push_pose[1] + 0.1,
@@ -191,12 +191,12 @@ class StrategyConfig(object):
                                                        0.56])
 
         self.goldenium_1_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.35,
-                                               self.accelerator_PREunloading_pos[2]])
+                                                   self.goldenium[1] + 0.35,
+                                                   self.accelerator_PREunloading_pos[2]])
 
         self.goldenium_2_PREgrab_pos = np.array([self.goldenium[0],
-                                               self.goldenium[1] + 0.28,
-                                               -1.57])
+                                                   self.goldenium[1] + 0.28,
+                                                   -1.57])
 
         self.goldenium_grab_pos = np.array([self.goldenium[0],
                                             self.goldenium[1] + self.VPAD,  # 0.185
@@ -247,49 +247,6 @@ class StrategyConfig(object):
         #       It will matter in case big robot faces hard collision and need to unload pucks in starting cells
 
         self.pucks_subscriber = rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
-
-    # #works but only once
-    # def pucks_callback(self, data):
-    #     # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
-    #     # red (1, 0, 0)
-    #     # green (0, 1, 0)
-    #     # blue (0, 0, 1)
-    #     # rospy.loginfo(data)
-    
-    #     try:
-    #         new_observation_pucks = [[marker.pose.position.x,
-    #                                   marker.pose.position.y,
-    #                                   marker.id,
-    #                                   marker.color.r,
-    #                                   marker.color.g,
-    #                                   marker.color.b] for marker in data.markers]
-    
-    #         purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(new_observation_pucks,
-    #                                                                                                       self.purple_chaos_center,
-    #                                                                                                       self.yellow_chaos_center,
-    #                                                                                                       self.chaos_radius,
-    #                                                                                                       self.purple_cells_area,
-    #                                                                                                       self.yellow_cells_area)
-    
-    #         if self.color_side == "purple_side":
-    #             self.my_chaos_pucks.set(purple_chaos_pucks)
-    #             self.opponent_chaos_pucks.set(yellow_chaos_pucks)
-    #             self.our_pucks_rgb.set(purple_pucks_rgb)
-                
-    #         elif self.color_side == "yellow_side":
-    #             self.my_chaos_pucks.set(yellow_chaos_pucks)
-    #             self.opponent_chaos_pucks.set(purple_chaos_pucks)
-    #             self.our_pucks_rgb.set(yellow_pucks_rgb)
-    
-    #         if len(self.our_chaos_pucks.get()) == 4:
-    #             self.is_observed_flag.set(True)
-    #             rospy.loginfo("Got pucks observation:")
-    #             rospy.loginfo(self.our_chaos_pucks.get())
-    
-    #             self.pucks_subscriber.unregister()
-    
-    #     except Exception:  # FIXME
-    #         rospy.loginfo("list index out of range - no visible pucks on the field ")
 
     def pucks_callback(self, data):
         # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
@@ -347,14 +304,13 @@ class StrategyConfig(object):
 
                     self.our_pucks_rgb.set(yellow_pucks_rgb)
 
-            # if self.is_main_robot_started.get() is True:
-            #     my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
-            #     self.my_chaos_pucks.set(my_chaos_pucks)
-            #     self.opponent_chaos_pucks.set(opp_chaos_pucks)
+            if self.is_main_robot_started.get() is True:
+                my_chaos_pucks, opp_chaos_pucks = self.compare_to_update_or_ignore(new_observation_pucks)
+                self.my_chaos_pucks.set(my_chaos_pucks)
+                self.opponent_chaos_pucks.set(opp_chaos_pucks)
 
         except Exception:  # FIXME
             rospy.loginfo("list index out of range - no visible pucks on the field ")
-
 
     def compare_to_update_or_ignore(self, new_observation):
         """
@@ -452,6 +408,7 @@ class StrategyConfig(object):
         colors_in_new_obs = []
         colors_in_known = []
         list_of_pucks = []
+        # FIXME: remove repetitive code!
 
         for puck in new_obs:
             puck_color = get_color(puck)
@@ -517,14 +474,6 @@ class StrategyConfig(object):
             list_of_pucks.extend(known)
         return list_of_pucks
 
-    # def is_chaos_available(self, side):
-    #
-    #     pass
-
-    # def get_yolo_observation(self):
-    #
-    #     return
-
     def is_observed(self):
         rospy.loginfo("is observed?")
         # if self.is_observed_flag.get(): 
@@ -539,15 +488,13 @@ class StrategyConfig(object):
     def calculate_next_landing(self, puck):
         """
         calculates closest landing to point wrt to current robot position
-        :param point: [x,y]
+        :param puck:
         :return: [xl,yl,thetal]
         """
-        print "INSIDE calculate_next_landing"
-        print "puck is", puck
-        print "__________________________________________________________________________here_mistake____________"
         while not self.update_main_coords():
             print "no coords available"
             rospy.sleep(0.5)
+
         puck = puck[:2]
         dist, _ = calculate_distance(self.main_coords, puck)  # return deltaX and deltaY coords
         gamma = np.arctan2(dist[1], dist[0])
@@ -641,7 +588,7 @@ class StrategyConfig(object):
             rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
             self.my_collected_chaos.set(self.my_chaos_pucks.get()[0])
             self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
-            rospy.loginfo("Known pucks after removing: " + str(self.my_chaos_pucks.get()))
+            rospy.loginfo("Our known pucks after removing: " + str(self.my_chaos_pucks.get()))
 
         if side == "opponent":
             incoming_puck_color = get_color(self.opponent_chaos_pucks.get()[0])
@@ -649,7 +596,7 @@ class StrategyConfig(object):
             rospy.loginfo("incoming_puck_color: " + str(self.incoming_puck_color.get()))
             self.opp_chaos_collected_me.set(self.opponent_chaos_pucks.get()[0])
             self.opponent_chaos_pucks.set(np.delete(self.opponent_chaos_pucks.get(), 0, axis=0))
-            rospy.loginfo("Known pucks after removing: " + str(self.opponent_chaos_pucks.get()))
+            rospy.loginfo("Opponent's known pucks after removing: " + str(self.opponent_chaos_pucks.get()))
 
     def calculate_pucks_configuration(self):
         """
@@ -662,7 +609,6 @@ class StrategyConfig(object):
 
         my_known_chaos_pucks = sort_wrt_robot(self.main_coords, self.my_chaos_pucks.get())
         opp_known_chaos_pucks = sort_wrt_robot(self.main_coords, self.opponent_chaos_pucks.get())
-        print "sorted"
         self.my_chaos_pucks.set(my_known_chaos_pucks)
         self.opponent_chaos_pucks.set(opp_known_chaos_pucks)
 
@@ -678,12 +624,12 @@ class StrategyConfig(object):
                 rospy.loginfo("hull is SAFE to approach, keep already sorted wrt robot")
 
         if len(self.my_chaos_pucks.get()) == 2:
-            my_known_chaos_pucks = list(my_known_chaos_pucks)
+            my_known_chaos_pucks = list(my_known_chaos_pucks)  # FIXME .tolist ?
             my_known_chaos_pucks.sort(key=lambda t: t[1])
-            rospy.loginfo("rolled when two left __----------------______---------------------- _----___-___--__---_-_--_")
+            rospy.loginfo("rolled when two left")
             my_known_chaos_pucks = np.array(my_known_chaos_pucks)
-            
             self.my_chaos_pucks.set(my_known_chaos_pucks)
+
         rospy.loginfo("Known pucks sorted: " + str(self.my_chaos_pucks.get()))
 
     #     when we finally sorted them, chec if one of them is blue. If so, roll it so blue becomes last one to collect
@@ -786,22 +732,19 @@ class SberStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
 
                                 bt.ParallelWithMemoryNode([
-                                    bt.SequenceWithMemoryNode([
-                                        # bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-                                        bt_ros.MoveToVariable(self.next_landing_var, "move_client")
-                                    ]),
+                                    bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.Delay500("manipulator_client"),
                                         bt_ros.BlindStartCollectGround("manipulator_client"),
                                         bt_ros.CompleteCollectGround("manipulator_client"),
                                     ])
-                                ], threshold=2),
+                                ], threshold=3),
                                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
 
+                                bt_ros.BlindStartCollectGround("manipulator_client"),
                                 bt.ActionNode(self.calculate_pucks_configuration),
                                 bt.ActionNode(self.calculate_closest_landing),
                                 bt.ActionNode(self.calculate_prelanding),
-                                bt_ros.BlindStartCollectGround("manipulator_client"),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.CompleteCollectGround("manipulator_client"),
                                     bt.SequenceWithMemoryNode([
@@ -812,6 +755,27 @@ class SberStrategy(StrategyConfig):
                                 bt.ActionNode(lambda: self.update_chaos_pucks(side="opponent")),
                                 bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
         ])
+
+        # test_collision = bt.SequenceWithMemoryNode([
+        #                     bt.ActionNode(self.calculate_pucks_configuration),
+        #                     bt.ActionNode(lambda: self.calculate_next_landing(self.opponent_chaos_pucks.get()[0])),
+        #
+        #                     bt.FallbackWithMemoryNode([
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt_ros.PathMoveToVariable(self.next_landing_var, "move_client"),
+        #                             bt_ros.BlindStartCollectGround("manipulator_client"),
+        #                             bt_ros.CompleteCollectGround("manipulator_client"),
+        #                         ]),
+        #                         bt.SequenceWithMemoryNode([
+        #                             bt.ActionNode(self.calculate_pucks_configuration),
+        #                             bt.ActionNode(self.calculate_closest_landing),
+        #                             bt.ActionNode(self.calculate_prelanding),
+        #                             bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+        #                             bt_ros.BlindStartCollectGround("manipulator_client"),
+        #                             bt_ros.CompleteCollectGround("manipulator_client")
+        #                         ])
+        #                     ])
+        #                 ])
 
         collect_chaos = bt.SequenceWithMemoryNode([
                     # # 1st, but done in finishing red
@@ -892,7 +856,6 @@ class SberStrategy(StrategyConfig):
                                     ]),
                                     bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
                                 ], threshold=2),
-                                #bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
                                 bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
                                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                                 bt.ActionNode(lambda: self.score_master.unload("ACC")),
@@ -900,16 +863,8 @@ class SberStrategy(StrategyConfig):
                             ])
 
         approach_acc = bt.SequenceWithMemoryNode([
-                            #bt_ros.MoveLineToPoint(self.blunium_get_back_pose, "move_client"),
-                            #bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
                             bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client")  # [0, -0.1, 0]
                         ])
-
-        # approach_acc = bt.ParallelWithMemoryNode([
-        #                     #bt_ros.MoveLineToPoint(self.blunium_get_back_pose, "move_client"),
-        #                     #bt_ros.MoveLineToPoint(self.accelerator_PREunloading_pos, "move_client"),  # FIXME try Arc
-        #                     bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client")  # [0, -0.1, 0]
-        #                 ], threshold=1)
 
         unload_acc = bt.SequenceNode([
                         bt.FallbackNode([
@@ -924,7 +879,6 @@ class SberStrategy(StrategyConfig):
 
         collect_goldenium = bt.SequenceWithMemoryNode([
                                 bt_ros.Delay500("manipulator_client"),
-                                # bt_ros.MoveLineToPoint(self.tactics.goldenium_1_PREgrab_pos, "move_client"),
                                 bt_ros.MoveLineToPoint(self.goldenium_2_PREgrab_pos, "move_client"),
                                 bt_ros.StartCollectGoldenium("manipulator_client"),
 
@@ -936,12 +890,13 @@ class SberStrategy(StrategyConfig):
 
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
                                         bt_ros.MoveLineToPoint(self.goldenium_back_pose, "move_client"),
-                                        bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
                                         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
                                         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-
-                                        # bt_ros.MoveLineToPoint(self.tactics.goldenium_back_rot_pose, "move_client"),
-                                        bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client")
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                            bt_ros.MoveLineToPoint(self.scales_goldenium_PREpos, "move_client")
+                                        ], threshold=2)
+                                        # bt_ros.MoveLineToPoint(self.goldenium_back_rot_pose, "move_client"),
                                     ])
 
         unload_goldenium = bt.SequenceWithMemoryNode([
@@ -971,7 +926,7 @@ class SberStrategy(StrategyConfig):
                                 move_to_opp_chaos
                             ]),
                             bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            #move_to_guard_zone
+                            # move_to_guard_zone
                         ]),
 
                         bt.FallbackWithMemoryNode([
@@ -980,7 +935,7 @@ class SberStrategy(StrategyConfig):
                                 collect_chaos
                             ]),
                             bt.ConditionNode(lambda: bt.Status.RUNNING)  # infinitely waiting for camera
-                            #move_home
+                            # move_home
                         ]),
 
                         finish_chaos_push_nose_blunium,
