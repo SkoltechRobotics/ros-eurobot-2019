@@ -188,13 +188,8 @@ class ParticleFilter:
             dist_from_closest_beacon_landmark = np.linalg.norm(beacons - landmarks[np.newaxis, :, :2], axis=2)
             # print dist_from_closest_beacon_landmark
             print landmarks.shape
-<<<<<<< HEAD
             landmarks = landmarks[np.where(dist_from_closest_beacon_landmark[0, :] < 4*BEAC_R)[0], :]
             beacons = beacons[:, np.where(dist_from_closest_beacon_landmark[0, :] < 4*BEAC_R)[0], :]
-=======
-            landmarks = landmarks[np.where(dist_from_closest_beacon_landmark[0, :] < 3*BEAC_R)[0], :]
-            beacons = beacons[:, np.where(dist_from_closest_beacon_landmark[0, :] < 3*BEAC_R)[0], :]
->>>>>>> upstream/release3.0
             print landmarks.shape
             print beacons.shape
             # print landmarks[:, np.where(dist_from_closest_beacon_landmark < 4 * BEAC_R)[1]]
