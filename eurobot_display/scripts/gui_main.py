@@ -16,15 +16,18 @@ class Prediction:
 
         self.puck_points = {
             "REDIUM_ON_RED": 6,
-            "REDIUM_ON_OTHER": 1,  # FIXME
+            "REDIUM_ON_GREEN": 1,
+            "REDIUM_ON_BLUE": 1,
 
             "GREENIUM_ON_GREEN": 6,
-            "GREENIUM_ON_OTHER": 1,  # FIXME
+            "GREENIUM_ON_RED": 1,
+            "GREENIUM_ON_BLUE": 1,
 
             "BLUNIUM_ON_BLUE": 6,
-            "BLUNIUM_ON_OTHER": 1,  # FIXME
+            "BLUNIUM_ON_RED": 1,
+            "BLUNIUM_ON_GREEN": 1,
 
-            "GOLDENIUM_ON_ANY": 6,
+            "GOLDENIUM_ON_CELLS": 6,
 
             "REDIUM_ON_ACC": 10,
             "GREENIUM_ON_ACC": 10,
@@ -90,6 +93,12 @@ class App:
         self.main_wire_frame.pack(side="left")
         # .pack() need to be a separate line, otherwise will get Attribute Error when applying config method
 
+        # main STRATEGY config
+        self.main_strategy_status = StringVar()
+        self.main_strategy_frame = Label(self.frame7, bg="green", height=2, width=9, font=("Helvetica", 40), textvariable=self.main_strategy_status)
+        self.main_strategy_status.set("Strategy")
+        self.main_strategy_frame.pack(side="top")
+
         # --------------------------------------------------
 
         # Main block config: name, coords, score
@@ -140,6 +149,14 @@ class App:
             self.main_start_status.set("GO!")
             self.main_wire_frame.config(bg='#%02x%02x%02x' % tuple(SIDE_COLORS[2]))
 
+    def main_strategy_status_callback(self, data):
+        if data.data == "0":
+            self.main_strategy_status.set("0 Mir")
+        elif data.data == "1":
+            self.main_strategy_status.set("1 Att")
+        elif data.data == "2":
+            self.main_strategy_status.set("2 NON")
+
     def main_score_callback(self, data):
         """
 
@@ -188,6 +205,7 @@ if __name__ == '__main__':
     rospy.Subscriber("score", String, app.main_score_callback)
     rospy.Subscriber("stm/start_status", String, app.main_wire_status_callback)
     rospy.Subscriber("stm/side_status", String, app.main_side_status_callback)
+    rospy.Subscriber("stm/strategy_status", String, app.main_strategy_status_callback)
 
     rate = rospy.Rate(100)
     rospy.loginfo("Start display")

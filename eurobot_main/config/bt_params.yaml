@@ -12,11 +12,10 @@ secondary_robot:
     nineth_puck_zone: [0.325, 1.81, 1.57]
     start_zone: [0.2, 0.75, 0.]
     redium_zone_center: [0.275, 0.45, -1.57]
-    redium_zone_first: [0.15, 0.65, -1.57]
-    redium_zone_second: [0.25, 0.65, -1.57]
-    redium_zone_third: [0.25, 0.75, -1.57]
+    redium_zone_first: [0.22, 0.35, 3.14]
+    redium_zone_second: [0.22, 0.43, 3.14]
+    redium_zone_third: [0.22, 0.51, 3.14]
     redium_zone_forth: [0.15, 0.75, -1.57]
-
 
   yellow_side:
     first_puck_zone: [2.775, 1.81, 1.57]

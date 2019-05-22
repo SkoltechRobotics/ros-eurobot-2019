@@ -27,10 +27,17 @@ class SecondaryRobotBT(object):
 
         rospy.Subscriber("manipulator/response", String, self.manipulator_client.response_callback)
 
-        self.purple_strategy = secondary_strategy.VovanStrategy(SideStatus.PURPLE)
-        self.yellow_strategy = secondary_strategy.VovanStrategy(SideStatus.YELLOW)
+        self.purple_strategy_0 = secondary_strategy.VovanStrategy(SideStatus.PURPLE)
+        self.yellow_strategy_0 = secondary_strategy.VovanStrategy(SideStatus.YELLOW)
+
+        self.purple_strategy_1 = secondary_strategy.ReflectedVovanStrategy(SideStatus.PURPLE)
+        self.yellow_strategy_1 = secondary_strategy.ReflectedVovanStrategy(SideStatus.YELLOW)
+
+        self.purple_strategy_2 = secondary_strategy.SemaPidrStrategy(SideStatus.PURPLE)
+        self.yellow_strategy_2 = secondary_strategy.SemaPidrStrategy(SideStatus.YELLOW)
 
         self.side_status = None
+        self.strategy_number = 0
         self.strategy = None
 
         self.bt = None
@@ -47,12 +54,46 @@ class SecondaryRobotBT(object):
 
     def change_side(self, side):
         if side == SideStatus.PURPLE:
-            self.strategy = self.purple_strategy
+            if self.strategy_number == 0:
+                self.strategy = self.purple_strategy_0
+            if self.strategy_number == 1:
+                self.strategy = self.purple_strategy_1
+            if self.strategy_number == 2:
+                self.strategy = self.purple_strategy_2
         elif side == SideStatus.YELLOW:
-            self.strategy = self.yellow_strategy
+            if self.strategy_number == 0:
+                self.strategy = self.yellow_strategy_0
+            if self.strategy_number == 1:
+                self.strategy = self.yellow_strategy_1
+            if self.strategy_number == 2:
+                self.strategy = self.yellow_strategy_2
         else:
             self.strategy = None
         self.side_status = side
+
+    def change_strategy(self, num):
+        self.strategy_number = num
+        if self.side_status == SideStatus.PURPLE:
+            if num == 0:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.purple_strategy_0
+            elif num == 1:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.purple_strategy_1
+            elif num == 2:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.purple_strategy_2
+        elif self.side_status == SideStatus.YELLOW:
+            if num == 0:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.yellow_strategy_0
+            elif num == 1:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.yellow_strategy_1
+            elif num == 2:
+                print("CHANGE STRATEGY TO " + str(num))
+                self.strategy = self.yellow_strategy_2
+
 
     def timer_callback(self, event):
         status = self.bt.tick()

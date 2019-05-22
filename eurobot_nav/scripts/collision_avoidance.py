@@ -98,7 +98,7 @@ class CollisionAvoidanceMainRobot(object):
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
         rospy.loginfo(distances)
-        distances[np.where(distances == 0.5)] = 1
+        #distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
@@ -308,7 +308,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         for i in range(self.sensor_coords.shape[0]):
             points_in_sensor_frame = np.array([cvt_local2global(np.array([distances[i], 0]), self.sensor_coords[i, :])])
             points = np.append(points, points_in_sensor_frame, axis=0)
-        self.obstacle_points_sensor = points[[0,3,4]]
+        self.obstacle_points_sensor = points
 
     def scan_callback(self, scan):
         scan = scan

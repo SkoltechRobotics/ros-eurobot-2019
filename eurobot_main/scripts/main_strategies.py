@@ -749,6 +749,7 @@ class BlindStrategy(StrategyConfig):
                         unload_goldenium,
                         ])
 
+
 class SberStrategy(StrategyConfig):
     def __init__(self, side):
         super(SberStrategy, self).__init__(side)

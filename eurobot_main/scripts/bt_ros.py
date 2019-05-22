@@ -366,6 +366,11 @@ class StepperUp(ActionClientNode):
         cmd = "stepper_up"
         super(StepperUp, self).__init__(cmd, action_client_id)
 
+class StepperDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_down"
+        super(StepperDown, self).__init__(cmd, action_client_id)
+
 
 class CompleteCollectLastWall(ActionClientNode):
     def __init__(self, action_client_id):

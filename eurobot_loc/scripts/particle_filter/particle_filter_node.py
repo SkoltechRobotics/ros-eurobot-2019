@@ -135,6 +135,7 @@ class PFNode(object):
                     rospy.loginfo("Find beacon at point (%.3f, %.3f)" % (beacons[-1][0], beacons[-1][1]))
         beacons = np.array(beacons)
         color = np.array([1, 0, 0])
+        rospy.loginfo(beacons)
         return np.array(beacons), color
 
     def publish_landmarks(self, beacons, header):

@@ -44,7 +44,7 @@ class Manipulator(object):
             "GRAB_PUCK_GRABBER" : 0x18,
             "GET_PACK_PUMPED_STATUS" : 0x19,
             "SET PUMP TO THE MOVING STATE" : 0x1A,
-
+            "GET_BAROMETR_STATUS" : 0x1B,
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,
             "RELEASER_THROW_SECONDARY" : 0x21,
@@ -92,6 +92,8 @@ class Manipulator(object):
             return self.moving_default()
         elif cmd == "stepper_up":
             return self.stepper_up()
+        elif cmd == "stepper_down":
+            return self.stepper_down()
         elif cmd == "delay_500":
             return self.delay_500()
         # --- main_robot
@@ -216,7 +218,8 @@ class Manipulator(object):
         return False
 
     def long_check_limit_switch_infinitely(self):
-        cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        # cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        cmd = self.protocol["GET_BAROMETR_STATUS"]
         counter = 0
         for i in range(70):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
@@ -253,7 +256,8 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(0.2)
-        result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        # result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
         if result:
             return True
         else:
@@ -382,6 +386,10 @@ class Manipulator(object):
         self.send_command(self.protocol["MAKE_STEP_UP"])
         return True
 
+    def stepper_down(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        return True
+
     def delay_500(self):
         rospy.sleep(0.5)
         return True
@@ -439,8 +447,7 @@ class Manipulator(object):
 
     def release_from_manipulator(self):
         self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.5)
-        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.4)
         return True
 
     def secondary_release_puck(self):
