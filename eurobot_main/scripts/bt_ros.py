@@ -106,6 +106,26 @@ class MainSetManipulatortoGround(ActionClientNode):
         cmd = "set_manipulator_ground_main"
         super(MainSetManipulatortoGround, self).__init__(cmd, action_client_id)
 
+class LeftMoustacheDefault(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "left_moustache_default"
+        super(LeftMoustacheDefault, self).__init__(cmd, action_client_id)
+
+class LeftMoustacheDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "left_moustache_down"
+        super(LeftMoustacheDown, self).__init__(cmd, action_client_id)
+
+class RightMoustacheDefault(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "right_moustache_default"
+        super(RightMoustacheDefault, self).__init__(cmd, action_client_id)
+
+class RightMoustacheDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "right_moustache_down"
+        super(RightMoustacheDown, self).__init__(cmd, action_client_id)
+
 
 class StartPump(ActionClientNode):
     def __init__(self, action_client_id):
