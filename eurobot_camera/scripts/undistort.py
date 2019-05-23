@@ -131,7 +131,7 @@ class CameraUndistortNode():
         image = undistorted_image
         # image = image_processing.crop_immage_1(image)
         # cv2.imwrite("./data/images/image" + str(self.counter) + ".png", image)
-        image = image_processing.equalize_histogram(image)
+        # image = image_processing.equalize_histogram(image)
 
 
         # Align image using field template
@@ -197,15 +197,16 @@ class CameraUndistortNode():
     #     undistorted_image = self.camera.undistort(rotated_image)
     #     image = undistorted_image
     #     # image = image_processing.crop_immage_1(image)
-    #     # cv2.imwrite("./data/images/image" + str(self.counter) + ".png", image)
-    #     image = image_processing.equalize_histogram(image)
+    #     cv2.imwrite("./data/images/image" + str(self.counter) + ".png", image)
+    #     # image = image_processing.decrease_noise(image, 5, 100, 100)
+    #     # image = image_processing.equalize_histogram(image)
     #
     #     # Align image using field template
     #     if self.camera.align_image(image, self.templ_path):
-    #         # image = image_processing.decrease_noise(image, 5, 100, 100)
+    #
     #         # image = image_processing.equalize_histogram(image)
     #
-    #         # image = image_processin g.increase_saturation_3(image)
+    #         # image = image_processing.increase_saturation_3(image)
     #
     #         # Find all contours on the image
     #         image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -257,7 +258,7 @@ if __name__ == '__main__':
                         default="../configs/calibration.yaml")
     parser.add_argument("-t", "--template",
                         help="path to field's template file",
-                        default="../configs/field.png")
+                        default="../configs/field_white.png")
     args = parser.parse_args()
 
     print ("ARGS.config", args.config)
