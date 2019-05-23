@@ -101,6 +101,8 @@ class Manipulator(object):
             return self.set_manipulator_scales()
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
+        elif cmd == "delay_start_collect_ground":
+            return self.delay_start_collect_ground()
         elif cmd == "blind_start_collect_ground":
             return self.blind_start_collect_ground()
         elif cmd == "delay_blind_start_collect_ground":
@@ -229,7 +231,7 @@ class Manipulator(object):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
-            if counter > 0:
+            if counter > 5:  # was 0
                 return True
         return False
 
@@ -264,6 +266,19 @@ class Manipulator(object):
         return True
 
     def start_collect_ground(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.2)
+        # result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
+        if result:
+            return True
+        else:
+            return False
+
+    def delay_start_collect_ground(self, delay=0.6):
+        rospy.sleep(delay)
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
