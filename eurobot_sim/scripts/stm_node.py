@@ -24,7 +24,7 @@ class SimMoveNode(object):
     def __init__(self):
         # ROS node
         rospy.init_node('simulate_node', anonymous=True)
-        rospy.Subscriber("cmd_vel", Twist, self.set_twist)
+        rospy.Subscriber("/navigation/cmd_vel", Twist, self.set_twist)
         self.pub_odom = rospy.Publisher("odom", Odometry, queue_size=1)
 
         # Robot params

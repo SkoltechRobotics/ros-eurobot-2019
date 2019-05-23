@@ -132,6 +132,7 @@ class ParticleFilter:
                     theta = np.zeros(self.particles_num_from_measurement_model)
                     return np.array([x, y, theta]).T
 
+
     def motion_model(self, delta):  # delta = [dx,dy,d_rot]
             if self.num_seeing_beacons > 1:
                 d_n = self.distance_noise
