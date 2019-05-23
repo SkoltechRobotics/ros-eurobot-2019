@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+roslaunch eurobot_main behavior_tree.launch

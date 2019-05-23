@@ -44,7 +44,7 @@ class Manipulator(object):
             "GRAB_PUCK_GRABBER" : 0x18,
             "GET_PACK_PUMPED_STATUS" : 0x19,
             "SET PUMP TO THE MOVING STATE" : 0x1A,
-
+            "GET_BAROMETR_STATUS" : 0x1B,
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,
             "RELEASER_THROW_SECONDARY" : 0x21,
@@ -92,15 +92,23 @@ class Manipulator(object):
             return self.moving_default()
         elif cmd == "stepper_up":
             return self.stepper_up()
+        elif cmd == "stepper_down":
+            return self.stepper_down()
         elif cmd == "delay_500":
             return self.delay_500()
         # --- main_robot
+        elif cmd == "manipulator_scales":
+            return self.set_manipulator_scales()
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
         elif cmd == "blind_start_collect_ground":
             return self.blind_start_collect_ground()
+        elif cmd == "delay_blind_start_collect_ground":
+            return self.delay_blind_start_collect_ground()
         elif cmd == "complete_collect_ground":
             return self.complete_collect_ground()
+        elif cmd == "complete_collect_ground_when_full":
+            return self.complete_collect_ground_when_full()
         elif cmd == "release_accelerator":
             return self.release_accelerator()
         elif cmd == "start_collect_blunium":
@@ -117,6 +125,8 @@ class Manipulator(object):
             return self.release_accelerator_first_move_when_full()
         elif cmd == "finish_collect_blunium":
             return self.finish_collect_blunium()
+        elif cmd == "finish_collect_blunium_when_full":
+            return self.finish_collect_blunium_when_full()
         elif cmd == "set_manipulator_ground_main":
             return self.set_manipulator_ground_main()
         elif cmd == "long_check_limit_switch_infinitely":
@@ -212,9 +222,10 @@ class Manipulator(object):
         return False
 
     def long_check_limit_switch_infinitely(self):
-        cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        # cmd = self.protocol["GET_PACK_PUMPED_STATUS"]
+        cmd = self.protocol["GET_BAROMETR_STATUS"]
         counter = 0
-        for i in range(90):
+        for i in range(70):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
@@ -244,12 +255,21 @@ class Manipulator(object):
         rospy.sleep(0.2)
         return True
 
+    def delay_blind_start_collect_ground(self, delay=1):
+        rospy.sleep(delay)
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.2)
+        return True
+
     def start_collect_ground(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
         rospy.sleep(0.2)
-        result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        # result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
         if result:
             return True
         else:
@@ -262,6 +282,15 @@ class Manipulator(object):
         self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        rospy.sleep(0.2)  # FIXME 0.2
+        return True
+
+    def complete_collect_ground_when_full(self):
+        self.send_command(self.protocol["SET_PLATFORM"])
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
         rospy.sleep(0.2)  # FIXME 0.2
         return True
 
@@ -307,6 +336,17 @@ class Manipulator(object):
         rospy.sleep(0.2)
         return True
 
+    def finish_collect_blunium_when_full(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.1)
+        self.send_command(self.protocol["PROP_PUCK_GRABBER"])
+        self.send_command(self.protocol["STOP_PUMP"])
+        self.send_command(self.protocol["GRAB_PUCK_GRABBER"])
+        rospy.sleep(0.2)
+        return True
+
     def goldenium_up_and_hold(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
@@ -316,7 +356,7 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
-        rospy.sleep(0.4)
+        rospy.sleep(0.5)
         return True
 
     def release_goldenium_on_scales(self):
@@ -340,6 +380,10 @@ class Manipulator(object):
         self.send_command(self.protocol["SET_PLATFORM"])
         return True
 
+    def set_manipulator_scales(self):
+        self.send_command(self.protocol["SET_BLUNIUM_ANGLE_MAIN"])
+        return True
+
     def start_pump(self):
         self.send_command(self.protocol["START_PUMP"])
         return True
@@ -356,6 +400,10 @@ class Manipulator(object):
 
     def stepper_up(self):
         self.send_command(self.protocol["MAKE_STEP_UP"])
+        return True
+
+    def stepper_down(self):
+        self.send_command(self.protocol["MAKE_STEP_DOWN"])
         return True
 
     def delay_500(self):
@@ -415,8 +463,7 @@ class Manipulator(object):
 
     def release_from_manipulator(self):
         self.send_command(self.protocol["STOP_PUMP"])
-        rospy.sleep(0.5)
-        self.send_command(self.protocol["SET_PLATFORM"])
+        rospy.sleep(0.4)
         return True
 
     def secondary_release_puck(self):

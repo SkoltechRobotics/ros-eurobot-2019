@@ -213,10 +213,22 @@ class BlindStartCollectGround(ActionClientNode):
         super(BlindStartCollectGround, self).__init__(cmd, action_client_id)
 
 
+class DelayBlindStartCollectGround(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_blind_start_collect_ground"
+        super(DelayBlindStartCollectGround, self).__init__(cmd, action_client_id)
+
+
 class CompleteCollectGround(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "complete_collect_ground"
         super(CompleteCollectGround, self).__init__(cmd, action_client_id)
+
+
+class CompleteCollectGroundWhenFull(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "complete_collect_ground_when_full"
+        super(CompleteCollectGroundWhenFull, self).__init__(cmd, action_client_id)
 
 
 class StartCollectBlunium(ActionClientNode):
@@ -229,6 +241,12 @@ class FinishCollectBlunium(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "finish_collect_blunium"
         super(FinishCollectBlunium, self).__init__(cmd, action_client_id)
+
+
+class FinishCollectBluniumWhenFull(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "finish_collect_blunium_when_full"
+        super(FinishCollectBluniumWhenFull, self).__init__(cmd, action_client_id)
 
 
 class UnloadAccelerator(ActionClientNode):
@@ -354,6 +372,11 @@ class StepperUp(ActionClientNode):
         cmd = "stepper_up"
         super(StepperUp, self).__init__(cmd, action_client_id)
 
+class StepperDown(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "stepper_down"
+        super(StepperDown, self).__init__(cmd, action_client_id)
+
 
 class CompleteCollectLastWall(ActionClientNode):
     def __init__(self, action_client_id):
@@ -367,6 +390,7 @@ class CompleteTakeWallPuck(ActionClientNode):
         super(CompleteTakeWallPuck, self).__init__(cmd, action_client_id)
 
 
+# FIXME
 class SetToGround_ifReachedGoal(bt.SequenceNode):
     def __init__(self, goal, action_client_id, threshold=0.2):
         self.tfBuffer = tf2_ros.Buffer()
@@ -463,8 +487,56 @@ class SetToWall_ifReachedGoal(bt.SequenceNode):
             return bt.Status.RUNNING
 
 
+class SetToScales_ifReachedGoal(bt.SequenceNode):
+    def __init__(self, goal, action_client_id, threshold=0.3):
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+
+        self.robot_name = rospy.get_param("robot_name")
+        self.robot_coordinates = None
+
+        self.goal = goal
+        self.threshold = bt.BTVariable(threshold)
+
+        self.set_to_wall_node = ActionClientNode("manipulator_scales", action_client_id, name="manipulator_to_scales")
+
+        super(SetToScales_ifReachedGoal, self).__init__([
+            bt.ConditionNode(self.is_coordinates_reached),
+            self.set_to_wall_node
+        ])
+
+    def update_coordinates(self):
+        try:
+            trans = self.tfBuffer.lookup_transform('map', self.robot_name, rospy.Time(0))
+            q = [trans.transform.rotation.x,
+                 trans.transform.rotation.y,
+                 trans.transform.rotation.z,
+                 trans.transform.rotation.w]
+            angle = euler_from_quaternion(q)[2] % (2 * np.pi)
+            self.robot_coordinates = np.array([trans.transform.translation.x,
+                                               trans.transform.translation.y,
+                                               angle])
+            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            return True
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
+            rospy.logwarn(str(msg))
+            rospy.logwarn("SMT WROND QQ")
+            return False
+
+    def is_coordinates_reached(self):
+        self.update_coordinates()
+        if self.robot_coordinates is None:
+            return bt.Status.RUNNING
+        distance, _ = calculate_distance(self.robot_coordinates, self.goal)
+        norm_distance = np.linalg.norm(distance)
+        if norm_distance < self.threshold.get():
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+
 class PublishScore_ifReachedGoal(bt.SequenceNode):
-    def __init__(self, goal, score_controller, unload_zone ,threshold=0.3):
+    def __init__(self, goal, score_controller, unload_zone ,threshold=0.15):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
@@ -509,29 +581,6 @@ class PublishScore_ifReachedGoal(bt.SequenceNode):
             return bt.Status.RUNNING
 
 
-class SetSpeedSTM(ActionClientNode):
-    def __init__(self, speed, time, action_client_id):
-        self.delay = time
-        self.speed = speed
-        cmd = "8 " + str(self.speed[0]) + " " + str(self.speed[1]) + " " + str(self.speed[2])
-        super(SetSpeedSTM, self).__init__(cmd, action_client_id)
-
-    def start_action(self):
-        print("Start BT Action: " + self.cmd.get())
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
-        rospy.sleep(self.delay)
-        self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
-        # rospy.sleep(self.delay*2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
-
-    def action_status(self):
-        status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
-        return bt.Status.SUCCESS
-
-
 class MoveWaypoints(bt.FallbackNode):
     def __init__(self, waypoints, action_client_id):
         # Init parameters
@@ -566,3 +615,51 @@ class MoveWaypoints(bt.FallbackNode):
 
     def remove_waypoint(self):
         self.waypoints.set(self.waypoints.get()[1:])
+
+
+class MoveToVariable(bt.SequenceNode):
+    def __init__(self, bt_var, action_client_id):
+        self.goal = bt_var
+        self.move_to_waypoint_node = ActionClientNode("move_line 0 0 0", action_client_id, name="move_to_waypoint")
+        self.set_command_latch = bt.Latch(bt.ActionNode(self.set_command))
+
+        super(MoveToVariable, self).__init__([
+            bt.ConditionNode(lambda: bt.Status.SUCCESS if np.all(self.goal.get()[:2] >= 0) else bt.Status.FAILED),
+            self.set_command_latch,
+            self.move_to_waypoint_node
+        ])
+
+    def set_command(self):
+        self.move_to_waypoint_node.cmd.set("move_line %f %f %f" % tuple(self.goal.get()))
+
+
+class ArcMoveToVariable(bt.SequenceNode):
+    def __init__(self, bt_var, action_client_id):
+        self.goal = bt_var
+        self.arc_move_to_waypoint_node = ActionClientNode("move_arc 0 0 0", action_client_id, name="move_to_waypoint")
+        self.set_command_latch = bt.Latch(bt.ActionNode(self.set_command))
+
+        super(ArcMoveToVariable, self).__init__([
+            bt.ConditionNode(lambda: bt.Status.SUCCESS if np.all(self.goal.get()[:2] >= 0) else bt.Status.FAILED),
+            self.set_command_latch,
+            self.arc_move_to_waypoint_node
+        ])
+
+    def set_command(self):
+        self.arc_move_to_waypoint_node.cmd.set("move_arc %f %f %f" % tuple(self.goal.get()))
+
+
+class PathMoveToVariable(bt.SequenceNode):
+    def __init__(self, bt_var, action_client_id):
+        self.goal = bt_var
+        self.path_move_to_waypoint_node = ActionClientNode("move_path 0 0 0", action_client_id, name="move_to_waypoint")
+        self.set_command_latch = bt.Latch(bt.ActionNode(self.set_command))
+
+        super(PathMoveToVariable, self).__init__([
+            bt.ConditionNode(lambda: bt.Status.SUCCESS if np.all(self.goal.get()[:2] >= 0) else bt.Status.FAILED),
+            self.set_command_latch,
+            self.path_move_to_waypoint_node
+        ])
+
+    def set_command(self):
+        self.path_move_to_waypoint_node.cmd.set("move_path %f %f %f" % tuple(self.goal.get()))

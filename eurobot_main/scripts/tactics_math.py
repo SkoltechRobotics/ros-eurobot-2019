@@ -6,6 +6,35 @@ from core_functions import batch_calculate_distance
 from core_functions import wrap_angle
 from core_functions import wrap_back
 from core_functions import cvt_local2global
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
+
+def get_color(puck):
+    """
+    red (1, 0, 0)
+    green (0, 1, 0)
+    blue (0, 0, 1)
+    :param puck: (x, y, id, 0, 0, 1)
+    :return:
+    """
+    # pucks_colors = {
+    #     (1, 0, 0): "REDIUM",
+    #     (0, 1, 0): "GREENIUM",
+    #     (0, 0, 1): "BLUNIUM"
+    # }
+    # color_val = pucks_colors.get(color_key)
+
+    color_val = None
+    color_key = puck[3:]
+    # print color_key
+    if all(color_key == np.array([1, 0, 0])):
+        color_val = "REDIUM"
+    elif all(color_key == np.array([0, 1, 0])):
+        color_val = "GREENIUM"
+    elif all(color_key == np.array([0, 0, 1])):
+        color_val = "BLUNIUM"
+    return color_val
 
 
 def calc_inner_angles(coords):
@@ -264,41 +293,56 @@ def sort_by_inner_angle_and_check_if_safe(robot_coords, coords, critical_angle):
     return is_hull_safe_to_approach, coords_sorted
 
 
-# def compare_to_update_or_ignore(self, new_obs_of_pucks):
-#
-#     """
-#     Input: [(id, x, y), ...]
-#     Output: format: [(id, x, y), ...]
-#
-#     Old
-#     [(1, x1, y1),
-#      (2, x2, y2)
-#      (3, x3, y3)]
-#
-#      New obs
-#      [(2, x2', y2'),
-#       (3, x3', y3')]
-#
-#     In a new list first puck may be absent for at least three reasons:
-#     - it was collected by our robot
-#     - it is not visible (but it's still there) either because of robot in the line of view or light conditions
-#     - it was collected by enemy robot (and it's not there anymore)
-#
-#     """
-#
-#     assert new_obs_of_pucks.shape[1] == 3
-#
-#     known_ids = self.known_chaos_pucks[:, 0]
-#     known_pucks = self.known_chaos_pucks
-#     for puck in new_obs_of_pucks:
-#         puck_id = puck[0]
-#         if puck_id in known_ids:
-#             ind = known_ids.index(puck_id)  # correct? FIXME
-#             x_new, y_new = puck[1], puck[2]
-#             x_old, y_old = known_pucks[1], known_pucks[2]
-#             if np.sqrt((x_new - x_old) ** 2 + (y_new - y_old) ** 2) > self.coords_threshold:
-#                 self.known_chaos_pucks[ind][1:] = puck[1:]
-#         else:
-#             # wtf happened? blink from sun? wasn't recognised at first time?
-#             self.known_chaos_pucks = np.stack((self.known_chaos_pucks, puck), axis=0)
-#             # self.known_coords_of_pucks.append(puck)
+def initial_parse_pucks(observation, pcc, ycc, chaos_radius, pca, yca):
+    """
+
+    :param observation: [[x, y, id, r, g, b], [x, y, id, r, g, b]...]
+    :param pcc: purple_chaos_center (x, y)
+    :param ycc: yellow_chaos_center (x, y)
+    :param chaos_radius: const
+    :param pca: purple_cells_area
+    :param yca: yellow_cells_area
+    :return: [[x, y, id, r, g, b], [x, y, id, r, g, b]...] format for each of chaoses and for  pucks_rgb
+            (red cell puck, green cell puck, blue cell puck)
+    """
+
+    purple_chaos_pucks = []
+    yellow_chaos_pucks = []
+    purple_pucks_rgb = []
+    yellow_pucks_rgb = []
+    other_pucks = []
+    offset = 0.03
+
+    purple_chaos_center_point = Point(pcc[0], pcc[1])
+    yellow_chaos_center_point = Point(ycc[0], ycc[1])
+
+    # create circle buffer from the points
+    purple_chaos_buffer = purple_chaos_center_point.buffer(chaos_radius + offset)
+    yellow_chaos_buffer = yellow_chaos_center_point.buffer(chaos_radius + offset)
+
+    purple_cell_buffer = Polygon([pca[0], pca[1], pca[2], pca[3]])
+    yellow_cell_buffer = Polygon([yca[0], yca[1], yca[2], yca[3]])
+
+    # checkk if the other point lies within
+    # within and contains is the same thing
+    for puck in observation:
+        current_puck = Point(puck[0], puck[1])
+        if current_puck.within(purple_chaos_buffer):
+            purple_chaos_pucks.append(puck)
+        elif current_puck.within(yellow_chaos_buffer):
+            yellow_chaos_pucks.append(puck)
+        elif purple_cell_buffer.contains(current_puck):
+            purple_pucks_rgb.append(puck)
+        elif yellow_cell_buffer.contains(current_puck):
+            yellow_pucks_rgb.append(puck)
+        else:
+            other_pucks.append(puck)
+
+    purple_chaos_pucks = np.array(purple_chaos_pucks)
+    yellow_chaos_pucks = np.array(yellow_chaos_pucks)
+    purple_pucks_rgb.sort(key=lambda t: t[1])
+    yellow_pucks_rgb.sort(key=lambda t: t[1])
+    purple_pucks_rgb = np.array(purple_pucks_rgb)
+    yellow_pucks_rgb = np.array(yellow_pucks_rgb)
+
+    return purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb
