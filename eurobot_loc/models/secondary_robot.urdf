@@ -10,7 +10,7 @@
 <link name="secondary_robot">
 <visual>
       <origin
-        xyz="0 0.029 .185"
+        xyz="0 0 .185"
         rpy="0 0 0" />
       <geometry>
         <mesh
