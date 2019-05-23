@@ -29,6 +29,7 @@ rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 
 ## to ride by odometry
 rostopic pub -1 /main_robot/stm/command std_msgs/String "data: '1 8 0.2 0 0'" 
 
+stm 1 8 0 0 2
 rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
 
 rostopic pub -1 /main_robot/score std_msgs/String "data: '24'" 
@@ -36,6 +37,7 @@ rostopic pub -1 /main_robot/score std_msgs/String "data: '24'"
 
 roslaunch eurobot_tactics tactics_sim_launch.launch
 
+rosnode kill /main_robot/particle_filter_node
 
 ssh odroid@192.168.88.239
 
@@ -79,8 +81,12 @@ rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.1
 
 rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
 rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
+
+
+# use sim to collect chaos
+roslaunch eurobot_tactics tactics_sim.launch 
+rosrun eurobot_main imitate_cam.py -n 5
 rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
-rosrun eurobot_tactics imitate_cam.py -n 4
 
 rostopic pub -1 /main_robot/navigation/command std_msgs/String "data: '1 move_line 0.4 0.4 0'"
 
@@ -352,6 +358,18 @@ GOALS
 Dzmitry Tsetserukou - XXL
 
 
+Александр Соколовский
+Лыхин Семен Александрович
+Батыржан Алиханов
+Горбадей Никита Петрович
+Хуан Эредиа
+Эдгар Казиахмедов
+Егоров Антон Андреевич
+Пристанский Егор Евгеньевич
+Кашапов Алексей Сергеевич
+Жердев Николай Алексеевич
+
+
 L - 8
 XL - 1
 XXL - 2
@@ -418,7 +436,10 @@ sudo journalctl -f -u secondary_start.service   -  logs
 
 
 
+add ip ros master
 
+odroid@odroid:~$ cd /etc/
+odroid@odroid:/etc$ sudo vim hosts
 
 
 
@@ -509,6 +530,7 @@ cd ~/.ros/log/latest
 
 roslaunch eurobot_main chaos_bt.launch
 
+fuck
 
 #TROOBLESHOOTING
 - ubuntu can't log in
@@ -524,16 +546,3 @@ If it succeeds, reboot.
 sudo reboot
 
 rosclean purge
-
-
-                bt.SequenceNode([
-                    bt_ros.SetManipulatortoWall("manipulator_client"),
-                    bt_ros.SetManipulatortoUp("manipulator_client"),
-                    bt.ActionNode(self.calculate_drive_back_point),
-                    self.choose_new_waypoint_latch,
-                    self.move_to_waypoint_node,
-                    bt.ActionNode(self.remove_waypoint),
-                    bt.ActionNode(self.choose_new_waypoint_latch.reset),
-
-                    bt.ActionNode(self.update_chaos_pucks),
-                ])

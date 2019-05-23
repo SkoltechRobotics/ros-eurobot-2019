@@ -1,13 +1,13 @@
 velocity_vector: [0.6, 0.6, 1.2]
 robot_name: "main_robot"
 num_points_in_path: 100
-robot_radius: 0.1
+robot_radius: 0.20
 k_linear_wp: 2.5
 k_linear_vp: 1.5
 k : 0.15
 min_dist_to_goal_point: 0.1  # 0.1
 # max rate of the planner
-RATE: 10
+RATE: 25
 # goal tolerance
 XY_GOAL_TOLERANCE: 0.005
 YAW_GOAL_TOLERANCE: 0.01
@@ -32,10 +32,11 @@ NUM_RANGEFINDERS: 16
 COLLISION_STOP_DISTANCE: 150
 COLLISION_STOP_NEIGHBOUR_DISTANCE: 50
 COLLISION_GAMMA: 2
+oponent_robot_radius: 0.08
 collision:
-    min_dist_to_obstacle_lidar: 0.5
+    min_dist_to_obstacle_lidar: 0.7
     min_dist_to_obstacle_sensor: 0.20
-    sensor_position: [[-0.122, -0.05959, 2.0944], [0.0327, 0.14795, 2.0944], [-0.1643, 0., 3.1415], [0.01315, -0.13807, 4.19],
-[-0.13415, -0.05303, 4.19], [0.105, 0.07032, 0.], [0.092,-0.0825, 0. ]]
-    angle_sensor: 0.261799
+    sensor_position: [[-0.1179, 0.05113, 2.0944], [0.03641, 0.13743, 2.0944], [-0.15573, 0., 3.1415], [0.01804, -0.12962, 4.19],
+[-0.12926, -0.04457, 4.19], [0.09281, 0.07027, 0.], [0.06798,-0.12699, 0], [0.06898, 0.12872, 1.0472], [0.09281, -0.08255, 5.23599 ]]
+    angle_sensor: 0.
 
