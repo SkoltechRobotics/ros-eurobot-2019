@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster1" args="0 0 0 0 0 0 map main_robot_odom 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster2" args="0 0 0 0 0 0 map secondary_robot_odom 100"/>
+
+  <group ns="main_robot"> 
+    <node pkg="eurobot_sim" name="stm_node" type="stm_node.py" output="screen"/>
+  </group>
+
+  <group ns="secondary_robot"> 
+    <node pkg="eurobot_sim" name="stm_node" type="stm_node.py" output="screen"/>
+  </group>
+
+</launch>
