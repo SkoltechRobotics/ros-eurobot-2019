@@ -283,7 +283,7 @@ class StrategyConfig(object):
         self.nearest_PRElanding = bt.BTVariable()
         self.next_landing_var = bt.BTVariable()
         self.next_prelanding_var = bt.BTVariable()
-
+        self.move_back_pose = bt.BTVariable()
         # self.guard_chaos_loc_var = bt.BTVariable(np.array([self.our_chaos_center[0] - self.sign * 0.3,
         #                                                    self.our_chaos_center[1] - 0.25,
         #                                                    1.57 - self.sign * 0.6]))  # FIXME change to another angle and loc * 0.785
@@ -607,6 +607,10 @@ class StrategyConfig(object):
             self.opponent_chaos_pucks.set(np.delete(self.opponent_chaos_pucks.get(), 0, axis=0))
             rospy.loginfo("Opponent's known pucks after removing: " + str(self.opponent_chaos_pucks.get()))
 
+    def remove_uncollected_chaos_puck(self):
+        self.my_chaos_pucks.set(np.delete(self.my_chaos_pucks.get(), 0, axis=0))
+        rospy.loginfo("Our known pucks after removing: " + str(self.my_chaos_pucks.get()))
+
     def calculate_pucks_configuration(self):
         """
 
@@ -649,7 +653,7 @@ class StrategyConfig(object):
         print self.my_chaos_pucks.get()
         print " "
 
-    def calculate_closest_chaos_landing(self):
+    def set_closest_chaos_landing(self):
         """
         Don't sort here, sort in calculate_config!
 
@@ -672,12 +676,17 @@ class StrategyConfig(object):
         self.waypoints.set(np.vstack((self.closest_landing.get(),
                                       self.waypoints.get())))
 
-    def calculate_prelanding(self):
+    def set_prelanding_to_chaos_landing(self):
         nearest_PRElanding = cvt_local2global(self.drive_back_vec, self.closest_landing.get())
         self.nearest_PRElanding.set(nearest_PRElanding)
         rospy.loginfo("Nearest PRElanding calculated: " + str(self.nearest_PRElanding.get()))
         print " "
         self.waypoints.set(np.vstack((self.nearest_PRElanding.get(),
+                                      self.waypoints.get())))
+
+    def calculate_move_back_pose(self):
+        self.move_back_pose.set(self.nearest_PRElanding.get())
+        self.waypoints.set(np.vstack((self.move_back_pose.get(),
                                       self.waypoints.get())))
 
     def update_robot_status(self):
@@ -735,29 +744,21 @@ class SuddenBlind(StrategyConfig):
     def __init__(self, side, pucks_slave):
         super(SuddenBlind, self).__init__(side, pucks_slave)
 
-        self.waypoints = bt.BTVariable()
+        self.waypoints = bt.BTVariable([self.blunium_nose_start_push_pose,
+                                        self.blunium_nose_end_push_pose,
+                                        self.goldenium_2_PREgrab_pos,
+                                        self.goldenium_grab_pos,
+                                        self.goldenium_back_pose,
+                                        self.scales_goldenium_PREpos,
+                                        self.scales_goldenium_pos + np.array([0, -0.01, 0]),
+                                        self.scales_goldenium_pos
+                                       ])
+
+        collect_red_cell_puck
+
+        collect_green_cell_puck
 
         blind_move_chaos_center = bt_ros.MoveLineToPoint(self.blind_chaos_pose, "move_client")
-
-        finish_chaos_push_nose_blunium = bt.SequenceWithMemoryNode([
-                                            bt.ParallelWithMemoryNode([
-                                                bt.SequenceWithMemoryNode([
-
-                                                    bt_ros.CompleteCollectGround("manipulator_client"),
-                                                    bt_ros.MainSetManipulatortoGround("manipulator_client"),  # FIXME when adding chaos
-                                                    bt_ros.StepperUp("manipulator_client")
-                                                ]),
-                                                bt_ros.MoveLineToPoint(self.blunium_nose_start_push_pose, "move_client"),
-                                            ], threshold=2),
-                                            bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client"),
-                                            bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
-                                            bt.ActionNode(lambda: self.score_master.unload("ACC")),
-                                            bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
-                                        ])
-
-
-
-
 
         move_to_opp_chaos_while_taking_red = bt.SequenceWithMemoryNode([
                                                 bt.ActionNode(self.calculate_pucks_configuration),
@@ -765,7 +766,7 @@ class SuddenBlind(StrategyConfig):
                                                 bt.ActionNode(self.choose_next_waypoint),  # TODO
 
                                                 bt.ParallelWithMemoryNode([
-                                                    bt_ros.MoveLineToPoint(self.next_waypoint, "move_client"),
+                                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),
 
                                                     bt.FallbackWithMemoryNode([
                                                         bt.SequenceWithMemoryNode([
@@ -780,8 +781,8 @@ class SuddenBlind(StrategyConfig):
 
                                                 bt.SequenceWithMemoryNode([
                                                     bt.ActionNode(self.calculate_pucks_configuration),
-                                                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                                                    bt.ActionNode(self.calculate_prelanding),
+                                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                                                     bt.FallbackWithMemoryNode([
                                                         bt.SequenceWithMemoryNode([
@@ -815,75 +816,324 @@ class SuddenBlind(StrategyConfig):
                                             ])
 
         collect_chaos = bt.SequenceWithMemoryNode([
-                    # # 1st, but done in finishing red
-                    # bt.ActionNode(self.calculate_pucks_configuration),
-                    # bt.ActionNode(self.calculate_closest_landing),
-                    # bt.ActionNode(self.calculate_prelanding),
+                            # # We here arrived to 1st chaos puck and ready to start collecting
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt.ActionNode(self.update_chaos_pucks),
+                                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
 
-                    # bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
-                    # bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt.SequenceWithMemoryNode([
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                            bt.ActionNode(self.remove_waypoint),
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                            bt.ActionNode(self.remove_waypoint)
+                                        ])
+                                    ], threshold=2),
+                                ]),
+                                # if we failed to pump puck
+                                bt.SequenceWithMemoryNode([
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
+                                    bt.ActionNode(self.remove_uncollected_chaos_puck),
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
+                                ]),
+                                # move to next chaos prelanding and landing
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt.SequenceWithMemoryNode([
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                        bt.ActionNode(self.remove_waypoint),
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                        bt.ActionNode(self.remove_waypoint)
+                                    ])
+                                ], threshold=2)
+                            ]),
 
+                            # # We here arrived to 2nd chaos puck and ready to start collecting
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt.ActionNode(self.update_chaos_pucks),
+                                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
 
-                    bt_ros.BlindStartCollectGround("manipulator_client"),
-                    bt.ActionNode(self.update_chaos_pucks),
-                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
-                    # 2nd
-                    bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt.SequenceWithMemoryNode([
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                            bt.ActionNode(self.remove_waypoint),
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                            bt.ActionNode(self.remove_waypoint)
+                                        ])
+                                    ], threshold=2),
+                                ]),
+                                # if we failed to pump puck
+                                bt.SequenceWithMemoryNode([
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
+                                    bt.ActionNode(self.remove_uncollected_chaos_puck),
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
+                                ]),
+                                # move to next chaos prelanding and landing
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt.SequenceWithMemoryNode([
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                        bt.ActionNode(self.remove_waypoint),
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                        bt.ActionNode(self.remove_waypoint)
+                                    ])
+                                ], threshold=2)
+                            ]),
 
-                    bt.ParallelWithMemoryNode([
-                        bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.SequenceWithMemoryNode([
-                            bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
-                            bt_ros.MoveToVariable(self.closest_landing, "move_client"),
+                            # # We here arrived to 3rd chaos puck and ready to start collecting
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt.ActionNode(self.update_chaos_pucks),
+                                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
+
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
+
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                        bt.SequenceWithMemoryNode([
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                            bt.ActionNode(self.remove_waypoint),
+                                            bt.ActionNode(self.choose_next_waypoint),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                            bt.ActionNode(self.remove_waypoint)
+                                        ])
+                                    ], threshold=2),
+                                ]),
+                                # if we failed to pump puck
+                                bt.SequenceWithMemoryNode([
+                                    bt.ActionNode(self.calculate_move_back_pose),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated move_back_pose
+                                    bt.ActionNode(self.remove_waypoint),
+                                    bt.ActionNode(self.remove_uncollected_chaos_puck),
+                                    bt.ActionNode(self.calculate_pucks_configuration),
+                                    bt.ActionNode(self.set_closest_chaos_landing),
+                                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
+                                ]),
+                                # move to next chaos prelanding and landing
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt.SequenceWithMemoryNode([
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                        bt.ActionNode(self.remove_waypoint),
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated LANDING in our chaos
+                                        bt.ActionNode(self.remove_waypoint)
+                                    ])
+                                ], threshold=2)
+                            ]),
+
+                            # # We here arrived to 4th chaos puck and ready to start collecting
+                            bt.FallbackWithMemoryNode([
+                                bt.SequenceWithMemoryNode([
+                                    bt_ros.StartCollectGround("manipulator_client"),
+                                    bt.ActionNode(self.update_chaos_pucks),
+                                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+
+                                    bt.ParallelWithMemoryNode([
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt_ros.MainSetManipulatortoGround("manipulator_client")
+                                        ]),
+                                        bt.SequenceWithMemoryNode([
+                                            bt.ActionNode(self.choose_next_waypoint), # to push blunium start pose
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client"),
+                                            bt.ActionNode(self.remove_waypoint),
+                                        ])
+                                    ], threshold=2),
+                                ]),
+                                # if we failed to pump puck - try again while moving to push blunium
+                                bt.ParallelWithMemoryNode([
+                                    bt.FallbackWithMemoryNode([
+                                        bt.SequenceWithMemoryNode([
+                                            bt_ros.StartCollectGround("manipulator_client"),
+                                            bt.ActionNode(self.update_chaos_pucks),
+                                            bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
+                                            bt_ros.CompleteCollectGround("manipulator_client"),
+                                            bt_ros.MainSetManipulatortoGround("manipulator_client"),
+                                        ]),
+                                        bt_ros.MainSetManipulatortoGround("manipulator_client"),
+                                    ]),
+                                    bt.SequenceWithMemoryNode([
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # to calculated prelanding in our chaos
+                                        bt.ActionNode(self.remove_waypoint),
+                                    ])
+                                ], threshold=2)
+                            ]),
                         ])
-                    ], threshold=2),
 
-                    bt_ros.BlindStartCollectGround("manipulator_client"),
-                    bt.ActionNode(self.update_chaos_pucks),
-                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+        push_nose_blunium = bt.SequenceWithMemoryNode([
+                                bt.ActionNode(self.choose_next_waypoint),
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.StepperUp("manipulator_client"),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # blunium_nose_end_push_pose
+                                ], threshold=2),
+                                bt.ActionNode(self.remove_waypoint),
+                                bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
+                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                                bt.ActionNode(lambda: self.score_master.reward("UNLOCK_GOLDENIUM_BONUS")),
+                            ])
 
-                    # 3rd
-                    bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+        approach_acc = bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client")  # [0, -0.1, 0]
 
-                    bt.ParallelWithMemoryNode([
-                        bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.SequenceWithMemoryNode([
-                            bt_ros.ArcMoveToVariable(self.nearest_PRElanding, "move_client"),
-                            bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-                        ])
-                    ], threshold=2),
+        unload_acc = bt.SequenceNode([
+                        bt.FallbackNode([
+                            bt.ConditionNode(self.is_robot_empty),
+                            bt.SequenceWithMemoryNode([
+                                bt_ros.UnloadAccelerator("manipulator_client"),
+                                bt.ActionNode(lambda: self.score_master.unload("ACC")),
+                            ])
+                        ]),
+                        bt.ConditionNode(self.is_robot_empty_1)
+                    ])
 
-                    bt_ros.BlindStartCollectGround("manipulator_client"),
-                    bt.ActionNode(self.update_chaos_pucks),
-                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get())),
-                    bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
+        collect_goldenium = bt.SequenceWithMemoryNode([
+                                bt.ActionNode(self.choose_next_waypoint),
+                                bt_ros.Delay500("manipulator_client"),
+                                bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_2_PREgrab_pos
+                                bt_ros.StartCollectGoldenium("manipulator_client"),
+                                bt.ActionNode(self.remove_waypoint),
+                                bt.ActionNode(self.choose_next_waypoint),
+                                bt.ParallelWithMemoryNode([
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_grab_pos
+                                    bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                ], threshold=1),
+                                bt.ActionNode(self.remove_waypoint)
+                            ])
 
-                    # 4th
-                    bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
+        move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_back_pose
+                                        bt.FallbackWithMemoryNode([
+                                            bt.SequenceWithMemoryNode([
+                                                bt_ros.CheckLimitSwitchInf("manipulator_client"),
+                                                bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                                                bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+                                                bt.ActionNode(self.remove_waypoint),
+                                                bt.ActionNode(self.choose_next_waypoint),
+                                                bt.ParallelWithMemoryNode([
+                                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                                ], threshold=2),
+                                                bt.ActionNode(self.remove_waypoint)
+                                            ]),
 
-                    bt.ParallelWithMemoryNode([
-                        bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt_ros.MoveToVariable(self.closest_landing, "move_client"),
-                    ], threshold=2),
+                                            # if failed to pull goldenium out, try again
+                                            bt.SequenceWithMemoryNode([
+                                                bt_ros.StartCollectGoldenium("manipulator_client"),
+                                                bt.ParallelWithMemoryNode([
+                                                    bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  # goldenium_grab_pos
+                                                    bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                                ], threshold=1),
+                                                bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_back_pose
 
-                    bt_ros.BlindStartCollectGround("manipulator_client"),
-                    bt.ActionNode(self.update_chaos_pucks),
-                    bt.ActionNode(lambda: self.score_master.add(self.incoming_puck_color.get()))  # COMAAAAAA
+                                                bt.FallbackWithMemoryNode([
+                                                    bt.SequenceWithMemoryNode([
+                                                        bt_ros.CheckLimitSwitchInf("manipulator_client"),
+                                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                                                        bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+                                                        bt.ActionNode(self.remove_waypoint),
+                                                        bt.ActionNode(self.choose_next_waypoint),
+                                                        bt.ParallelWithMemoryNode([
+                                                            bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                                        ], threshold=2),
+                                                        bt.ActionNode(self.remove_waypoint)
+                                                    ]),
+                                                    bt.SequenceWithMemoryNode([
+                                                        bt.ActionNode(self.remove_waypoint),
+                                                        bt.ActionNode(self.choose_next_waypoint),
+                                                        bt.ParallelWithMemoryNode([
+                                                            bt_ros.MainSetManipulatortoGround("manipulator_client"),
+                                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                                        ], threshold=2),
+                                                        bt.ActionNode(self.remove_waypoint)
+                                                    ])
+                                                ])
+                                            ])
+                                        ])
+                                    ])
 
-                    # only for testing and unloading at home
-                    # bt_ros.CompleteCollectGround("manipulator_client"),
-                    # bt_ros.StepperUp("manipulator_client")
-        ])
+        unload_goldenium = bt.SequenceWithMemoryNode([
+                                bt.ConditionNode(self.is_scales_landing_free),
+                                bt.SequenceWithMemoryNode([
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt.ParallelWithMemoryNode([
+                                        bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # self.scales_goldenium_pos + np.array([0, -0.01, 0])
+                                        bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.07, 0]), "manipulator_client", threshold=0.1),
+                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.1),
+                                    ], threshold=3),
+                                    #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
+                                    bt.ActionNode(self.remove_waypoint),
+                                    bt.ActionNode(self.choose_next_waypoint),
+                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                    bt_ros.SetManipulatortoWall("manipulator_client"),
+                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # scales_goldenium_pos  FIXME change to STM movement?
+                                    bt_ros.UnloadGoldenium("manipulator_client"),
+                                    bt_ros.SetManipulatortoUp("manipulator_client"),
+                                    bt.ActionNode(self.remove_waypoint)
+                                ])
+                            ])
 
+        # search_lost_puck_unload_cell = bt.SequenceWithMemoryNode([
+        #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")),
+        #     bt.ConditionNode(self.is_lost_puck_present),
+        #     # find it
+        #     # if green - move to green cell
+        #     # if blue - move to blue cell
+        #     # if red - move to red cell and try NOT TO INTERFERE WITH SECONDARY
+        # ])
 
 
 
@@ -903,9 +1153,6 @@ class SuddenBlind(StrategyConfig):
         #                                         bt_ros.MoveToVariable(self.next_waypoint, "move_client"),
         #                                     ], threshold=2)
         #                                 ])
-
-
-
 
         self.tree = bt.SequenceWithMemoryNode([
                         bt.ActionNode(self.update_robot_status),
@@ -927,7 +1174,7 @@ class SuddenBlind(StrategyConfig):
                             blind_move_chaos_center
                         ]),
 
-                        finish_chaos_push_nose_blunium,
+                        push_nose_blunium,
                         approach_acc,
                         unload_acc,
                         collect_goldenium,
@@ -1117,8 +1364,8 @@ class PeacefulStrategy(StrategyConfig):
         collect_chaos = bt.SequenceWithMemoryNode([
                     # # 1st, but done in finishing red
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.set_closest_chaos_landing),
+                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                     bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                     bt_ros.ArcMoveToVariable(self.closest_landing, "move_client"),
@@ -1130,8 +1377,8 @@ class PeacefulStrategy(StrategyConfig):
 
                     # 2nd
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.set_closest_chaos_landing),
+                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1148,8 +1395,8 @@ class PeacefulStrategy(StrategyConfig):
 
                     # 3rd
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.set_closest_chaos_landing),
+                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1166,7 +1413,7 @@ class PeacefulStrategy(StrategyConfig):
 
                     # 4th
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
+                    bt.ActionNode(self.set_closest_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1333,14 +1580,14 @@ class SberStrategy(StrategyConfig):
 
                                 bt_ros.BlindStartCollectGround("manipulator_client"),
                                 bt.ActionNode(self.calculate_pucks_configuration),
-                                bt.ActionNode(self.calculate_closest_chaos_landing),
-                                bt.ActionNode(self.calculate_prelanding),
+                                bt.ActionNode(self.set_closest_chaos_landing),
+                                bt.ActionNode(self.set_prelanding_to_chaos_landing),
                                 bt.ParallelWithMemoryNode([
                                     bt_ros.CompleteCollectGround("manipulator_client"),
                                     bt.SequenceWithMemoryNode([
                                         bt_ros.MoveToVariable(self.nearest_PRElanding, "move_client"),
                                         bt.ActionNode(self.calculate_pucks_configuration),
-                                        bt.ActionNode(self.calculate_closest_chaos_landing),
+                                        bt.ActionNode(self.set_closest_chaos_landing),
                                         bt_ros.MoveToVariable(self.closest_landing, "move_client"),
                                     ])
                                 ], threshold=2),
@@ -1366,8 +1613,8 @@ class SberStrategy(StrategyConfig):
 
                     # 2nd
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.set_closest_chaos_landing),
+                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1384,8 +1631,8 @@ class SberStrategy(StrategyConfig):
 
                     # 3rd
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
-                    bt.ActionNode(self.calculate_prelanding),
+                    bt.ActionNode(self.set_closest_chaos_landing),
+                    bt.ActionNode(self.set_prelanding_to_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1402,7 +1649,7 @@ class SberStrategy(StrategyConfig):
 
                     # 4th
                     bt.ActionNode(self.calculate_pucks_configuration),
-                    bt.ActionNode(self.calculate_closest_chaos_landing),
+                    bt.ActionNode(self.set_closest_chaos_landing),
 
                     bt.ParallelWithMemoryNode([
                         bt_ros.CompleteCollectGround("manipulator_client"),
