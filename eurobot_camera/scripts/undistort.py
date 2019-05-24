@@ -131,7 +131,7 @@ class CameraUndistortNode():
         image = undistorted_image
         # image = image_processing.crop_immage_1(image)
         # cv2.imwrite("./data/images/image" + str(self.counter) + ".png", image)
-        # image = image_processing.equalize_histogram(image)
+        image = image_processing.equalize_histogram(image)
 
 
         # Align image using field template
