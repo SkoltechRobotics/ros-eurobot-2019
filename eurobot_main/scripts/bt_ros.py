@@ -517,7 +517,7 @@ class SetToScales_ifReachedGoal(bt.SequenceNode):
             self.robot_coordinates = np.array([trans.transform.translation.x,
                                                trans.transform.translation.y,
                                                angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            # rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
@@ -563,7 +563,7 @@ class PublishScore_ifReachedGoal(bt.SequenceNode):
             self.robot_coordinates = np.array([trans.transform.translation.x,
                                                trans.transform.translation.y,
                                                angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            # rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))

@@ -55,11 +55,6 @@ class MainRobotBT(object):
 
         # self.strategy = Combobombo(self.side_status)
 
-        self.strategy0 = SberStrategy(self.side_status, self.pucks_slave)
-        self.strategy1 = PeacefulStrategy(self.side_status, self.pucks_slave)
-        self.strategy2 = Testing(self.side_status, self.pucks_slave)
-        self.strategy3 = SuddenBlind(self.side_status, self.pucks_slave)
-
         # self.strategy = OptimalStrategy(self.side_status)
         # self.strategy = BlindStrategy(self.side_status)
 
@@ -78,6 +73,11 @@ class MainRobotBT(object):
 
     def change_side(self, side):
         self.side_status = side
+        self.strategy0 = SberStrategy(self.side_status, self.pucks_slave)
+        self.strategy1 = PeacefulStrategy(self.side_status, self.pucks_slave)
+        self.strategy2 = Testing(self.side_status, self.pucks_slave)
+        self.strategy3 = SuddenBlind(self.side_status, self.pucks_slave)
+        
         self.strategy = self.strategy3
 
     def change_strategy(self, num):
@@ -968,10 +968,10 @@ class SuddenBlind(StrategyConfig):
                             collect_one_chaos_puck,
 
                             # # We here arrived to 2nd chaos puck and ready to start collecting
-                            collect_one_chaos_puck,
+                            # collect_one_chaos_puck,
 
                             # # We here arrived to 3rd chaos puck and ready to start collecting
-                            collect_one_chaos_puck,
+                            # collect_one_chaos_puck,
 
                             # # We here arrived to 4th chaos puck and ready to start collecting
                             bt.FallbackWithMemoryNode([
@@ -1054,64 +1054,73 @@ class SuddenBlind(StrategyConfig):
         move_to_goldenium_prepose = bt.SequenceWithMemoryNode([
                                         bt.ActionNode(self.choose_next_waypoint),
                                         bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_back_pose
-                                        bt.FallbackWithMemoryNode([
-                                            bt.SequenceWithMemoryNode([
-                                                bt_ros.CheckLimitSwitchInf("manipulator_client"),
-                                                bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
-                                                bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-                                                bt.ActionNode(self.remove_waypoint),
-                                                bt.ActionNode(self.choose_next_waypoint),
-                                                bt.ParallelWithMemoryNode([
-                                                    bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                                                    bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
-                                                ], threshold=2),
-                                                bt.ActionNode(self.remove_waypoint)
-                                            ]),
-
-                                            # if failed to pull goldenium out, try again
-                                            bt.SequenceWithMemoryNode([
-                                                bt_ros.StartCollectGoldenium("manipulator_client"),
-                                                bt.ParallelWithMemoryNode([
-                                                    bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  # goldenium_grab_pos
-                                                    bt_ros.CheckLimitSwitchInfLong("manipulator_client")
-                                                ], threshold=1),
-                                                bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_back_pose
-
-                                                bt.FallbackWithMemoryNode([
-                                                    bt.SequenceWithMemoryNode([
-                                                        bt_ros.CheckLimitSwitchInf("manipulator_client"),
-                                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
-                                                        bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
-                                                        bt.ActionNode(self.remove_waypoint),
-                                                        bt.ActionNode(self.choose_next_waypoint),
-                                                        bt.ParallelWithMemoryNode([
-                                                            bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
-                                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
-                                                        ], threshold=2),
-                                                        bt.ActionNode(self.remove_waypoint)
-                                                    ]),
-                                                    bt.SequenceWithMemoryNode([
-                                                        bt.ActionNode(self.remove_waypoint),
-                                                        bt.ActionNode(self.choose_next_waypoint),
-                                                        bt.ParallelWithMemoryNode([
-                                                            bt_ros.MainSetManipulatortoGround("manipulator_client"),
-                                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
-                                                        ], threshold=2),
-                                                        bt.ActionNode(self.remove_waypoint)
-                                                    ])
-                                                ])
-                                            ])
-                                        ])
+                                        bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                                        bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+                                        bt.ActionNode(self.remove_waypoint),
+                                        bt.ActionNode(self.choose_next_waypoint),
+                                        bt.ParallelWithMemoryNode([
+                                            bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                            bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                        ], threshold=2),
+                                        bt.ActionNode(self.remove_waypoint)
                                     ])
+                                        # bt.FallbackWithMemoryNode([
+                                        #     bt.SequenceWithMemoryNode([
+                                        #         bt_ros.CheckLimitSwitchInf("manipulator_client"),
+                                        #         bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                                        #         bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+                                        #         bt.ActionNode(self.remove_waypoint),
+                                        #         bt.ActionNode(self.choose_next_waypoint),
+                                        #         bt.ParallelWithMemoryNode([
+                                        #             bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                        #             bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                        #         ], threshold=2),
+                                        #         bt.ActionNode(self.remove_waypoint)
+                                        #     ]),
+
+                                        #     # if failed to pull goldenium out, try again
+                                        #     bt.SequenceWithMemoryNode([
+                                        #         bt_ros.StartCollectGoldenium("manipulator_client"),
+                                        #         bt.ParallelWithMemoryNode([
+                                        #             bt_ros.MoveLineToPoint(self.goldenium_grab_pos, "move_client"),  # goldenium_grab_pos
+                                        #             bt_ros.CheckLimitSwitchInfLong("manipulator_client")
+                                        #         ], threshold=1),
+                                        #         bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # goldenium_back_pose
+
+                                        #         bt.FallbackWithMemoryNode([
+                                        #             bt.SequenceWithMemoryNode([
+                                        #                 bt_ros.CheckLimitSwitchInf("manipulator_client"),
+                                        #                 bt.ActionNode(lambda: self.score_master.add("GOLDENIUM")),
+                                        #                 bt.ActionNode(lambda: self.score_master.reward("GRAB_GOLDENIUM_BONUS")),
+                                        #                 bt.ActionNode(self.remove_waypoint),
+                                        #                 bt.ActionNode(self.choose_next_waypoint),
+                                        #                 bt.ParallelWithMemoryNode([
+                                        #                     bt_ros.GrabGoldeniumAndHoldUp("manipulator_client"),
+                                        #                     bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                        #                 ], threshold=2),
+                                        #                 bt.ActionNode(self.remove_waypoint)
+                                        #             ]),
+                                        #             bt.SequenceWithMemoryNode([
+                                        #                 bt.ActionNode(self.remove_waypoint),
+                                        #                 bt.ActionNode(self.choose_next_waypoint),
+                                        #                 bt.ParallelWithMemoryNode([
+                                        #                     bt_ros.MainSetManipulatortoGround("manipulator_client"),
+                                        #                     bt_ros.MoveToVariable(self.next_waypoint, "move_client")  # scales_goldenium_PREpos
+                                        #                 ], threshold=2),
+                                        #                 bt.ActionNode(self.remove_waypoint)
+                                        #             ])
+                                        #         ])
+                                        #     ])
+                                        # ])
 
         unload_goldenium = bt.SequenceWithMemoryNode([
-                                bt.ConditionNode(self.is_scales_landing_free),
+                                # bt.ConditionNode(self.is_scales_landing_free),
                                 bt.SequenceWithMemoryNode([
                                     bt.ActionNode(self.choose_next_waypoint),
                                     bt.ParallelWithMemoryNode([
                                         bt_ros.MoveToVariable(self.next_waypoint, "move_client"),  # self.scales_goldenium_pos + np.array([0, -0.01, 0])
-                                        bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.07, 0]), "manipulator_client", threshold=0.1),
-                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.1),
+                                        bt_ros.SetToScales_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.07, 0]), "manipulator_client", threshold=0.05),
+                                        bt_ros.PublishScore_ifReachedGoal(self.scales_goldenium_pos + np.array([0, -0.1, 0]), self.score_master, "SCALES", threshold=0.05),
                                     ], threshold=3),
                                     #     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")), # TODO
                                     bt.ActionNode(self.remove_waypoint),
@@ -1152,14 +1161,14 @@ class SuddenBlind(StrategyConfig):
                             collect_green_cell_puck
                         ]),
 
-                        bt.FallbackWithMemoryNode([
-                            bt.SequenceNode([
-                                bt.ConditionNode(self.is_my_chaos_observed),
-                                collect_chaos
-                            ]),
-                            bt.ActionNode(lambda: self.insert_waypoint(self.blind_chaos_pose)),
-                            blind_move_chaos_center_collect
-                        ]),
+                        # bt.FallbackWithMemoryNode([
+                        #     bt.SequenceNode([
+                        #         bt.ConditionNode(self.is_my_chaos_observed),
+                        #         collect_chaos
+                        #     ]),
+                        #     bt.ActionNode(lambda: self.insert_waypoint(self.blind_chaos_pose)),
+                        #     blind_move_chaos_center_collect
+                        # ]),
 
                         push_nose_blunium,
                         unload_acc,
