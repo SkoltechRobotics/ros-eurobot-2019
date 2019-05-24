@@ -49,7 +49,7 @@ def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path
     start_time = time.time()
     print ('Start homogeneous by features')
 
-    MIN_MATCH_COUNT = 20
+    MIN_MATCH_COUNT = 10
 
     im2 = cv2.imread(templ_path)
     im1 = cv2.resize(im1, (int(rx),int(ry)))
