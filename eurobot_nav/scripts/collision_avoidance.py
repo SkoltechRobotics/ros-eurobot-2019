@@ -357,12 +357,16 @@ class CollisionAvoidanceSecondaryRobot(object):
         points = np.array([[-0.15, -0.15], [dist_to_goal+0.15, -0.15], [dist_to_goal+0.15, 0.15], [-0.15, 0.15], [-0.15, -0.15]])
         self.collision_area = cvt_local2global(points, np.array(
             [coords[0], coords[1], coords[2] + wrap_angle(np.arctan2(goal_in_robot_frame[1], goal_in_robot_frame[0]))]))
-        self.num_lidar_collision_points = len(self.obstacle_points_lidar)
-        self.num_sensor_collision_points = len(self.obstacle_points_sensor)
-        self.obstacle_points = np.concatenate((self.obstacle_points_lidar.copy(), self.obstacle_points_sensor.copy()), axis=0)
-        self.obstacle_points = self.filter_points(self.obstacle_points.copy(), coords.copy(), goal.copy())
+        self.obstacle_points_lidar = self.filter_points(self.obstacle_points_lidar.copy(), coords.copy(), goal.copy())
+        self.obstacle_points_sensor = self.filter_points(self.obstacle_points_sensor.copy(), coords.copy(), goal.copy())
+        self.num_lidar_collision_points = self.obstacle_points_lidar.shape[0]
+        self.num_sensor_collision_points = self.obstacle_points_sensor.shape[0]
+        self.obstacle_points = np.zeros((0,2))
+        if self.obstacle_points_lidar.shape[0] > 0:
+            self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_lidar, axis=0)
+        if self.obstacle_points_lidar.shape[0] > 0:
+            self.obstacle_points = np.append(self.obstacle_points, self.obstacle_points_sensor, axis=0)
         self.set_collision_point(self.obstacle_points)
-
 
     def filter_points(self, points, coords, goal):
         rospy.loginfo("POINTS")
@@ -372,7 +376,6 @@ class CollisionAvoidanceSecondaryRobot(object):
         filtered_points = filtered_points[self.get_points_inside_collision_area(filtered_points.copy(), coords.copy(), goal.copy())]
         rospy.loginfo(filtered_points)
         return filtered_points
-
 
     def get_collision_status(self, coords, goal):
         self.p = 1
