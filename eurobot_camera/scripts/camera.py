@@ -81,7 +81,7 @@ class Camera():
 
     def align_image(self, undistorted_image, templ_path):
         if not self.is_aligned:
-            self.find_warp_matrix_feature(undistorted_image, templ_path)
+            self.find_warp_matrix_not_feature(undistorted_image, templ_path)
             self.find_vertical_warp_projection(self.warp_matrix)
             self.is_aligned = True
         return self.is_aligned

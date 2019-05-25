@@ -18,8 +18,8 @@ def find_transform_ecc(img,rx,ry,templ_path):
 
     # create a CLAHE object (Arguments are optional).
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    img_gray = clahe.apply(img_gray)
-    img_gray = clahe.apply(img_gray)
+    # img_gray = clahe.apply(img_gray)
+    # img_gray = clahe.apply(img_gray)
 
     # Define the motion model
     warp_mode = cv2.MOTION_HOMOGRAPHY
@@ -27,21 +27,21 @@ def find_transform_ecc(img,rx,ry,templ_path):
     warp_matrix = np.eye(3, 3, dtype=np.float32)
 
     # Specify the number of iterations.
-    number_of_iterations = 5000;
+    number_of_iterations = 500
 
     # Specify the threshold of the increment
     # in the correlation coefficient between two iterations
-    termination_eps = 1e-6;
+    termination_eps = 1e-5
 
     # Define termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
 
     # Run the ECC algorithm. The results are stored in warp_matrix.
-    (cc, warp_matrix) = cv2.findTransformECC (tmp_gray,img_gray,warp_matrix, warp_mode, criteria)
+    (cc, warp_matrix) = cv2.findTransformECC (tmp_gray, img_gray, warp_matrix, warp_mode, criteria)
 
     result_time = time.time() - start_time
     print ('Homogeneous result time= ', result_time)
-    #img_aligned = cv2.warpPerspective (img, self.warp_matrix, (img.shape[1],img.shape[0]), flags=cv2.INTER_LINEAR)
+    # img_aligned = cv2.warpPerspective (img, self.warp_matrix, (img.shape[1],img.shape[0]), flags=cv2.INTER_LINEAR)
     return warp_matrix
     
 
@@ -168,13 +168,13 @@ def find_transform_features(im1, rx, ry, MAX_FEATURES, GOOD_MATCH_PERCENT, templ
 
     # create a CLAHE object (Arguments are optional).
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    im1Gray = clahe.apply(im1Gray)
     # im1Gray = clahe.apply(im1Gray)
-    im2Gray = clahe.apply(im2Gray)
-    im2Gray = clahe.apply(im2Gray)
+    # im1Gray = clahe.apply(im1Gray)
+    # im2Gray = clahe.apply(im2Gray)
+    # im2Gray = clahe.apply(im2Gray)
     #
     # Detect ORB features and compute descriptors.
-    orb = cv2.ORB_create(MAX_FEATURES)
+    orb = cv2.ORB_create()
 
     (keypoints1, descriptors1) = orb.detectAndCompute(im1Gray, None)
     (keypoints2, descriptors2) = orb.detectAndCompute(im2Gray, None)
