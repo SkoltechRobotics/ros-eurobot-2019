@@ -126,6 +126,16 @@ class RightMoustacheDown(ActionClientNode):
         cmd = "right_moustache_down"
         super(RightMoustacheDown, self).__init__(cmd, action_client_id)
 
+class SetReleaserSpeedToHigh(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_releaser_speed_to_high"
+        super(SetReleaserSpeedToHigh, self).__init__(cmd, action_client_id)
+
+class SetReleaserSpeedToLow(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_releaser_speed_to_low"
+        super(SetReleaserSpeedToLow, self).__init__(cmd, action_client_id)
+
 
 class StartPump(ActionClientNode):
     def __init__(self, action_client_id):

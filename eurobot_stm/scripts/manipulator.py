@@ -53,6 +53,8 @@ class Manipulator(object):
             "LEFT_MOUSTACHE_DOWN" : 0x23,
             "RIGHT_MOUSTACHE_DEFAULT" : 0x24,
             "RIGHT_MOUSTACHE_DOWN" : 0x25,
+            "SET_RELEASER_SPEED_TO_HIGH" : 0x26,
+            "SET_RELEASER_SPEED_TO_LOW" : 0x27,
 
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
@@ -159,6 +161,10 @@ class Manipulator(object):
             return self.release_from_manipulator()
         elif cmd == "check_limit switch_infinitely":
             return self.check_status_infinitely()
+        elif cmd == "set_releaser_speed_to_high":
+            return self.set_releaser_speed_to_high()
+        elif cmd == "set_releaser_speed_to_low":
+            return self.set_releaser_speed_to_low()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -420,6 +426,15 @@ class Manipulator(object):
     def right_moustache_down(self):
         self.send_command(self.protocol["RIGHT_MOUSTACHE_DOWN"])
         return True
+
+    def set_releaser_speed_to_high(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_HIGH"])
+        return True
+
+    def set_releaser_speed_to_low(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_LOW"])
+        return True
+
 
     def moving_default(self):
         self.send_command(self.protocol["STOP_PUMP"])
