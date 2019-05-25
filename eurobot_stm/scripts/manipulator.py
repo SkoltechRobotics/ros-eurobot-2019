@@ -364,14 +364,18 @@ class Manipulator(object):
 
     def goldenium_up_and_hold(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
-        return True
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
+        if result:
+            self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
+            return True
+        else:
+            return False
 
     def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
-        rospy.sleep(0.5)
+        rospy.sleep(0.2)
         return True
 
     def release_goldenium_on_scales(self):

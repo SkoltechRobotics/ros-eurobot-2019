@@ -27,6 +27,9 @@ class Prediction:
             "BLUNIUM_ON_RED": 1,
             "BLUNIUM_ON_GREEN": 1,
 
+            "UNDEFINED_ON_BLUE": 1,
+            "UNDEFINED_ON_MIDDLE": 6,
+
             "GOLDENIUM_ON_CELLS": 6,
 
             "REDIUM_ON_ACC": 10,

@@ -34,6 +34,8 @@ def get_color(puck):
         color_val = "GREENIUM"
     elif all(color_key == np.array([0, 0, 1])):
         color_val = "BLUNIUM"
+    elif all(color_key == np.array([0, 0, 0])):
+        color_val = "UNDEFINED"
     return color_val
 
 

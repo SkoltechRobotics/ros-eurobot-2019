@@ -10,8 +10,8 @@ from core_functions import *
 class ScoreController(object):
     def __init__(self, collected_pucks, robot_name):
         self.collected_pucks = collected_pucks
-        self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM"]
-        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES", "CELLS"]
+        self.pucks = ["REDIUM", "GREENIUM", "BLUNIUM", "GOLDENIUM", "UNDEFINED"]
+        self.places = ["RED", "GREEN", "BLUE", "ACC", "SCALES", "CELLS", "MIDDLE"]
         self.bonuses = ["UNLOCK_GOLDENIUM_BONUS", "GRAB_GOLDENIUM_BONUS"]
         self.robot_name = robot_name
         if self.robot_name == "main_robot":
