@@ -349,6 +349,25 @@ def initial_parse_pucks(observation, pcc, ycc, chaos_radius, pca, yca):
 
     return purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb
 
+
+def yolo_parse_pucks(observation, area):
+
+    lost_pucks = []
+
+    if len(observation) > 0:
+        search_area_buffer = Polygon([area[0], area[1], area[2], area[3]])
+
+        for puck in observation:
+            current_puck = Point(puck[0], puck[1])
+            if current_puck.within(search_area_buffer):
+                lost_pucks.append(puck)
+    else:
+        print "no pucks on the field"
+
+    lost_pucks = np.array(lost_pucks)
+    return lost_pucks
+
+
 """
 def parse_by_color(new_obs, known):
 

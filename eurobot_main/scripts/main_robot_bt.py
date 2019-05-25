@@ -103,7 +103,6 @@ class StrategyConfig(object):
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
         self.robot_name = rospy.get_param("robot_name")
-        self.coords_threshold = rospy.get_param("coords_threshold")
 
         self.purple_chaos_center = rospy.get_param(self.robot_name + "/" + "purple_side" + "/chaos_center")
         self.yellow_chaos_center = rospy.get_param(self.robot_name + "/" + "yellow_side" + "/chaos_center")
@@ -138,7 +137,7 @@ class StrategyConfig(object):
         self.my_collected_chaos = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
         self.opp_chaos_collected_me = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
-        self.lost_pucks = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+        self.visible_pucks_on_field = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
 
         self.incoming_puck_color = bt.BTVariable(None)
         self.collected_pucks = bt.BTVariable(np.array([]))
@@ -162,6 +161,7 @@ class StrategyConfig(object):
         self.scales_area = np.array(rospy.get_param(self.robot_name + "/" + self.color_side + "/scales_area"))
         self.chaos_radius = rospy.get_param("chaos_radius")
 
+        self.final_search_area = rospy.get_param("final_search_area")
         self.my_chaos_area = rospy.get_param(self.robot_name + "/" + self.color_side + "/area_to_search_chaos")
         self.opponent_chaos_area = rospy.get_param(self.robot_name + "/" + self.opponent_side + "/area_to_search_chaos")
 
@@ -366,9 +366,10 @@ class StrategyConfig(object):
 
                     self.our_pucks_rgb.set(yellow_pucks_rgb)
 
-            #if self.is_main_robot_started.get() is True:
-                #print "ola-la-la"
-                #self.lost_pucks =
+            if self.is_main_robot_started.get() is True:
+                lost_pucks = yolo_parse_pucks(new_observation_pucks,
+                                               self.final_search_area)
+                self.visible_pucks_on_field.set(lost_pucks)
 
             """
             if self.is_main_robot_started.get() is True:
@@ -483,14 +484,6 @@ class StrategyConfig(object):
     #
     #     return my_chaos_new, opp_chaos_new
 
-    # def get_yolo_observation(self, area="all_center"):
-    #
-    #     self.lost_pucks.set()
-    #     self.is_lost_puck_present_flag.set(True)
-    #
-    #     if
-    #     self.is_lost_puck_present_flag.set(False)
-
     def is_my_chaos_observed(self):
         # rospy.loginfo("is observed?")
         if self.is_our_chaos_observed_flag.get():
@@ -522,8 +515,8 @@ class StrategyConfig(object):
 
     def is_lost_puck_present(self):
         rospy.loginfo("lost pucks")
-        rospy.loginfo(self.lost_pucks.get())
-        if len(self.lost_pucks.get()) > 0:
+        rospy.loginfo(self.visible_pucks_on_field.get())
+        if len(self.visible_pucks_on_field.get()) > 0:
             rospy.loginfo('There are missing pucks on table')
             return bt.Status.SUCCESS
         else:
@@ -1255,28 +1248,27 @@ class SuddenBlind(StrategyConfig):
         #                         ])
         #                     ])
 
-        # search_lost_puck_unload_cell = bt.SequenceWithMemoryNode([
-        #                                     bt.ActionNode(lambda: self.get_yolo_observation(area="all_center")),
-        #                                     bt.ConditionNode(self.is_lost_puck_present),
-        #                                     bt.ActionNode(lambda: self.calculate_next_landing(self.lost_pucks.get()[0])),
-        #                                     bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
-        #                                     bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
-        #
-        #                                     bt.FallbackWithMemoryNode([
-        #                                         bt.SequenceWithMemoryNode([
-        #                                             bt_ros.StartCollectGroundCheck("manipulator_client"),
-        #                                             bt.ActionNode(lambda: self.score_master.add(get_color(self.lost_pucks.get()[0]))),
-        #                                             bt.ParallelWithMemoryNode([
-        #                                                 bt_ros.CompleteCollectGround("manipulator_client"),
-        #                                                 bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client")
-        #                                             ], threshold=2),
-        #                                             bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),
-        #                                             bt_ros.UnloadAccelerator("manipulator_client"),
-        #                                             bt.ActionNode(lambda: self.score_master.unload("ACC"))
-        #                                         ]),
-        #                                         bt_ros.StopPump("manipulator_client"),
-        #                                     ])
-        #                                 ])
+        search_lost_puck_unload_cell = bt.SequenceWithMemoryNode([
+                                            bt.ConditionNode(self.is_lost_puck_present),
+                                            bt.ActionNode(lambda: self.calculate_next_landing(self.visible_pucks_on_field.get()[0])),
+                                            bt_ros.MoveToVariable(self.next_prelanding_var, "move_client"),
+                                            bt_ros.MoveToVariable(self.next_landing_var, "move_client"),
+
+                                            bt.FallbackWithMemoryNode([
+                                                bt.SequenceWithMemoryNode([
+                                                    bt_ros.StartCollectGroundCheck("manipulator_client"),
+                                                    bt.ActionNode(lambda: self.score_master.add(get_color(self.visible_pucks_on_field.get()[0]))),
+                                                    bt.ParallelWithMemoryNode([
+                                                        bt_ros.CompleteCollectGround("manipulator_client"),
+                                                        bt_ros.MoveLineToPoint(self.blunium_nose_end_push_pose, "move_client")
+                                                    ], threshold=2),
+                                                    bt_ros.SetSpeedSTM([-0.05, -0.1, 0], 0.9, "stm_client"),
+                                                    bt_ros.UnloadAccelerator("manipulator_client"),
+                                                    bt.ActionNode(lambda: self.score_master.unload("ACC"))
+                                                ]),
+                                                bt_ros.StopPump("manipulator_client"),
+                                            ])
+                                        ])
 
         ## INTERVIENE STRATEGY
         self.tree = bt.SequenceWithMemoryNode([
@@ -1299,6 +1291,7 @@ class SuddenBlind(StrategyConfig):
                         push_nose_blunium,
                         unload_acc,
                         collect_unload_goldenium,
+                        search_lost_puck_unload_cell,
                         bt_ros.SetManipulatortoUp("manipulator_client"),
                         bt_ros.MoveLineToPoint(self.starting_pos, "move_client")
                     ])
