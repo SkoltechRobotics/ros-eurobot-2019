@@ -239,3 +239,28 @@ class Root(BTNode):
 
     def log(self, level, prefix=""):
         self.children[0].log(0)
+
+
+# class RepeatNode(FallbackNode):
+#     def __init__(self, n_times):
+#         self.n_times = n_times
+#         self.counter = 0
+#         super(RepeatNode, self).__init__([
+#                 self.check_counter,
+#                 SequenceNode([
+#
+#                 ])
+#         ])
+#
+#     def check_counter(self):
+#         if self.counter < self.n_times:
+#             return Status.FAILED
+#         else:
+#             return Status.SUCCESS
+#
+#     def increase_counter(self):
+#         self.counter += 1
+#
+#     def reset(self):
+#         super(RepeatNode, self).reset()
+#         self.counter = 0

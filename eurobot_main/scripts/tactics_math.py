@@ -34,6 +34,8 @@ def get_color(puck):
         color_val = "GREENIUM"
     elif all(color_key == np.array([0, 0, 1])):
         color_val = "BLUNIUM"
+    elif all(color_key == np.array([0, 0, 0])):
+        color_val = "UNDEFINED"
     return color_val
 
 
@@ -346,3 +348,99 @@ def initial_parse_pucks(observation, pcc, ycc, chaos_radius, pca, yca):
     yellow_pucks_rgb = np.array(yellow_pucks_rgb)
 
     return purple_chaos_pucks, yellow_chaos_pucks, purple_pucks_rgb, yellow_pucks_rgb
+
+
+def yolo_parse_pucks(observation, area):
+
+    lost_pucks = []
+
+    if len(observation) > 0:
+        search_area_buffer = Polygon([area[0], area[1], area[2], area[3]])
+
+        for puck in observation:
+            current_puck = Point(puck[0], puck[1])
+            if current_puck.within(search_area_buffer):
+                lost_pucks.append(puck)
+    else:
+        print "no pucks on the field"
+
+    lost_pucks = np.array(lost_pucks)
+    return lost_pucks
+
+
+"""
+def parse_by_color(new_obs, known):
+
+    colors = ['BLUNIUM', 'GREENIUM', 'REDIUM']
+    known = known.tolist()
+    colors_in_new_obs = []
+    colors_in_known = []
+    list_of_pucks = []
+    # FIXME: remove repetitive code!
+
+    for puck in new_obs:
+        puck_color = get_color(puck)
+        colors_in_new_obs.append(puck_color)
+
+    for puck in known:
+        puck_color = get_color(puck)
+        colors_in_known.append(puck_color)
+
+    if colors_in_new_obs.count("BLUNIUM") == 1:
+
+        ind = colors_in_new_obs.index("BLUNIUM")
+        colors_in_new_obs.remove("BLUNIUM")
+        list_of_pucks.append(new_obs.pop(ind))
+        print "UPDATED BLUNIUM COORDINATE ==========================="
+        try:
+            ind_old = colors_in_known.index("BLUNIUM")
+            colors_in_known.remove("BLUNIUM")
+            del known[ind_old]
+        except ValueError as Error:
+            print Error
+
+    if colors_in_new_obs.count("GREENIUM") == 1:
+
+        ind = colors_in_new_obs.index("GREENIUM")
+        colors_in_new_obs.remove("GREENIUM")
+        list_of_pucks.append(new_obs.pop(ind))
+        print "UPDATED GREENIUM COORDINATE ==========================="
+        try:
+            ind_old = colors_in_known.index("GREENIUM")
+            colors_in_known.remove("GREENIUM")
+            del known[ind_old]
+        except ValueError as Error:
+            print Error
+
+    if colors_in_new_obs.count('REDIUM') == 2:
+
+        ind = colors_in_new_obs.index('REDIUM')
+        colors_in_new_obs.remove('REDIUM')
+        list_of_pucks.append(new_obs.pop(ind))
+        try:
+            ind_old = colors_in_known.index('REDIUM')
+            colors_in_known.remove('REDIUM')
+            # print "old after deleting", colors_in_known
+            del known[ind_old]
+        except ValueError as Error:
+            print Error
+
+        ind = colors_in_new_obs.index('REDIUM')
+        colors_in_new_obs.remove('REDIUM')
+        list_of_pucks.append(new_obs.pop(ind))
+        try:
+            ind_old = colors_in_known.index('REDIUM')
+            colors_in_known.remove('REDIUM')
+            del known[ind_old]
+        except ValueError as Error:
+            print Error
+
+        print "UPDATED TWO REDIUM COORDINATE ==========================="
+
+        list_of_pucks.extend(known)
+
+    elif colors_in_new_obs.count("REDIUM") < 2:
+        # get coords of red in known and append them
+        list_of_pucks.extend(known)
+    return list_of_pucks
+"""

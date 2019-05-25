@@ -39,6 +39,7 @@ secondary_robot:
 
 ground_spacing_dist: 0.3  # between pucks on ground
 chaos_radius: 0.15
+final_search_area: [[2.3, 0.3], [2.3, 1.2], [0.7, 1.2], [0.7, 0.3]]
 
 # lab table
 main_robot:
