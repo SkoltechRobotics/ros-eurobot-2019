@@ -123,6 +123,13 @@ class Delay500(ActionClientNode):
         cmd = "delay_500"
         super(Delay500, self).__init__(cmd, action_client_id)
 
+
+class DelayCollision(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_collision"
+        super(DelayCollision, self).__init__(cmd, action_client_id)
+
+
 # ===========================================================
 class MovingDefault(ActionClientNode):
     def __init__(self, action_client_id):
@@ -196,16 +203,16 @@ class ReleaseFromManipulator(ActionClientNode):
 
 # ===========================================================
 # Commands for collecting ground pucks
-class StartCollectGround(ActionClientNode):
+class StartCollectGroundCheck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_ground"
-        super(StartCollectGround, self).__init__(cmd, action_client_id)
+        super(StartCollectGroundCheck, self).__init__(cmd, action_client_id)
 
 
-class DelayStartCollectGround(ActionClientNode):
+class DelayStartCollectGroundCheck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "delay_start_collect_ground"
-        super(DelayStartCollectGround, self).__init__(cmd, action_client_id)
+        super(DelayStartCollectGroundCheck, self).__init__(cmd, action_client_id)
 
 
 class BlindStartCollectGround(ActionClientNode):
@@ -372,6 +379,7 @@ class StepperUp(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stepper_up"
         super(StepperUp, self).__init__(cmd, action_client_id)
+
 
 class StepperDown(ActionClientNode):
     def __init__(self, action_client_id):

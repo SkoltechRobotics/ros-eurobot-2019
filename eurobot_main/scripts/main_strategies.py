@@ -1119,7 +1119,7 @@ class SuddenBlind(StrategyConfig):
 
                                     bt.FallbackWithMemoryNode([
                                         bt.SequenceWithMemoryNode([
-                                            bt_ros.StartCollectGround("manipulator_client"),
+                                            bt_ros.StartCollectGroundCheck("manipulator_client"),
                                             bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1149,7 +1149,7 @@ class SuddenBlind(StrategyConfig):
 
                                     bt.FallbackWithMemoryNode([
                                         bt.SequenceWithMemoryNode([
-                                            bt_ros.StartCollectGround("manipulator_client"),
+                                            bt_ros.StartCollectGroundCheck("manipulator_client"),
                                             bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME: color is undetermined without camera!
                                             bt.ParallelWithMemoryNode([
                                                 bt_ros.CompleteCollectGround("manipulator_client"),
@@ -1184,7 +1184,7 @@ class SuddenBlind(StrategyConfig):
 
                                             bt.FallbackWithMemoryNode([
                                                 bt.SequenceWithMemoryNode([
-                                                    bt_ros.StartCollectGround("manipulator_client"),
+                                                    bt_ros.StartCollectGroundCheck("manipulator_client"),
                                                     bt.ActionNode(lambda: self.score_master.add("REDIUM")),  # FIXME undefined color
                                                     bt.ActionNode(self.choose_next_waypoint),  # to push blunium start pose
                                                     bt.ParallelWithMemoryNode([

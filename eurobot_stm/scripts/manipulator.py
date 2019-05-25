@@ -96,6 +96,8 @@ class Manipulator(object):
             return self.stepper_down()
         elif cmd == "delay_500":
             return self.delay_500()
+        elif cmd == "delay_collision":
+            return self.delay_collision()
         # --- main_robot
         elif cmd == "manipulator_scales":
             return self.set_manipulator_scales()
@@ -427,6 +429,10 @@ class Manipulator(object):
 
     def delay_500(self):
         rospy.sleep(0.5)
+        return True
+
+    def delay_collision(self):
+        rospy.sleep(10)
         return True
 
     def start_collect_wall(self):
