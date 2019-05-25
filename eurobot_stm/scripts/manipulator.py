@@ -486,7 +486,7 @@ class Manipulator(object):
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
-            result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+            result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
             if result:
                 return True
             else:
