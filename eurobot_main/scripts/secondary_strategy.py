@@ -10,6 +10,7 @@ import bt_ros
 from bt_controller import SideStatus
 from score_controller import ScoreController
 
+
 class Strategy(object):
     def __init__(self):
         self.tfBuffer = tf2_ros.Buffer()
@@ -18,8 +19,6 @@ class Strategy(object):
         self.robot_coordinates = None
         self.collected_pucks = bt.BTVariable([])
         self.score_master = ScoreController(self.collected_pucks, self.robot_name)
-
-
 
     def update_coordinates(self):
         try:
@@ -49,31 +48,30 @@ class Strategy(object):
         else:
             return bt.Status.FAILED
 
-
     def is_last_puck_inside(self):
         if len(self.collected_pucks.get()) == 1:
             return bt.Status.SUCCESS
-        else: 
+        else:
             return bt.Status.FAILED
 
     def is_last_puck_inside_1(self):
         if len(self.collected_pucks.get()) == 1:
             return bt.Status.SUCCESS
-        else: 
+        else:
             return bt.Status.RUNNING
-
 
     def is_no_pucks(self):
         if len(self.collected_pucks.get()) == 0:
             return bt.Status.SUCCESS
-        else: 
+        else:
             return bt.Status.FAILED
 
     def is_no_pucks_1(self):
         if len(self.collected_pucks.get()) == 0:
             return bt.Status.SUCCESS
-        else: 
+        else:
             return bt.Status.RUNNING
+
 
 class HomoStrategy(Strategy):
     def __init__(self, side):
@@ -96,16 +94,15 @@ class HomoStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
 
-
         sixth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt_ros.MoveLineToPoint(self.start_zone + (0, 0, -side_sign*1.57), "move_client"),
+                bt_ros.MoveLineToPoint(self.start_zone + (0, 0, -side_sign * 1.57), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.05, 0), "move_client"),
                     bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client")
                 ], threshold=2),
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.sixth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.1, 0), "move_client"),
@@ -116,7 +113,7 @@ class HomoStrategy(Strategy):
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
                 ], threshold=2),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.redium_zone_first + (0, 0, -side_sign*1.57), "move_client"),
+                bt_ros.MoveLineToPoint(self.redium_zone_first + (0, 0, -side_sign * 1.57), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.05, 0), "move_client"),
                     bt_ros.SetToWall_ifReachedGoal(self.seventh_puck, "manipulator_client")
@@ -128,7 +125,7 @@ class HomoStrategy(Strategy):
         seventh_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.seventh_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.1, 0), "move_client"),
@@ -139,7 +136,7 @@ class HomoStrategy(Strategy):
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
                 ], threshold=2),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.redium_zone_second + (0, 0, -side_sign*1.57), "move_client"),
+                bt_ros.MoveLineToPoint(self.redium_zone_second + (0, 0, -side_sign * 1.57), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
                     bt_ros.SetToWall_ifReachedGoal(self.eighth_puck, "manipulator_client")
@@ -151,7 +148,7 @@ class HomoStrategy(Strategy):
         eighth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.eighth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.1, 0), "move_client"),
@@ -170,6 +167,7 @@ class HomoStrategy(Strategy):
             seventh_puck,
             eighth_puck
         ])
+
 
 class SemaPidrStrategy(Strategy):
     def __init__(self, side):
@@ -204,16 +202,15 @@ class SemaPidrStrategy(Strategy):
             bt.ConditionNode(self.is_no_pucks_1)
         ])
 
-
         sixth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt_ros.MoveLineToPoint(self.start_zone + (0, 0, -side_sign*1.57), "move_client"),
+                bt_ros.MoveLineToPoint(self.start_zone + (0, 0, -side_sign * 1.57), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.05, 0), "move_client"),
                     bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client")
                 ], threshold=2),
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.sixth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.1, 0), "move_client"),
@@ -224,7 +221,7 @@ class SemaPidrStrategy(Strategy):
 
         seventh_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.seventh_puck),
                 bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
                 bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.1, 0), "move_client"),
@@ -236,7 +233,7 @@ class SemaPidrStrategy(Strategy):
         eighth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.eighth_puck),
                 bt.ActionNode(lambda: self.score_master.add("BLUNIUM")),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.1, 0), "move_client"),
@@ -254,6 +251,7 @@ class SemaPidrStrategy(Strategy):
             bt_ros.RightMoustacheDown("manipulator_client"),
             unload
         ])
+
 
 class ReflectedVovanStrategy(Strategy):
     def __init__(self, side):
@@ -284,19 +282,22 @@ class ReflectedVovanStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
         self.reflected_last_zone = np.array(rospy.get_param("secondary_robot/" + param + "/reflected_last_zone"))
+        self.ground_puck = np.array(rospy.get_param("secondary_robot/" + param + "/ground_puck"))
 
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
-                bt.ParallelWithMemoryNode([
-                    bt.SequenceWithMemoryNode([
-                        bt_ros.DelayBlindStartCollectGround("manipulator_client"),
+                bt.SequenceWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.ground_puck + (side_sign * 0.07, 0, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.ground_puck, "move_client"),
+                    bt.ParallelWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
+                        bt_ros.StartCollectGround("manipulator_client"),
                         bt_ros.CompleteCollectGround("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
                         bt_ros.SetManipulatortoWall("manipulator_client")
-                    ]),
-                    bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
+                    ], threshold=5),
                     # bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
-                ], threshold=2),
+                ]),
                 bt_ros.StartPump("manipulator_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.fifth_puck, "move_client"),
@@ -332,19 +333,19 @@ class ReflectedVovanStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.third_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign * 0.05, -0.1, 0), "move_client"),
+                        bt_ros.StopPump("manipulator_client"),
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign * 0.25, -0.1, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
                         bt.ActionNode(lambda: self.score_master.add("GREENIUM"))
                     ])
-                ], threshold=2),
-                bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
+                ], threshold=2)
             ]),
             bt.SequenceWithMemoryNode([
                 bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.25, -0.1, 0), "move_client")
+                bt_ros.MoveLineToPoint(self.third_puck + (side_sign * 0.25, -0.1, 0), "move_client")
                 # bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.05, -0.1, 0), "move_client"),
                 # bt.ParallelWithMemoryNode([
                 #     bt_ros.MoveLineToPoint(self.fifth_puck + (side_sign*0.2, -0.1, 0), "move_client"),
@@ -353,7 +354,6 @@ class ReflectedVovanStrategy(Strategy):
             ])
 
         ])
-
 
         forth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -369,7 +369,7 @@ class ReflectedVovanStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.first_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.05, -0.08, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.05, -0.08, 0), "move_client"),
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
@@ -379,15 +379,14 @@ class ReflectedVovanStrategy(Strategy):
             ]),
             bt.SequenceWithMemoryNode([
                 bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.05, -0.1, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.08, -0.1, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.first_puck + (side_sign*0.07, -0.15, 0), "manipulator_client")
-                ], threshold = 2)
+                    bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.08, -0.1, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.first_puck + (side_sign * 0.07, -0.15, 0), "manipulator_client")
+                ], threshold=2)
             ])
 
         ])
-
 
         fifth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -399,7 +398,7 @@ class ReflectedVovanStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.second_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.2, -0.5, 0), "move_client")
+                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.2, -0.5, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteCollectLastWall("manipulator_client"),
@@ -411,16 +410,16 @@ class ReflectedVovanStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
                     bt_ros.StepperUp("manipulator_client"),
-                ],threshold=2)
+                ], threshold=2)
             ]),
             bt.SequenceWithMemoryNode([
-                    bt_ros.StopPump("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.1, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client"),
-                    bt.ParallelWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
-                        bt_ros.StepperUp("manipulator_client"),
-                    ],threshold=2)
+                bt_ros.StopPump("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.1, -0.5, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.scales_zone + (0, -0.14, 0), "move_client"),
+                bt.ParallelWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
+                    bt_ros.StepperUp("manipulator_client"),
+                ], threshold=2)
             ])
         ])
 
@@ -442,7 +441,7 @@ class ReflectedVovanStrategy(Strategy):
                     bt_ros.SetToWall_ifReachedGoal(self.sixth_puck, "manipulator_client")
                 ], threshold=2),
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.sixth_puck),
                 bt_ros.CompleteTakePuckAndMoveToNext(self.sixth_puck, self.seventh_puck, self.score_master, "REDIUM")
             ])
@@ -451,7 +450,7 @@ class ReflectedVovanStrategy(Strategy):
         seventh_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.seventh_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.seventh_puck),
                 bt_ros.CompleteTakePuckAndMoveToNext(self.seventh_puck, self.eighth_puck, self.score_master, "REDIUM")
             ])
@@ -460,26 +459,26 @@ class ReflectedVovanStrategy(Strategy):
         eighth_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt_ros.StartPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"), 
+                bt_ros.MoveLineToPoint(self.eighth_puck, "move_client"),
                 bt_ros.TryToPumpWallPuck(self.eighth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
 
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.third_puck + (side_sign*0.4, -0.1, 0), "move_client"),
+                    bt.SequenceWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.third_puck + (side_sign * 0.4, -0.1, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
+                    ]),
                     bt_ros.CompleteTakeWallPuck("manipulator_client"),
                 ], threshold=2),
-
-                bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
-
             ])
         ])
 
         nineth_puck = bt.SequenceWithMemoryNode([
             bt_ros.StartPump("manipulator_client"),
             bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
-                    bt_ros.CheckLimitSwitchInf("manipulator_client")
-                ], threshold=1),
+                bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
+                bt_ros.CheckLimitSwitchInf("manipulator_client")
+            ], threshold=1),
             bt_ros.TryToPumpWallPuck(self.nineth_puck),
             bt.ActionNode(lambda: self.score_master.add("REDIUM")),
             bt.ParallelWithMemoryNode([
@@ -499,22 +498,29 @@ class ReflectedVovanStrategy(Strategy):
             bt.ConditionNode(self.is_no_pucks_1)
         ])
 
+        leaving_red_zone = bt.SequenceNode([
+            bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
+            bt_ros.RightMoustacheDefault("manipulator_client"),
+        ])
+
         self.tree = bt.SequenceWithMemoryNode([
             first_puck,
             second_puck,
             third_puck,
             forth_puck,
-            fifth_puck,            
+            fifth_puck,
             unload,
             bt_ros.StepperDown("manipulator_client"),
+            bt_ros.SetReleaserSpeedToLow("manipulator_client"),
             sixth_puck,
             seventh_puck,
             eighth_puck,
             nineth_puck,
             bt_ros.StepperUp("manipulator_client"),
-            bt_ros.SetReleaserSpeedToLow("manipulator_client"),
             bt_ros.RightMoustacheDown("manipulator_client"),
-            unload_to_red])
+            unload_to_red,
+            leaving_red_zone])
+
 
 class VovanStrategy(Strategy):
     def __init__(self, side):
@@ -545,7 +551,6 @@ class VovanStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
 
-
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt.ParallelWithMemoryNode([
@@ -560,7 +565,7 @@ class VovanStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.first_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.05, -0.1, 0), "move_client"),
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
@@ -570,15 +575,14 @@ class VovanStrategy(Strategy):
             ]),
             bt.SequenceWithMemoryNode([
                 bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.05, -0.1, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.05, -0.1, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.first_puck + (side_sign*0.08, -0.1, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.first_puck + (side_sign*0.07, -0.15, 0), "manipulator_client")
-                ], threshold = 2)
+                    bt_ros.MoveLineToPoint(self.first_puck + (side_sign * 0.08, -0.1, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.first_puck + (side_sign * 0.07, -0.15, 0), "manipulator_client")
+                ], threshold=2)
             ])
 
         ])
-
 
         second_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -590,7 +594,7 @@ class VovanStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.second_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.1, -0.5, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.1, -0.5, 0), "move_client"),
                         bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
@@ -600,11 +604,11 @@ class VovanStrategy(Strategy):
                 ], threshold=2),
             ]),
             bt.SequenceWithMemoryNode([
-                    bt_ros.StopPump("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.1, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.third_puck + (0, -0.15, 0), "manipulator_client")
-                ])
+                bt_ros.StopPump("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.1, -0.5, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client"),
+                bt_ros.SetToWall_ifReachedGoal(self.third_puck + (0, -0.15, 0), "manipulator_client")
+            ])
         ])
 
         third_puck = bt.FallbackWithMemoryNode([
@@ -646,7 +650,7 @@ class VovanStrategy(Strategy):
             bt.ParallelWithMemoryNode([
                 bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
                 bt_ros.StepperUp("manipulator_client"),
-            ],threshold=2)
+            ], threshold=2)
         ])
 
         fifth_puck = bt.FallbackWithMemoryNode([
@@ -667,8 +671,8 @@ class VovanStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
                     bt_ros.StepperUp("manipulator_client"),
-                ],threshold=2)
-                
+                ], threshold=2)
+
             ])
         ])
 
@@ -694,13 +698,14 @@ class VovanStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                     bt_ros.CheckLimitSwitchInf("manipulator_client")
-                ], threshold=1), 
+                ], threshold=1),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.sixth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_first, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.sixth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.sixth_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_first, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -725,7 +730,8 @@ class VovanStrategy(Strategy):
                 bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_second, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.seventh_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.seventh_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_second, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -750,7 +756,8 @@ class VovanStrategy(Strategy):
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_third, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -765,8 +772,8 @@ class VovanStrategy(Strategy):
                 bt_ros.SetManipulatortoUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.eighth_puck + (side_sign*0.2, -0.05, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.05, 0), "manipulator_client")
+                    bt_ros.MoveLineToPoint(self.eighth_puck + (side_sign * 0.2, -0.05, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.eighth_puck + (side_sign * 0.2, -0.05, 0), "manipulator_client")
                 ], threshold=2),
                 bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
             ])
@@ -775,14 +782,14 @@ class VovanStrategy(Strategy):
         nineth_puck = bt.SequenceWithMemoryNode([
             bt_ros.StartPump("manipulator_client"),
             bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
-                    bt_ros.CheckLimitSwitchInf("manipulator_client")
-                ], threshold=1),
+                bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
+                bt_ros.CheckLimitSwitchInf("manipulator_client")
+            ], threshold=1),
             bt_ros.TryToPumpWallPuckWithoutGrabber(self.nineth_puck),
             bt.ActionNode(lambda: self.score_master.add("REDIUM")),
             bt.ParallelWithMemoryNode([
-                bt_ros.MoveLineToPoint((0.25,0.4, 1.57), "move_client"),
-                bt_ros.SetToGround_ifReachedGoal(self.nineth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                bt_ros.MoveLineToPoint((0.25, 0.4, 1.57), "move_client"),
+                bt_ros.SetToGround_ifReachedGoal(self.nineth_puck + (side_sign * 0.2, -0.2, 0), "manipulator_client"),
                 bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
             ], threshold=3),
             bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -795,7 +802,7 @@ class VovanStrategy(Strategy):
             second_puck,
             third_puck,
             forth_puck,
-            fifth_puck,            
+            fifth_puck,
             unload,
             sixth_puck,
             seventh_puck,
@@ -832,7 +839,6 @@ class DefenseStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
 
-
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt.ParallelWithMemoryNode([
@@ -847,7 +853,7 @@ class DefenseStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.fifth_puck_zone),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign*0.05, -0.1, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign * 0.05, -0.1, 0), "move_client"),
                     ]),
                     bt.SequenceWithMemoryNode([
                         bt_ros.CompleteTakeWallPuck("manipulator_client"),
@@ -857,15 +863,15 @@ class DefenseStrategy(Strategy):
             ]),
             bt.SequenceWithMemoryNode([
                 bt_ros.StopPump("manipulator_client"),
-                bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign*0.05, -0.1, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign * 0.05, -0.1, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign*0.08, -0.1, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.fifth_puck_zone + (side_sign*0.07, -0.15, 0), "manipulator_client")
-                ], threshold = 2)
+                    bt_ros.MoveLineToPoint(self.fifth_puck_zone + (side_sign * 0.08, -0.1, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.fifth_puck_zone + (side_sign * 0.07, -0.15, 0),
+                                                   "manipulator_client")
+                ], threshold=2)
             ])
 
         ])
-
 
         second_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
@@ -877,7 +883,7 @@ class DefenseStrategy(Strategy):
                 bt_ros.TryToPumpWallPuck(self.second_puck),
                 bt.ParallelWithMemoryNode([
                     bt.SequenceWithMemoryNode([
-                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.1, -0.5, 0), "move_client"),
+                        bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.1, -0.5, 0), "move_client"),
                         bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client")
                     ]),
                     bt.SequenceWithMemoryNode([
@@ -887,11 +893,11 @@ class DefenseStrategy(Strategy):
                 ], threshold=2),
             ]),
             bt.SequenceWithMemoryNode([
-                    bt_ros.StopPump("manipulator_client"),
-                    bt_ros.MoveLineToPoint(self.second_puck + (side_sign*-0.1, -0.5, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.third_puck + (0, -0.15, 0), "manipulator_client")
-                ])
+                bt_ros.StopPump("manipulator_client"),
+                bt_ros.MoveLineToPoint(self.second_puck + (side_sign * -0.1, -0.5, 0), "move_client"),
+                bt_ros.MoveLineToPoint(self.third_puck + (0, -0.05, 0), "move_client"),
+                bt_ros.SetToWall_ifReachedGoal(self.third_puck + (0, -0.15, 0), "manipulator_client")
+            ])
         ])
 
         third_puck = bt.FallbackWithMemoryNode([
@@ -933,7 +939,7 @@ class DefenseStrategy(Strategy):
             bt.ParallelWithMemoryNode([
                 bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
                 bt_ros.StepperUp("manipulator_client"),
-            ],threshold=2)
+            ], threshold=2)
         ])
 
         fifth_puck = bt.FallbackWithMemoryNode([
@@ -954,8 +960,8 @@ class DefenseStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.scales_zone, "move_client"),
                     bt_ros.StepperUp("manipulator_client"),
-                ],threshold=2)
-                
+                ], threshold=2)
+
             ])
         ])
 
@@ -981,13 +987,14 @@ class DefenseStrategy(Strategy):
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.sixth_puck, "move_client"),
                     bt_ros.CheckLimitSwitchInf("manipulator_client")
-                ], threshold=1), 
+                ], threshold=1),
                 bt_ros.TryToPumpWallPuckWithoutGrabber(self.sixth_puck),
                 bt.ActionNode(lambda: self.score_master.add("REDIUM")),
                 bt_ros.MoveLineToPoint(self.sixth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_first, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.sixth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.sixth_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_first, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -1012,7 +1019,8 @@ class DefenseStrategy(Strategy):
                 bt_ros.MoveLineToPoint(self.seventh_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_second, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.seventh_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.seventh_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_second, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -1037,7 +1045,8 @@ class DefenseStrategy(Strategy):
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
                     bt_ros.MoveLineToPoint(self.redium_zone_third, "move_client"),
-                    bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                    bt_ros.SetToGround_ifReachedGoal(self.eighth_puck + (side_sign * 0.2, -0.2, 0),
+                                                     "manipulator_client"),
                     bt_ros.PublishScore_ifReachedGoal(self.redium_zone_third, self.score_master, "RED")
                 ], threshold=3),
                 bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -1052,8 +1061,8 @@ class DefenseStrategy(Strategy):
                 bt_ros.SetManipulatortoUp("manipulator_client"),
                 bt_ros.MoveLineToPoint(self.eighth_puck + (0, -0.05, 0), "move_client"),
                 bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.eighth_puck + (side_sign*0.2, -0.05, 0), "move_client"),
-                    bt_ros.SetToWall_ifReachedGoal(self.eighth_puck + (side_sign*0.2, -0.05, 0), "manipulator_client")
+                    bt_ros.MoveLineToPoint(self.eighth_puck + (side_sign * 0.2, -0.05, 0), "move_client"),
+                    bt_ros.SetToWall_ifReachedGoal(self.eighth_puck + (side_sign * 0.2, -0.05, 0), "manipulator_client")
                 ], threshold=2),
                 bt_ros.MoveLineToPoint(self.nineth_puck + (0, -0.05, 0), "move_client"),
             ])
@@ -1062,14 +1071,14 @@ class DefenseStrategy(Strategy):
         nineth_puck = bt.SequenceWithMemoryNode([
             bt_ros.StartPump("manipulator_client"),
             bt.ParallelWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
-                    bt_ros.CheckLimitSwitchInf("manipulator_client")
-                ], threshold=1),
+                bt_ros.MoveLineToPoint(self.nineth_puck, "move_client"),
+                bt_ros.CheckLimitSwitchInf("manipulator_client")
+            ], threshold=1),
             bt_ros.TryToPumpWallPuckWithoutGrabber(self.nineth_puck),
             bt.ActionNode(lambda: self.score_master.add("REDIUM")),
             bt.ParallelWithMemoryNode([
-                bt_ros.MoveLineToPoint((0.25,0.4, 1.57), "move_client"),
-                bt_ros.SetToGround_ifReachedGoal(self.nineth_puck + (side_sign*0.2, -0.2, 0), "manipulator_client"),
+                bt_ros.MoveLineToPoint((0.25, 0.4, 1.57), "move_client"),
+                bt_ros.SetToGround_ifReachedGoal(self.nineth_puck + (side_sign * 0.2, -0.2, 0), "manipulator_client"),
                 bt_ros.PublishScore_ifReachedGoal(self.redium_zone_center, self.score_master, "RED")
             ], threshold=3),
             bt_ros.ReleaseFromManipulator("manipulator_client"),
@@ -1082,7 +1091,7 @@ class DefenseStrategy(Strategy):
             second_puck,
             third_puck,
             forth_puck,
-            fifth_puck,            
+            fifth_puck,
             unload,
             sixth_puck,
             seventh_puck,
