@@ -9,16 +9,40 @@ import behavior_tree as bt
 import bt_ros
 from bt_controller import SideStatus
 from score_controller import ScoreController
+from tactics_math import get_color, yolo_parse_pucks, initial_parse_pucks
 
 
 class Strategy(object):
-    def __init__(self):
+    def __init__(self, side):
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
         self.robot_name = rospy.get_param("robot_name")
         self.robot_coordinates = None
         self.collected_pucks = bt.BTVariable([])
+        self.chaos_radius = rospy.get_param("chaos_radius")
+        self.purple_chaos_center = rospy.get_param("main_robot" + "/" + "purple_side" + "/chaos_center")
+        self.yellow_chaos_center = rospy.get_param("main_robot" + "/" + "yellow_side" + "/chaos_center")
+        self.purple_cells_area = rospy.get_param("main_robot" + "/" + "purple_side" + "/purple_cells_area")
+        self.yellow_cells_area = rospy.get_param("main_robot" + "/" + "yellow_side" + "/yellow_cells_area")
+        self.final_search_area = rospy.get_param("final_search_area")
+        self.visible_pucks_on_field = bt.BTVariable(np.array([]))  # (x, y, id, r, g, b)
+
+        self.is_robot_started = bt.BTVariable(False)
+        self.our_pucks_rgb = bt.BTVariable(np.array([[0, 0, 0, 0, 0, 0],
+                                                     [0, 0, 1, 0, 0, 0],
+                                                     [0, 0, 2, 0, 0, 0]]))  # (x, y, id, r, g, b)
+
+        self.side = side
         self.score_master = ScoreController(self.collected_pucks, self.robot_name)
+
+        if side == SideStatus.PURPLE:
+            self.color_side = "purple_side"
+            self.opponent_side = "yellow_side"
+            self.sign = -1
+        elif side == SideStatus.YELLOW:
+            self.color_side = "yellow_side"
+            self.opponent_side = "purple_side"
+            self.sign = 1
 
     def update_coordinates(self):
         try:
@@ -48,6 +72,62 @@ class Strategy(object):
         else:
             return bt.Status.FAILED
 
+    def parse_pucks(self):
+        data = self.pucks_slave.get_pucks()
+        # [(0.95, 1.1, 3, 0, 0, 1), ...] - blue, id=3  IDs are not guaranteed to be the same from frame to frame
+        # red (1, 0, 0)
+        # green (0, 1, 0)
+        # blue (0, 0, 1)
+        # rospy.loginfo(data)
+
+        try:
+            new_observation_pucks = [[marker.pose.position.x,
+                                      marker.pose.position.y,
+                                      marker.id,
+                                      marker.color.r,
+                                      marker.color.g,
+                                      marker.color.b] for marker in data.markers]
+
+            # Updating all pucks from scratch with each new observation if robots are still waiting.
+            # When robots start, there occurs possibility that camera just doesn't see some of pucks or they are already collected:
+            # in this case function compare_to_update_or_ignore is used
+
+            if self.is_robot_started.get() is False:
+
+                _, __, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(
+                                                            new_observation_pucks,
+                                                            self.purple_chaos_center,
+                                                            self.yellow_chaos_center,
+                                                            self.chaos_radius,
+                                                            self.purple_cells_area,
+                                                            self.yellow_cells_area)
+
+                if self.color_side == "purple_side":
+                    if len(purple_pucks_rgb) == 3:
+                        self.our_pucks_rgb.set(purple_pucks_rgb)
+
+                elif self.color_side == "yellow_side":
+                    if len(yellow_pucks_rgb) == 3:
+                        self.our_pucks_rgb.set(yellow_pucks_rgb)
+
+            if self.is_robot_started.get() is True:
+                lost_pucks = yolo_parse_pucks(new_observation_pucks,
+                                              self.final_search_area)
+                self.visible_pucks_on_field.set(lost_pucks)
+
+        except Exception:  # FIXME
+            rospy.loginfo("list index out of range - no visible pucks on the field ")
+
+    def is_observed(self):
+        # rospy.loginfo("is_observed")
+        # rospy.loginfo(self.visible_pucks_on_field.get())
+        if len(self.our_pucks_rgb.get()) > 0:
+            rospy.loginfo('pucks near cells observed')
+            return bt.Status.SUCCESS
+        else:
+            rospy.loginfo('no pucks found')
+            return bt.Status.FAILED
+
     def is_last_puck_inside(self):
         if len(self.collected_pucks.get()) == 1:
             return bt.Status.SUCCESS
@@ -74,13 +154,13 @@ class Strategy(object):
 
 
 class HomoStrategy(Strategy):
-    def __init__(self, side):
+    def __init__(self):
         super(HomoStrategy, self).__init__()
 
-        if side == SideStatus.PURPLE:
+        if self.side == SideStatus.PURPLE:
             param = "purple_side"
             side_sign = -1
-        elif side == SideStatus.YELLOW:
+        elif self.side == SideStatus.YELLOW:
             param = "yellow_side"
             side_sign = 1
 
@@ -293,7 +373,7 @@ class ReflectedVovanStrategy(Strategy):
                         bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
                         bt_ros.StartCollectGround("manipulator_client"),
                         bt_ros.CompleteCollectGround("manipulator_client"),
-                        bt.ActionNode(lambda: self.score_master.add("GREENIUM")),
+                        bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[0]))),
                         bt_ros.SetManipulatortoWall("manipulator_client")
                     ], threshold=5),
                     # bt_ros.SetToWall_ifReachedGoal(self.fifth_puck + (0, -0.05, 0), "manipulator_client")
