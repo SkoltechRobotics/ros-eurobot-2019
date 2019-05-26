@@ -154,8 +154,8 @@ class Strategy(object):
 
 
 class HomoStrategy(Strategy):
-    def __init__(self):
-        super(HomoStrategy, self).__init__()
+    def __init__(self, side):
+        super(HomoStrategy, self).__init__(side)
 
         if self.side == SideStatus.PURPLE:
             param = "purple_side"
@@ -251,7 +251,7 @@ class HomoStrategy(Strategy):
 
 class SemaPidrStrategy(Strategy):
     def __init__(self, side):
-        super(SemaPidrStrategy, self).__init__()
+        super(SemaPidrStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -335,7 +335,7 @@ class SemaPidrStrategy(Strategy):
 
 class ReflectedVovanStrategy(Strategy):
     def __init__(self, side):
-        super(ReflectedVovanStrategy, self).__init__()
+        super(ReflectedVovanStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -604,7 +604,7 @@ class ReflectedVovanStrategy(Strategy):
 
 class VovanStrategy(Strategy):
     def __init__(self, side):
-        super(VovanStrategy, self).__init__()
+        super(VovanStrategy,  self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"
@@ -892,7 +892,7 @@ class VovanStrategy(Strategy):
 
 class DefenseStrategy(Strategy):
     def __init__(self, side):
-        super(DefenseStrategy, self).__init__()
+        super(DefenseStrategy, self).__init__(side)
 
         if side == SideStatus.PURPLE:
             param = "purple_side"

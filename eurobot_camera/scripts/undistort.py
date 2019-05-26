@@ -70,13 +70,35 @@ class CameraUndistortNode():
         self.publisher_pucks = rospy.Publisher("/pucks", MarkerArray, queue_size=1)
         self.publisher_thresh = rospy.Publisher("/thresh", Image, queue_size=1)
 
+        self.cap = cv2.VideoCapture(0)
+
         self.bridge = CvBridge()
         self.camera = Camera(DIM, K, D)
         self.contour = Contour()
 
+        rospy.Timer(1,self.__callback_vertical())
+
         if self.mode == "vertical":
             self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                                self.__callback_vertical, queue_size=1)
+
+
+
+            while (True):
+                # Capture frame-by-frame
+                ret, frame = self.cap.read()
+
+                # Our operations on the frame come here
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                # Display the resulting frame
+                cv2.imshow('frame', gray)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+            # When everything done, release the capture
+            cap.release()
+            cv2.destroyAllWindows()
         elif self.mode == "horizontal":
             self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
                                                self.__callback_horizontal, queue_size=1)
@@ -149,7 +171,6 @@ class CameraUndistortNode():
             # Find all contours on the image
             # image_gray = image_p #cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            # image_gray = image_processing.watersherd(image_gray)
             image_thresh = self.contour.find(image_gray)
             image_contours = copy.copy(image)
             image_contours = self.contour.draw(image_contours, self.contour.all_contours)
