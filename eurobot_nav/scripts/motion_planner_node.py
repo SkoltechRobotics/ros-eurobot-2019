@@ -120,10 +120,10 @@ class MotionPlannerNode:
                                [3. - self.robot_radius, 2. - self.robot_radius],
                                [2.55 + self.robot_radius, 2. - self.robot_radius],
                                [2.55 + self.robot_radius, 1.543 - self.robot_radius],
-                               [1.7 - self.robot_radius, 1.543 - self.robot_radius],
-                               [1.7 - self.robot_radius, 1.343 - self.robot_radius],
-                               [1.3 - self.robot_radius, 1.343 - self.robot_radius],
-                               [1.3 - self.robot_radius, 1.543 - self.robot_radius],
+                               # [1.7 - self.robot_radius, 1.543 - self.robot_radius],
+                               # [1.7 - self.robot_radius, 1.343 - self.robot_radius],
+                               # [1.3 - self.robot_radius, 1.343 - self.robot_radius],
+                               # [1.3 - self.robot_radius, 1.543 - self.robot_radius],
                                [0.45 - self.robot_radius, 1.543 - self.robot_radius],
                                [0.45 - self.robot_radius, 2. - self.robot_radius],
                                [self.robot_radius, 2. - self.robot_radius],
@@ -252,6 +252,7 @@ class MotionPlannerNode:
             self.xy_tolerance = self.XY_GOAL_TOLERANCE_MOVE_TO_POINT
             self.yaw_tolerance = self.YAW_GOAL_TOLERANCE_MOVE_TO_POINT
             self.e_const = self.exp_const_move_to_point
+            self.obstacle_polygon = np.array([[1.7, 1.], [1.7, 1.8], [2, 1.8], [2, 1]])
             self.way_points = self.path_planner.create_path(self.coords, self.goal, self.obstacle_polygon)
             # self.publish_world(np.array([world]))
             # self.collision_avoidance.set_collision_point([self.world[1, :]])
@@ -453,7 +454,7 @@ class MotionPlannerNode:
         #rospy.loginfo(self.collision_avoidance)
         #rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
         self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
-
+        obstacle_point = np.array([[1.7, 1.], [1.7, 1.6], [2, 1.6], [2, 1.6]])
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
         #self.is_collision = False
