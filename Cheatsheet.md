@@ -545,3 +545,12 @@ If it succeeds, reboot.
 sudo reboot
 
 rosclean purge
+
+
+tmuxinator new main_robot
+with Ctrl+B start any coomand:
+    shift+5 - vertically
+    shift+" - horiz
+    x - kill
+    arrows - navigation
+    
