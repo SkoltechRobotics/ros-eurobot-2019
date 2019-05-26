@@ -48,7 +48,7 @@ class CollisionAvoidanceMainRobot(object):
         self.collision_area_publisher = rospy.Publisher("collision_area", Marker, queue_size=10)
 #       init subscribers
         rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
-        rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
+        #rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
 
     @staticmethod
     def filter_scan(scan):
@@ -255,7 +255,7 @@ class CollisionAvoidanceSecondaryRobot(object):
         self.num_sensor_collision_points = None
         self.default_obstacle_point = []
 #       init subscribers
-        rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
+        #rospy.Subscriber("/%s/scan" % self.robot_name, LaserScan, self.scan_callback, queue_size=1)
         rospy.Subscriber("/%s/stm/proximity_status" % self.robot_name, String, self.proximity_callback, queue_size=10)
         #rospy.Subscriber("obstacle_point", String, self.obstacle_callback, queue_size=1)
 #       init publishers
@@ -273,7 +273,7 @@ class CollisionAvoidanceSecondaryRobot(object):
     def filter_scan(scan):
         ranges = np.array(scan.ranges)
         index0 = ranges < 2
-        index1 = ranges > 0.1
+        index1 = ranges > 0.2
         index = index0
         return np.where(index, ranges, 0)
 

@@ -16,6 +16,8 @@ secondary_robot:
     redium_zone_second: [0.22, 0.43, 3.14]
     redium_zone_third: [0.22, 0.51, 3.14]
     redium_zone_forth: [0.15, 0.75, -1.57]
+    reflected_last_zone : [0.21, 0.36, -1.7]
+    ground_puck : [0.45, 1.05, 0]
 
   yellow_side:
     first_puck_zone: [2.775, 1.81, 1.57]
@@ -34,9 +36,12 @@ secondary_robot:
     redium_zone_second: [2.75, 0.65, -1.57]
     redium_zone_third: [2.75, 0.75, -1.5]
     redium_zone_forth: [2.85, 0.75, -1.57]
+    reflected_last_zone : [2.83, 0.77, 1.37]
+    ground_puck : [2.55, 1.05, 3.14]
 
 ground_spacing_dist: 0.3  # between pucks on ground
 chaos_radius: 0.15
+final_search_area: [[2.3, 0.3], [2.3, 1.2], [0.7, 1.2], [0.7, 0.3]]
 
 # lab table
 main_robot:

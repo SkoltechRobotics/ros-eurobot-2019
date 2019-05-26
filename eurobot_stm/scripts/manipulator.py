@@ -53,6 +53,8 @@ class Manipulator(object):
             "LEFT_MOUSTACHE_DOWN" : 0x23,
             "RIGHT_MOUSTACHE_DEFAULT" : 0x24,
             "RIGHT_MOUSTACHE_DOWN" : 0x25,
+            "SET_RELEASER_SPEED_TO_HIGH" : 0x26,
+            "SET_RELEASER_SPEED_TO_LOW" : 0x27,
 
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
@@ -109,11 +111,15 @@ class Manipulator(object):
             return self.stepper_down()
         elif cmd == "delay_500":
             return self.delay_500()
+        elif cmd == "delay_collision":
+            return self.delay_collision()
         # --- main_robot
         elif cmd == "manipulator_scales":
             return self.set_manipulator_scales()
         elif cmd == "start_collect_ground":
             return self.start_collect_ground()
+        elif cmd == "delay_start_collect_ground":
+            return self.delay_start_collect_ground()
         elif cmd == "blind_start_collect_ground":
             return self.blind_start_collect_ground()
         elif cmd == "delay_blind_start_collect_ground":
@@ -159,6 +165,10 @@ class Manipulator(object):
             return self.release_from_manipulator()
         elif cmd == "check_limit switch_infinitely":
             return self.check_status_infinitely()
+        elif cmd == "set_releaser_speed_to_high":
+            return self.set_releaser_speed_to_high()
+        elif cmd == "set_releaser_speed_to_low":
+            return self.set_releaser_speed_to_low()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -242,7 +252,7 @@ class Manipulator(object):
             self.stm_publisher.publish(String("manipulator_status-" + str(self.status_command) + " " + str(cmd)))
             if self.is_success_status(self.status_command):
                 counter += 1
-            if counter > 0:
+            if counter > 5:  # was 0
                 return True
         return False
 
@@ -277,6 +287,19 @@ class Manipulator(object):
         return True
 
     def start_collect_ground(self):
+        self.send_command(self.protocol["OPEN_GRABBER"])
+        self.send_command(self.protocol["SET_GROUND"])
+        self.send_command(self.protocol["START_PUMP"])
+        rospy.sleep(0.2)
+        # result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
+        if result:
+            return True
+        else:
+            return False
+
+    def delay_start_collect_ground(self, delay=0.6):
+        rospy.sleep(delay)
         self.send_command(self.protocol["OPEN_GRABBER"])
         self.send_command(self.protocol["SET_GROUND"])
         self.send_command(self.protocol["START_PUMP"])
@@ -362,14 +385,18 @@ class Manipulator(object):
 
     def goldenium_up_and_hold(self):
         self.send_command(self.protocol["OPEN_GRABBER"])
-        self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
-        return True
+        result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
+        if result:
+            self.send_command(self.protocol["SET_LIFT_GOLDENIUM_ANGLE_MAIN"])
+            return True
+        else:
+            return False
 
     def start_collect_goldenium(self):
         self.send_command(self.protocol["SET_GRAB_GOLDENIUM_ANGLE_MAIN"])
         rospy.sleep(0.2)
         self.send_command(self.protocol["START_PUMP"])
-        rospy.sleep(0.5)
+        rospy.sleep(0.2)
         return True
 
     def release_goldenium_on_scales(self):
@@ -421,6 +448,15 @@ class Manipulator(object):
         self.send_command(self.protocol["RIGHT_MOUSTACHE_DOWN"])
         return True
 
+    def set_releaser_speed_to_high(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_HIGH"])
+        return True
+
+    def set_releaser_speed_to_low(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_LOW"])
+        return True
+
+
     def moving_default(self):
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["SET_PLATFORM"])
@@ -439,6 +475,10 @@ class Manipulator(object):
         rospy.sleep(0.5)
         return True
 
+    def delay_collision(self):
+        rospy.sleep(10)
+        return True
+
     def start_collect_wall(self):
         if self.robot_name == "main_robot":
             pass
@@ -446,7 +486,7 @@ class Manipulator(object):
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
-            result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+            result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
             if result:
                 return True
             else:

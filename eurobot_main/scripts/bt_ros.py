@@ -126,6 +126,16 @@ class RightMoustacheDown(ActionClientNode):
         cmd = "right_moustache_down"
         super(RightMoustacheDown, self).__init__(cmd, action_client_id)
 
+class SetReleaserSpeedToHigh(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_releaser_speed_to_high"
+        super(SetReleaserSpeedToHigh, self).__init__(cmd, action_client_id)
+
+class SetReleaserSpeedToLow(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "set_releaser_speed_to_low"
+        super(SetReleaserSpeedToLow, self).__init__(cmd, action_client_id)
+
 
 class StartPump(ActionClientNode):
     def __init__(self, action_client_id):
@@ -142,6 +152,13 @@ class Delay500(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "delay_500"
         super(Delay500, self).__init__(cmd, action_client_id)
+
+
+class DelayCollision(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_collision"
+        super(DelayCollision, self).__init__(cmd, action_client_id)
+
 
 # ===========================================================
 class MovingDefault(ActionClientNode):
@@ -180,11 +197,6 @@ class SetSpeedSTM(ActionClientNode):
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd(self.cmd.get()))
         rospy.sleep(self.delay)
         self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 -0.05 0"))  # "8 " + str(-1*self.speed[0]) + "0 " + "0"
-        # rospy.sleep(self.delay*2)
-        # self.cmd_id.set(self.root.action_clients[self.action_client_id].set_cmd("8 0 0 0"))
-        # rospy.sleep(self.delay/2)
 
     def action_status(self):
         status = self.root.action_clients[self.action_client_id].get_status(self.cmd_id.get())
@@ -221,10 +233,16 @@ class ReleaseFromManipulator(ActionClientNode):
 
 # ===========================================================
 # Commands for collecting ground pucks
-class StartCollectGround(ActionClientNode):
+class StartCollectGroundCheck(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "start_collect_ground"
-        super(StartCollectGround, self).__init__(cmd, action_client_id)
+        super(StartCollectGroundCheck, self).__init__(cmd, action_client_id)
+
+
+class DelayStartCollectGroundCheck(ActionClientNode):
+    def __init__(self, action_client_id):
+        cmd = "delay_start_collect_ground"
+        super(DelayStartCollectGroundCheck, self).__init__(cmd, action_client_id)
 
 
 class BlindStartCollectGround(ActionClientNode):
@@ -392,6 +410,7 @@ class StepperUp(ActionClientNode):
         cmd = "stepper_up"
         super(StepperUp, self).__init__(cmd, action_client_id)
 
+
 class StepperDown(ActionClientNode):
     def __init__(self, action_client_id):
         cmd = "stepper_down"
@@ -536,7 +555,7 @@ class SetToScales_ifReachedGoal(bt.SequenceNode):
             self.robot_coordinates = np.array([trans.transform.translation.x,
                                                trans.transform.translation.y,
                                                angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            # rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))
@@ -582,7 +601,7 @@ class PublishScore_ifReachedGoal(bt.SequenceNode):
             self.robot_coordinates = np.array([trans.transform.translation.x,
                                                trans.transform.translation.y,
                                                angle])
-            rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
+            # rospy.loginfo("Robot coords:\t" + str(self.robot_coordinates))
             return True
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as msg:
             rospy.logwarn(str(msg))

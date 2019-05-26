@@ -13,15 +13,13 @@ class MapPublisher:
         self.length_y = 200
         self.resolution = 0.01
         self.map = np.zeros((self.length_y, self.length_x))
-        self.map[154:200, 45:255] = 100
-        self.map[0:7, 50:250] = 100
-        self.map[197:200, 8:38] = 100
-        self.map[197:200, 262:293] = 100
-        self.map[134:200, 148:152] = 100
-        x, y = np.meshgrid(range(self.length_x), range(self.length_y))
-        self.map[((y - 105)**2 + (x - 100)**2) <= 225] = 100
-        x, y = np.meshgrid(range(self.length_x), range(self.length_y))
-        self.map[((y - 105)**2 + (x - 200)**2) <= 225] = 100
+        self.map[144:200, 35:265] = 100
+        self.map[0:12, 45:255] = 100
+        self.map[192:200, 3:43] = 100
+        self.map[192:200, 257:298] = 100
+        self.map[129:200, 143:157] = 100
+        self.map[25:125, 250:300] = 100
+        self.map[25:125, 0:50] = 100
         rospy.Timer(rospy.Duration(1. / 2), self. publish_map)
 
     def publish_map(self, event):

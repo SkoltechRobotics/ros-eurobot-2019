@@ -4,13 +4,14 @@ num_points_in_path: 100
 robot_radius: 0.20
 k_linear_wp: 2.5
 k_linear_vp: 1.5
-k : 0.15
-min_dist_to_goal_point: 0.1  # 0.1
+
+k : 0.25
+min_dist_to_goal_point: 0.2  # 0.1
 # max rate of the planner
-RATE: 25
+RATE: 40
 # goal tolerance
-XY_GOAL_TOLERANCE: 0.005
-YAW_GOAL_TOLERANCE: 0.01
+XY_GOAL_TOLERANCE: 0.012
+YAW_GOAL_TOLERANCE: 0.012
 # maximum speed
 V_MAX: 0.5
 W_MAX: 1.5
@@ -21,7 +22,7 @@ ACCELERATION: 1.0
 # goal distance for deceleration
 D_DECELERATION: 0.15
 R_DECELERATION: 1
-exp_const: 0.08
+exp_const: 0.11
 # power of deceleration factor
 GAMMA: 0.75
 # params for accurate movements to water towers or cube heaps
