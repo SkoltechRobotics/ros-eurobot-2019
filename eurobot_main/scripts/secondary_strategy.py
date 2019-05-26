@@ -581,6 +581,9 @@ class ReflectedVovanStrategy(Strategy):
                 bt.SequenceWithMemoryNode([
                     bt_ros.ReleaseOnePuck("manipulator_client"),
                     bt.ActionNode(lambda: self.score_master.unload("RED")),
+                    bt_ros.RightMoustacheDown("manipulator_client"),
+                    bt_ros.Delay500("manipulator_client"),
+                    bt_ros.RightMoustacheDefault("manipulator_client"),
                 ])
             ]),
             bt.ConditionNode(self.is_no_pucks_1)
@@ -620,7 +623,7 @@ class ReflectedVovanStrategy(Strategy):
             eighth_puck,
             nineth_puck,
             bt_ros.StepperUp("manipulator_client"),
-            bt_ros.RightMoustacheDown("manipulator_client"),
+            bt_ros.LeftMoustacheDown("manipulator_client"),
             unload_to_red,
             leaving_red_zone,
             second_ground_puck])

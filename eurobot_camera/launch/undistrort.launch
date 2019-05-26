@@ -11,12 +11,12 @@
     <param name="camera_info_url" value="package://eurobot_camera/configs/calibration.yaml"/>
 </node>
 
-<node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery"/>
-<node pkg="master_sync_fkie" type="master_sync" name="master_sync"/>
+<node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" respawn="true"/>
+<node pkg="master_sync_fkie" type="master_sync" name="master_sync" respawn="true"/>
 
-<node name="camera_node" pkg="eurobot_camera" type="undistort.py" output="screen" args="-c /home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/configs/calibration.yaml -t /home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/resources/field_white.png">
+<node name="camera_node" pkg="eurobot_camera" type="undistort.py" respawn="true" output="screen" args="-c /home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/configs/calibration.yaml -t /home/nuka-cola/catkin_ws/src/ros-eurobot-2019/eurobot_camera/resources/field_white.png">
 </node>
 
-<node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" >
+<node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" respawn="true" output="screen" >
 </node>
 </launch>
