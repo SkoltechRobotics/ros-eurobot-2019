@@ -71,20 +71,20 @@ class MainRobotBT(object):
     def change_side(self, side):
 
         self.side_status = side
-        self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
-        # self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
+        # self.sberstr = SberStrategy(self.side_status)  # , self.pucks_slave # FIXME: add second tree from SuddenBlind
+        self.suddenblind = SuddenBlind(self.side_status)  # , self.pucks_slave
         # self.testfield = TestField(self.side_status)  # , self.pucks_slave
 
-        self.strategy = self.sberstr
+        self.strategy = self.suddenblind
 
     def change_strategy(self, num):
         self.strategy_number = num
         if num == 0:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = self.sberstr  #  suddenblind
+            self.strategy = self.suddenblind  #  suddenblind
         elif num == 1:
             print("CHANGE STRATEGY TO " + str(num))
-            self.strategy = SuddenBlind(self.side_status)
+            # self.strategy = SuddenBlind(self.side_status)
         elif num == 2:
             print("CHANGE STRATEGY TO " + str(num))
             # self.strategy = self.testfield
@@ -189,7 +189,7 @@ class StrategyConfig(object):
                                                      self.blunium[1] + self.robot_outer_radius - 0.03,
                                                      0.56 - self.sign * 0.07])  # y/p  /0.63 or 0.56 both
 
-        self.blunium_nose_end_push_pose = np.array([self.blunium[0] + self.sign * 0.21,  # 0.22
+        self.blunium_nose_end_push_pose = np.array([self.blunium[0] - self.sign * 0.22,  # 0.22
                                                    self.blunium[1] + self.robot_outer_radius - 0.03,  # self.blunium[1] + 0.13
                                                    self.blunium_nose_start_push_pose[2]])
 
@@ -229,9 +229,9 @@ class StrategyConfig(object):
                                             self.guard_chaos_loc[1],
                                             1.57 - self.sign * 0.785])  # y/p  0.78/2.35
 
-        self.blind_guard_chaos_finish = np.array([self.guard_chaos_loc[0] + self.sign * 0.23,
+        self.blind_guard_chaos_finish = np.array([self.guard_chaos_loc[0] + self.sign * 0.15,
                                                     self.guard_chaos_loc[1] + 0.15,
-                                                    self.guard_chaos_rotate[2] - self.sign * 0.2])
+                                                    self.guard_chaos_rotate[2] - self.sign * 0.3])
 
         self.starting_pos = np.array([1.5 + self.sign * 1.2,  # y/p 2.7 / 0.3
                                     0.45,
