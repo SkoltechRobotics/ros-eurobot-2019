@@ -437,8 +437,7 @@ class MotionPlannerNode:
         self.prev_vel = v_cmd
         self.set_speed(v_cmd)
         if self.path_left < self.xy_tolerance and self.path_left < self.yaw_tolerance:
-            if self.cmd_type != "move_to_point":
-                self.set_speed(np.zeros(3))
+            self.set_speed(np.zeros(3))
             self.is_robot_stopped = True
 
     def move(self):
