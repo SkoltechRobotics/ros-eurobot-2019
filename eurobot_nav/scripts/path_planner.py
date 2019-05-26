@@ -5,22 +5,20 @@ from polygon_conversions import list_from_polygon, list_from_polygon_array, poly
 
 
 class PathPlanning(object):
-    def __init__(self):
-        self.robot_radius = 0.15
-#         self.world = np.array([[self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],
-#                   [3. - self.robot_radius, 2. - self.robot_radius], [2.55 + self.robot_radius, 2. - self.robot_radius],
-#                  [2.55 + self.robot_radius, 1.543 - self.robot_radius],
-#                                [0.45 - self.robot_radius, 1.543 - self.robot_radius],
-#                  [0.45 - self.robot_radius, 2. - self.robot_radius], [self.robot_radius, 2. - self.robot_radius]])
+    def __init__(self, robot_radius=0.15):
+        self.robot_radius = robot_radius
         self.chaos_zone_purple = np.array([[1. - self.robot_radius, 1 - self.robot_radius], [1. - self.robot_radius, 1. + self.robot_radius], [1. + self.robot_radius, 1. + self.robot_radius], [1. + self.robot_radius, 1. - self.robot_radius]])
         self.chaos_zone_yellow = np.array([[2. - self.robot_radius, 1 - self.robot_radius], [2. - self.robot_radius, 1. + self.robot_radius], [2. + self.robot_radius, 1. + self.robot_radius], [2. + self.robot_radius, 1. - self.robot_radius]])
         self.epsilon = 0.0001
         self.is_flipped = False
-        robot_radius = 0.15
-        self.world = np.array([[robot_radius, robot_radius], [3. - robot_radius, robot_radius],
-                  [3. - robot_radius, 2. - robot_radius], [2.55 + robot_radius, 2. - robot_radius],
-                 [2.55 + robot_radius, 1.543 - robot_radius], [0.45 - robot_radius, 1.543 - robot_radius],
-                 [0.45 - robot_radius, 2. - robot_radius], [robot_radius, 2. - robot_radius]])
+        self.world = np.array([[self.robot_radius, self.robot_radius], [0.5 - self.robot_radius, self.robot_radius],
+                          [0.5 - self.robot_radius, 0.07 + self.robot_radius], [2.5 + self.robot_radius, 0.07 + self.robot_radius],
+                          [2.5 + self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],
+                          [3. - self.robot_radius, 2. - self.robot_radius], [2.55 + self.robot_radius, 2. - self.robot_radius],
+                          [2.55 + self.robot_radius, 1.543 - self.robot_radius], [1.7 - self.robot_radius, 1.543 - self.robot_radius],
+                          [1.7 - self.robot_radius, 1.343 - self.robot_radius], [1.3 - self.robot_radius, 1.343 - self.robot_radius],
+                          [1.3 - self.robot_radius, 1.543 - self.robot_radius], [0.45 - self.robot_radius, 1.543 - self.robot_radius],
+                          [0.45 - self.robot_radius, 2. - self.robot_radius], [self.robot_radius, 2. - self.robot_radius]])
 
     @staticmethod
     def points2vis_graph(points):

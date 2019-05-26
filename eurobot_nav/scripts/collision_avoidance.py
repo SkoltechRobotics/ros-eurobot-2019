@@ -396,7 +396,7 @@ class CollisionAvoidanceSecondaryRobot(object):
                     else:
                         p_lidar = min_dist_to_obstacle/0.7
             else:
-                rospy.loginfo("Sensor obstacle %s", obstacle_point) 
+                rospy.loginfo("Sensor obstacle %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_sensor:
                     rospy.loginfo("COLLISION")
                     return True, self.p, obstacle_point

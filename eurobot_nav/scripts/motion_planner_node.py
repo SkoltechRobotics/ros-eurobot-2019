@@ -111,16 +111,17 @@ class MotionPlannerNode:
             self.collision_avoidance = CollisionAvoidanceMainRobot()
 #       init path planner
         rospy.sleep(3)
-        self.world = np.array([[self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],
-                               [3. - self.robot_radius, 2. - self.robot_radius],
-                               [2.55 + self.robot_radius, 2. - self.robot_radius],
-                               [2.55 + self.robot_radius, 1.543 - self.robot_radius],
-                               [0.45 - self.robot_radius, 1.543 - self.robot_radius],
-                               [0.45 - self.robot_radius, 2. - self.robot_radius],
-                               [self.robot_radius, 2. - self.robot_radius],
+        self.world = np.array([[self.robot_radius, self.robot_radius], [0.5 - self.robot_radius, self.robot_radius],
+                          [0.5 - self.robot_radius, 0.07 + self.robot_radius], [2.5 + self.robot_radius, 0.07 + self.robot_radius],
+                          [2.5 + self.robot_radius, self.robot_radius], [3. - self.robot_radius, self.robot_radius],
+                          [3. - self.robot_radius, 2. - self.robot_radius], [2.55 + self.robot_radius, 2. - self.robot_radius],
+                          [2.55 + self.robot_radius, 1.543 - self.robot_radius], [1.7 - self.robot_radius, 1.543 - self.robot_radius],
+                          [1.7 - self.robot_radius, 1.343 - self.robot_radius], [1.3 - self.robot_radius, 1.343 - self.robot_radius],
+                          [1.3 - self.robot_radius, 1.543 - self.robot_radius], [0.45 - self.robot_radius, 1.543 - self.robot_radius],
+                          [0.45 - self.robot_radius, 2. - self.robot_radius], [self.robot_radius, 2. - self.robot_radius],
                                [self.robot_radius, self.robot_radius]])
         self.publish_world(np.array([self.world]))
-        self.path_planner = PathPlanning()
+        self.path_planner = PathPlanning(self.robot_radius)
 
     def publish_world(self, world):
         markers = []
