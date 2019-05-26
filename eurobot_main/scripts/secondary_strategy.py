@@ -95,7 +95,7 @@ class Strategy(object):
 
             if self.is_robot_started.get() is False:
 
-                _, __, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(
+                __, __, purple_pucks_rgb, yellow_pucks_rgb = initial_parse_pucks(
                                                             new_observation_pucks,
                                                             self.purple_chaos_center,
                                                             self.yellow_chaos_center,
@@ -103,7 +103,6 @@ class Strategy(object):
                                                             self.purple_cells_area,
                                                             self.yellow_cells_area)
 
-                print ("yellow_pucks_rgb", yellow_pucks_rgb)
 
                 if self.color_side == "purple_side":
                     if len(purple_pucks_rgb) == 3:
@@ -111,9 +110,7 @@ class Strategy(object):
 
                 elif self.color_side == "yellow_side":
                     if len(yellow_pucks_rgb) == 3:
-                        print ("yellow_pucks_rgb", yellow_pucks_rgb)
                         self.our_pucks_rgb.set(yellow_pucks_rgb)
-                        print ("yellow_pucks_rgb",  self.our_pucks_rgb.get())
 
             if self.is_robot_started.get() is True:
                 lost_pucks = yolo_parse_pucks(new_observation_pucks,
@@ -367,13 +364,14 @@ class ReflectedVovanStrategy(Strategy):
         self.redium_zone_forth = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_forth"))
         self.redium_zone_center = np.array(rospy.get_param("secondary_robot/" + param + "/redium_zone_center"))
         self.reflected_last_zone = np.array(rospy.get_param("secondary_robot/" + param + "/reflected_last_zone"))
-        self.ground_puck = np.array(rospy.get_param("secondary_robot/" + param + "/ground_puck"))
+        self.third_ground_puck = np.array(rospy.get_param("secondary_robot/" + param + "/third_ground_puck"))
+        self.second_ground_puck = np.array(rospy.get_param("secondary_robot/" + param + "/second_ground_puck"))
 
         first_puck = bt.FallbackWithMemoryNode([
             bt.SequenceWithMemoryNode([
                 bt.SequenceWithMemoryNode([
-                    bt_ros.MoveLineToPoint(self.ground_puck + (side_sign * 0.07, 0, 0), "move_client"),
-                    bt_ros.MoveLineToPoint(self.ground_puck, "move_client"),
+                    bt_ros.MoveLineToPoint(self.third_ground_puck + (side_sign * 0.07, 0, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.third_ground_puck, "move_client"),
                     bt.FallbackWithMemoryNode([
                         bt.ParallelWithMemoryNode([
                             bt_ros.MoveLineToPoint(self.fifth_puck + (0, -0.08, 0), "move_client"),
@@ -591,6 +589,21 @@ class ReflectedVovanStrategy(Strategy):
         leaving_red_zone = bt.SequenceNode([
             bt_ros.MoveLineToPoint(self.reflected_last_zone + (-0.2, 0, 0), "move_client"),
             bt_ros.RightMoustacheDefault("manipulator_client"),
+        ]),
+
+        second_ground_puck = bt.FallbackWithMemoryNode([
+                bt.SequenceWithMemoryNode([
+                    bt_ros.MoveLineToPoint(self.second_ground_puck + (side_sign * 0.07, 0, 0), "move_client"),
+                    bt_ros.MoveLineToPoint(self.second_ground_puck, "move_client"),
+                    bt_ros.StartCollectGroundCheck("manipulator_client"),
+                    bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1]))),
+                    bt.ParallelWithMemoryNode([
+                        bt_ros.MoveLineToPoint(self.redium_zone_forth, "move_client"),
+                        bt_ros.PublishScore_ifReachedGoal(self.redium_zone_forth, self.score_master, "RED")
+                    ], threshold=2),
+                    bt_ros.ReleaseFromManipulator("manipulator_client"),
+                    bt.ActionNode(lambda: self.score_master.add(get_color(self.our_pucks_rgb.get()[1])))
+            ]),
         ])
 
         self.tree = bt.SequenceWithMemoryNode([
@@ -609,7 +622,8 @@ class ReflectedVovanStrategy(Strategy):
             bt_ros.StepperUp("manipulator_client"),
             bt_ros.RightMoustacheDown("manipulator_client"),
             unload_to_red,
-            leaving_red_zone])
+            leaving_red_zone,
+            second_ground_puck])
 
 
 class VovanStrategy(Strategy):
