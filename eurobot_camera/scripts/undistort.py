@@ -74,24 +74,24 @@ class CameraUndistortNode():
         self.camera = Camera(DIM, K, D)
         self.contour = Contour()
 
-        self.cap = cv2.VideoCapture(0)
-        self.cap.set(3, 2448)
-        self.cap.set(4, 2048)
-
-        last_frame_index = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.cap.set(2,last_frame_index)
+        # self.cap = cv2.VideoCapture(0)
+        # self.cap.set(3, 2448)
+        # self.cap.set(4, 2048)
+        #
+        # last_frame_index = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        # self.cap.set(2,last_frame_index)
         #
         # self.cap.set(cv2.CAP_PROP_FRAME_COUNT, last_frame_index - 1)
         # Check if camera opened successfully
-        if (self.cap.isOpened() == False):
-            print("Unable to read camera feed")
+        # if (self.cap.isOpened() == False):
+        #     print("Unable to read camera feed")
 
 
         if self.mode == "vertical":
-            pass
+            # pass
 
-            # self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
-            #                                    self.__callback_vertical, queue_size=1)
+            self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
+                                               self.__callback_vertical, queue_size=1)
 
         elif self.mode == "horizontal":
             self.subscriber = rospy.Subscriber("/usb_cam/image_raw", Image,
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     rospy.sleep(1)
     undistort_node = CameraUndistortNode(DIM, K, D, args.template)
     undistort_node.camera.find_vertical_projection()
-    while (True):
-        undistort_node.image_analyze()
+    # while (True):
+    #     undistort_node.image_analyze()
 
     rospy.spin()
