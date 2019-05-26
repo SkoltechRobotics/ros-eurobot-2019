@@ -60,7 +60,7 @@ class CollisionAvoidance(object):
         ranges = np.array(scan.ranges)
         index0 = ranges < 2
         index1 = ranges > 0.2
-        index = index0
+        index = index0 * index1
         return np.where(index, ranges, 0)
 
     def get_landmarks(self, scan):
@@ -70,7 +70,7 @@ class CollisionAvoidance(object):
         final_ind = np.where((np.arange(ranges.shape[0]) * ind) > 0)[0]
         angles = (LIDAR_DELTA_ANGLE * final_ind + LIDAR_START_ANGLE) % (2 * np.pi)
         distances = ranges[final_ind]
-        distances -= 0.05
+        #distances -= 0.05
         return angles, distances
 
     @staticmethod
@@ -104,6 +104,7 @@ class CollisionAvoidance(object):
 
     def proximity_callback(self, data):
         distances = (np.array((data.data.split())).astype(float))/100
+        rospy.loginfo("Proximity data %s", distances)
         distances[np.where(distances == 0.5)] = 1
         points = np.zeros((0, 2))
         for i in range(self.sensor_coords.shape[0]):
@@ -116,10 +117,16 @@ class CollisionAvoidance(object):
         x, y = cloud.T
         x0, y0 = 0, 0
         x1, y1 = np.roll(x, 1), np.roll(y, 1)
+        x2, y2 = np.roll(x,-1), np.roll(y, -1)
         cos_angle = ((x - x0) * (x - x1) + (y - y0) * (y - y1)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
                                                                    * np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1)))
         sin_angle = np.sqrt(1 - cos_angle * cos_angle)
-        index = sin_angle >= min_sin_angle
+        index1 = sin_angle >= min_sin_angle
+        cos_angle = ((x - x0) * (x - x2) + (y - y0) * (y - y2)) / (np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+                                                                   * np.sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2)))
+        sin_angle = np.sqrt(1 - cos_angle * cos_angle)
+        index2 = sin_angle >= min_sin_angle
+        index = index1 * index2
         return index
 
     def scan_callback(self, scan):
@@ -129,6 +136,7 @@ class CollisionAvoidance(object):
         y = distances * np.sin(angles)
         self.obstacle_points_lidar = np.zeros((0, 2))
         landmarks = (np.array([x, y])).T
+        landmarks = landmarks[self.alpha_filter(landmarks, 0.4)]
         if landmarks.size > 0:
             self.obstacle_points_lidar = landmarks
 
@@ -146,6 +154,8 @@ class CollisionAvoidance(object):
         obstacle_points_sensor = self.filter_points(self.obstacle_points_sensor.copy(), coords.copy(), goal.copy())
         self.num_lidar_collision_points = obstacle_points_lidar.shape[0]
         self.num_sensor_collision_points = obstacle_points_sensor.shape[0]
+        rospy.loginfo("Lidar obstacle points num %s", self.num_lidar_collision_points)
+        rospy.loginfo("Lidar sensor points num %s", self.num_sensor_collision_points)
         self.obstacle_points = np.concatenate((obstacle_points_lidar.copy(), obstacle_points_sensor.copy()), axis=0)
         self.set_collision_point(self.obstacle_points)
 
@@ -174,7 +184,7 @@ class CollisionAvoidance(object):
                 rospy.loginfo("Lidar obstacle %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_lidar:
                     rospy.loginfo("COLLISION")
-                    return True, self.p, obstacle_point, "Lidar"
+                    return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.7:
                         p_lidar = 1
@@ -184,15 +194,15 @@ class CollisionAvoidance(object):
                 rospy.loginfo("Sensor obstacle %s", obstacle_point)
                 if min_dist_to_obstacle < self.min_dist_to_obstacle_sensor:
                     rospy.loginfo("COLLISION")
-                    return True, self.p, obstacle_point, "Sensor"
+                    return True, self.p, obstacle_point
                 else:
                     if min_dist_to_obstacle > 0.4:
                         p_sensor = 1
                     else:
                         p_sensor = min_dist_to_obstacle/0.4
-            return False, min(p_lidar, p_sensor), obstacle_point, "None"
+            return False, min(p_lidar, p_sensor), obstacle_point
         else:
-            return False, self.p, self.default_obstacle_point, "None"
+            return False, self.p, self.default_obstacle_point
 
     def set_collision_point(self, positions):
         marker = []
@@ -245,4 +255,5 @@ class CollisionAvoidance(object):
             point.z = 0.2
             marker.points.append(point)
         self.collision_area_publisher.publish(marker)
+
 

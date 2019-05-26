@@ -4,7 +4,7 @@ num_points_in_path: 100
 robot_radius: 0.14
 k_linear_wp: 1.5
 k_linear_vp: 1.5
-k : 0.15
+k : 0.2
 min_dist_to_goal_point: 0.2
 # max rate of the planner
 RATE: 40
@@ -12,14 +12,14 @@ RATE: 40
 XY_GOAL_TOLERANCE: 0.012
 YAW_GOAL_TOLERANCE: 0.012
 # maximum speed
-V_MAX: 0.7
+V_MAX: 0.6
 W_MAX: 1.2
 AV_MAX: 0.9
 AW_MAX: 1.5
 # acceleration at beginning of movements
 ACCELERATION: 1.0
 # goal distance for deceleration
-D_DECELERATION: 0.1
+D_DECELERATION: 0.15
 R_DECELERATION: 1
 exp_const: 0.08
 # power of deceleration factor
