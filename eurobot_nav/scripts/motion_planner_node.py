@@ -13,10 +13,9 @@ from geometry_msgs.msg import Twist, TwistStamped
 from core_functions import cvt_global2local, cvt_local2global, wrap_angle, calculate_distance
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, Point
-from collision_avoidance import CollisionAvoidanceMainRobot, CollisionAvoidanceSecondaryRobot
+from collision_avoidance import CollisionAvoidance
 from path_planner import PathPlanning
-from polygon_conversions import list_from_polygon, list_from_polygon_array, polygon_list_from_numpy, get_collision_polygon
-
+from polygon_conversions import list_from_polygon, get_collision_polygon
 
 
 class MotionPlannerNode:
@@ -105,10 +104,7 @@ class MotionPlannerNode:
         rospy.Subscriber("command", String, self.cmd_callback, queue_size=1)
         #rospy.Subscriber("obstacle", String, self.obstacle_callback, queue_size=1)
 #       init collision avoidance
-        if self.robot_name == "secondary_robot":
-            self.collision_avoidance = CollisionAvoidanceSecondaryRobot()
-        elif self.robot_name == "main_robot":
-            self.collision_avoidance = CollisionAvoidanceMainRobot()
+        self.collision_avoidance = CollisionAvoidance()
 #       init path planner
         rospy.sleep(3)
         self.world = np.array([[self.robot_radius, self.robot_radius], [0.5 - self.robot_radius, self.robot_radius],
@@ -156,17 +152,16 @@ class MotionPlannerNode:
             markers.append(marker)
             self.world_publisher.publish(markers)
 
-    def get_polygon_from_point(self, point, radius):
-        return np.array([[point[0] - radius, point[1] - radius],
-                         [point[0] - radius, point[1] + radius],
-                         [point[0] + radius, point[1] + radius],
-                         [point[0] + radius, point[1] - radius]])
+    def get_polygon_from_point(self, point, radius, collision_src):
+            return np.array([[point[0] - radius, point[1] - radius],
+                             [point[0] - radius, point[1] + radius],
+                             [point[0] + radius, point[1] + radius],
+                             [point[0] + radius, point[1] - radius]])
 
     def obstacle_callback(self, obstacle):
         obstacle_point = np.array(obstacle.data.split()).astype(float)
         self.obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         self.collision_avoidance.set_collision_area(self.obstacle_polygon)
-
 
     def pub_path(self):
         path = Path()
@@ -440,7 +435,7 @@ class MotionPlannerNode:
         rospy.loginfo(self.goal)
         rospy.loginfo(self.collision_avoidance)
         rospy.loginfo(type(self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())))
-        self.is_collision, self.p, obstacle_point = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
+        self.is_collision, self.p, obstacle_point, collision_src = self.collision_avoidance.get_collision_status(self.coords.copy(), self.goal.copy())
 
         #obstacle_polygon = self.get_polygon_from_point(obstacle_point)
         # self.collision_avoidance.set_collision_area(obstacle_polygon)
@@ -456,9 +451,9 @@ class MotionPlannerNode:
             self.prev_vel = np.zeros(3)
             self.goal = self.buf_goal.copy()
             self.prev_time = rospy.Time.now().to_sec()
-            obstacle_polygon = self.get_polygon_from_point(obstacle_point, self.oponent_robot_radius + self.robot_radius)
+            obstacle_polygon = self.get_polygon_from_point(obstacle_point, self.oponent_robot_radius + self.robot_radius, collision_src)
             self.collision_avoidance.set_collision_area(obstacle_polygon)
-            robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
+            robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius, "None")
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)
             obstacle_polygon = list_from_polygon(obstacle_polygon)
             self.way_points = self.path_planner.create_path(self.coords.copy(), self.goal.copy(), obstacle_polygon)
