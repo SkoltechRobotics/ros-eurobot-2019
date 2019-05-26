@@ -111,7 +111,7 @@ def find_transform_features(im1,rx,ry,MAX_FEATURES,GOOD_MATCH_PERCENT,templ_path
         pt1 = np.array(keypoints1[img1_idx].pt)
         pt2 = np.array(keypoints2[img2_idx].pt)
         dist = np.linalg.norm(pt1-pt2)
-        if m.distance < 0.8 * n.distance and dist < 50:
+        if m.distance < 0.8 * n.distance and dist < 40:
             good.append(m)
 
     if len(good) > MIN_MATCH_COUNT:
