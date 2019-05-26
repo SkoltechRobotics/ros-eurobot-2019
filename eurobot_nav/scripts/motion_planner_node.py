@@ -120,10 +120,10 @@ class MotionPlannerNode:
                                [3. - self.robot_radius, 2. - self.robot_radius],
                                [2.55 + self.robot_radius, 2. - self.robot_radius],
                                [2.55 + self.robot_radius, 1.543 - self.robot_radius],
-                               # [1.7 - self.robot_radius, 1.543 - self.robot_radius],
-                               # [1.7 - self.robot_radius, 1.343 - self.robot_radius],
-                               # [1.3 - self.robot_radius, 1.343 - self.robot_radius],
-                               # [1.3 - self.robot_radius, 1.543 - self.robot_radius],
+                               [1.7 - self.robot_radius, 1.543 - self.robot_radius],
+                               [1.7 - self.robot_radius, 1.343 - self.robot_radius],
+                               [1.3 - self.robot_radius, 1.343 - self.robot_radius],
+                               [1.3 - self.robot_radius, 1.543 - self.robot_radius],
                                [0.45 - self.robot_radius, 1.543 - self.robot_radius],
                                [0.45 - self.robot_radius, 2. - self.robot_radius],
                                [self.robot_radius, 2. - self.robot_radius],
@@ -219,6 +219,7 @@ class MotionPlannerNode:
         """
 
         self.mutex.acquire()
+        self.publish_world(np.array([self.world]))
         #rospy.loginfo("CMD CALLBACK")
         #rospy.loginfo(data.data)
         #rospy.loginfo(rospy.Time.now().to_sec())
@@ -474,6 +475,7 @@ class MotionPlannerNode:
             robot_polygon = self.get_polygon_from_point(self.coords.copy(), self.robot_radius)
             obstacle_polygon = get_collision_polygon(obstacle_polygon, robot_polygon)
             obstacle_polygon = list_from_polygon(obstacle_polygon)
+            self.collision_avoidance.set_collision_area(obstacle_polygon)
             self.way_points = self.path_planner.create_path(self.coords.copy(), self.goal.copy(), obstacle_polygon)
             self.way_points[:-1, 2] = self.coords[2]
             self.way_points[-1, 2] = self.goal[2]
