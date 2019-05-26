@@ -678,3 +678,26 @@ class PathMoveToVariable(bt.SequenceNode):
 
     def set_command(self):
         self.path_move_to_waypoint_node.cmd.set("move_path %f %f %f" % tuple(self.goal.get()))
+
+
+class DelayNode(bt.SequenceNode):
+    def __init__(self, duration):
+        self.duration = duration
+        self.start_time = bt.BTVariable(rospy.get_time())
+        self.start_timer_latch = bt.Latch(bt.ActionNode(self.start_timer))
+        super(DelayNode, self).__init__([
+            self.start_timer_latch,
+            bt.ConditionNode(self.is_end)
+        ])
+
+    def is_end(self):
+        if rospy.get_time() - self.start_time.get() > self.duration:
+            return bt.Status.SUCCESS
+        else:
+            return bt.Status.RUNNING
+
+    def start_timer(self):
+        self.start_time.set(rospy.get_time())
+
+    def reset(self):
+        self.start_timer_latch.reset()
