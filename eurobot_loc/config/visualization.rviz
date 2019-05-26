@@ -89,19 +89,9 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        main_robot:
-          Value: true
-        main_robot_laser:
-          Value: true
-        main_robot_odom:
-          Value: true
         map:
           Value: true
         secondary_robot:
-          Value: true
-        secondary_robot_laser:
-          Value: true
-        secondary_robot_odom:
           Value: true
       Marker Scale: 0.400000006
       Name: TF
@@ -110,14 +100,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          main_robot_odom:
-            main_robot:
-              main_robot_laser:
-                {}
-          secondary_robot_odom:
-            secondary_robot:
-              secondary_robot_laser:
-                {}
+          secondary_robot:
+            {}
       Update Interval: 0
       Value: true
     - Attached Body Color: 150; 50; 150
@@ -158,11 +142,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        main_robot:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: MainRobot
       Robot Alpha: 1
       Robot Description: main_robot/description
@@ -536,7 +515,7 @@ Visualization Manager:
       Marker Topic: /secondary_robot/beacons
       Name: MarkerArray
       Namespaces:
-        beacons: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -552,7 +531,7 @@ Visualization Manager:
       Marker Topic: /main_robot/beacons
       Name: MarkerArray
       Namespaces:
-        beacons: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -609,7 +588,15 @@ Visualization Manager:
       Marker Topic: /pucks
       Name: MarkerArray
       Namespaces:
-        pucks: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /navigation/world
+      Name: MarkerArray
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
