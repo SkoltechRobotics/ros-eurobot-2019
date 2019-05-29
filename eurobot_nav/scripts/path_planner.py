@@ -16,6 +16,7 @@ class PathPlanning(object):
         self.chaos_zone_yellow = np.array([[2. - self.robot_radius, 1 - self.robot_radius], [2. - self.robot_radius, 1. + self.robot_radius], [2. + self.robot_radius, 1. + self.robot_radius], [2. + self.robot_radius, 1. - self.robot_radius]])
         self.epsilon = 0.0001
         self.is_flipped = False
+
         self.world = np.array([[self.robot_radius, self.robot_radius], [0.5 - self.robot_radius, self.robot_radius],
                                [0.5 - self.robot_radius, 0.07 + self.robot_radius],
                                [2.5 + self.robot_radius, 0.07 + self.robot_radius],
