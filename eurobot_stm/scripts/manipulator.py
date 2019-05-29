@@ -45,10 +45,17 @@ class Manipulator(object):
             "GET_PACK_PUMPED_STATUS" : 0x19,
             "SET PUMP TO THE MOVING STATE" : 0x1A,
             "GET_BAROMETR_STATUS" : 0x1B,
+
             # only for Secondary
             "RELEASER_DEFAULT_SECONDARY" : 0x20,
             "RELEASER_THROW_SECONDARY" : 0x21,
-    
+            "LEFT_MOUSTACHE_DEFAULT" : 0x22,
+            "LEFT_MOUSTACHE_DOWN" : 0x23,
+            "RIGHT_MOUSTACHE_DEFAULT" : 0x24,
+            "RIGHT_MOUSTACHE_DOWN" : 0x25,
+            "SET_RELEASER_SPEED_TO_HIGH" : 0x26,
+            "SET_RELEASER_SPEED_TO_LOW" : 0x27,
+
             # only for Main
             "UNLOAD_PUCK_TOP_MAIN" : 0x30,
             "UNLOAD_DEFAULT_MAIN" : 0x31,  # FIXME
@@ -88,6 +95,14 @@ class Manipulator(object):
             return self.start_pump()
         elif cmd == "stop_pump":
             return self.stop_pump()
+        elif cmd == "left_moustache_default":
+            return self.left_moustache_default()
+        elif cmd == "left_moustache_down":
+            return self.left_moustache_down()
+        elif cmd == "right_moustache_default":
+            return self.right_moustache_default()
+        elif cmd == "right_moustache_down":
+            return self.right_moustache_down()
         elif cmd == "moving_default":
             return self.moving_default()
         elif cmd == "stepper_up":
@@ -154,6 +169,10 @@ class Manipulator(object):
             return self.release_from_manipulator()
         elif cmd == "check_limit switch_infinitely":
             return self.check_status_infinitely()
+        elif cmd == "set_releaser_speed_to_high":
+            return self.set_releaser_speed_to_high()
+        elif cmd == "set_releaser_speed_to_low":
+            return self.set_releaser_speed_to_low()
 
     def command_callback(self, data):
         cmd_id, cmd = self.parse_data(data)
@@ -428,6 +447,31 @@ class Manipulator(object):
         self.send_command(self.protocol["STOP_PUMP"])
         return True
 
+    def left_moustache_default(self):
+        self.send_command(self.protocol["LEFT_MOUSTACHE_DEFAULT"])
+        return True
+
+    def left_moustache_down(self):
+        self.send_command(self.protocol["LEFT_MOUSTACHE_DOWN"])
+        return True
+
+    def right_moustache_default(self):
+        self.send_command(self.protocol["RIGHT_MOUSTACHE_DEFAULT"])
+        return True
+
+    def right_moustache_down(self):
+        self.send_command(self.protocol["RIGHT_MOUSTACHE_DOWN"])
+        return True
+
+    def set_releaser_speed_to_high(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_HIGH"])
+        return True
+
+    def set_releaser_speed_to_low(self):
+        self.send_command(self.protocol["SET_RELEASER_SPEED_TO_LOW"])
+        return True
+
+
     def moving_default(self):
         self.send_command(self.protocol["STOP_PUMP"])
         self.send_command(self.protocol["SET_PLATFORM"])
@@ -457,7 +501,7 @@ class Manipulator(object):
             self.send_command(self.protocol["OPEN_GRABBER"])
             self.send_command(self.protocol["SET_WALL"])
             self.send_command(self.protocol["START_PUMP"])
-            result = self.check_status(self.protocol["GET_PACK_PUMPED_STATUS"])
+            result = self.check_status(self.protocol["GET_BAROMETR_STATUS"])
             if result:
                 return True
             else:
