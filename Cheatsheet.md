@@ -1,210 +1,217 @@
-# CODE GUIDELINES
----------------------
+
+#CODE GUIDELINES
+
 1) Code should look like a poem and be self-explanatory
 2) Use functions
-3) First list yaml-params, than publishers, and in the end - Subcribers
-4) Timer in the end, it should call function motion_timer_callback, from which desiable methods are chosen
 5) No magic constants in code
 6) No pre-optimization, and more post-opt
 7) Write specs --> write tests --> write code --> release
-8) For subscriber callback the last parameter is data from topic, for timer callback - event
-9) не надо делать абсолютные пути '/secondary_robot/stm_command', лучше в launch файле сделать remap
-10) 
+
+
+
+# PROTOCOL 2019
+https://docs.google.com/spreadsheets/d/1j6GV8JzCToRLRh0yVEz2r-NNTBBeui3rUYlnIGAXVAA/edit#gid=1248994702
 
 
 # General info
 - Subscribers to the end of init
+
 - no namespaces in init, all in launch
+
+- For subscriber callback the last parameter is data from topic, for timer callback - event
+
+- instead of paths like '/secondary_robot/stm_command', better do remap in launch file (using namespace)
+
+- First list yaml-params, than publishers, and in the end - Subcribers
+- Timer in the end, it should call function timer_callback, from which desireable methods are chosen
 
 
 # ROBOT COMMUNICATION
-------------------
-rostopic pub -1 /move_command std_msgs/String "data: 'abc arc_move 0.3 1.2 0'" 
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data 'abc arc_move 1 1 3.14'"
-
-8 - vels
-14 - pos
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: 'null 8 0 0 0'" 
-
-## to ride by odometry
-rostopic pub -1 /main_robot/stm/command std_msgs/String "data: '1 8 0.2 0 0'" 
-stm 1 8 0 0 2
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 14 0 0 0'" 
-
-rostopic pub -1 /main_robot/score std_msgs/String "data: '24'" 
 
 
-roslaunch eurobot_tactics tactics_sim_launch.launch
-
-rosnode kill /main_robot/particle_filter_node
-
-ssh odroid@192.168.88.239
-
-roscd eurobot_nav
-
-на роботе
-roslaunch eurobot_loc pf_launch.launch
-
-на компе
-roslaunch eurobot_loc remote.launch
-roslaunch eurobot_loc visualization.launch
-
-python arc_move_v01.py 
-
-rostopic echo /secondary_robot/stm_command 
-rostopic list 
-rosnode list
-
-"""
-roslaunch eurobot multimaster.launch 
-autostart
-
-autostart ??? command
-crontab -e
-"""
-
-- To turn off odroid from ssh:
-sudo shutdown -h now
-
-rosed 
-
-- To check coords and delay
-rosrun tf tf_echo map secondary_robot
+    ssh odroid@192.168.88.239
+    or
+    secondary_robot
+    
+    ssh odroid@192.168.88.242
+    or
+    main_robot
+    
+    
+    rosrun rqt_graph rqt_graph
 
 
-
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_arc 1.5 0.45 3.14'"
-rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 0.45 3.14'"
-rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.5 0.34 1.57'"
-rostopic pub -1 /move_command std_msgs/String "data: 'abc move_arc 0.61 1.05 3.14'"
-
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.75 0.5 0'"
-rostopic pub -1 /main_robot/move_command std_msgs/String "data: 'abc move_line 0.4 0.4 0'"
-
-
-# use sim to collect chaos
-roslaunch eurobot_tactics tactics_sim.launch 
-rosrun eurobot_main imitate_cam.py -n 5
-rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
+### to ride using localisation
 
 rostopic pub -1 /main_robot/navigation/command std_msgs/String "data: '1 move_line 0.4 0.4 0'"
 
 
-rosrun rqt_graph rqt_graph
+### to ride by odometry
 
-to puck near red field SMALL
-rostopic pub -1 /secondary_robot/move_command std_msgs/String "data: 'abc move_line 0.6 0.45 3.14'"
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x30'"
-rostopic pub -1 /secondary_robot/stm_command std_msgs/String "data: '1 0x11'"
+8 - vels
+14 - pos
 
-roslaunch eurobot_stm STM_node.launch
+rotate:
 
-rostopic pub -1 /manipulator/command std_msgs/String "data: 'abc release_accelerator'"
+    stm 1 8 0 0 2
 
-WE CHANGED TOPIC
-stm 1 0x11
+    stm - topic
+    1 - id
+    8 - type of command
+    0 - x
+    0 - y
+    2 - theta
 
-export DISPLAY=:0
-roslaunch eurobot_main main_robot_bt.launch 
+move in X dir
+
+    rostopic pub -1 /main_robot/stm/command std_msgs/String "data: '1 8 0.2 0 0'" 
+    # or
+    stm 1 8 0.2 0 0
+
+
+Type commands like this using protocol commands (link above):
+
+    stm 1 0x11
+
+
+###VUSIALIZATION
+on computer
+
+    roslaunch eurobot_loc remote.launch
+    roslaunch eurobot_loc visualization.launch
+
+on robot
+
+    roslaunch eurobot_loc pf_launch.launch
+
+??
+roslaunch eurobot multimaster.launch 
+
+To check coords and delay
+
+    rosrun tf tf_echo map secondary_robot
+
+launch STM node
+
+    roslaunch eurobot_stm STM_node.launch
+
+
+###SIMULATION to collect chaos
+
+    roslaunch eurobot_tactics tactics_sim.launch 
+    rosrun eurobot_main imitate_cam.py -n 5
+    rostopic pub -1 /secondary_robot/cmd_tactics std_msgs/String "data: 'abc collect_chaos'"
 
 
 
 # WIRELESS PART SETUP
+
 ---------------
 ifconfig
 
 in /etc/network$ vim interfaces
 
-# interfaces(5) file used by ifup(8) and ifdown(8)
-auto lo
-iface lo inet loopback
-auto wlan0
-auto eth0
-#allow-hotplug eth0
-iface eth0 inet static
-        address 192.168.0.15
-        netmask 255.255.255.0
+add ip ros master
+
+odroid@odroid:~$ cd /etc/
+odroid@odroid:/etc$ sudo vim hosts
 
 
+    # interfaces(5) file used by ifup(8) and ifdown(8)
+    auto lo
+    iface lo inet loopback
+    auto wlan0
+    auto eth0
+    #allow-hotplug eth0
+    iface eth0 inet static
+            address 192.168.0.15
+            netmask 255.255.255.0
 
-ssh keygen
-enter
-enter enter
-copy id
-adress
+smth
+
+    ssh keygen
+    enter
+    enter enter
+    copy id
+    adress
 
 
 
 # GIT
+
 ---------------
+
+https://www.ohshitgit.com
+
 http://rogerdudler.github.io/git-guide/
+
 http://365git.tumblr.com/post/504140728/fast-forward-merge
+
 http://rogerdudler.github.io/git-guide/
 
-git push --set-upstream upstream test_nav_loc
+    git push --set-upstream upstream branch_name
+    git config --global user.email nikolay.zherdev@gmail.com
+    git config --global user.name "nickzherdev"
 
-git config --global user.email nikolay.zherdev@gmail.com
-git config --global user.name "nickzherdev"
+### create new repository
 
-# create new repository
-cd eurobot2019_ws/
-git init
-git status
-git checkout branchname  # Change working branch
-git checkout -b your-branch # Create the branch on your local machine and switch in this branch
-git push -u upstream collect_chaos_pucks - in order for branch to watch origin
-
-git add filename
-git commit -m “Add chocolate.jpeg.”
-git push origin master (or git push upstream bt_chaos)
-
-git remote add origin (upstream) 
-git remote add upstream https://github.com/SkoltechRobotics/ros-eurobot-2019.git
-git remote add [name_of_your_remote] [name_of_your_new_branch]
-git commit
-
-git remote -v
-git push origin [name_of_your_new_branch] 
-
-git push upstream navnew
-git push upstream grab_atoms 
-
-git merge branchname (ex: loc)
-
-git push upstream navnew --force
-git push --set-upstream upstream test_nav_loc 
+    cd eurobot2019_ws/
+    git init
+    
+    
+    git status
+    git checkout branchname  # Change working branch
+    git checkout -b your-branch # Create the branch on your local machine and switch in this branch
+    git push -u upstream collect_chaos_pucks - in order for branch to watch origin
+    
+    git add filename
+    git commit -m “Add chocolate.jpeg.”
+    git push origin master (or git push upstream bt_chaos)
+    
+    git remote add origin (upstream) 
+    git remote add upstream https://github.com/SkoltechRobotics/ros-eurobot-2019.git
+    git remote add [name_of_your_remote] [name_of_your_new_branch]
+    git commit
+    
+    git remote -v
+    git push origin [name_of_your_new_branch] 
+    
+    git push upstream navnew
+    git push upstream grab_atoms 
+    
+    git merge branchname (ex: loc)
+    
+    git push upstream navnew --force
+    git push --set-upstream upstream test_nav_loc 
 
 В том случае, если ветка master (или branch_name) не является отслеживаемой веткой origin/master (или origin/branch_name), а вы хотите сделать её таковой.
 
 Выполнив команду git push -u origin master вы устанавливаете связь между той веткой, в которой вы находитесь и веткой master на удалённом сервере. Команду требуется выполнить единожды, чтобы потом можно было отправлять/принимать изменения лишь выполняя git push из ветки без указания всяких алиасов для сервера и удалённых веток. Это сделано для удобства.
 
-на роботе
-git clone https://github.com/SkoltechRobotics/ros-eurobot-2019.git
-
-git config --global http.sslverify false
-
+    на роботе
+    git clone https://github.com/SkoltechRobotics/ros-eurobot-2019.git
+    
 in case of problems with sertificates use this command
-git config --global http.sslverify false
+
+    git config --global http.sslverify false
 
 copy file or folder from other branch
-git checkout branchname path/to/file/file.py
-git checkout collect_chaos_pucks eurobot_tactics/notebooks
-git checkout behavior_tree_backend eurobot_nav/scripts
 
+    git checkout branchname path/to/file/file.py
+    git checkout collect_chaos_pucks eurobot_tactics/notebooks
+    git checkout behavior_tree_backend eurobot_nav/scripts
 
 To revert the previous commit (our merge commit), we do:
-git revert HEAD
 
-- to show last commits
-git reflog
+    git revert HEAD
 
-- to remove latest pull
-git reset --hard a0d3fe6, // where  a0d3fe6 - is a head id
+To show last commits
 
-test3
+    git reflog
 
-## Team
+To remove latest pull
 
+    git reset --hard a0d3fe6, // where  a0d3fe6 - is a head id
 
 
 
@@ -220,15 +227,33 @@ cd catkin_ws/src/ros-eurobot-2018/
 
 rm -rf ros-eurobot-2019/ # recursevly delete folder and it's subfolders and files
 
-chmod +x "filename"
+- make file executable:
 
-sudo pip install --target=/usr/local/lib/python2.7/dist-packages shapely
-sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages shapely
+    chmod +x "filename"
 
-on odroid to show 
-ls -l /dev/tty*
+- install new packages:
+
+    sudo pip install --target=/usr/local/lib/python2.7/dist-packages shapely
+    
+    sudo pip install --target=/opt/ros/kinetic/lib/python2.7/dist-packages shapely
+
+on odroid to show connected devices
+    
+    ls -l /dev/tty*
 
 
+python arc_move_v01.py 
+
+autostart ??? command
+crontab -e
+"""
+
+To turn off odroid from ssh:
+
+    sudo shutdown -h now
+
+### free up memory on odroid
+    rosclean purge
 
 
 # make backup
@@ -251,15 +276,18 @@ Error mounting /dev/sdf1 at /media/safoex/EurobotMain: Command-line `mount -t "e
        dmesg | tail or so.alsfasfafkasfsafmsdklgnsdklmsdklmsklvmsdklvmklsa
 
 
-gedit ~/.bashrc 
-
-sudo vim /etc/hosts
+    gedit ~/.bashrc 
+    
+    sudo vim /etc/hosts
 
 ## remove nesessity to enter password 
-sudo update-alternatives --config editor
-sudo visudo
-myuser ALL=(ALL) NOPASSWD:ALL
+    sudo update-alternatives --config editor
+    sudo visudo
+    myuser ALL=(ALL) NOPASSWD:ALL
 
+
+### add in launch file when using display
+    export DISPLAY=:0
 
 
 # ROS WORKSPACE:
@@ -273,129 +301,49 @@ http://wiki.ros.org/ROS/Tutorials/CreatingPackage
 http://wiki.ros.org/ROS/Tutorials/catkin/CreatingPackage
 http://wiki.ros.org/ROS/NetworkSetup
 
-
-# create new node
+## create new node
 catkin_create_pkg eurobot_display std_msgs rospy roscpp
 
-# navigate to workspace/src to create a new package eurobot_core and eurobot_nav
+## navigate to workspace/src to create a new package eurobot_core and eurobot_nav
+
 cd ~/catkin_ws/src
 mkdir ros-eurobot-2019
 cd ros-eurobot-2019
 
 mkdir scripts
 
-vim /etc/hosts 
-export PYTHONPATH="${PYTHONPATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs"
-export PATH="${PATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/scripts"
+    vim /etc/hosts 
+    export PYTHONPATH="${PYTHONPATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/libs"
+    export PATH="${PATH}:/home/safoex/eurobot2019_ws/src/ros-eurobot-2019/scripts"
+    
+    export PYTHONPATH="${PYTHONPATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/libs"
+    export PATH="${PATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/scripts"
+    /home/odroid/catkin_ws/src/ros-eurobot-2019/libs
 
-export PYTHONPATH="${PYTHONPATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/libs"
-export PATH="${PATH}:/home/odroid/catkin_ws/src/ros-eurobot-2019/scripts"
-/home/odroid/catkin_ws/src/ros-eurobot-2019/libs
 
-
-# Create new workspace
+## Create new workspace
 http://wiki.ros.org/catkin/Tutorials/create_a_workspace
 
-mkdir -p ~/eurobot2019_ws/src
-cd eurobot2019_ws/
-catkin_make
-source devel/setup.bash
-vim ~/.bashrc
+    mkdir -p ~/eurobot2019_ws/src
+    cd eurobot2019_ws/
+    catkin_make
+    source devel/setup.bash
+    vim ~/.bashrc
+    
+    source ~/.bashrc 
+    rosrun eurobot_tactics TacticsNode.py
+    gedit ~/.bashrc 
 
-source ~/.bashrc 
-rosrun eurobot_tactics TacticsNode.py
-gedit ~/.bashrc 
+In the header of each file we need to state which env to use! Otherwise it won't work!
 
-In the header of each file we need to state which env to use:
-#!/usr/bin/env python
-
-
-
-# Usefull shortcuts
-Ctrl Alt 9 / 3 / 6 / 7 for sticking windows to different screen corners
+    #!/usr/bin/env python
 
 
-
-TROOBLESHOOTING
-------------------
-
-Localization not working
-- check if LIDAR is turned on (starts making noise) and connected to Ethernet port in Odroid
-- check in RViz if robot is coreectly localized 
-
-
-
-
-
-
-GOALS
-------------------
-Цель - подобрать роботом шайбу и овтезти её на акселлератор
-
-Задачи
-
-Получить координаты шайбы по камере (Алексей)
-Подъехать к ней по дуге (Николай) в правильное место с учётом зазора для манипулятора
-Произвести операцию схватывания
-Отвезти в акселлератор
-Сбросить
-Вернуться на место
-Вынести все параметры в yaml файл
-
-
-# Team
-Александр Соколовский - XL (54)
-Семен Лыхин - M
-Батыржан Алиханов - L
-Никита Горбадей - L
-Хуан Эредиа - L
-Эдгар Казиахмедов - L
-Антон Егоров - L
-Егор Пристанский - XXL
-Алексей Кашапов - L
-Николай Жердев - L
-Dzmitry Tsetserukou - XXL
-
-
-Александр Соколовский
-Лыхин Семен Александрович
-Батыржан Алиханов
-Горбадей Никита Петрович
-Хуан Эредиа
-Эдгар Казиахмедов
-Егоров Антон Андреевич
-Пристанский Егор Евгеньевич
-Кашапов Алексей Сергеевич
-Жердев Николай Алексеевич
-
-
-L - 8
-XL - 1
-XXL - 2
-
-Sergei Vostrikov - L
-Taras Melnik - L
-Andrew Chemikhin - M
-Evgeny Safronov - M
-Vladimir Karandaev - XL
-Mikhail Kurenkov - M
-
-
-Alexandr Kuleshov - XXL
-
-Optional:
-Evgeniy - L
-poc - L
-S - 1
-
-Поло и Худи
-S - 1
-M - 4
-L - 11 (9 + 2)
-XL - 2
-XXL - 3
-
-Поло + 2 спонсорам
+    rostopic echo /secondary_robot/stm/command 
+    rostopic list 
+    rosnode list
+    
+    rosnode kill /main_robot/particle_filter_node
 
 
 # BT
@@ -407,64 +355,45 @@ XXL - 3
 -- Callbacks
 -- Nodes
 
-# Проверить, что робот остановился.
-# Информация о том, что робот отсановился, публикуется в топик response
-# Проверить, что цель достигнута.
-
-# Alexey
-# Проверить, что манипулятор в исходной позиции, Опустить манипулятор, Проверить, что манипулятор опустился
-# Включить насос (на сколько?)
-# Поднять манипулятор до конца
-# Подпереть атом граблей
-# Выключить насос
 
 
-# required packages:
-ros-laser-scan-matcher
+### NO RVIZ IN LAUNCH FILE
+
+    #! /bin/bash
+
+    source /opt/ros/kinetic/setup.bash
+    source ~/catkin_ws/devel/setup.bash
 
 
 
-# services
-add ros-bashrc to service
-sudo systemctl status secondary_start.service   -  status of service
-sudo journalctl -f -u secondary_start.service   -  logs 
+### setup laser_scan_matcher package:
+
+    ros-laser-scan-matcher
+    sudo apt-get install ros-kinetic-laser-scan-matcher
+    roslaunch polar_scan_matcher demo.launch
 
 
+# SYSTEMCTL - Autostart using SystemD service
+
+Show journal with logs
+
+    sudo journalctl -f -u main_start.service
+
+Start / stop / restart service:
+
+    sudo systemctl restart main_start
+    sudo systemctl stop main_start
+    sudo systemctl start main_start
+
+Something:
+
+    add ros-bashrc to service
+    sudo systemctl status secondary_start.service   -  status of service
+    sudo journalctl -f -u secondary_start.service   -  logs 
 
 
-
-
-
-add ip ros master
-
-odroid@odroid:~$ cd /etc/
-odroid@odroid:/etc$ sudo vim hosts
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# NO RVIZ IN LAUNCH FILE
-
-#! /bin/bash
-
-source /opt/ros/kinetic/setup.bash
-source ~/catkin_ws/devel/setup.bash
-
-roslaunch eurobot main_robot.launch 
-
-
+Alexey Kashapov and Mikhail Kurenkov set up SystemD service in our robots. 
+Here is not complete instruction from internet:
 
 To run this on boot you can create a simple systemd service. 
 Create mavros.service file in /lib/systemd/system with the following contents:
@@ -485,13 +414,99 @@ And enable it on boot:
 sudo systemctl enable mavros.service
 
 
-        <node pkg="eurobot_display" name="display_node" type="gui.py" respawn="true" output="screen"/>
 
-# required packages:
-ros-laser-scan-matcher
->>>>>>> Stashed changes
-sudo apt-get install ros-kinetic-laser-scan-matcher
-roslaunch polar_scan_matcher demo.launch
+# LOGs
+
+    rosbag record -a
+    cd ~/.ros/log/latest
+    vim namefile.log
+
+
+
+#TROOBLESHOOTING
+
+### can't login your user in ubuntu
+https://askubuntu.com/questions/223501/ubuntu-gets-stuck-in-a-login-loop
+
+TL;DR, just try logging into the shell (Ctrl+Alt+F2 or whatever F between F1 and F6) and type
+
+    sudo add-apt-repository ppa:graphics-drivers/ppa
+    sudo apt update
+    sudo apt install nvidia-367
+
+If it succeeds, reboot.
+
+    sudo reboot
+
+### gui on odroid (mate panel)
+
+    sudo mate-panel start
+
+### free up memory on odroid
+    rosclean purge
+
+### Localization not working
+- check if LIDAR is turned on (starts making noise) and connected to Ethernet port in Odroid
+- check in RViz if robot is coreectly localized 
+- we once experienced problem with receiving coordinates - Lidar was sending data, but on gui we saw only 0 0 0 - problem was with some drivers or kernel error in odroid. We then just changed odroid and all started working
+
+
+
+
+# Workspace
+Ctrl Alt 9 / 3 / 6 / 7 for sticking windows to different screen corners
+
+tmuxinator new main_robot
+
+with Ctrl+B start any coomand:
+
+    shift+5 - vertically
+    
+    shift+" - horiz
+    
+    x - kill
+    
+    arrows - navigation
+  
+  
+
+
+# Team
+
+    Александр Соколовский
+    Лыхин Семен Александрович
+    Батыржан Алиханов
+    Горбадей Никита Петрович
+    Хуан Эредиа
+    Эдгар Казиахмедов
+    Егоров Антон Андреевич
+    Пристанский Егор Евгеньевич
+    Кашапов Алексей Сергеевич
+    Жердев Николай Алексеевич
+
+
+
+# TODO
+
+    # class PucksSlave(object):
+    #     def __init__(self):
+    #         self.pucks = None
+    #         self.mutex = threading.Lock()
+    #         rospy.Subscriber("/pucks", MarkerArray, self.pucks_callback, queue_size=1)
+    
+    #     def pucks_callback(self, data):
+    #         # rospy.loginfo("pucks callback, get")
+    #         # rospy.loginfo(data)
+    #         with self.mutex:
+    #             self.pucks = data
+    
+    #     def get_pucks(self):
+    #         with self.mutex:
+    #             return self.pucks
+
+
+
+# Something
 
 cp -a .git .git-old2
 
@@ -500,8 +515,6 @@ git hash-object -w Cheatsheet.md
 cp -r /home/odroid/catkin_ws/src/temporary-ros/ros-eurobot-2019/.git /home/odroid/catkin_ws/src/ros-eurobot-2019
 
 
-
-15
 
 It seems that your ~/.config/dconf/user* files are corrupted. Try the following command, it should recreate a new one and allow you to store your settings persistently:
 
@@ -512,45 +525,3 @@ If it does not solve your problem all you have to do is:
 
 mv ~/.config/dconf.bak ~/.config/dconf/ 
 
-
-sudo mate-panel start
-
-cd ~/.ros/log/latest
-vim main_robot-behavior_tree-11.log
-
-sudo journalctl -f -u main_start.service
-sudo systemctl restart main_start
-sudo systemctl stop main_start
-sudo systemctl start main_start
-
-rosbag record -a
-
-cd ~/.ros/log/latest
-
-roslaunch eurobot_main chaos_bt.launch
-
-fuck
-
-#TROOBLESHOOTING
-- ubuntu can't log in
-https://askubuntu.com/questions/223501/ubuntu-gets-stuck-in-a-login-loop
-
-TL;DR, just try logging into the shell (Ctrl+Alt+F2 or whatever F between F1 and F6) and type
-
-sudo add-apt-repository ppa:graphics-drivers/ppa
-sudo apt update
-sudo apt install nvidia-367
-If it succeeds, reboot.
-
-sudo reboot
-
-rosclean purge
-
-
-tmuxinator new main_robot
-with Ctrl+B start any coomand:
-    shift+5 - vertically
-    shift+" - horiz
-    x - kill
-    arrows - navigation
-    
